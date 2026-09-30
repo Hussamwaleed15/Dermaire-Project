@@ -111,9 +111,8 @@ class ApiService {
     throw ApiException(data['message']?.toString() ?? 'Google sign-in failed', data);
   }
 
-  /// Starts a real password-reset flow on the backend. In development the
-  /// response may include a `reset_token` directly, since no email-sending
-  /// provider is configured yet to deliver it to the user's inbox.
+  /// Starts the password-reset flow. The backend emails a reset code when
+  /// an account exists for the supplied email address.
   Future<Map<String, dynamic>> forgotPassword({required String email}) async {
     final res = await http.post(
       Uri.parse('$baseUrl/auth/forgot-password'),
@@ -130,12 +129,20 @@ class ApiService {
     throw ApiException(data['message']?.toString() ?? 'Request failed', data);
   }
 
-  /// Completes a password reset using the token from forgotPassword().
-  Future<void> resetPassword({required String token, required String newPassword}) async {
+  /// Completes a password reset using the code sent to the user's email.
+  Future<void> resetPassword({
+    required String email,
+    required String token,
+    required String newPassword,
+  }) async {
     final res = await http.post(
       Uri.parse('$baseUrl/auth/reset-password'),
       headers: _headers(),
-      body: jsonEncode({'token': token, 'new_password': newPassword}),
+      body: jsonEncode({
+        'email': email,
+        'token': token,
+        'new_password': newPassword,
+      }),
     );
     if (res.body.isEmpty) {
       throw ApiException('Empty response from server (status ${res.statusCode})');

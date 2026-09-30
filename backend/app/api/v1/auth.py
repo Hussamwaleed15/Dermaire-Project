@@ -6,6 +6,7 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from google.oauth2 import id_token as google_id_token
 from google.auth.transport import requests as google_requests
+from azure.communication.email import EmailClient
 
 from app.core.database import get_db
 from app.core.security import get_password_hash, verify_password, create_access_token
@@ -27,11 +28,37 @@ class ForgotPasswordRequest(BaseModel):
 
 
 class ResetPasswordRequest(BaseModel):
+    email: str
     token: str
     new_password: str
 
 
 RESET_TOKEN_TTL_MINUTES = 30
+MAX_RESET_ATTEMPTS = 5
+
+def send_password_reset_email(recipient_email: str, reset_token: str):
+    email_client = EmailClient.from_connection_string(
+        settings.AZURE_COMMUNICATION_CONNECTION_STRING
+    )
+
+    message = {
+        "senderAddress": settings.AZURE_EMAIL_SENDER,
+        "recipients": {
+            "to": [{"address": recipient_email}]
+        },
+        "content": {
+            "subject": "Reset your Dermaire password",
+            "plainText": (
+                "You requested a password reset for your Dermaire account.\n\n"
+                f"Your reset code is:\n{reset_token}\n\n"
+                f"This code expires in {RESET_TOKEN_TTL_MINUTES} minutes.\n"
+                "If you did not request this reset, you can ignore this email."
+            ),
+        },
+    }
+
+    poller = email_client.begin_send(message)
+    poller.result()
 
 
 @router.post("/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
@@ -160,50 +187,86 @@ def google_login(payload: GoogleAuthRequest, db: Session = Depends(get_db)):
 @router.post("/forgot-password")
 def forgot_password(payload: ForgotPasswordRequest, db: Session = Depends(get_db)):
     """
-    Starts a real password-reset flow: generates a single-use token and
-    stores its hash against the account (if one exists for this email).
+    Starts the password-reset flow. If the account exists, an 8-digit
+    single-use reset code is generated, only its SHA-256 hash is stored,
+    and the code is delivered by email.
 
-    IMPORTANT: no email-sending provider is configured yet for this project,
-    so there is no way to deliver the reset link to the user's inbox. Until
-    one is wired up (e.g. Azure Communication Services or SendGrid), the raw
-    token is only returned in the API response, and only in non-production
-    (DEBUG) environments, so the reset flow can still be tested end-to-end.
-    The same generic message is always returned regardless of whether the
-    email exists, so this endpoint can't be used to check which emails are
-    registered.
+    The same generic response is returned whether or not the email exists,
+    so this endpoint cannot be used to enumerate registered accounts.
     """
     user = db.query(User).filter(User.email == payload.email).first()
 
     reset_token = None
     if user:
-        reset_token = secrets.token_urlsafe(32)
+        reset_token = f"{secrets.randbelow(100_000_000):08d}"
         user.reset_token_hash = hashlib.sha256(reset_token.encode()).hexdigest()
         user.reset_token_expires = datetime.now(timezone.utc) + timedelta(minutes=RESET_TOKEN_TTL_MINUTES)
+        user.reset_token_attempts = 0
         db.commit()
+
         record_audit(db, user.id, "PASSWORD_RESET_REQUESTED", "users", {})
+        send_password_reset_email(user.email, reset_token)
 
     response = {
-        "message": "If an account exists for this email, a password reset link has been generated."
+        "message": "If an account exists for this email, a password reset code has been sent."
     }
-    if settings.DEBUG and reset_token:
+
+    if settings.EXPOSE_PASSWORD_RESET_TOKEN and reset_token:
         response["reset_token"] = reset_token
-        response["note"] = (
-            "Email delivery isn't configured yet for this project, so the "
-            "reset token is included here directly (development mode only)."
-        )
+        response["note"] = "Reset code exposure is enabled for testing only."
+
     return response
 
 
 @router.post("/reset-password", response_model=UserOut)
 def reset_password(payload: ResetPasswordRequest, db: Session = Depends(get_db)):
-    token_hash = hashlib.sha256(payload.token.encode()).hexdigest()
-    user = db.query(User).filter(User.reset_token_hash == token_hash).first()
+    user = db.query(User).filter(User.email == payload.email).first()
 
     now = datetime.now(timezone.utc)
-    expires_at = user.reset_token_expires.replace(tzinfo=timezone.utc) if user and user.reset_token_expires else None
-    if not user or not expires_at or expires_at < now:
+    expires_at = (
+        user.reset_token_expires.replace(tzinfo=timezone.utc)
+        if user and user.reset_token_expires
+        else None
+    )
+
+    if not user or not user.reset_token_hash or not expires_at or expires_at < now:
         raise DermaireException(
-            message="This reset link is invalid or has expired. Please request a new one.",
+            message="This reset code is invalid or has expired. Please request a new one.",
+            error_code="RESET_TOKEN_INVALID",
+            status_code=status.HTTP_400_BAD_REQUEST
+        )
+
+    if user.reset_token_attempts >= MAX_RESET_ATTEMPTS:
+        user.reset_token_hash = None
+        user.reset_token_expires = None
+        user.reset_token_attempts = 0
+        db.commit()
+        raise DermaireException(
+            message="Too many incorrect attempts. Please request a new reset code.",
+            error_code="RESET_ATTEMPTS_EXCEEDED",
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS
+        )
+
+    token_hash = hashlib.sha256(payload.token.encode()).hexdigest()
+
+    if not secrets.compare_digest(token_hash, user.reset_token_hash):
+        user.reset_token_attempts += 1
+
+        if user.reset_token_attempts >= MAX_RESET_ATTEMPTS:
+            user.reset_token_hash = None
+            user.reset_token_expires = None
+            user.reset_token_attempts = 0
+            db.commit()
+            record_audit(db, user.id, "PASSWORD_RESET_ATTEMPTS_EXCEEDED", "users", {})
+            raise DermaireException(
+                message="Too many incorrect attempts. Please request a new reset code.",
+                error_code="RESET_ATTEMPTS_EXCEEDED",
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS
+            )
+
+        db.commit()
+        raise DermaireException(
+            message="This reset code is invalid or has expired. Please try again.",
             error_code="RESET_TOKEN_INVALID",
             status_code=status.HTTP_400_BAD_REQUEST
         )
@@ -211,6 +274,7 @@ def reset_password(payload: ResetPasswordRequest, db: Session = Depends(get_db))
     user.hashed_password = get_password_hash(payload.new_password)
     user.reset_token_hash = None
     user.reset_token_expires = None
+    user.reset_token_attempts = 0
     db.commit()
     db.refresh(user)
 

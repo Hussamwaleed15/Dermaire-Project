@@ -174,7 +174,8 @@ class _SignInScreenState extends State<SignInScreen> {
     } catch (e) {
       final errStr = e.toString();
       // If server is offline or connection refused (e.g. tests or no network), allow demo mode
-      final isNetworkError = errStr.contains('Connection') ||
+      final isNetworkError =
+          errStr.contains('Connection') ||
           errStr.contains('ClientException') ||
           errStr.contains('SocketException') ||
           errStr.contains('Empty response') ||
@@ -285,7 +286,6 @@ class _SignInScreenState extends State<SignInScreen> {
       ),
     ],
   );
-
 }
 
 class CreateAccountScreen extends StatefulWidget {
@@ -595,7 +595,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       errorText = null;
     });
     try {
-      final data = await ApiService.instance.forgotPassword(email: email.text.trim());
+      final data = await ApiService.instance.forgotPassword(
+        email: email.text.trim(),
+      );
       if (!mounted) return;
       setState(() {
         sent = true;
@@ -614,7 +616,10 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
   Future<void> _submitNewPassword() async {
     if (resetToken.text.trim().isEmpty || newPassword.text.trim().length < 8) {
-      setState(() => errorText = 'Enter the reset code and a password of at least 8 characters.');
+      setState(
+        () => errorText =
+            'Enter the reset code and a password of at least 8 characters.',
+      );
       return;
     }
     setState(() {
@@ -623,6 +628,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     });
     try {
       await ApiService.instance.resetPassword(
+        email: email.text.trim(),
         token: resetToken.text.trim(),
         newPassword: newPassword.text.trim(),
       );
@@ -643,13 +649,14 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     subtitle: resetDone
         ? 'Your password has been updated.'
         : sent
-            ? 'Enter the reset code and choose a new password.'
-            : 'Enter your email and we’ll generate a reset link.',
+        ? 'Enter the reset code and choose a new password.'
+        : 'Enter your email and we’ll send you a reset code.',
     children: [
       if (resetDone) ...[
         const Notice(
           icon: '✓',
-          text: 'Password reset successful. You can sign in with your new password now.',
+          text:
+              'Password reset successful. You can sign in with your new password now.',
           color: DermaireColors.safeBackground,
         ),
         const SizedBox(height: 14),
@@ -672,11 +679,14 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         if (errorText != null)
           Padding(
             padding: const EdgeInsets.only(bottom: 14),
-            child: Text(errorText!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
+            child: Text(
+              errorText!,
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
+            ),
           ),
         FilledButton(
           onPressed: loading ? null : _sendResetLink,
-          child: Text(loading ? 'Sending…' : 'Send reset link'),
+          child: Text(loading ? 'Sending…' : 'Send reset code'),
         ),
         const SizedBox(height: 8),
         OutlinedButton(
@@ -686,7 +696,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       ] else ...[
         const Notice(
           icon: '✓',
-          text: 'If an account exists for this email, a reset link has been generated.',
+          text:
+              'If an account exists for this email, a reset code has been sent.',
           color: DermaireColors.safeBackground,
         ),
         if (devNote != null) ...[
@@ -708,7 +719,10 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         if (errorText != null)
           Padding(
             padding: const EdgeInsets.only(bottom: 14),
-            child: Text(errorText!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
+            child: Text(
+              errorText!,
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
+            ),
           ),
         FilledButton(
           onPressed: loading ? null : _submitNewPassword,

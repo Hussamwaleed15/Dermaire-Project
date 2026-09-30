@@ -39,7 +39,7 @@ class User(Base):
     # Password reset (forgot-password flow)
     reset_token_hash = Column(String(255), nullable=True, index=True)
     reset_token_expires = Column(DateTime, nullable=True)
-
+    reset_token_attempts = Column(Integer, default=0, nullable=False)
     created_at = Column(DateTime, default=utc_now)
     updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 

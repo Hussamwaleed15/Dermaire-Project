@@ -24,7 +24,23 @@ class Settings(BaseSettings):
     REFRESH_TOKEN_EXPIRE_DAYS: int = 30
 
     # Google Sign-In (OAuth 2.0)
+    # This must be the "Web application" client ID from Google Cloud Console —
+    # it's the audience the Flutter app's google_sign_in requests via
+    # serverClientId, and what we verify incoming ID tokens against here.
     GOOGLE_WEB_CLIENT_ID: str = "1042340572793-ss2cemhfub1bod1a8nakitgco1af2540.apps.googleusercontent.com"
+
+    # Password reset — no email-sending provider is configured yet for this
+    # project, so there's no way to deliver reset links to an inbox. While
+    # that's true, this flag lets the forgot-password endpoint return the
+    # raw token directly in its response so the flow can still be tested
+    # end-to-end. Turn this OFF the moment a real email provider is wired
+    # up, since leaving it on would let anyone reset any account's password
+    # just by knowing their email.
+    EXPOSE_PASSWORD_RESET_TOKEN: bool = False
+
+    # Azure Communication Services Email
+    AZURE_COMMUNICATION_CONNECTION_STRING: str = ""
+    AZURE_EMAIL_SENDER: str = ""
 
     # CORS
     BACKEND_CORS_ORIGINS: List[str] = [
@@ -75,5 +91,4 @@ class Settings(BaseSettings):
         return bool(self.AZURE_CONTENT_SAFETY_ENDPOINT and self.AZURE_CONTENT_SAFETY_KEY)
 
 settings = Settings()
-
 
