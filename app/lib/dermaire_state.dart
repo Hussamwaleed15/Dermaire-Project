@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'baseline/baseline_controller.dart';
+import 'context_controller.dart';
 import 'products/product_repository.dart';
 import 'products/products_controller.dart';
 import 'services/api_service.dart';
@@ -14,7 +15,9 @@ class JournalEntry {
 }
 
 class DermaireState extends ChangeNotifier {
-  DermaireState({ProductRepository? productRepository, BaselineRepository? baselineRepository}) {
+  DermaireState({ProductRepository? productRepository, BaselineRepository? baselineRepository, ContextRepository? contextRepository}) {
+    dailyContext = ContextController(contextRepository ?? RemoteContextRepository())
+      ..addListener(notifyListeners);
     baseline = BaselineController(baselineRepository ?? RemoteBaselineRepository())
       ..addListener(notifyListeners);
     ApiService.instance.addListener(clearAccountData);
@@ -25,6 +28,7 @@ class DermaireState extends ChangeNotifier {
 
   late final ProductsController productController;
   late final BaselineController baseline;
+  late final ContextController dailyContext;
   static const _darkModeKey = 'dermaire_dark_mode';
   static const _safetyAcceptedKey = 'dermaire_safety_accepted';
 
@@ -55,6 +59,7 @@ class DermaireState extends ChangeNotifier {
       if (!ApiService.instance.isAuthenticated) return;
       await productController.load();
       await baseline.refresh();
+      await dailyContext.refresh();
       safetyAccepted = preferences.getBool(_safetyAcceptedKey) ?? false;
       
       // Fetch live user profile from Azure
@@ -101,6 +106,7 @@ class DermaireState extends ChangeNotifier {
     selectedTab = 0;
     tokens = 0;
     baseline.clear();
+    dailyContext.clear();
     experimentDay = 1;
     experimentPaused = false;
     doctorLinkActive = false;
@@ -198,6 +204,9 @@ class DermaireState extends ChangeNotifier {
   @override
   void dispose() {
     ApiService.instance.removeListener(clearAccountData);
+    dailyContext
+      ..removeListener(notifyListeners)
+      ..dispose();
     baseline
       ..removeListener(notifyListeners)
       ..dispose();

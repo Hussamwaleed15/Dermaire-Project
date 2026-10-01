@@ -398,6 +398,21 @@ class ApiService extends ChangeNotifier {
     return jsonDecode(res.body) as Map<String, dynamic>;
   }
 
+  Future<Map<String, dynamic>> getDailyContext(String day) async {
+    final res = await _client.get(Uri.parse('$baseUrl/context/$day'),
+        headers: _headers(false)).timeout(const Duration(seconds: 15));
+    if (res.statusCode != 200) throw ApiException('Context unavailable');
+    return jsonDecode(res.body) as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> saveDailyContext(String day, bool? unusual, int? cycleDay) async {
+    final res = await _client.put(Uri.parse('$baseUrl/context/$day'), headers: _headers(),
+        body: jsonEncode({'unusual_conditions': unusual, 'cycle_day': cycleDay}))
+        .timeout(const Duration(seconds: 15));
+    if (res.statusCode != 200) throw ApiException('Context save unconfirmed');
+    return jsonDecode(res.body) as Map<String, dynamic>;
+  }
+
   Future<List<Map<String, dynamic>>> getCheckIns() async {
     final res = await _client.get(
       Uri.parse('$baseUrl/checkins'),

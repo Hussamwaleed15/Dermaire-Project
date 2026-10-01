@@ -21,6 +21,7 @@ void _openApp(BuildContext context, DermaireState state) {
   if (ApiService.instance.isAuthenticated) {
     unawaited(state.productController.load());
     unawaited(state.baseline.refresh());
+    unawaited(state.dailyContext.refresh());
   }
   Navigator.of(context).pushAndRemoveUntil(
     MaterialPageRoute(builder: (_) => AppShell(state: state)),

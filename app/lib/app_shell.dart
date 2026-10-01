@@ -194,7 +194,11 @@ class HomeTab extends StatelessWidget {
       const Notice(
         icon: '🌤',
         text:
-            'Weather today is within your normal range — no adjustment needed.',
+            'Weather is not measured. Context does not currently adjust skin scores.',
+      ),
+      OutlinedButton(
+        onPressed: () => openPage(context, ContextScreen(state: state)),
+        child: const Text("View or edit today's context"),
       ),
       OutlinedButton(
         onPressed: () => openPage(context, TimelineScreen(state: state)),
@@ -858,7 +862,7 @@ class ReportScreen extends StatelessWidget {
       ('3–4. Measurements & change', 'Texture improved 18% vs. baseline'),
       (
         '5. Context',
-        '3 days excluded for abnormal weather; cycle context logged where provided',
+        'User-reported daily context is stored separately. No weather exclusions or score adjustments are applied.',
       ),
       (
         '6. Conclusion',
@@ -1184,7 +1188,7 @@ class HowItWorksScreen extends StatelessWidget {
       'Compare',
       'Measurements are compared against your personal baseline.',
     ),
-    ('4', 'Control', 'Weather and other context are considered.'),
+    ('4', 'Control', 'You can log daily context. Weather is not measured and scores are not adjusted.'),
     (
       '5',
       'Report',
@@ -1559,91 +1563,76 @@ class ContextScreen extends StatefulWidget {
 }
 
 class _ContextScreenState extends State<ContextScreen> {
-  bool unusualWeather = false;
-  double cycleDay = 12;
+  bool? unusual;
+  final cycle = TextEditingController();
+  bool initialized = false;
 
   @override
-  Widget build(BuildContext context) => DermairePage(
-    eyebrow: "Today's context",
-    title: unusualWeather
-        ? 'Unusual conditions detected'
-        : 'A few quick details',
-    children: [
-      if (unusualWeather)
-        const Notice(
-          icon: '🟡',
-          text:
-              "Today's environmental conditions differ significantly from your usual measurements. We'll account for this in your result.",
-          color: DermaireColors.unknownBackground,
-        ),
-      DermaireCard(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Weather',
-              style: TextStyle(fontWeight: FontWeight.w700),
-            ),
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                Expanded(
-                  child: MetricTile(
-                    unusualWeather ? '34°C' : '22°C',
-                    'Temperature',
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: MetricTile(unusualWeather ? '88%' : '48%', 'Humidity'),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              title: const Text(
-                'Simulate unusual weather',
-                style: TextStyle(fontSize: 12.5),
-              ),
-              value: unusualWeather,
-              activeTrackColor: DermaireColors.deep,
-              onChanged: (value) => setState(() => unusualWeather = value),
-            ),
-          ],
-        ),
-      ),
-      DermaireCard(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Personal context (optional)',
-              style: TextStyle(fontWeight: FontWeight.w700),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Cycle day ${cycleDay.round()}',
-              style: const TextStyle(fontSize: 12),
-            ),
-            Slider(
-              value: cycleDay,
-              min: 1,
-              max: 28,
-              divisions: 27,
-              activeColor: DermaireColors.deep,
-              onChanged: (value) => setState(() => cycleDay = value),
-            ),
-          ],
-        ),
-      ),
-      FilledButton(
-        onPressed: () {
-          Navigator.of(context).popUntil((route) => route.isFirst);
-          showDermaireSnack(context, 'Context saved');
-        },
-        child: const Text('Save context'),
-      ),
-    ],
+  void initState() {
+    super.initState();
+    widget.state.dailyContext.refresh().then((_) {
+      if (!mounted) return;
+      final value = widget.state.dailyContext.current;
+      setState(() {
+        unusual = value?['unusual_conditions'] as bool?;
+        cycle.text = value?['cycle_day']?.toString() ?? '';
+        initialized = true;
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    cycle.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => AnimatedBuilder(
+    animation: widget.state.dailyContext,
+    builder: (context, _) {
+      final controller = widget.state.dailyContext;
+      return DermairePage(
+        eyebrow: "Today's context (UTC)",
+        title: 'Your reported context',
+        children: [
+          const Notice(icon: '🌤', text: 'Weather is not measured. These optional reports do not currently adjust skin scores.'),
+          if (controller.error != null) Notice(icon: '!', text: controller.error!),
+          if (controller.loading) const LinearProgressIndicator(),
+          if (controller.current != null)
+            Text(controller.current!['recorded'] == true ? 'Server-confirmed context: unusual conditions ${controller.current!['unusual_conditions'] ?? 'not reported'}; cycle day ${controller.current!['cycle_day'] ?? 'not reported'}' : 'No context recorded for today'),
+          DropdownButtonFormField<bool>(
+            key: ValueKey(initialized),
+            initialValue: unusual,
+            decoration: const InputDecoration(labelText: 'Unusual conditions (optional)'),
+            items: const [
+              DropdownMenuItem(value: null, child: Text('Not reported')),
+              DropdownMenuItem(value: false, child: Text('No unusual conditions reported')),
+              DropdownMenuItem(value: true, child: Text('Unusual conditions reported')),
+            ],
+            onChanged: controller.loading ? null : (value) => setState(() => unusual = value),
+          ),
+          TextField(controller: cycle, enabled: !controller.loading,
+            keyboardType: TextInputType.number,
+            decoration: const InputDecoration(labelText: 'Cycle day (optional, 1–60)')),
+          const Text('Edits are an unsaved draft until the server confirms them.'),
+          OutlinedButton(onPressed: controller.loading ? null : controller.refresh,
+            child: const Text('Refresh server context')),
+          FilledButton(
+            onPressed: !initialized || controller.loading ? null : () async {
+              final text = cycle.text.trim();
+              final day = text.isEmpty ? null : int.tryParse(text);
+              if (text.isNotEmpty && (day == null || day < 1 || day > 60)) {
+                showDermaireSnack(context, 'Enter a cycle day between 1 and 60, or leave it blank.');
+                return;
+              }
+              final saved = await controller.save(unusual, day);
+              if (!context.mounted || !saved) return;
+              showDermaireSnack(context, 'Context saved on server');
+              Navigator.pop(context);
+            }, child: const Text('Save context')),
+        ],
+      );
+    },
   );
 }

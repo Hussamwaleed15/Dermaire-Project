@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime, timezone
 from sqlalchemy import (
     Column, String, Integer, Float, Boolean, DateTime, Date,
-    ForeignKey, Text, JSON, Enum as SQLEnum
+    ForeignKey, Text, JSON, UniqueConstraint, Enum as SQLEnum
 )
 from sqlalchemy.orm import relationship
 from app.core.database import Base
@@ -159,3 +159,14 @@ class RewardRedemption(Base):
     created_at = Column(DateTime, default=utc_now)
 
     user = relationship("User", back_populates="redemptions")
+
+
+class DailyContext(Base):
+    __tablename__ = "daily_contexts"
+    __table_args__ = (UniqueConstraint("user_id", "date", name="uq_context_user_date"),)
+    id = Column(String(36), primary_key=True, default=gen_uuid)
+    user_id = Column(String(36), ForeignKey("users.id"), nullable=False, index=True)
+    date = Column(Date, nullable=False)
+    unusual_conditions = Column(Boolean, nullable=True)
+    cycle_day = Column(Integer, nullable=True)
+    updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
