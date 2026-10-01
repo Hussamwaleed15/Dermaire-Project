@@ -51,3 +51,6 @@ uploads/*
 .pytest_cache/
 .coverage
 htmlcov/
+
+# Deployment Artifacts
+deploy.zip
