@@ -3,6 +3,8 @@ import 'dart:convert';
 
 import 'package:dermaire_app/dermaire_state.dart';
 import 'package:dermaire_app/main.dart';
+import 'package:dermaire_app/app_shell.dart';
+import 'package:dermaire_app/services/api_service.dart';
 import 'package:dermaire_app/onboarding_screens.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -13,6 +15,94 @@ import 'package:shared_preferences/shared_preferences.dart';
 void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
 
+  for (final body in [
+    '{"access_token":"login-token"}',
+    '{"message":"Invalid credentials"}',
+    '',
+    '{',
+    '{}',
+    '{"access_token":" "}',
+    '{"access_token":123}',
+    '[]',
+    'network',
+  ]) {
+    testWidgets('login response $body', (tester) async {
+      await ApiService.instance.logout();
+      final pending = Completer<http.Response>();
+      var requests = 0;
+      await http.runWithClient(
+        () async {
+          await tester.pumpWidget(
+            MaterialApp(home: SignInScreen(state: DermaireState())),
+          );
+          await tester.pumpAndSettle();
+          await tester.enterText(
+            find.byKey(const Key('signInEmail')),
+            'salma@example.com',
+          );
+          await tester.enterText(
+            find.byKey(const Key('signInPassword')),
+            'HealthySkin9!',
+          );
+          final button = tester.widget<FilledButton>(
+            find.byKey(const Key('signInButton')),
+          );
+          button.onPressed!();
+          button.onPressed!();
+          await tester.pump();
+          expect(requests, 1);
+          expect(find.text('Please wait...'), findsOneWidget);
+          expect(
+            tester
+                .widget<FilledButton>(find.byKey(const Key('signInButton')))
+                .onPressed,
+            isNull,
+          );
+          if (body == 'network') {
+            pending.completeError(http.ClientException('Connection refused'));
+          } else {
+            pending.complete(
+              http.Response(
+                body,
+                body.contains('Invalid credentials') ? 401 : 200,
+              ),
+            );
+          }
+          await tester.pump();
+          await tester.pump(const Duration(seconds: 1));
+          final success = body.contains('login-token');
+          expect(
+            find.byType(AppShell),
+            success ? findsOneWidget : findsNothing,
+          );
+          expect(ApiService.instance.isAuthenticated, success);
+          final prefs = await SharedPreferences.getInstance();
+          expect(
+            prefs.getString('dermaire_jwt_token'),
+            success ? 'login-token' : isNull,
+          );
+          if (!success) {
+            expect(find.byType(SignInScreen), findsOneWidget);
+            expect(find.textContaining('Sign-in failed:'), findsOneWidget);
+            expect(
+              tester
+                  .widget<FilledButton>(find.byKey(const Key('signInButton')))
+                  .onPressed,
+              isNotNull,
+            );
+          }
+        },
+        () => MockClient((request) {
+          if (request.url.path.endsWith('/auth/login')) {
+            requests++;
+            return pending.future;
+          }
+          return Future.value(http.Response('{}', 200));
+        }),
+      );
+      await ApiService.instance.logout();
+    });
+  }
   testWidgets('welcome supports dark mode and opens create account', (
     tester,
   ) async {

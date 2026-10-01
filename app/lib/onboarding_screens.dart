@@ -172,24 +172,14 @@ class _SignInScreenState extends State<SignInScreen> {
         password: password.text.trim(),
       );
     } catch (e) {
-      final errStr = e.toString();
-      // If server is offline or connection refused (e.g. tests or no network), allow demo mode
-      final isNetworkError =
-          errStr.contains('Connection') ||
-          errStr.contains('ClientException') ||
-          errStr.contains('SocketException') ||
-          errStr.contains('Empty response') ||
-          errStr.contains('FormatException');
-      if (!isNetworkError) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(errStr),
-            backgroundColor: Theme.of(context).colorScheme.error,
-          ),
-        );
-        return;
-      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Sign-in failed: $e'),
+          backgroundColor: Theme.of(context).colorScheme.error,
+        ),
+      );
+      return;
     } finally {
       if (mounted) setState(() => loading = false);
     }
@@ -269,7 +259,11 @@ class _SignInScreenState extends State<SignInScreen> {
           child: const Text('Forgot password?'),
         ),
       ),
-      FilledButton(onPressed: submit, child: const Text('Sign in')),
+      FilledButton(
+        key: const Key('signInButton'),
+        onPressed: loading ? null : submit,
+        child: Text(loading ? 'Please wait...' : 'Sign in'),
+      ),
       const SizedBox(height: 8),
       TextButton(
         onPressed: () => Navigator.of(context).pushReplacement(

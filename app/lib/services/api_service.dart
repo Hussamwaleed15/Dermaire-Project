@@ -172,7 +172,11 @@ class ApiService {
   }
 
   Future<void> _persistAuth(Map<String, dynamic> data) async {
-    _authToken = data['access_token'] as String?;
+    final token = data['access_token'];
+    if (token is! String || token.trim().isEmpty) {
+      throw ApiException('Invalid authentication response from server');
+    }
+    _authToken = token;
     _currentUser = data;
     try {
       final prefs = await SharedPreferences.getInstance();
