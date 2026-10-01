@@ -33,7 +33,7 @@ class User(Base):
     skin_concerns = Column(JSON, default=lambda: ["Redness"])
 
     # Gamification
-    tokens_balance = Column(Integer, default=6)
+    tokens_balance = Column(Integer, default=0)
     baseline_checkins_count = Column(Integer, default=0) # Legacy storage; not authoritative
 
     # Password reset (forgot-password flow)

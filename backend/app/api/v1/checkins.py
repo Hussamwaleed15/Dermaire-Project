@@ -40,7 +40,7 @@ def get_checkins_history(
             notes=c.notes,
             image_sas_url=sas_url,
             ai_vision_analysis=c.ai_vision_analysis,
-            tokens_earned=1,
+            tokens_earned=0,
             created_at=c.created_at
         ))
     return results
@@ -112,9 +112,6 @@ async def submit_daily_checkin(
     )
     db.add(checkin)
 
-    # Award gamification token
-    current_user.tokens_balance += 1
-
     db.commit()
     db.refresh(checkin)
 
@@ -135,6 +132,6 @@ async def submit_daily_checkin(
         notes=checkin.notes,
         image_sas_url=sas_url,
         ai_vision_analysis=checkin.ai_vision_analysis,
-        tokens_earned=1,
+        tokens_earned=0,
         created_at=checkin.created_at
     )

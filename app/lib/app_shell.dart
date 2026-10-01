@@ -1,4 +1,3 @@
-import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:file_picker/file_picker.dart';
@@ -525,155 +524,14 @@ class RewardsTab extends StatelessWidget {
   final DermaireState state;
 
   @override
-  Widget build(BuildContext context) => _TabPage(
+  Widget build(BuildContext context) => const _TabPage(
     children: [
-      const Eyebrow('Rewards'),
-      Text('Token rewards', style: Theme.of(context).textTheme.headlineSmall),
-      const SizedBox(height: 16),
-      Container(
-        padding: const EdgeInsets.all(22),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [DermaireColors.caramel, DermaireColors.deep],
-          ),
-        ),
-        child: Column(
-          children: [
-            const Text('🌿  🪙', style: TextStyle(fontSize: 28)),
-            const SizedBox(height: 8),
-            Text(
-              '${state.tokens} tokens',
-              style: Theme.of(
-                context,
-              ).textTheme.headlineMedium?.copyWith(color: Colors.white),
-            ),
-            const SizedBox(height: 6),
-            const Text(
-              'Every product you add to your routine earns tokens toward a free skincare product.',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.white, fontSize: 12),
-            ),
-            const SizedBox(height: 14),
-            LinearProgressIndicator(
-              value: math.min(1, state.tokens / 10),
-              minHeight: 7,
-              color: Colors.white,
-              backgroundColor: Colors.white24,
-            ),
-            const SizedBox(height: 6),
-            Text(
-              '${state.tokens} / 10 tokens to your next free product',
-              style: const TextStyle(color: Colors.white70, fontSize: 10.5),
-            ),
-          ],
-        ),
+      Eyebrow('Rewards'),
+      Notice(
+        icon: '🪙',
+        text: 'Rewards are not available. Products and check-ins do not currently earn redeemable tokens.',
       ),
-      const SizedBox(height: 14),
-      FilledButton(
-        onPressed: state.tokens >= 10 ? () => _redeem(context) : null,
-        child: Text(
-          state.tokens >= 10
-              ? '🎁 Redeem your free serum'
-              : 'Keep adding products to unlock a reward',
-        ),
-      ),
-      const Divider(height: 34),
-      Text(
-        'How you earn tokens',
-        style: Theme.of(context).textTheme.titleLarge?.copyWith(fontSize: 16),
-      ),
-      const SizedBox(height: 10),
-      const ActionCard(
-        icon: '+1',
-        title: 'Add a product to your routine',
-        subtitle: 'From search, all products, or a custom entry',
-      ),
-      const ActionCard(
-        icon: '+1',
-        title: 'Log a new journal entry',
-        subtitle: 'Daily check-ins keep your streak going',
-      ),
-      const ActionCard(
-        icon: '+1',
-        title: 'Complete a daily check-in',
-        subtitle: 'Consistent measurements improve your report',
-      ),
-      Text(
-        'Reward tiers',
-        style: Theme.of(context).textTheme.titleLarge?.copyWith(fontSize: 16),
-      ),
-      const SizedBox(height: 10),
-      const _RewardTier('🧴', 'Travel-size Hydrating Serum', r'$12 value'),
-      const _RewardTier('🧼', 'Full-size Gentle Cleanser', r'$18 value'),
-      const _RewardTier('☀️', 'SPF 30 Mineral Sunscreen', r'$22 value'),
-      const _RewardTier('🎁', 'Complete Hydration Bundle', r'$45 value'),
-      if (state.redemptionHistory.isNotEmpty) ...[
-        Text(
-          'Redemption history',
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(fontSize: 16),
-        ),
-        const SizedBox(height: 10),
-        ...state.redemptionHistory.map(
-          (item) => DermaireCard(color: DermaireColors.card, child: Text(item)),
-        ),
-      ],
     ],
-  );
-
-  void _redeem(BuildContext context) {
-    if (!state.redeemReward()) return;
-    showDialog<void>(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: DermaireColors.card,
-        icon: const Text('🧴', style: TextStyle(fontSize: 42)),
-        title: const Text("You've earned a free product!"),
-        content: const Text(
-          'Your Travel-size Hydrating Serum has been added to your redemption history.',
-        ),
-        actions: [
-          FilledButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Great!'),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _RewardTier extends StatelessWidget {
-  const _RewardTier(this.icon, this.name, this.value);
-  final String icon;
-  final String name;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) => DermaireCard(
-    color: DermaireColors.card,
-    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-    child: Row(
-      children: [
-        Text(icon, style: const TextStyle(fontSize: 22)),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Text(
-            name,
-            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
-          ),
-        ),
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 11,
-            color: DermaireColors.ink.withValues(alpha: .6),
-          ),
-        ),
-      ],
-    ),
   );
 }
 

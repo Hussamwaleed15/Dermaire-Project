@@ -86,7 +86,7 @@ def register_user(payload: UserRegister, db: Session = Depends(get_db)):
         safety_accepted=True,
         safety_accepted_at=datetime.now(timezone.utc),
         safety_policy_version="1.0",
-        tokens_balance=6,
+        tokens_balance=0,
         baseline_checkins_count=0
     )
     db.add(user)
@@ -163,7 +163,7 @@ def google_login(payload: GoogleAuthRequest, db: Session = Depends(get_db)):
             full_name=full_name,
             role="patient",
             safety_accepted=False,
-            tokens_balance=6,
+            tokens_balance=0,
             baseline_checkins_count=0
         )
         db.add(user)

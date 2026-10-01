@@ -39,7 +39,6 @@ class DermaireState extends ChangeNotifier {
   ThemeMode themeMode = ThemeMode.light;
   bool safetyAccepted = false;
   int selectedTab = 0;
-  int tokens = 0;
   int? get baselineCheckIns => baseline.completedDays;
   int experimentDay = 1;
   bool experimentPaused = false;
@@ -47,7 +46,6 @@ class DermaireState extends ChangeNotifier {
   bool doctorLinkActive = false;
   String selectedGoal = 'Improve Skin Texture';
   final Set<String> skinConcerns = <String>{};
-  final List<String> redemptionHistory = [];
   String userName = 'Skin Lab User';
   String userEmail = '';
   final List<JournalEntry> journal = [];
@@ -79,10 +77,6 @@ class DermaireState extends ChangeNotifier {
         }
       }
 
-      // Rewards remain a separate domain until their authority cleanup.
-      final checkins = await ApiService.instance.getCheckIns();
-      if (checkins.isNotEmpty) tokens = checkins.length * 2;
-
       // Sync remote experiment if active
       final remoteExp = await ApiService.instance.getCurrentExperiment();
       if (remoteExp != null) {
@@ -98,7 +92,6 @@ class DermaireState extends ChangeNotifier {
   void clearAccountData() {
     safetyAccepted = false;
     selectedTab = 0;
-    tokens = 0;
     baseline.clear();
     dailyContext.clear();
     home.clear();
@@ -107,7 +100,6 @@ class DermaireState extends ChangeNotifier {
     doctorLinkActive = false;
     selectedGoal = 'Improve Skin Texture';
     skinConcerns.clear();
-    redemptionHistory.clear();
     userName = 'Skin Lab User';
     userEmail = '';
     journal.clear();
@@ -150,11 +142,6 @@ class DermaireState extends ChangeNotifier {
     notifyListeners();
   }
 
-  void earnToken([String? reason]) {
-    tokens++;
-    notifyListeners();
-  }
-
   // Legacy callers can request a read, never manufacture a measurement.
   Future<bool> addJournalEntry() => home.refresh();
 
@@ -162,16 +149,6 @@ class DermaireState extends ChangeNotifier {
   Future<void> markTodayCheckedIn() async {
     await baseline.refresh();
     await home.refresh();
-  }
-
-  bool redeemReward() {
-    if (tokens < 10) return false;
-    tokens -= 10;
-    redemptionHistory.insert(0, 'Travel-size Hydrating Serum · Today');
-    notifyListeners();
-    // Sync redemption with Azure Backend
-    ApiService.instance.redeemReward('travel_serum').catchError((_) => <String, dynamic>{});
-    return true;
   }
 
   void togglePause() {

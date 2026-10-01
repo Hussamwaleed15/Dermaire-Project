@@ -178,7 +178,7 @@ class CheckInResponse(BaseModel):
     notes: Optional[str] = None
     image_sas_url: Optional[str] = None
     ai_vision_analysis: Optional[Dict[str, Any]] = None
-    tokens_earned: int = 1
+    tokens_earned: int = 0
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)

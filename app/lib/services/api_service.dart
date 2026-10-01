@@ -548,22 +548,6 @@ class ApiService extends ChangeNotifier {
     }
     return data;
   }
-
-  Future<Map<String, dynamic>> redeemReward(String rewardId) async {
-    final res = await _client.post(
-      Uri.parse('$baseUrl/rewards/redeem'),
-      headers: _headers(),
-      body: jsonEncode({'reward_id': rewardId}),
-    );
-    final data = jsonDecode(res.body) as Map<String, dynamic>;
-    if (res.statusCode >= 200 && res.statusCode < 300) {
-      return data;
-    }
-    throw ApiException(
-      data['message']?.toString() ?? 'Redemption failed',
-      data,
-    );
-  }
 }
 
 class _SessionClient extends http.BaseClient {

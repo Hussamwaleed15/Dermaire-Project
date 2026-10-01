@@ -89,11 +89,9 @@ void main() {
     final state = DermaireState(productRepository: MemoryProductRepository());
     await state.productController.load();
     state.userEmail = 'private@example.com';
-    state.tokens = 20;
     state.journal.add(const JournalEntry('today', 'morning', 'Private'));
     state.clearAccountData();
     expect(state.userEmail, isEmpty);
-    expect(state.tokens, 0);
     expect(state.journal, isEmpty);
     expect(state.productController.all, isEmpty);
     state.dispose();

@@ -304,7 +304,7 @@ class ProductAddChoiceScreen extends StatelessWidget {
       ),
       const Notice(
         icon: '🪙',
-        text: 'Every product you add earns one reward token.',
+        text: 'Rewards are not available. Adding products does not earn redeemable tokens.',
       ),
     ],
   );

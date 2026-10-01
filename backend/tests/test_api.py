@@ -127,7 +127,7 @@ def test_experiment_and_checkin_flow(client):
         "notes": "Skin feels hydrated and calm today."
     })
     assert checkin_res.status_code == 201
-    assert checkin_res.json()["tokens_earned"] == 1
+    assert checkin_res.json()["tokens_earned"] == 0
 
 
 def test_doctor_qr_and_notes(client, db_session):

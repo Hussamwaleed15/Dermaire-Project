@@ -91,9 +91,6 @@ def create_product(
     )
     db.add(product)
 
-    # Award gamification token for registering a product
-    current_user.tokens_balance += 1
-
     db.commit()
     db.refresh(product)
 
