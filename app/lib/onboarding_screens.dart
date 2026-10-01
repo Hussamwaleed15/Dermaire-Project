@@ -904,7 +904,6 @@ class _SafetyResponsibilityScreenState
                                 email: widget.email!,
                                 password: widget.password!,
                                 fullName: 'Dermaire Member',
-                                role: 'patient',
                                 acceptSafety: true,
                               );
                             } catch (_) {}

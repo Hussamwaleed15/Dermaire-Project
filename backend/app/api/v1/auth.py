@@ -82,7 +82,7 @@ def register_user(payload: UserRegister, db: Session = Depends(get_db)):
         email=payload.email,
         hashed_password=get_password_hash(payload.password),
         full_name=payload.full_name,
-        role=payload.role,
+        role="patient",
         safety_accepted=True,
         safety_accepted_at=datetime.now(timezone.utc),
         safety_policy_version="1.0",
@@ -155,7 +155,7 @@ def google_login(payload: GoogleAuthRequest, db: Session = Depends(get_db)):
     is_new_user = user is None
 
     if is_new_user:
-        # Google-authenticated accounts don't use a local password — store an
+        # Google-authenticated accounts don't use a local password - store an
         # unusable random hash so the column constraint is still satisfied.
         user = User(
             email=email,

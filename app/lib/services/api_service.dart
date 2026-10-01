@@ -1,6 +1,4 @@
 import 'dart:convert';
-import 'dart:io' show Platform;
-import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -47,7 +45,6 @@ class ApiService {
     required String email,
     required String password,
     required String fullName,
-    String role = 'patient',
     bool acceptSafety = true,
   }) async {
     final res = await http.post(
@@ -57,19 +54,23 @@ class ApiService {
         'email': email,
         'password': password,
         'full_name': fullName,
-        'role': role,
         'accept_safety': acceptSafety,
       }),
     );
     if (res.body.isEmpty) {
-      throw ApiException('Empty response from server (status ${res.statusCode})');
+      throw ApiException(
+        'Empty response from server (status ${res.statusCode})',
+      );
     }
     final data = jsonDecode(res.body) as Map<String, dynamic>;
     if (res.statusCode >= 200 && res.statusCode < 300) {
       await _persistAuth(data);
       return data;
     }
-    throw ApiException(data['message']?.toString() ?? 'Registration failed', data);
+    throw ApiException(
+      data['message']?.toString() ?? 'Registration failed',
+      data,
+    );
   }
 
   Future<Map<String, dynamic>> login({
@@ -82,7 +83,9 @@ class ApiService {
       body: jsonEncode({'email': email, 'password': password}),
     );
     if (res.body.isEmpty) {
-      throw ApiException('Empty response from server (status ${res.statusCode})');
+      throw ApiException(
+        'Empty response from server (status ${res.statusCode})',
+      );
     }
     final data = jsonDecode(res.body) as Map<String, dynamic>;
     if (res.statusCode >= 200 && res.statusCode < 300) {
@@ -94,21 +97,28 @@ class ApiService {
 
   /// Verifies a real Google ID token (from google_sign_in) with our backend
   /// and signs the user in, creating an account automatically on first use.
-  Future<Map<String, dynamic>> loginWithGoogle({required String idToken}) async {
+  Future<Map<String, dynamic>> loginWithGoogle({
+    required String idToken,
+  }) async {
     final res = await http.post(
       Uri.parse('$baseUrl/auth/google'),
       headers: _headers(),
       body: jsonEncode({'id_token': idToken}),
     );
     if (res.body.isEmpty) {
-      throw ApiException('Empty response from server (status ${res.statusCode})');
+      throw ApiException(
+        'Empty response from server (status ${res.statusCode})',
+      );
     }
     final data = jsonDecode(res.body) as Map<String, dynamic>;
     if (res.statusCode >= 200 && res.statusCode < 300) {
       await _persistAuth(data);
       return data;
     }
-    throw ApiException(data['message']?.toString() ?? 'Google sign-in failed', data);
+    throw ApiException(
+      data['message']?.toString() ?? 'Google sign-in failed',
+      data,
+    );
   }
 
   /// Starts the password-reset flow. The backend emails a reset code when
@@ -120,7 +130,9 @@ class ApiService {
       body: jsonEncode({'email': email}),
     );
     if (res.body.isEmpty) {
-      throw ApiException('Empty response from server (status ${res.statusCode})');
+      throw ApiException(
+        'Empty response from server (status ${res.statusCode})',
+      );
     }
     final data = jsonDecode(res.body) as Map<String, dynamic>;
     if (res.statusCode >= 200 && res.statusCode < 300) {
@@ -145,13 +157,18 @@ class ApiService {
       }),
     );
     if (res.body.isEmpty) {
-      throw ApiException('Empty response from server (status ${res.statusCode})');
+      throw ApiException(
+        'Empty response from server (status ${res.statusCode})',
+      );
     }
     final data = jsonDecode(res.body) as Map<String, dynamic>;
     if (res.statusCode >= 200 && res.statusCode < 300) {
       return;
     }
-    throw ApiException(data['message']?.toString() ?? 'Password reset failed', data);
+    throw ApiException(
+      data['message']?.toString() ?? 'Password reset failed',
+      data,
+    );
   }
 
   Future<void> _persistAuth(Map<String, dynamic> data) async {
@@ -176,7 +193,10 @@ class ApiService {
 
   Future<bool> deleteAccount() async {
     try {
-      final res = await http.delete(Uri.parse('$baseUrl/users/me'), headers: _headers(false));
+      final res = await http.delete(
+        Uri.parse('$baseUrl/users/me'),
+        headers: _headers(false),
+      );
       await logout();
       return res.statusCode >= 200 && res.statusCode < 300;
     } catch (_) {
@@ -186,7 +206,10 @@ class ApiService {
   }
 
   Future<Map<String, dynamic>?> getCurrentUser() async {
-    final res = await http.get(Uri.parse('$baseUrl/users/me'), headers: _headers(false));
+    final res = await http.get(
+      Uri.parse('$baseUrl/users/me'),
+      headers: _headers(false),
+    );
     if (res.statusCode == 200 && res.body.isNotEmpty) {
       final user = jsonDecode(res.body) as Map<String, dynamic>;
       _currentUser = user;
@@ -215,7 +238,10 @@ class ApiService {
       _currentUser = data;
       return data;
     }
-    throw ApiException(data['message']?.toString() ?? 'Failed to update skin profile', data);
+    throw ApiException(
+      data['message']?.toString() ?? 'Failed to update skin profile',
+      data,
+    );
   }
 
   Future<Map<String, dynamic>> sendChatMessage(String message) async {
@@ -240,7 +266,9 @@ class ApiService {
     if (category != null) qp['category'] = category;
     if (inRoutine != null) qp['in_routine'] = inRoutine.toString();
     if (inExperiment != null) qp['in_experiment'] = inExperiment.toString();
-    final uri = Uri.parse('$baseUrl/products').replace(queryParameters: qp.isNotEmpty ? qp : null);
+    final uri = Uri.parse(
+      '$baseUrl/products',
+    ).replace(queryParameters: qp.isNotEmpty ? qp : null);
     final res = await http.get(uri, headers: _headers(false));
     if (res.statusCode == 200) {
       final list = jsonDecode(res.body) as List<dynamic>;
@@ -249,7 +277,9 @@ class ApiService {
     return [];
   }
 
-  Future<Map<String, dynamic>> createProduct(Map<String, dynamic> product) async {
+  Future<Map<String, dynamic>> createProduct(
+    Map<String, dynamic> product,
+  ) async {
     final res = await http.post(
       Uri.parse('$baseUrl/products'),
       headers: _headers(),
@@ -259,18 +289,29 @@ class ApiService {
     if (res.statusCode >= 200 && res.statusCode < 300) {
       return data;
     }
-    throw ApiException(data['message']?.toString() ?? 'Failed to add product', data);
+    throw ApiException(
+      data['message']?.toString() ?? 'Failed to add product',
+      data,
+    );
   }
 
   Future<void> deleteProduct(String id) async {
-    final res = await http.delete(Uri.parse('$baseUrl/products/$id'), headers: _headers(false));
+    final res = await http.delete(
+      Uri.parse('$baseUrl/products/$id'),
+      headers: _headers(false),
+    );
     if (res.statusCode != 204 && res.statusCode != 200) {
       final data = jsonDecode(res.body) as Map<String, dynamic>;
-      throw ApiException(data['message']?.toString() ?? 'Failed to delete product', data);
+      throw ApiException(
+        data['message']?.toString() ?? 'Failed to delete product',
+        data,
+      );
     }
   }
 
-  Future<Map<String, dynamic>> checkInteractions(List<String> ingredients) async {
+  Future<Map<String, dynamic>> checkInteractions(
+    List<String> ingredients,
+  ) async {
     final res = await http.post(
       Uri.parse('$baseUrl/products/check-interactions'),
       headers: _headers(),
@@ -280,14 +321,19 @@ class ApiService {
   }
 
   Future<Map<String, dynamic>?> getCurrentExperiment() async {
-    final res = await http.get(Uri.parse('$baseUrl/experiments/current'), headers: _headers(false));
+    final res = await http.get(
+      Uri.parse('$baseUrl/experiments/current'),
+      headers: _headers(false),
+    );
     if (res.statusCode == 200 && res.body.isNotEmpty && res.body != 'null') {
       return jsonDecode(res.body) as Map<String, dynamic>;
     }
     return null;
   }
 
-  Future<Map<String, dynamic>> togglePauseExperiment(String experimentId) async {
+  Future<Map<String, dynamic>> togglePauseExperiment(
+    String experimentId,
+  ) async {
     final res = await http.patch(
       Uri.parse('$baseUrl/experiments/$experimentId/toggle-pause'),
       headers: _headers(),
@@ -296,7 +342,10 @@ class ApiService {
   }
 
   Future<List<Map<String, dynamic>>> getCheckIns() async {
-    final res = await http.get(Uri.parse('$baseUrl/checkins'), headers: _headers(false));
+    final res = await http.get(
+      Uri.parse('$baseUrl/checkins'),
+      headers: _headers(false),
+    );
     if (res.statusCode == 200) {
       final list = jsonDecode(res.body) as List<dynamic>;
       return list.cast<Map<String, dynamic>>();
@@ -314,7 +363,10 @@ class ApiService {
     List<int>? photoBytes,
     String? photoFilename,
   }) async {
-    final request = http.MultipartRequest('POST', Uri.parse('$baseUrl/checkins'));
+    final request = http.MultipartRequest(
+      'POST',
+      Uri.parse('$baseUrl/checkins'),
+    );
     if (_authToken != null) {
       request.headers['Authorization'] = 'Bearer $_authToken';
     }
@@ -326,11 +378,13 @@ class ApiService {
     if (experimentId != null) request.fields['experiment_id'] = experimentId;
 
     if (photoBytes != null && photoBytes.isNotEmpty) {
-      request.files.add(http.MultipartFile.fromBytes(
-        'photo',
-        photoBytes,
-        filename: photoFilename ?? 'skin_photo.jpg',
-      ));
+      request.files.add(
+        http.MultipartFile.fromBytes(
+          'photo',
+          photoBytes,
+          filename: photoFilename ?? 'skin_photo.jpg',
+        ),
+      );
     }
 
     final streamedRes = await request.send();
@@ -368,7 +422,10 @@ class ApiService {
   }
 
   Future<List<Map<String, dynamic>>> getDoctorPatients() async {
-    final res = await http.get(Uri.parse('$baseUrl/doctor/patients'), headers: _headers(false));
+    final res = await http.get(
+      Uri.parse('$baseUrl/doctor/patients'),
+      headers: _headers(false),
+    );
     if (res.statusCode == 200) {
       final list = jsonDecode(res.body) as List<dynamic>;
       return list.cast<Map<String, dynamic>>();
@@ -404,7 +461,10 @@ class ApiService {
     if (res.statusCode >= 200 && res.statusCode < 300) {
       return data;
     }
-    throw ApiException(data['message']?.toString() ?? 'Redemption failed', data);
+    throw ApiException(
+      data['message']?.toString() ?? 'Redemption failed',
+      data,
+    );
   }
 }
 
@@ -416,4 +476,3 @@ class ApiException implements Exception {
   @override
   String toString() => message;
 }
-

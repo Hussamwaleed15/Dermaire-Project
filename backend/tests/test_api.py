@@ -1,5 +1,9 @@
-﻿import pytest
+import pytest
 from fastapi import status
+
+from app.core.security import create_access_token, get_password_hash
+from app.models import User
+
 
 def test_health_check(client):
     res = client.get("/health")
@@ -8,30 +12,51 @@ def test_health_check(client):
     assert data["status"] == "healthy"
     assert "azure_services" in data
 
+
 def test_auth_and_safety_rejection(client):
-    # Register without accepting medical safety should fail with 400
+    # Register without accepting medical safety should fail with 400.
     res = client.post("/api/v1/auth/register", json={
         "email": "test_patient@dermaire.com",
         "password": "StrongPass123!",
         "full_name": "Salma Test",
-        "role": "patient",
         "accept_safety": False
     })
     assert res.status_code == 400
     assert res.json()["errorCode"] == "SAFETY_ACCEPTANCE_REQUIRED"
 
-    # Register with safety accepted should succeed with 201
+    # Public registration has no role field. A successful account is always patient.
     res = client.post("/api/v1/auth/register", json={
         "email": "test_patient@dermaire.com",
         "password": "StrongPass123!",
         "full_name": "Salma Test",
-        "role": "patient",
         "accept_safety": True
     })
     assert res.status_code == 201
     token_data = res.json()
     assert "access_token" in token_data
     assert token_data["role"] == "patient"
+
+
+@pytest.mark.parametrize("privileged_role", ["doctor", "admin", "support"])
+def test_public_registration_cannot_create_privileged_users(
+    client, db_session, privileged_role
+):
+    email = f"role_injection_{privileged_role}@dermaire.com"
+
+    res = client.post("/api/v1/auth/register", json={
+        "email": email,
+        "password": "StrongPass123!",
+        "full_name": "Role Injection Test",
+        "role": privileged_role,
+        "accept_safety": True
+    })
+
+    # Public registration rejects client-controlled role assignment.
+    assert res.status_code == 422
+
+    user = db_session.query(User).filter(User.email == email).first()
+    assert user is None
+
 
 def test_products_and_conflict_check(client):
     # Login patient
@@ -75,6 +100,7 @@ def test_products_and_conflict_check(client):
     assert dup_res.status_code == 409
     assert dup_res.json()["errorCode"] == "PRODUCT_DUPLICATE_NAME"
 
+
 def test_experiment_and_checkin_flow(client):
     login_res = client.post("/api/v1/auth/login", json={
         "email": "test_patient@dermaire.com",
@@ -103,16 +129,25 @@ def test_experiment_and_checkin_flow(client):
     assert checkin_res.status_code == 201
     assert checkin_res.json()["tokens_earned"] == 1
 
-def test_doctor_qr_and_notes(client):
-    # Register Doctor
-    doc_res = client.post("/api/v1/auth/register", json={
-        "email": "doctor_ahmed@dermaire.com",
-        "password": "DoctorPass2027!",
-        "full_name": "Dr. Ahmed Mostafa",
-        "role": "doctor",
-        "accept_safety": True
-    })
-    doc_token = doc_res.json()["access_token"]
+
+def test_doctor_qr_and_notes(client, db_session):
+    # Privileged roles must be provisioned internally, never via public signup.
+    doctor = User(
+        email="doctor_ahmed@dermaire.com",
+        hashed_password=get_password_hash("DoctorPass2027!"),
+        full_name="Dr. Ahmed Mostafa",
+        role="doctor",
+        safety_accepted=True,
+    )
+    db_session.add(doctor)
+    db_session.commit()
+    db_session.refresh(doctor)
+
+    doc_token = create_access_token(
+        subject=doctor.id,
+        role=doctor.role,
+        additional_claims={"email": doctor.email},
+    )
     doc_headers = {"Authorization": f"Bearer {doc_token}"}
 
     # Patient generates QR
@@ -140,30 +175,43 @@ def test_doctor_qr_and_notes(client):
     assert any(p["patient_id"] == patient_id for p in patients_list.json())
 
     # Doctor adds append-only note
-    note_res = client.post(f"/api/v1/doctor/patients/{patient_id}/notes", headers=doc_headers, json={
-        "content": "Patient shows marked reduction in erythema. Continue Retinol titration.",
-        "priority": "routine",
-        "follow_up": "Next Week"
-    })
+    note_res = client.post(
+        f"/api/v1/doctor/patients/{patient_id}/notes",
+        headers=doc_headers,
+        json={
+            "content": (
+                "Patient shows marked reduction in erythema. "
+                "Continue Retinol titration."
+            ),
+            "priority": "routine",
+            "follow_up": "Next Week"
+        }
+    )
     assert note_res.status_code == 201
+
 
 def test_ai_chat_red_flag_escalation(client):
     patient_res = client.post("/api/v1/auth/login", json={
         "email": "test_patient@dermaire.com",
         "password": "StrongPass123!"
     })
-    headers = {"Authorization": f"Bearer {patient_res.json()["access_token"]}"}
+    headers = {
+        "Authorization": f"Bearer {patient_res.json()['access_token']}"
+    }
 
     # English Emergency Red Flag: trouble breathing & face swelling
     emergency_en = client.post("/api/v1/chat", headers=headers, json={
-        "message": "I applied the serum and now I have trouble breathing and face swelling!"
+        "message": (
+            "I applied the serum and now I have trouble breathing "
+            "and face swelling!"
+        )
     })
     assert emergency_en.status_code == 200
     data_en = emergency_en.json()
     assert data_en["escalation_triggered"] is True
     assert data_en["kind"] == "escalation"
 
-    # Arabic Emergency Red Flag: تورم الوجه وضيق تنفس
+    # Arabic Emergency Red Flag
     emergency_ar = client.post("/api/v1/chat", headers=headers, json={
         "message": "عندي تورم الوجه وضيق تنفس بعد الكريم الجديد"
     })

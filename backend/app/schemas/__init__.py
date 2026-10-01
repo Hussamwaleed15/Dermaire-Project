@@ -1,4 +1,4 @@
-﻿from datetime import datetime
+from datetime import datetime
 from typing import List, Optional, Any, Dict
 from pydantic import BaseModel, EmailStr, Field, ConfigDict
 
@@ -8,8 +8,9 @@ class UserRegister(BaseModel):
     email: EmailStr
     password: str = Field(..., min_length=8, description="Password must be at least 8 characters with letters and numbers")
     full_name: str = Field(..., min_length=2, max_length=100)
-    role: str = Field("patient", pattern="^(patient|doctor|admin|support)$")
     accept_safety: bool = Field(..., description="User must accept medical safety & responsibility terms")
+
+    model_config = ConfigDict(extra="forbid")
 
 class UserLogin(BaseModel):
     email: EmailStr
