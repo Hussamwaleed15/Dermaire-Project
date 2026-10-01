@@ -14,7 +14,7 @@ from app.core.config import settings
 from app.core.exceptions import DermaireException, InvalidCredentialsException
 from app.models import User
 from app.schemas import UserRegister, UserLogin, TokenResponse, UserOut, AcceptSafetyRequest
-from app.api.deps import get_current_user, record_audit
+from app.api.deps import get_current_user, get_token_payload, record_audit
 
 router = APIRouter(prefix="/auth", tags=["Authentication & Medical Safety"])
 
@@ -95,7 +95,7 @@ def register_user(payload: UserRegister, db: Session = Depends(get_db)):
 
     record_audit(db, user.id, "USER_REGISTERED", "users", {"email": user.email, "role": user.role})
 
-    token = create_access_token(subject=user.id, role=user.role)
+    token = create_access_token(subject=user.id, role=user.role, hashed_password=user.hashed_password)
     return TokenResponse(
         access_token=token,
         token_type="bearer",
@@ -112,7 +112,7 @@ def login_user(payload: UserLogin, db: Session = Depends(get_db)):
     if not user or not verify_password(payload.password, user.hashed_password):
         raise InvalidCredentialsException("Incorrect email or password. Please verify your credentials.")
 
-    token = create_access_token(subject=user.id, role=user.role)
+    token = create_access_token(subject=user.id, role=user.role, hashed_password=user.hashed_password)
     record_audit(db, user.id, "USER_LOGGED_IN", "users", {"role": user.role})
 
     return TokenResponse(
@@ -173,7 +173,7 @@ def google_login(payload: GoogleAuthRequest, db: Session = Depends(get_db)):
     else:
         record_audit(db, user.id, "USER_LOGGED_IN_VIA_GOOGLE", "users", {"role": user.role})
 
-    token = create_access_token(subject=user.id, role=user.role)
+    token = create_access_token(subject=user.id, role=user.role, hashed_password=user.hashed_password)
     return TokenResponse(
         access_token=token,
         token_type="bearer",
@@ -280,6 +280,15 @@ def reset_password(payload: ResetPasswordRequest, db: Session = Depends(get_db))
 
     record_audit(db, user.id, "PASSWORD_RESET_COMPLETED", "users", {})
     return user
+
+
+@router.post("/logout", status_code=204)
+def logout_session(
+    payload: dict = Depends(get_token_payload),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    record_audit(db, current_user.id, "SESSION_REVOKED", payload["jti"], {})
 
 
 @router.post("/accept-safety", response_model=UserOut)

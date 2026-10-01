@@ -38,7 +38,7 @@ def deletion_context():
     ]); db.commit()
     app.dependency_overrides[get_db] = lambda: db
     with TestClient(app) as client:
-        yield client, db, {"Authorization": "Bearer " + create_access_token(patient.id, "patient")}
+        yield client, db, {"Authorization": "Bearer " + create_access_token(patient.id, "patient", hashed_password=patient.hashed_password)}
     app.dependency_overrides.clear()
     db.close(); engine.dispose()
 
@@ -137,7 +137,7 @@ def test_namespaced_orphan_cleanup(tmp_path):
 def test_doctor_deletion_removes_grants_and_notes(deletion_context, monkeypatch):
     client, db, _ = deletion_context
     monkeypatch.setattr(azure_blob_service, "delete_owned_images", Mock())
-    headers = {"Authorization": "Bearer " + create_access_token("delete-doctor", "doctor")}
+    headers = {"Authorization": "Bearer " + create_access_token("delete-doctor", "doctor", hashed_password="unused")}
     assert client.delete("/api/v1/users/me", headers=headers).status_code == 204
     assert db.query(ClinicalNote).count() == 0
     assert db.query(DoctorPatientAccess).count() == 0

@@ -1,8 +1,10 @@
 import 'dart:convert';
+import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
-class ApiService {
+class ApiService extends ChangeNotifier {
   ApiService._();
   static final ApiService instance = ApiService._();
 
@@ -14,27 +16,29 @@ class ApiService {
   }
 
   late String baseUrl = defaultBaseUrl;
+  final http.Client _client = _SessionClient();
+  Timer? _expiryTimer;
+  DateTime? _expiresAt;
   String? _authToken;
   Map<String, dynamic>? _currentUser;
 
   String? get authToken => _authToken;
   Map<String, dynamic>? get currentUser => _currentUser;
-  bool get isAuthenticated => _authToken != null;
+  bool get isAuthenticated => _authToken != null &&
+      _expiresAt != null && DateTime.now().isBefore(_expiresAt!);
 
   Future<void> init() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      _authToken = prefs.getString(_tokenKey);
-      final rawUser = prefs.getString(_userKey);
-      if (rawUser != null) {
-        _currentUser = jsonDecode(rawUser) as Map<String, dynamic>;
-      }
-    } catch (_) {}
+    // Sessions are memory-only. Never restore legacy plaintext credentials.
+    await _clearSession();
   }
 
   Map<String, String> _headers([bool isJson = true]) {
     final headers = <String, String>{};
     if (isJson) headers['Content-Type'] = 'application/json';
+    if (_authToken != null && !isAuthenticated) {
+      unawaited(_clearSession());
+      throw ApiException('Session expired. Please sign in again');
+    }
     if (_authToken != null) {
       headers['Authorization'] = 'Bearer $_authToken';
     }
@@ -47,9 +51,9 @@ class ApiService {
     required String fullName,
     bool acceptSafety = true,
   }) async {
-    final res = await http.post(
+    final res = await _client.post(
       Uri.parse('$baseUrl/auth/register'),
-      headers: _headers(),
+      headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
         'email': email,
         'password': password,
@@ -78,9 +82,9 @@ class ApiService {
     required String password,
     String? requiredRole,
   }) async {
-    final res = await http.post(
+    final res = await _client.post(
       Uri.parse('$baseUrl/auth/login'),
-      headers: _headers(),
+      headers: {'Content-Type': 'application/json'},
       body: jsonEncode({'email': email, 'password': password}),
     );
     if (res.body.isEmpty) {
@@ -109,9 +113,9 @@ class ApiService {
   Future<Map<String, dynamic>> loginWithGoogle({
     required String idToken,
   }) async {
-    final res = await http.post(
+    final res = await _client.post(
       Uri.parse('$baseUrl/auth/google'),
-      headers: _headers(),
+      headers: {'Content-Type': 'application/json'},
       body: jsonEncode({'id_token': idToken}),
     );
     if (res.body.isEmpty) {
@@ -133,9 +137,9 @@ class ApiService {
   /// Starts the password-reset flow. The backend emails a reset code when
   /// an account exists for the supplied email address.
   Future<Map<String, dynamic>> forgotPassword({required String email}) async {
-    final res = await http.post(
+    final res = await _client.post(
       Uri.parse('$baseUrl/auth/forgot-password'),
-      headers: _headers(),
+      headers: {'Content-Type': 'application/json'},
       body: jsonEncode({'email': email}),
     );
     if (res.body.isEmpty) {
@@ -156,9 +160,9 @@ class ApiService {
     required String token,
     required String newPassword,
   }) async {
-    final res = await http.post(
+    final res = await _client.post(
       Uri.parse('$baseUrl/auth/reset-password'),
-      headers: _headers(),
+      headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
         'email': email,
         'token': token,
@@ -172,6 +176,7 @@ class ApiService {
     }
     final data = jsonDecode(res.body) as Map<String, dynamic>;
     if (res.statusCode >= 200 && res.statusCode < 300) {
+      await _clearSession();
       return;
     }
     throw ApiException(
@@ -182,39 +187,57 @@ class ApiService {
 
   Future<void> _persistAuth(Map<String, dynamic> data) async {
     final token = data['access_token'];
-    if (token is! String || token.trim().isEmpty) {
+    final ttl = data['expires_in'];
+    if (token is! String || token.trim().isEmpty || ttl is! int || ttl <= 0) {
       throw ApiException('Invalid authentication response from server');
     }
+    await _clearSession();
     _authToken = token;
-    _currentUser = data;
+    _currentUser = Map.of(data)..remove('access_token');
+    _expiresAt = DateTime.now().add(Duration(seconds: ttl));
+    _expiryTimer = Timer(Duration(seconds: ttl), () => unawaited(_clearSession()));
+  }
+
+  Future<void> _clearSession() async {
+    final hadSession = _authToken != null;
+    _expiryTimer?.cancel();
+    _expiryTimer = null;
+    _expiresAt = null;
+    _authToken = null;
+    _currentUser = null;
+    if (hadSession) notifyListeners();
     try {
       final prefs = await SharedPreferences.getInstance();
-      if (_authToken != null) await prefs.setString(_tokenKey, _authToken!);
-      await prefs.setString(_userKey, jsonEncode(data));
-    } catch (_) {}
+      for (final key in [
+        _tokenKey, _userKey, 'dermaire_products_v2', 'dermaire_safety_accepted',
+      ]) {
+        await prefs.remove(key);
+      }
+    } catch (_) {
+      // Legacy storage is never restored, even when platform cleanup fails.
+    }
   }
 
   Future<void> logout() async {
-    _authToken = null;
-    _currentUser = null;
+    final headers = isAuthenticated ? _headers() : null;
+    await _clearSession();
+    if (headers == null) return;
     try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.remove(_tokenKey);
-      await prefs.remove(_userKey);
-    } catch (_) {}
+      await _client.post(Uri.parse('$baseUrl/auth/logout'), headers: headers)
+          .timeout(const Duration(seconds: 10));
+    } catch (_) {
+      // Offline logout still clears this device; server expiry remains bounded.
+    }
   }
 
   Future<bool> deleteAccount() async {
     try {
-      final res = await http.delete(
+      final res = await _client.delete(
         Uri.parse('$baseUrl/users/me'),
         headers: _headers(false),
       );
       if (res.statusCode != 204) return false;
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.remove('dermaire_products_v2');
-      await prefs.remove('dermaire_safety_accepted');
-      await logout();
+      await _clearSession();
       return true;
     } catch (_) {
       return false;
@@ -222,7 +245,7 @@ class ApiService {
   }
 
   Future<Map<String, dynamic>?> getCurrentUser() async {
-    final res = await http.get(
+    final res = await _client.get(
       Uri.parse('$baseUrl/users/me'),
       headers: _headers(false),
     );
@@ -244,7 +267,7 @@ class ApiService {
     if (selectedGoal != null) bodyMap['selected_goal'] = selectedGoal;
     if (skinConcerns != null) bodyMap['skin_concerns'] = skinConcerns;
 
-    final res = await http.patch(
+    final res = await _client.patch(
       Uri.parse('$baseUrl/users/skin-profile'),
       headers: _headers(),
       body: jsonEncode(bodyMap),
@@ -261,7 +284,7 @@ class ApiService {
   }
 
   Future<Map<String, dynamic>> sendChatMessage(String message) async {
-    final res = await http.post(
+    final res = await _client.post(
       Uri.parse('$baseUrl/chat'),
       headers: _headers(),
       body: jsonEncode({'message': message}),
@@ -285,7 +308,7 @@ class ApiService {
     final uri = Uri.parse(
       '$baseUrl/products',
     ).replace(queryParameters: qp.isNotEmpty ? qp : null);
-    final res = await http.get(uri, headers: _headers(false));
+    final res = await _client.get(uri, headers: _headers(false));
     if (res.statusCode == 200) {
       final list = jsonDecode(res.body) as List<dynamic>;
       return list.cast<Map<String, dynamic>>();
@@ -296,7 +319,7 @@ class ApiService {
   Future<Map<String, dynamic>> createProduct(
     Map<String, dynamic> product,
   ) async {
-    final res = await http.post(
+    final res = await _client.post(
       Uri.parse('$baseUrl/products'),
       headers: _headers(),
       body: jsonEncode(product),
@@ -312,7 +335,7 @@ class ApiService {
   }
 
   Future<void> deleteProduct(String id) async {
-    final res = await http.delete(
+    final res = await _client.delete(
       Uri.parse('$baseUrl/products/$id'),
       headers: _headers(false),
     );
@@ -328,7 +351,7 @@ class ApiService {
   Future<Map<String, dynamic>> checkInteractions(
     List<String> ingredients,
   ) async {
-    final res = await http.post(
+    final res = await _client.post(
       Uri.parse('$baseUrl/products/check-interactions'),
       headers: _headers(),
       body: jsonEncode({'ingredients': ingredients}),
@@ -337,7 +360,7 @@ class ApiService {
   }
 
   Future<Map<String, dynamic>?> getCurrentExperiment() async {
-    final res = await http.get(
+    final res = await _client.get(
       Uri.parse('$baseUrl/experiments/current'),
       headers: _headers(false),
     );
@@ -350,7 +373,7 @@ class ApiService {
   Future<Map<String, dynamic>> togglePauseExperiment(
     String experimentId,
   ) async {
-    final res = await http.patch(
+    final res = await _client.patch(
       Uri.parse('$baseUrl/experiments/$experimentId/toggle-pause'),
       headers: _headers(),
     );
@@ -358,7 +381,7 @@ class ApiService {
   }
 
   Future<List<Map<String, dynamic>>> getCheckIns() async {
-    final res = await http.get(
+    final res = await _client.get(
       Uri.parse('$baseUrl/checkins'),
       headers: _headers(false),
     );
@@ -383,9 +406,7 @@ class ApiService {
       'POST',
       Uri.parse('$baseUrl/checkins'),
     );
-    if (_authToken != null) {
-      request.headers['Authorization'] = 'Bearer $_authToken';
-    }
+    request.headers.addAll(_headers(false));
     request.fields['time_of_day'] = timeOfDay;
     request.fields['hydration_score'] = hydration.toString();
     request.fields['texture_score'] = texture.toString();
@@ -403,7 +424,7 @@ class ApiService {
       );
     }
 
-    final streamedRes = await request.send();
+    final streamedRes = await _client.send(request);
     final res = await http.Response.fromStream(streamedRes);
     final data = jsonDecode(res.body) as Map<String, dynamic>;
     if (res.statusCode >= 200 && res.statusCode < 300) {
@@ -413,7 +434,7 @@ class ApiService {
   }
 
   Future<Map<String, dynamic>> generateDoctorQr({int minutes = 60}) async {
-    final res = await http.post(
+    final res = await _client.post(
       Uri.parse('$baseUrl/doctor/generate-qr?minutes_valid=$minutes'),
       headers: _headers(),
     );
@@ -421,7 +442,7 @@ class ApiService {
   }
 
   Future<bool> claimDoctorAccess(String token) async {
-    final res = await http.post(
+    final res = await _client.post(
       Uri.parse('$baseUrl/doctor/claim'),
       headers: _headers(),
       body: jsonEncode({'access_token': token}),
@@ -430,7 +451,7 @@ class ApiService {
   }
 
   Future<bool> revokeDoctorAccess(String patientId) async {
-    final res = await http.delete(
+    final res = await _client.delete(
       Uri.parse('$baseUrl/doctor/revoke/$patientId'),
       headers: _headers(false),
     );
@@ -438,7 +459,7 @@ class ApiService {
   }
 
   Future<List<Map<String, dynamic>>> getDoctorPatients() async {
-    final res = await http.get(
+    final res = await _client.get(
       Uri.parse('$baseUrl/doctor/patients'),
       headers: _headers(false),
     );
@@ -455,7 +476,7 @@ class ApiService {
     String priority = 'routine',
     String? followUp,
   }) async {
-    final res = await http.post(
+    final res = await _client.post(
       Uri.parse('$baseUrl/doctor/patients/$patientId/notes'),
       headers: _headers(),
       body: jsonEncode({
@@ -477,7 +498,7 @@ class ApiService {
   }
 
   Future<Map<String, dynamic>> redeemReward(String rewardId) async {
-    final res = await http.post(
+    final res = await _client.post(
       Uri.parse('$baseUrl/rewards/redeem'),
       headers: _headers(),
       body: jsonEncode({'reward_id': rewardId}),
@@ -490,6 +511,34 @@ class ApiService {
       data['message']?.toString() ?? 'Redemption failed',
       data,
     );
+  }
+}
+
+class _SessionClient extends http.BaseClient {
+  @override
+  Future<http.StreamedResponse> send(http.BaseRequest request) async {
+    final sentToken = request.headers['Authorization'];
+    final client = http.Client();
+    http.StreamedResponse response;
+    try {
+      final streamed = await client.send(request);
+      final bytes = await streamed.stream.toBytes();
+      response = http.StreamedResponse(Stream.value(bytes), streamed.statusCode,
+          headers: streamed.headers, request: request, reasonPhrase: streamed.reasonPhrase);
+    } finally {
+      client.close();
+    }
+    final api = ApiService.instance;
+    if (sentToken != null && sentToken != 'Bearer ${api.authToken}' &&
+        !request.url.path.endsWith('/auth/logout')) {
+      throw ApiException('Session changed. Please try again');
+    }
+    if (response.statusCode == 401 && sentToken != null &&
+        sentToken == 'Bearer ${api.authToken}') {
+      await api._clearSession();
+      throw ApiException('Session expired or invalid. Please sign in again');
+    }
+    return response;
   }
 }
 

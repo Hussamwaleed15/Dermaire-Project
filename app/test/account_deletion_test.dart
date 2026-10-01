@@ -11,7 +11,18 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+Future<void> signIn() async {
+  await http.runWithClient(
+    () => ApiService.instance.login(email: 'private@example.com', password: 'test'),
+    () => MockClient((_) async => http.Response(jsonEncode({
+      'access_token': 'original-token', 'expires_in': 3600,
+      'user_id': 'original-user', 'role': 'patient',
+    }), 200)),
+  );
+}
+
 void main() {
+  tearDown(() => ApiService.instance.init());
   for (final status in [204, 503]) {
     testWidgets('Delete UI response $status', (tester) async {
       SharedPreferences.setMockInitialValues({
@@ -19,6 +30,7 @@ void main() {
         'dermaire_user_data': '{}',
       });
       await ApiService.instance.init();
+      await signIn();
       final state = DermaireState(productRepository: MemoryProductRepository([]));
       state.userEmail = 'private@example.com';
       final pending = Completer<http.Response>();
@@ -33,10 +45,11 @@ void main() {
         pending.complete(http.Response('', status));
         await tester.pumpAndSettle();
         expect(find.byType(WelcomeScreen), status == 204 ? findsOneWidget : findsNothing);
-        expect(ApiService.instance.isAuthenticated, status != 204);
+        expect(ApiService.instance.isAuthenticated, status != 204 && status != 401);
         expect(state.userEmail, status == 204 ? isEmpty : 'private@example.com');
       }, () => MockClient((_) => pending.future));
       await tester.pumpWidget(const SizedBox());
+      await ApiService.instance.init();
       state.dispose();
     });
   }
@@ -50,6 +63,10 @@ void main() {
         'dermaire_safety_accepted': true,
       });
       await ApiService.instance.init();
+      await signIn();
+      final cached = await SharedPreferences.getInstance();
+      await cached.setString('dermaire_products_v2', '[]');
+      await cached.setBool('dermaire_safety_accepted', true);
       final deleted = await http.runWithClient(
         () => ApiService.instance.deleteAccount(),
         () => MockClient((request) async {
@@ -61,11 +78,11 @@ void main() {
         }),
       );
       expect(deleted, status == 204);
-      expect(ApiService.instance.isAuthenticated, status != 204);
+      expect(ApiService.instance.isAuthenticated, status != 204 && status != 401);
       final prefs = await SharedPreferences.getInstance();
-      expect(prefs.containsKey('dermaire_jwt_token'), status != 204);
-      expect(prefs.containsKey('dermaire_products_v2'), status != 204);
-      expect(prefs.containsKey('dermaire_safety_accepted'), status != 204);
+      expect(prefs.containsKey('dermaire_jwt_token'), isFalse);
+      expect(prefs.containsKey('dermaire_products_v2'), status != 204 && status != 401);
+      expect(prefs.containsKey('dermaire_safety_accepted'), status != 204 && status != 401);
     });
   }
   test('Clears account data held in memory', () async {

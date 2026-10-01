@@ -13,10 +13,11 @@ import 'package:http/testing.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
+  tearDown(() => ApiService.instance.init());
   setUp(() => SharedPreferences.setMockInitialValues({}));
 
   for (final body in [
-    '{"access_token":"login-token"}',
+    '{"access_token":"login-token","expires_in":3600}',
     '{"message":"Invalid credentials"}',
     '',
     '{',
@@ -79,8 +80,9 @@ void main() {
           final prefs = await SharedPreferences.getInstance();
           expect(
             prefs.getString('dermaire_jwt_token'),
-            success ? 'login-token' : isNull,
+            isNull,
           );
+          await ApiService.instance.init();
           if (!success) {
             expect(find.byType(SignInScreen), findsOneWidget);
             expect(find.textContaining('Sign-in failed:'), findsOneWidget);
@@ -192,13 +194,14 @@ void main() {
         ]) {
           expect(find.text(concern), findsOneWidget);
         }
+        await ApiService.instance.init();
       },
       () => MockClient((request) async {
         if (request.url.path.endsWith('/auth/register')) {
           final body = jsonDecode(request.body) as Map<String, dynamic>;
           expect(body['email'], 'salma@example.com');
           expect(body['accept_safety'], isTrue);
-          return http.Response('{"access_token":"test-token"}', 201);
+          return http.Response('{"access_token":"test-token","expires_in":3600}', 201);
         }
         return http.Response('{}', 200);
       }),

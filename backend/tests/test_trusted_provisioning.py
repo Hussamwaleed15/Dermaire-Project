@@ -38,7 +38,7 @@ def request(role="doctor", email="trusted@example.com", **overrides):
 
 
 def auth(user):
-    return {"Authorization": "Bearer " + create_access_token(user.id, user.role)}
+    return {"Authorization": "Bearer " + create_access_token(user.id, user.role, hashed_password=user.hashed_password)}
 
 
 @pytest.mark.parametrize("role", ["doctor", "admin", "support"])
@@ -76,7 +76,7 @@ def test_public_creation_and_elevation_cannot_assign_roles(provisioning_context,
     assert client.get("/api/v1/users/me", headers=headers).json()["role"] == "patient"
     # Even a misleading claim in a valid token cannot override the database role.
     patient = db.query(User).one()
-    forged_role = {"Authorization": "Bearer " + create_access_token(patient.id, role)}
+    forged_role = {"Authorization": "Bearer " + create_access_token(patient.id, role, hashed_password=patient.hashed_password)}
     assert client.get("/api/v1/doctor/patients", headers=forged_role).status_code == 403
     assert client.get("/api/v1/doctor/patients").status_code == 401
     assert client.get("/api/v1/doctor/patients", headers=headers).status_code == 403

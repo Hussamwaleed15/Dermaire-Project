@@ -1457,6 +1457,18 @@ class ProfileTab extends StatelessWidget {
         subtitle: 'App help, measurement explanations and safety escalation',
         onTap: () => openPage(context, const SkinAssistantScreen()),
       ),
+      TextButton(
+        onPressed: () async {
+          await ApiService.instance.logout();
+          state.clearAccountData();
+          if (!context.mounted) return;
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (_) => WelcomeScreen(state: state)),
+            (_) => false,
+          );
+        },
+        child: const Text('Sign out'),
+      ),
       const SizedBox(height: 6),
       Row(
         children: [

@@ -27,6 +27,7 @@ class JournalEntry {
 
 class DermaireState extends ChangeNotifier {
   DermaireState({ProductRepository? productRepository}) {
+    ApiService.instance.addListener(clearAccountData);
     productController = ProductsController(
       productRepository ?? RemoteProductRepository(),
     )..addListener(notifyListeners);
@@ -55,12 +56,14 @@ class DermaireState extends ChangeNotifier {
 
   Future<void> loadPreferences() async {
     await ApiService.instance.init();
-    await productController.load();
     try {
       final preferences = await SharedPreferences.getInstance();
       themeMode = preferences.getBool(_darkModeKey) == true
           ? ThemeMode.dark
           : ThemeMode.light;
+      notifyListeners();
+      if (!ApiService.instance.isAuthenticated) return;
+      await productController.load();
       safetyAccepted = preferences.getBool(_safetyAcceptedKey) ?? false;
       
       // Fetch live user profile from Azure
@@ -220,6 +223,7 @@ class DermaireState extends ChangeNotifier {
 
   @override
   void dispose() {
+    ApiService.instance.removeListener(clearAccountData);
     productController
       ..removeListener(notifyListeners)
       ..dispose();

@@ -1,6 +1,9 @@
 ﻿from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, Optional, Union
 import jwt
+import hashlib
+import hmac
+import uuid
 from passlib.context import CryptContext
 from app.core.config import settings
 
@@ -12,13 +15,19 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 def get_password_hash(password: str) -> str:
     return pwd_context.hash(password)
 
+def credential_stamp(hashed_password: str) -> str:
+    return hmac.new(settings.SECRET_KEY.encode(), hashed_password.encode(), hashlib.sha256).hexdigest()
+
+
 def create_access_token(
     subject: Union[str, Any],
     role: str,
     expires_delta: Optional[timedelta] = None,
-    additional_claims: Optional[Dict[str, Any]] = None
+    additional_claims: Optional[Dict[str, Any]] = None,
+    *,
+    hashed_password: str
 ) -> str:
-    if expires_delta:
+    if expires_delta is not None:
         expire = datetime.now(timezone.utc) + expires_delta
     else:
         expire = datetime.now(timezone.utc) + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
@@ -28,6 +37,8 @@ def create_access_token(
         "sub": str(subject),
         "role": role,
         "type": "access",
+        "jti": str(uuid.uuid4()),
+        "credential": credential_stamp(hashed_password),
         "iat": datetime.now(timezone.utc)
     }
     if additional_claims:

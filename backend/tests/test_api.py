@@ -146,6 +146,7 @@ def test_doctor_qr_and_notes(client, db_session):
     doc_token = create_access_token(
         subject=doctor.id,
         role=doctor.role,
+        hashed_password=doctor.hashed_password,
         additional_claims={"email": doctor.email},
     )
     doc_headers = {"Authorization": f"Bearer {doc_token}"}

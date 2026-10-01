@@ -10,6 +10,7 @@ import 'package:http/testing.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
+  tearDown(() => ApiService.instance.init());
   setUp(() async {
     SharedPreferences.setMockInitialValues({});
     await ApiService.instance.logout();
@@ -86,6 +87,7 @@ void main() {
             succeeds ? findsOneWidget : findsNothing,
           );
           expect(ApiService.instance.isAuthenticated, succeeds);
+          await ApiService.instance.init();
           expect(
             patientPath,
             [
@@ -114,6 +116,7 @@ void main() {
             submittedPassword = jsonDecode(request.body)['password'] as String;
             return pending.future;
           }
+          if (request.url.path.endsWith('/auth/logout')) return http.Response('', 204);
           patientPath = request.url.path;
           if (entry.key == 'patients failure') return http.Response('{}', 403);
           if (entry.key == 'malformed patients') {
