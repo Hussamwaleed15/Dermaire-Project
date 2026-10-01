@@ -758,6 +758,44 @@ class _SafetyResponsibilityScreenState
     extends State<SafetyResponsibilityScreen> {
   final controller = ScrollController();
   bool reachedEnd = false;
+  bool loading = false;
+
+  Future<void> _acceptSafety() async {
+    if (!reachedEnd || loading) return;
+    setState(() => loading = true);
+    try {
+      if (widget.email != null && widget.password != null) {
+        try {
+          await ApiService.instance.register(
+            email: widget.email!,
+            password: widget.password!,
+            fullName: 'Dermaire Member',
+            acceptSafety: true,
+          );
+        } catch (e) {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Registration failed. Please try again: $e'),
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+          );
+          return;
+        }
+      }
+      // Persist local acceptance only after registration succeeds, or when
+      // this is the safety-only flow for an already authenticated account.
+      await widget.state.acceptSafety();
+      if (!mounted) return;
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (_) => AccountCreatedScreen(state: widget.state),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => loading = false);
+    }
+  }
 
   @override
   void initState() {
@@ -895,29 +933,10 @@ class _SafetyResponsibilityScreenState
                   ),
                 FilledButton(
                   key: const Key('acceptSafetyButton'),
-                  onPressed: reachedEnd
-                      ? () async {
-                          await widget.state.acceptSafety();
-                          if (widget.email != null && widget.password != null) {
-                            try {
-                              await ApiService.instance.register(
-                                email: widget.email!,
-                                password: widget.password!,
-                                fullName: 'Dermaire Member',
-                                acceptSafety: true,
-                              );
-                            } catch (_) {}
-                          }
-                          if (!context.mounted) return;
-                          Navigator.of(context).pushReplacement(
-                            MaterialPageRoute(
-                              builder: (_) =>
-                                  AccountCreatedScreen(state: widget.state),
-                            ),
-                          );
-                        }
-                      : null,
-                  child: const Text('I understand — continue'),
+                  onPressed: reachedEnd && !loading ? _acceptSafety : null,
+                  child: Text(
+                    loading ? 'Please wait...' : 'I understand — continue',
+                  ),
                 ),
               ],
             ),
