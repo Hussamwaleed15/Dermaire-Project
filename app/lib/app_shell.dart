@@ -1107,94 +1107,75 @@ class HowItWorksScreen extends StatelessWidget {
   );
 }
 
-class TimelineScreen extends StatelessWidget {
+class TimelineScreen extends StatefulWidget {
   const TimelineScreen({super.key, required this.state});
   final DermaireState state;
-  static const events = [
-    ('Day 1', 'Baseline period begins'),
-    ('Day 5', 'Baseline established'),
-    ('Day 7', 'Check-in logged'),
-    ('Day 10', 'Product added — interaction check passed'),
-    ('Day 14', 'Environmental anomaly recorded'),
-    ('Day 21', 'Check-in logged'),
-    ('Day 28', 'Experiment complete'),
-  ];
+  @override
+  State<TimelineScreen> createState() => _TimelineScreenState();
+}
 
+class _TimelineScreenState extends State<TimelineScreen> {
+  List<Map<String, dynamic>>? _rows;
+  String? _error;
+  bool _loading = false;
+  @override
+  void initState() {
+    super.initState();
+    ApiService.instance.addListener(_sessionChanged);
+    _load();
+  }
+  void _sessionChanged() {
+    if (!ApiService.instance.isAuthenticated && mounted) {
+      setState(() { _rows = null; _error = 'Sign in to view skin history'; });
+    }
+  }
+  @override
+  void dispose() {
+    ApiService.instance.removeListener(_sessionChanged);
+    super.dispose();
+  }
+  Future<void> _load() async {
+    setState(() { _loading = true; _rows = null; _error = null; });
+    try {
+      final rows = await ApiService.instance.getCheckIns();
+      if (mounted) setState(() => _rows = rows);
+    } catch (e) {
+      if (mounted) setState(() => _error = 'Skin history unavailable: $e');
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
   @override
   Widget build(BuildContext context) => DermairePage(
-    eyebrow: 'Demo timeline - not your baseline history',
-    title:
-        '${state.productController.active.where((product) => product.inExperiment).firstOrNull?.name ?? 'No active product'} · Texture',
-    actions: [
-      IconButton(
-        onPressed: state.togglePause,
-        icon: Icon(
-          state.experimentPaused
-              ? Icons.play_arrow_rounded
-              : Icons.pause_rounded,
-        ),
-      ),
-    ],
+    eyebrow: 'Longitudinal skin history', title: 'Your check-ins',
     children: [
-      if (state.experimentPaused)
-        const Notice(
-          icon: '⏸',
-          text: 'Experiment paused. Resume any time.',
-          color: DermaireColors.unknownBackground,
-        ),
-      ...events.indexed.map((entry) {
-        final current = entry.$1 + 1 == state.experimentDay;
-        return IntrinsicHeight(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SizedBox(
-                width: 26,
-                child: Column(
-                  children: [
-                    Container(
-                      width: 12,
-                      height: 12,
-                      decoration: BoxDecoration(
-                        color: current
-                            ? DermaireColors.deep
-                            : DermaireColors.caramel,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    if (entry.$1 < events.length - 1)
-                      Expanded(
-                        child: Container(
-                          width: 1,
-                          color: DermaireColors.caramel,
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.only(bottom: 22),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        entry.$2.$1,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 12.5,
-                        ),
-                      ),
-                      Text(entry.$2.$2, style: const TextStyle(fontSize: 12)),
-                    ],
-                  ),
-                ),
-              ),
+      if (_loading) const CircularProgressIndicator(),
+      if (_error != null) Text(_error!),
+      if (_rows != null && _rows!.isEmpty) const Text('No check-ins yet. Record your first observation.'),
+      ...?_rows?.map((row) {
+        final observation = row['observation'];
+        final report = observation?['user_reported'];
+        final source = row['ai_vision_analysis']?['measurement_source'];
+        return Card(child: Padding(padding: const EdgeInsets.all(12), child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text('${row['created_at']} UTC', style: const TextStyle(fontWeight: FontWeight.bold)),
+            Text(report == null ? 'Overall change: not reported' : 'User reported: ${report['overall_change']}'),
+            if (report != null) ...[
+              Text('Symptoms: ${(report['symptoms'] as List).join(', ')}'),
+              Text('Routine: ${report['routine_status'] ?? 'not reported'}'),
             ],
-          ),
-        );
+            if (source != 'none') Text('${source == 'manual' ? 'User-entered measurements' : 'Photo estimates'}: hydration ${row['hydration_score']}, texture ${row['texture_score']}, redness ${row['redness_score']}'),
+            if (row['notes'] != null) Text('User notes: ${row['notes']}'),
+            if (row['image_sas_url'] != null) const Text('Linked photo available'),
+            if (observation != null) Text('Daily context: ${observation['daily_context_date']} · ${observation['daily_context_id'] == null ? 'not linked at submission' : 'linked'}'),
+          ],
+        )));
       }),
+      OutlinedButton(onPressed: _loading ? null : _load, child: const Text('Refresh history')),
+      FilledButton(onPressed: () async {
+        await Navigator.of(context).push(MaterialPageRoute(builder: (_) => CameraScreen(state: widget.state)));
+        if (mounted) _load();
+      }, child: const Text('Record check-in')),
     ],
   );
 }
@@ -1212,6 +1193,15 @@ class _CameraScreenState extends State<CameraScreen> {
   String? _photoFilename;
   bool _isUploading = false;
   String? _errorMessage;
+  String? _overallChange;
+  String? _routineStatus;
+  final Set<String> _symptoms = {};
+  final _notes = TextEditingController();
+  @override
+  void dispose() {
+    _notes.dispose();
+    super.dispose();
+  }
 
   Future<void> _pickPhoto() async {
     try {
@@ -1233,8 +1223,8 @@ class _CameraScreenState extends State<CameraScreen> {
 
   Future<void> _submitPhoto() async {
     if (_isUploading) return;
-    if (_photoBytes == null) {
-      setState(() => _errorMessage = 'Select a skin photo before analyzing.');
+    if (_overallChange == null) {
+      setState(() => _errorMessage = 'Choose your overall skin change.');
       return;
     }
     setState(() {
@@ -1248,14 +1238,16 @@ class _CameraScreenState extends State<CameraScreen> {
         timeOfDay: DateTime.now().hour < 12 ? 'Morning' : 'Evening',
         photoBytes: _photoBytes,
         photoFilename: _photoFilename,
-        notes: 'Skin photo captured via app',
+        notes: _notes.text.trim().isEmpty ? null : _notes.text.trim(),
+        report: {'overall_change': _overallChange, 'symptoms': _symptoms.toList(),
+          'routine_status': _routineStatus},
       );
     } catch (e) {
       if (mounted) {
         setState(() {
           _isUploading = false;
           _errorMessage =
-              "Could not confirm this photo check-in. Check your connection and retry; the server may have received it.\n($e)";
+              "Could not confirm this check-in. Check your connection and refresh history before retrying; the server may have received it.\n($e)";
         });
       }
       return;
@@ -1276,12 +1268,28 @@ class _CameraScreenState extends State<CameraScreen> {
 
   @override
   Widget build(BuildContext context) => DermairePage(
-    eyebrow: 'Photo estimate check-in',
-    title: 'Analyze your skin',
+    eyebrow: 'Structured skin check-in',
+    title: 'Record your observation',
     subtitle: _photoBytes == null
-        ? 'Upload or take a clear, well-lit photo for image-property estimates.'
+        ? 'Report your skin change. A photo is optional.'
         : 'Photo ready for server processing.',
     children: [
+      DropdownButtonFormField<String>(
+        decoration: const InputDecoration(labelText: 'Overall change since last check-in'),
+        items: ['better', 'same', 'worse'].map((value) => DropdownMenuItem(value: value, child: Text(value))).toList(),
+        onChanged: _isUploading ? null : (value) => setState(() => _overallChange = value),
+      ),
+      const Text('Symptoms / concerns (optional)'),
+      Wrap(spacing: 6, children: ['redness', 'dryness', 'itching', 'burning', 'breakouts', 'sensitivity', 'texture'].map((value) => FilterChip(
+        label: Text(value), selected: _symptoms.contains(value),
+        onSelected: _isUploading ? null : (selected) => setState(() { selected ? _symptoms.add(value) : _symptoms.remove(value); }),
+      )).toList()),
+      DropdownButtonFormField<String>(
+        decoration: const InputDecoration(labelText: 'Routine adherence (optional)'),
+        items: ['followed', 'partial', 'skipped', 'not_applicable'].map((value) => DropdownMenuItem(value: value, child: Text(value))).toList(),
+        onChanged: _isUploading ? null : (value) => setState(() => _routineStatus = value),
+      ),
+      TextField(controller: _notes, enabled: !_isUploading, maxLength: 1500, decoration: const InputDecoration(labelText: 'Notes (optional)')),
       if (_photoBytes != null)
         Container(
           height: 240,
@@ -1352,7 +1360,7 @@ class _CameraScreenState extends State<CameraScreen> {
                 width: 20,
                 child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
               )
-            : const Text('Capture & Analyze measurement'),
+            : const Text('Save check-in'),
       ),
     ],
   );
@@ -1375,12 +1383,14 @@ class CheckInCompleteScreen extends StatelessWidget {
 
     return DermairePage(
       title: 'Check-in complete',
-      subtitle: "Server saved your image-property estimates. These are not clinical measurements.",
+      subtitle: "Server saved your observation. Optional photo estimates are not clinical measurements.",
       centered: true,
       children: [
         if (state.baseline.error != null) Text('Check-in saved; ${state.baseline.error}'),
         const SizedBox(height: 8),
-        Row(
+        if (analysisData?['observation']?['user_reported'] != null)
+          Text('Your reported change: ${analysisData!['observation']['user_reported']['overall_change']}'),
+        if (analysisData?['hydration_score'] != null) Row(
           children: [
             Expanded(child: MetricTile(redness, 'Redness')),
             const SizedBox(width: 10),
@@ -1390,7 +1400,7 @@ class CheckInCompleteScreen extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 14),
-        if (analysisData != null && analysisData!['photo_url'] != null)
+        if (analysisData != null && analysisData!['image_sas_url'] != null)
           Notice(
             icon: '☁️',
             text: 'Uploaded to Azure Blob Storage securely.',

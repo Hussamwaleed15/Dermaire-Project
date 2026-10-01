@@ -104,9 +104,10 @@ class CheckIn(Base):
     experiment_id = Column(String(36), ForeignKey("experiments.id"), nullable=True)
     date_str = Column(String(50), nullable=False) # e.g. "2026-09-14"
     time_of_day = Column(String(20), default="Morning") # Morning, Evening
-    hydration_score = Column(Float, default=75.0)
-    texture_score = Column(Float, default=80.0)
-    redness_score = Column(Float, default=20.0)
+    hydration_score = Column(Float, nullable=True)
+    texture_score = Column(Float, nullable=True)
+    redness_score = Column(Float, nullable=True)
+    observation = Column(JSON, nullable=True) # Versioned evidence; null for legacy rows
     notes = Column(Text, nullable=True)
     image_blob_name = Column(String(255), nullable=True)
     ai_vision_analysis = Column(JSON, nullable=True)

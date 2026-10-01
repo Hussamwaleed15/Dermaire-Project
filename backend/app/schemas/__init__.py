@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import List, Optional, Any, Dict
+from typing import List, Optional, Any, Dict, Literal
 from pydantic import BaseModel, EmailStr, Field, ConfigDict
 
 # ==================== User & Auth Schemas ====================
@@ -158,12 +158,26 @@ class ExperimentOut(BaseModel):
 
 # ==================== CheckIn Schemas ====================
 
+class CheckInReport(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    overall_change: Literal["better", "same", "worse"]
+    symptoms: List[Literal["redness", "dryness", "itching", "burning", "breakouts", "sensitivity", "texture"]] = Field(default_factory=list, max_length=7)
+    routine_status: Optional[Literal["followed", "partial", "skipped", "not_applicable"]] = None
+
+class CheckInObservation(BaseModel):
+    schema_version: Literal[1] = 1
+    user_reported: Optional[CheckInReport] = None
+    daily_context_date: str
+    daily_context_id: Optional[str] = None
+    provenance: Dict[str, str]
+
 class CheckInCreate(BaseModel):
     experiment_id: Optional[str] = None
     time_of_day: str = Field("Morning", pattern="^(Morning|Evening)$")
-    hydration_score: float = Field(..., ge=0.0, le=100.0)
-    texture_score: float = Field(..., ge=0.0, le=100.0)
-    redness_score: float = Field(..., ge=0.0, le=100.0)
+    report: Optional[CheckInReport] = None
+    hydration_score: Optional[float] = Field(None, ge=0.0, le=100.0)
+    texture_score: Optional[float] = Field(None, ge=0.0, le=100.0)
+    redness_score: Optional[float] = Field(None, ge=0.0, le=100.0)
     notes: Optional[str] = Field(None, max_length=1500)
 
 class CheckInResponse(BaseModel):
@@ -172,9 +186,10 @@ class CheckInResponse(BaseModel):
     experiment_id: Optional[str] = None
     date_str: str
     time_of_day: str
-    hydration_score: float
-    texture_score: float
-    redness_score: float
+    hydration_score: Optional[float] = None
+    texture_score: Optional[float] = None
+    redness_score: Optional[float] = None
+    observation: Optional[CheckInObservation] = None
     notes: Optional[str] = None
     image_sas_url: Optional[str] = None
     ai_vision_analysis: Optional[Dict[str, Any]] = None

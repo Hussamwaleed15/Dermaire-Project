@@ -424,12 +424,46 @@ class ApiService extends ChangeNotifier {
     final res = await _client.get(
       Uri.parse('$baseUrl/checkins'),
       headers: _headers(false),
-    );
-    if (res.statusCode == 200) {
-      final list = jsonDecode(res.body) as List<dynamic>;
-      return list.cast<Map<String, dynamic>>();
+    ).timeout(const Duration(seconds: 15));
+    if (res.statusCode != 200) throw ApiException('Skin history unavailable');
+    final list = jsonDecode(res.body) as List<dynamic>;
+    final rows = list.cast<Map<String, dynamic>>();
+    for (final row in rows) {
+      _validateCheckIn(row);
     }
-    return [];
+    return rows;
+  }
+
+  void _validateCheckIn(Map<String, dynamic> data) {
+    if (data['id'] is! String || (data['id'] as String).isEmpty ||
+        data['created_at'] is! String || DateTime.tryParse(data['created_at'] as String) == null) {
+      throw ApiException('Invalid check-in confirmation. Refresh before retrying');
+    }
+    final report = data['observation'] is Map ? data['observation']['user_reported'] : null;
+    if (data['observation'] != null && (data['observation'] is! Map ||
+        data['observation']['schema_version'] != 1 || data['observation']['provenance'] is! Map ||
+        data['observation']['daily_context_date'] is! String)) {
+      throw ApiException('Invalid observation evidence');
+    }
+    if (report != null && (report is! Map ||
+        !['better', 'same', 'worse'].contains(report['overall_change']) || report['symptoms'] is! List)) {
+      throw ApiException('Invalid structured report');
+    }
+    final analysis = data['ai_vision_analysis'];
+    final source = analysis is Map ? analysis['measurement_source'] : null;
+    if (source == 'none' && report != null) {
+      if (['hydration_score', 'texture_score', 'redness_score'].any((key) => data[key] != null)) {
+        throw ApiException('Unexpected check-in measurements');
+      }
+      return;
+    }
+    if (!['manual', 'image_proxy'].contains(source)) throw ApiException('Unknown measurement source');
+    for (final key in ['hydration_score', 'texture_score', 'redness_score']) {
+      final value = data[key];
+      if (value is! num || !value.isFinite || value < 0 || value > 100) {
+        throw ApiException('Invalid check-in measurements');
+      }
+    }
   }
 
   Future<Map<String, dynamic>> submitCheckIn({
@@ -441,6 +475,7 @@ class ApiService extends ChangeNotifier {
     String? experimentId,
     List<int>? photoBytes,
     String? photoFilename,
+    Map<String, dynamic>? report,
   }) async {
     final request = http.MultipartRequest(
       'POST',
@@ -448,6 +483,7 @@ class ApiService extends ChangeNotifier {
     );
     request.headers.addAll(_headers(false));
     request.fields['time_of_day'] = timeOfDay;
+    if (report != null) request.fields['report'] = jsonEncode(report);
     if (hydration != null) request.fields['hydration_score'] = hydration.toString();
     if (texture != null) request.fields['texture_score'] = texture.toString();
     if (redness != null) request.fields['redness_score'] = redness.toString();
@@ -468,16 +504,14 @@ class ApiService extends ChangeNotifier {
     final res = await http.Response.fromStream(streamedRes);
     final data = jsonDecode(res.body) as Map<String, dynamic>;
     if (res.statusCode == 201) {
-      final analysis = data['ai_vision_analysis'];
-      if (data['id'] is! String || (data['id'] as String).isEmpty ||
-          data['created_at'] is! String || DateTime.tryParse(data['created_at'] as String) == null ||
-          analysis is! Map || !['manual', 'image_proxy'].contains(analysis['measurement_source'])) {
-        throw ApiException('Invalid check-in confirmation. Refresh before retrying');
-      }
-      for (final key in ['hydration_score', 'texture_score', 'redness_score']) {
-        final value = data[key];
-        if (value is! num || !value.isFinite || value < 0 || value > 100) {
-          throw ApiException('Invalid check-in measurements');
+      _validateCheckIn(data);
+      if (report != null) {
+        final confirmed = data['observation']?['user_reported'];
+        final symptoms = (report['symptoms'] as List? ?? []).toSet().toList();
+        if (confirmed is! Map || confirmed['overall_change'] != report['overall_change'] ||
+            confirmed['routine_status'] != report['routine_status'] ||
+            !listEquals(confirmed['symptoms'] as List?, symptoms)) {
+          throw ApiException('Structured report was not confirmed');
         }
       }
       return data;
