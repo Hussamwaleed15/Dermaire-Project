@@ -1,4 +1,5 @@
-from typing import List
+from typing import List, Literal
+from pydantic import field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
@@ -6,7 +7,8 @@ class Settings(BaseSettings):
         env_file=".env",
         env_file_encoding="utf-8",
         case_sensitive=True,
-        extra="ignore"
+        extra="ignore",
+        hide_input_in_errors=True
     )
 
     # App Identity
@@ -14,7 +16,7 @@ class Settings(BaseSettings):
     VERSION: str = "1.0.0"
     API_V1_STR: str = "/api/v1"
     IMAGINE_COP_EDITION: str = "Microsoft Imagine Cup 2027"
-    ENVIRONMENT: str = "development"
+    ENVIRONMENT: Literal["development", "test", "staging", "production"] = "development"
     DEBUG: bool = True
 
     # Security & Authentication
@@ -72,6 +74,25 @@ class Settings(BaseSettings):
     # Microsoft Azure AI Content Safety (Emergency Red Flag Escalation)
     AZURE_CONTENT_SAFETY_ENDPOINT: str = ""
     AZURE_CONTENT_SAFETY_KEY: str = ""
+
+    @field_validator("ENVIRONMENT", mode="before")
+    @classmethod
+    def normalize_environment(cls, value):
+        if isinstance(value, str):
+            value = value.strip().lower()
+            return {"dev": "development", "testing": "test", "prod": "production"}.get(value, value)
+        return value
+
+    @model_validator(mode="after")
+    def validate_production_secret(self):
+        if self.ENVIRONMENT in {"production", "staging"}:
+            development_secret = type(self).model_fields["SECRET_KEY"].default
+            if not self.SECRET_KEY.strip() or self.SECRET_KEY.strip() == development_secret:
+                raise ValueError(
+                    "SECRET_KEY must be explicitly configured with a non-empty, "
+                    "non-development secret in production/staging"
+                )
+        return self
 
     # Mock mode flag: automatically active when Azure credentials are not provided
     @property

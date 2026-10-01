@@ -27,6 +27,7 @@ services:
       - "8000:8000"
     environment:
       - DATABASE_URL=postgresql://dermaire_user:dermaire_secure_password_2027@db:5432/dermaire_db
+      - SECRET_KEY=${SECRET_KEY:?Set a unique production SECRET_KEY}
       - ENVIRONMENT=production
       - DEBUG=False
     depends_on:
