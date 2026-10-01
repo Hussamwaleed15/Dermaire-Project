@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'baseline/baseline_controller.dart';
 import 'context_controller.dart';
+import 'home_controller.dart';
 import 'products/product_repository.dart';
 import 'products/products_controller.dart';
 import 'services/api_service.dart';
@@ -15,7 +16,9 @@ class JournalEntry {
 }
 
 class DermaireState extends ChangeNotifier {
-  DermaireState({ProductRepository? productRepository, BaselineRepository? baselineRepository, ContextRepository? contextRepository}) {
+  DermaireState({ProductRepository? productRepository, BaselineRepository? baselineRepository, ContextRepository? contextRepository, HomeRepository? homeRepository}) {
+    home = HomeController(homeRepository ?? RemoteHomeRepository())
+      ..addListener(notifyListeners);
     dailyContext = ContextController(contextRepository ?? RemoteContextRepository())
       ..addListener(notifyListeners);
     baseline = BaselineController(baselineRepository ?? RemoteBaselineRepository())
@@ -29,6 +32,7 @@ class DermaireState extends ChangeNotifier {
   late final ProductsController productController;
   late final BaselineController baseline;
   late final ContextController dailyContext;
+  late final HomeController home;
   static const _darkModeKey = 'dermaire_dark_mode';
   static const _safetyAcceptedKey = 'dermaire_safety_accepted';
 
@@ -60,6 +64,7 @@ class DermaireState extends ChangeNotifier {
       await productController.load();
       await baseline.refresh();
       await dailyContext.refresh();
+      await home.refresh();
       safetyAccepted = preferences.getBool(_safetyAcceptedKey) ?? false;
       
       // Fetch live user profile from Azure
@@ -74,20 +79,9 @@ class DermaireState extends ChangeNotifier {
         }
       }
 
-      // Fetch live checkins from Azure to populate real journal
+      // Rewards remain a separate domain until their authority cleanup.
       final checkins = await ApiService.instance.getCheckIns();
-      if (checkins.isNotEmpty) {
-        journal.clear();
-        for (final c in checkins) {
-          final dateStr = (c['created_at'] as String?)?.split('T').first ?? 'Recent';
-          final timeStr = c['time_of_day']?.toString().toUpperCase() ?? 'CHECK-IN';
-          final h = c['hydration_score'] ?? 70;
-          final r = c['redness_score'] ?? 20;
-          final t = c['texture_score'] ?? 70;
-          journal.add(JournalEntry(dateStr, timeStr, 'Hydration: $h · Redness: $r · Texture: $t'));
-        }
-        tokens = checkins.length * 2;
-      }
+      if (checkins.isNotEmpty) tokens = checkins.length * 2;
 
       // Sync remote experiment if active
       final remoteExp = await ApiService.instance.getCurrentExperiment();
@@ -107,6 +101,7 @@ class DermaireState extends ChangeNotifier {
     tokens = 0;
     baseline.clear();
     dailyContext.clear();
+    home.clear();
     experimentDay = 1;
     experimentPaused = false;
     doctorLinkActive = false;
@@ -160,21 +155,13 @@ class DermaireState extends ChangeNotifier {
     notifyListeners();
   }
 
-  void addJournalEntry() {
-    journal.insert(
-      0,
-      const JournalEntry(
-        'Today',
-        'Morning',
-        'Hydration: Good · Texture: Stable',
-      ),
-    );
-    earnToken();
-  }
+  // Legacy callers can request a read, never manufacture a measurement.
+  Future<bool> addJournalEntry() => home.refresh();
 
   // A confirmed write never increments baseline locally. Read its server projection.
   Future<void> markTodayCheckedIn() async {
     await baseline.refresh();
+    await home.refresh();
   }
 
   bool redeemReward() {
@@ -204,6 +191,9 @@ class DermaireState extends ChangeNotifier {
   @override
   void dispose() {
     ApiService.instance.removeListener(clearAccountData);
+    home
+      ..removeListener(notifyListeners)
+      ..dispose();
     dailyContext
       ..removeListener(notifyListeners)
       ..dispose();

@@ -12,7 +12,10 @@ from app.api.v1.baseline import router as baseline_router
 
 from app.api.v1.context import router as context_router
 
+from app.api.v1.home import router as home_router
+
 api_v1_router = APIRouter()
+api_v1_router.include_router(home_router)
 api_v1_router.include_router(context_router)
 api_v1_router.include_router(baseline_router)
 api_v1_router.include_router(auth_router)

@@ -413,6 +413,13 @@ class ApiService extends ChangeNotifier {
     return jsonDecode(res.body) as Map<String, dynamic>;
   }
 
+  Future<Map<String, dynamic>> getHome() async {
+    final res = await _client.get(Uri.parse('$baseUrl/home'), headers: _headers(false))
+        .timeout(const Duration(seconds: 15));
+    if (res.statusCode != 200) throw ApiException('Home unavailable');
+    return jsonDecode(res.body) as Map<String, dynamic>;
+  }
+
   Future<List<Map<String, dynamic>>> getCheckIns() async {
     final res = await _client.get(
       Uri.parse('$baseUrl/checkins'),

@@ -101,167 +101,172 @@ class HomeTab extends StatelessWidget {
   final DermaireState state;
 
   @override
-  Widget build(BuildContext context) => _TabPage(
-    header: Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            'Welcome, ${state.userName.split(" ").first} 🌿',
-            style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
-          ),
-          Text(
-            '${DateTime.now().year}-${DateTime.now().month.toString().padLeft(2, '0')}-${DateTime.now().day.toString().padLeft(2, '0')}',
-            style: TextStyle(
-              fontSize: 11,
-              color: DermaireColors.ink.withValues(alpha: .55),
-            ),
-          ),
-        ],
-      ),
-    ),
-    children: [
-      Text(
-        'Day ${state.experimentDay} of 28',
-        style: Theme.of(context).textTheme.headlineSmall,
-      ),
-      const SizedBox(height: 6),
-      Text(
-        'Testing: ${state.productController.active.where((product) => product.inExperiment).firstOrNull?.name ?? 'No active product'} for texture',
-        style: TextStyle(
-          fontSize: 13.5,
-          color: DermaireColors.ink.withValues(alpha: .75),
-        ),
-      ),
-      const SizedBox(height: 13),
-      ClipRRect(
-        borderRadius: BorderRadius.circular(99),
-        child: LinearProgressIndicator(
-          value: state.experimentDay / 28,
-          minHeight: 6,
-          color: DermaireColors.deep,
-          backgroundColor: DermaireColors.line,
-        ),
-      ),
-      const SizedBox(height: 16),
-      const Row(
-        children: [
-          Expanded(child: MetricTile('Unavailable', 'Redness vs baseline')),
-          SizedBox(width: 10),
-          Expanded(child: MetricTile('Unavailable', 'Texture vs baseline')),
-        ],
-      ),
-      const SizedBox(height: 14),
-      DermaireCard(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+  Widget build(BuildContext context) {
+    final snapshot = state.home.current;
+    final experiment = snapshot?['experiment'] as Map?;
+    final entries = snapshot?['journal'] as List? ?? [];
+    String delta(String key) {
+      final value = experiment?[key] as num?;
+      return value == null ? 'Unavailable' : '${value > 0 ? '+' : ''}${value.toStringAsFixed(1)}%';
+    }
+    return _TabPage(
+      header: Padding(
+        padding: const EdgeInsets.only(bottom: 16),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        state.todayCheckedIn
-                            ? "✓ Today's check-in"
-                            : "🟢 Today's check-in",
-                        style: const TextStyle(fontWeight: FontWeight.w700),
-                      ),
-                      Text(
-                        state.todayCheckedIn
-                            ? 'Completed'
-                            : state.baseline.available ? 'Not yet completed' : 'Progress unconfirmed',
-                        style: const TextStyle(fontSize: 11.5),
-                      ),
-                    ],
-                  ),
-                ),
-                if (state.todayCheckedIn) const StatusPill('Done'),
-              ],
+            Text(
+              'Welcome, ${state.userName.split(" ").first} 🌿',
+              style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
             ),
-            if (!state.todayCheckedIn) ...[
-              const SizedBox(height: 12),
-              FilledButton(
-                onPressed: () => openPage(context, CameraScreen(state: state)),
-                child: const Text('Check in now'),
+            Text(
+              '${DateTime.now().year}-${DateTime.now().month.toString().padLeft(2, '0')}-${DateTime.now().day.toString().padLeft(2, '0')}',
+              style: TextStyle(
+                fontSize: 11,
+                color: DermaireColors.ink.withValues(alpha: .55),
               ),
-            ],
+            ),
           ],
         ),
       ),
-      const Notice(
-        icon: '🌤',
-        text:
-            'Weather is not measured. Context does not currently adjust skin scores.',
-      ),
-      OutlinedButton(
-        onPressed: () => openPage(context, ContextScreen(state: state)),
-        child: const Text("View or edit today's context"),
-      ),
-      OutlinedButton(
-        onPressed: () => openPage(context, TimelineScreen(state: state)),
-        child: const Text('View experiment timeline'),
-      ),
-      const SizedBox(height: 18),
-      Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            'Latest journal entries',
-            style: Theme.of(
-              context,
-            ).textTheme.titleLarge?.copyWith(fontSize: 16),
-          ),
-          TextButton(
-            onPressed: () => state.selectTab(2),
-            child: const Text('View products'),
-          ),
+      children: [
+        if (snapshot == null)
+          Notice(icon: 'ℹ️', text: state.home.loading ? 'Loading Home…' :
+            state.home.error ?? 'Home unconfirmed. Refresh to load current data.')
+        else if (experiment == null)
+          const Notice(icon: 'ℹ️', text: 'No current experiment')
+        else ...[
+          Text('Day ${experiment['current_day']} of ${experiment['target_days']}',
+            style: Theme.of(context).textTheme.headlineSmall),
+          const SizedBox(height: 6),
+          Text('Testing: ${experiment['product_name'] ?? 'No linked product'} · ${experiment['primary_concern']}'),
+          Text('Status: ${experiment['status']}'),
+          const SizedBox(height: 13),
+          LinearProgressIndicator(value: (experiment['current_day'] as int) /
+              (experiment['target_days'] as int)),
         ],
-      ),
-      ...state.journal
-          .take(2)
-          .map(
-            (entry) => DermaireCard(
-              color: DermaireColors.card,
-              child: Row(
+        OutlinedButton(
+          onPressed: state.home.loading ? null : state.home.refresh,
+          child: const Text('Refresh Home'),
+        ),
+        const SizedBox(height: 16),
+        Row(children: [
+          Expanded(child: MetricTile(delta('redness_delta_percent'), 'Redness vs baseline')),
+          const SizedBox(width: 10),
+          Expanded(child: MetricTile(delta('texture_delta_percent'), 'Texture vs baseline')),
+        ]),
+        const SizedBox(height: 14),
+        DermaireCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
                 children: [
-                  Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(12),
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFFEAD3BC), Color(0xFFC9A47E)],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          '${entry.date} · ${entry.time}',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w700,
-                            fontSize: 13,
-                          ),
+                          (snapshot?['today_checked_in'] == true)
+                              ? "✓ Today's check-in"
+                              : "🟢 Today's check-in",
+                          style: const TextStyle(fontWeight: FontWeight.w700),
                         ),
                         Text(
-                          entry.summary,
+                          (snapshot?['today_checked_in'] == true)
+                              ? 'Completed'
+                              : snapshot != null ? 'Not yet completed' : 'Progress unconfirmed',
                           style: const TextStyle(fontSize: 11.5),
                         ),
                       ],
                     ),
                   ),
+                  if ((snapshot?['today_checked_in'] == true)) const StatusPill('Done'),
                 ],
               ),
-            ),
+              if (!(snapshot?['today_checked_in'] == true)) ...[
+                const SizedBox(height: 12),
+                FilledButton(
+                  onPressed: () => openPage(context, CameraScreen(state: state)),
+                  child: const Text('Check in now'),
+                ),
+              ],
+            ],
           ),
-    ],
-  );
+        ),
+        const Notice(
+          icon: '🌤',
+          text:
+              'Weather is not measured. Context does not currently adjust skin scores.',
+        ),
+        OutlinedButton(
+          onPressed: () => openPage(context, ContextScreen(state: state)),
+          child: const Text("View or edit today's context"),
+        ),
+        OutlinedButton(
+          onPressed: () => openPage(context, TimelineScreen(state: state)),
+          child: const Text('View experiment timeline'),
+        ),
+        const SizedBox(height: 18),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Latest journal entries',
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontSize: 16),
+            ),
+            TextButton(
+              onPressed: () => state.selectTab(2),
+              child: const Text('View products'),
+            ),
+          ],
+        ),
+        if (snapshot != null && entries.isEmpty)
+          const Text('No confirmed journal entries'),
+        ...entries
+            .map(
+              (entry) => DermaireCard(
+                color: DermaireColors.card,
+                child: Row(
+                  children: [
+                    Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFFEAD3BC), Color(0xFFC9A47E)],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "${(entry['created_at'] as String).split('T').first} · ${entry['time_of_day']}",
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 13,
+                            ),
+                          ),
+                          Text(
+                            "Hydration: ${entry['hydration_score']} · Redness: ${entry['redness_score']} · Texture: ${entry['texture_score']} (${entry['measurement_source']})",
+                            style: const TextStyle(fontSize: 11.5),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+      ],
+    );
+  }
 }
 
 class ExperimentTab extends StatefulWidget {

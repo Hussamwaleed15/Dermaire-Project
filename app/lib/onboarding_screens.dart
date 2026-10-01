@@ -22,6 +22,7 @@ void _openApp(BuildContext context, DermaireState state) {
     unawaited(state.productController.load());
     unawaited(state.baseline.refresh());
     unawaited(state.dailyContext.refresh());
+    unawaited(state.home.refresh());
   }
   Navigator.of(context).pushAndRemoveUntil(
     MaterialPageRoute(builder: (_) => AppShell(state: state)),
