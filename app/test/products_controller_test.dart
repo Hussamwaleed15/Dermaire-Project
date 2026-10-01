@@ -52,6 +52,7 @@ void main() {
       final failed = await controller.add(product('3', 'Barrier Cream'));
       expect(failed.success, isFalse);
       expect(controller.errorMessage, isNotNull);
+      await controller.load();
       final success = await controller.add(product('3', 'Barrier Cream'));
       expect(success.success, isTrue);
     },
@@ -67,7 +68,7 @@ void main() {
       expect((await controller.delete('1')).success, isFalse);
       expect(
         (await controller.delete('1', endExperiment: true)).success,
-        isTrue,
+        isFalse,
       );
 
       final restorable = product(

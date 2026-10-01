@@ -313,7 +313,7 @@ class ApiService extends ChangeNotifier {
       final list = jsonDecode(res.body) as List<dynamic>;
       return list.cast<Map<String, dynamic>>();
     }
-    return [];
+    throw ApiException('Could not load products (status ${res.statusCode})');
   }
 
   Future<Map<String, dynamic>> createProduct(
@@ -332,6 +332,15 @@ class ApiService extends ChangeNotifier {
       data['message']?.toString() ?? 'Failed to add product',
       data,
     );
+  }
+
+  Future<Map<String, dynamic>> updateProduct(String id, Map<String, dynamic> product) async {
+    final res = await _client.patch(Uri.parse('$baseUrl/products/$id'),
+        headers: _headers(), body: jsonEncode(product));
+    if (res.statusCode != 200) {
+      throw ApiException('Could not update product (status ${res.statusCode})');
+    }
+    return jsonDecode(res.body) as Map<String, dynamic>;
   }
 
   Future<void> deleteProduct(String id) async {

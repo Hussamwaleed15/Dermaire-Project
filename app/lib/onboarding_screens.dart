@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import 'app_shell.dart';
@@ -16,6 +18,9 @@ String? _validateEmail(String? value) =>
     : 'Enter a valid email address';
 
 void _openApp(BuildContext context, DermaireState state) {
+  if (ApiService.instance.isAuthenticated) {
+    unawaited(state.productController.load());
+  }
   Navigator.of(context).pushAndRemoveUntil(
     MaterialPageRoute(builder: (_) => AppShell(state: state)),
     (_) => false,

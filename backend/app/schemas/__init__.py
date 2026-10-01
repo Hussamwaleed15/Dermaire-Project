@@ -65,6 +65,7 @@ class ProductCreate(BaseModel):
     in_routine: bool = True
     in_experiment: bool = False
     notes: Optional[str] = Field(None, max_length=1000)
+    start_date: Optional[datetime] = None
 
 class ProductUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=2, max_length=150)
@@ -81,6 +82,9 @@ class ProductUpdate(BaseModel):
     in_experiment: Optional[bool] = None
     notes: Optional[str] = None
     rating: Optional[float] = Field(None, ge=1.0, le=5.0)
+    tags: Optional[List[str]] = None
+    start_date: Optional[datetime] = None
+    end_date: Optional[datetime] = None
 
 class ProductOut(BaseModel):
     id: str
@@ -101,6 +105,8 @@ class ProductOut(BaseModel):
     tags: List[str]
     notes: Optional[str] = None
     image_url: Optional[str] = None
+    start_date: Optional[datetime] = None
+    end_date: Optional[datetime] = None
     created_at: datetime
     updated_at: datetime
 

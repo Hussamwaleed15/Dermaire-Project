@@ -86,7 +86,8 @@ def create_product(
         tags=payload.tags,
         in_routine=payload.in_routine,
         in_experiment=payload.in_experiment,
-        notes=payload.notes
+        notes=payload.notes,
+        start_date=payload.start_date
     )
     db.add(product)
 
@@ -128,6 +129,21 @@ def update_product(
         raise EntityNotFoundException("Product", product_id)
 
     data = payload.model_dump(exclude_unset=True)
+    required_fields = {"name", "category", "active_ingredients", "skin_concerns",
+                       "usage_instructions", "frequency_per_week", "time_of_use",
+                       "status", "in_routine", "in_experiment", "tags"}
+    if any(key in data and data[key] is None for key in required_fields):
+        raise DermaireException(message="Product fields cannot be null.", error_code="PRODUCT_INVALID_UPDATE", status_code=422)
+    if "name" in data:
+        existing = db.query(Product).filter(
+            Product.user_id == current_user.id,
+            Product.id != product.id,
+            Product.name.ilike(data["name"])
+        ).first()
+        if existing:
+            raise DermaireException(message="A product with this name already exists.", error_code="PRODUCT_DUPLICATE_NAME", status_code=409)
+    if product.in_experiment and data.get("status") == "archived":
+        raise DermaireException(message="Finish the experiment before archiving this product.", error_code="PRODUCT_IN_ACTIVE_EXPERIMENT", status_code=409)
     for key, value in data.items():
         setattr(product, key, value)
 

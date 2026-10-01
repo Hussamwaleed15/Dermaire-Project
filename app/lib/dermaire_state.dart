@@ -5,19 +5,6 @@ import 'products/product_repository.dart';
 import 'products/products_controller.dart';
 import 'services/api_service.dart';
 
-class Product {
-  const Product(
-    this.name,
-    this.subtitle,
-    this.icon, {
-    this.inExperiment = false,
-  });
-  final String name;
-  final String subtitle;
-  final String icon;
-  final bool inExperiment;
-}
-
 class JournalEntry {
   const JournalEntry(this.date, this.time, this.summary);
   final String date;
@@ -51,7 +38,6 @@ class DermaireState extends ChangeNotifier {
   final List<String> redemptionHistory = [];
   String userName = 'Skin Lab User';
   String userEmail = '';
-  final List<Product> products = [];
   final List<JournalEntry> journal = [];
 
   Future<void> loadPreferences() async {
@@ -120,7 +106,6 @@ class DermaireState extends ChangeNotifier {
     redemptionHistory.clear();
     userName = 'Skin Lab User';
     userEmail = '';
-    products.clear();
     journal.clear();
     productController.clear();
     notifyListeners();
@@ -164,12 +149,6 @@ class DermaireState extends ChangeNotifier {
   void earnToken([String? reason]) {
     tokens++;
     notifyListeners();
-  }
-
-  void addProduct(Product product) {
-    if (products.any((item) => item.name == product.name)) return;
-    products.add(product);
-    earnToken();
   }
 
   void addJournalEntry() {

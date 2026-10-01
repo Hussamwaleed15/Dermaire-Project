@@ -136,6 +136,39 @@ class Product {
     'updatedAt': updatedAt.toIso8601String(),
   };
 
+  static const _apiKeys = {
+    'productType': 'product_type',
+    'activeIngredients': 'active_ingredients',
+    'skinConcerns': 'skin_concerns',
+    'usageInstructions': 'usage_instructions',
+    'frequencyPerWeek': 'frequency_per_week',
+    'timeOfUse': 'time_of_use',
+    'startDate': 'start_date',
+    'endDate': 'end_date',
+    'imagePath': 'image_url',
+    'inRoutine': 'in_routine',
+    'inExperiment': 'in_experiment',
+    'createdAt': 'created_at',
+    'updatedAt': 'updated_at',
+  };
+
+  factory Product.fromApi(Map<String, Object?> json) => Product.fromJson({
+    for (final entry in json.entries)
+      (_apiKeys.entries
+                  .where((key) => key.value == entry.key)
+                  .firstOrNull
+                  ?.key ??
+              entry.key):
+          entry.value,
+  });
+
+  Map<String, dynamic> toApi({bool create = false}) => {
+    for (final entry in toJson().entries)
+      if (!['id', 'createdAt', 'updatedAt', 'imagePath'].contains(entry.key) &&
+          !(create && ['status', 'rating', 'endDate'].contains(entry.key)))
+        (_apiKeys[entry.key] ?? entry.key): entry.value,
+  };
+
   factory Product.fromJson(Map<String, Object?> json) {
     T enumValue<T extends Enum>(List<T> values, String? name, T fallback) =>
         values.where((value) => value.name == name).firstOrNull ?? fallback;

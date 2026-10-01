@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../dermaire_state.dart' hide Product;
+import '../dermaire_state.dart';
 import '../dermaire_theme.dart';
 import '../dermaire_widgets.dart';
 import 'product.dart';
@@ -62,11 +62,24 @@ class ProductsFeatureTab extends StatelessWidget {
                   ),
                 ),
               ),
+              if (controller.errorMessage != null && controller.all.isNotEmpty)
+                SliverToBoxAdapter(
+                  child: Column(
+                    children: [
+                      Text(controller.errorMessage!),
+                      TextButton(
+                        onPressed: controller.load,
+                        child: const Text('Retry refresh'),
+                      ),
+                    ],
+                  ),
+                ),
               if (controller.isLoading)
                 const SliverFillRemaining(
                   child: Center(child: CircularProgressIndicator()),
                 )
-              else if (controller.errorMessage != null)
+              else if (controller.errorMessage != null &&
+                  controller.all.isEmpty)
                 SliverFillRemaining(
                   child: _ErrorState(
                     message: controller.errorMessage!,
@@ -869,7 +882,6 @@ class ProductInteractionScreen extends StatelessWidget {
     if (!context.mounted) return;
     showDermaireSnack(context, result.message);
     if (result.success) {
-      state.earnToken();
       Navigator.of(context).popUntil((route) => route.isFirst);
       state.selectTab(2);
     }
@@ -1045,9 +1057,10 @@ class ProductFeatureDetailScreen extends StatelessWidget {
           ? "You're changing your experiment"
           : 'Delete this product?',
       product.inExperiment
-          ? 'Deleting the tested product ends the active experiment and affects result validity.'
-          : 'This permanently removes the product from this device.',
-      confirm: product.inExperiment ? 'End experiment & delete' : 'Delete',
+          ? 'Finish the active experiment before deleting this product.'
+          : 'This permanently removes the product from your account.',
+      confirm: 'Delete',
+      enabled: !product.inExperiment,
     );
     if (confirmed && context.mounted) {
       final result = await state.productController.delete(

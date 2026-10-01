@@ -17,6 +17,8 @@ class ProductsController extends ChangeNotifier {
   final ProductRepository _repository;
 
   List<Product> _products = [];
+  int _generation = 0;
+  bool isStale = false;
   bool isLoading = true;
   bool isSaving = false;
   String? errorMessage;
@@ -69,6 +71,9 @@ class ProductsController extends ChangeNotifier {
   }
 
   void clear() {
+    _generation++;
+    isLoading = true;
+    isStale = false;
     _products = [];
     query = '';
     categoryFilter = null;
@@ -78,15 +83,23 @@ class ProductsController extends ChangeNotifier {
   }
 
   Future<void> load() async {
+    if (isSaving) return;
+    final generation = ++_generation;
     isLoading = true;
     errorMessage = null;
     notifyListeners();
     try {
-      _products = await _repository.fetchProducts();
+      final products = await _repository.fetchProducts();
+      if (generation != _generation) return;
+      _products = products;
+      isStale = false;
     } on Object {
-      errorMessage = 'We couldn’t load your products. Please try again.';
+      if (generation != _generation) return;
+      isStale = true;
+      errorMessage =
+          'Could not refresh products. Displayed data may be stale. Connect and retry.';
     } finally {
-      isLoading = false;
+      if (generation == _generation) isLoading = false;
       notifyListeners();
     }
   }
@@ -133,7 +146,10 @@ class ProductsController extends ChangeNotifier {
         'This product is already in your routine.',
       );
     }
-    return _commit([..._products, product], 'Product added to your routine.');
+    return _commit(() async {
+      final saved = await _repository.create(product);
+      return [..._products, saved];
+    }, 'Product added to your routine.');
   }
 
   Future<ProductOperationResult> update(Product product) async {
@@ -146,10 +162,12 @@ class ProductsController extends ChangeNotifier {
         'This product is already in your routine.',
       );
     }
-    return _commit(
-      _products.map((item) => item.id == product.id ? product : item).toList(),
-      'Product updated.',
-    );
+    return _commit(() async {
+      final saved = await _repository.update(product);
+      return _products
+          .map((item) => item.id == product.id ? saved : item)
+          .toList();
+    }, 'Product updated.');
   }
 
   Future<ProductOperationResult> archive(String id) async {
@@ -195,17 +213,15 @@ class ProductsController extends ChangeNotifier {
     if (product == null) {
       return const ProductOperationResult.failure('Product not found.');
     }
-    if (product.inExperiment && !endExperiment) {
+    if (product.inExperiment) {
       return const ProductOperationResult.failure(
         'This product is used in an active experiment.',
       );
     }
-    return _commit(
-      _products.where((item) => item.id != id).toList(),
-      product.inExperiment
-          ? 'Experiment ended and product removed.'
-          : 'Product removed.',
-    );
+    return _commit(() async {
+      await _repository.delete(id);
+      return _products.where((item) => item.id != id).toList();
+    }, 'Product removed.');
   }
 
   Future<ProductOperationResult> setRoutine(String id, bool value) async {
@@ -238,23 +254,40 @@ class ProductsController extends ChangeNotifier {
   }
 
   Future<ProductOperationResult> _commit(
-    List<Product> next,
+    Future<List<Product>> Function() operation,
     String success,
   ) async {
+    if (isStale || isLoading) {
+      return const ProductOperationResult.failure(
+        'Refresh products online before making changes.',
+      );
+    }
     if (isSaving) {
       return const ProductOperationResult.failure(
         'Please wait for the current change to finish.',
       );
     }
+    final generation = _generation;
     isSaving = true;
     errorMessage = null;
     notifyListeners();
     try {
-      await _repository.saveProducts(next);
+      final next = await operation();
+      if (generation != _generation) {
+        return const ProductOperationResult.failure(
+          'Session or product data changed. Refresh and retry.',
+        );
+      }
       _products = next;
       return ProductOperationResult.success(success);
     } on Object {
-      errorMessage = 'We couldn’t save that change. Please try again.';
+      if (generation != _generation) {
+        return const ProductOperationResult.failure(
+          'Session changed. Please sign in again.',
+        );
+      }
+      isStale = true;
+      errorMessage = 'Change not confirmed. Refresh online before retrying.';
       return ProductOperationResult.failure(errorMessage!);
     } finally {
       isSaving = false;
