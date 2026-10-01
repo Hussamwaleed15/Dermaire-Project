@@ -35,41 +35,35 @@ class ClinicalAuditEvent {
 }
 
 class DoctorWorkspaceController extends ChangeNotifier {
-  DoctorWorkspaceController(this.session);
+  DoctorWorkspaceController(
+    this.session, {
+    List<Map<String, dynamic>> patientData = const [],
+  }) {
+    for (final data in patientData) {
+      final patient = DoctorPatient(
+        id: data['patient_id'] as String,
+        name: data['full_name'] as String,
+        lastCheckIn: data['last_check_in'] as String,
+        experiment: data['active_experiment'] as String,
+        priority: PatientPriority.values.firstWhere(
+          (value) => value.name == data['priority'],
+        ),
+        activeProducts: data['active_products_count'] as int,
+      );
+      patients.add(patient);
+      for (final note in (data['notes'] as List<dynamic>)) {
+        notes.putIfAbsent(patient.id, () => []).add(note['content'] as String);
+      }
+    }
+  }
   final AccessSession session;
   bool loading = false;
+  bool _disposed = false;
   String query = '';
   PatientPriority? filter;
   final notes = <String, List<String>>{};
   final audit = <String, List<ClinicalAuditEvent>>{};
-  final patients = const [
-    DoctorPatient(
-      id: 'patient-salma',
-      name: 'Salma Ahmed',
-      lastCheckIn: 'Today, 8:40 AM',
-      experiment: 'Product X · Day 14 of 28',
-      priority: PatientPriority.review,
-      activeProducts: 3,
-      followUp: 'Apr 29',
-    ),
-    DoctorPatient(
-      id: 'patient-nour',
-      name: 'Nour Hassan',
-      lastCheckIn: 'Yesterday',
-      experiment: 'Baseline · 3 of 5 check-ins',
-      priority: PatientPriority.routine,
-      activeProducts: 2,
-    ),
-    DoctorPatient(
-      id: 'patient-mariam',
-      name: 'Mariam Ali',
-      lastCheckIn: '3 days ago',
-      experiment: 'Experiment paused',
-      priority: PatientPriority.urgent,
-      activeProducts: 4,
-      followUp: 'Overdue',
-    ),
-  ];
+  final patients = <DoctorPatient>[];
 
   List<DoctorPatient> get visible => patients.where((patient) {
     if (!AccessControl.allows(
@@ -101,8 +95,9 @@ class DoctorWorkspaceController extends ChangeNotifier {
     return null;
   }
 
-  bool addNote(DoctorPatient patient, String value) {
-    if (patient.fileClosed ||
+  Future<bool> addNote(DoctorPatient patient, String value) async {
+    if (loading ||
+        patient.fileClosed ||
         validateNote(value) != null ||
         !AccessControl.allows(
           session,
@@ -111,17 +106,34 @@ class DoctorWorkspaceController extends ChangeNotifier {
         )) {
       return false;
     }
-    notes.putIfAbsent(patient.id, () => []).add(value.trim());
-    audit
-        .putIfAbsent(patient.id, () => [])
-        .add(
-          ClinicalAuditEvent(
-            'Clinical note added by ${session.userId}',
-            DateTime.now(),
-          ),
-        );
+    loading = true;
     notifyListeners();
-    return true;
+    try {
+      final saved = await ApiService.instance.addClinicalNote(
+        patientId: patient.id,
+        content: value.trim(),
+      );
+      if (_disposed) return false;
+      final timestamp = DateTime.parse(saved['created_at'] as String);
+      notes.putIfAbsent(patient.id, () => []).add(saved['content'] as String);
+      audit
+          .putIfAbsent(patient.id, () => [])
+          .add(
+            ClinicalAuditEvent('Clinical note confirmed by server', timestamp),
+          );
+      return true;
+    } catch (_) {
+      return false;
+    } finally {
+      loading = false;
+      if (!_disposed) notifyListeners();
+    }
+  }
+
+  @override
+  void dispose() {
+    _disposed = true;
+    super.dispose();
   }
 }
 
@@ -135,13 +147,13 @@ class DoctorSignInScreen extends StatefulWidget {
 class _DoctorSignInScreenState extends State<DoctorSignInScreen> {
   final formKey = GlobalKey<FormState>();
   final email = TextEditingController();
-  final license = TextEditingController();
+  final password = TextEditingController();
   bool loading = false;
 
   @override
   void dispose() {
     email.dispose();
-    license.dispose();
+    password.dispose();
     super.dispose();
   }
 
@@ -149,55 +161,64 @@ class _DoctorSignInScreenState extends State<DoctorSignInScreen> {
     if (!formKey.currentState!.validate() || loading) return;
     setState(() => loading = true);
 
-    AccessSession session;
     try {
       final res = await ApiService.instance.login(
         email: email.text.trim(),
-        password: license.text.trim(), // use license as password for clinician login
+        password: password.text,
+        requiredRole: 'doctor',
       );
-      final userId = res['user']?['id']?.toString() ?? 'doctor-demo';
-      
-      // Fetch real assigned patients from Azure backend
-      Set<String> patientIds = {'patient-salma', 'patient-nour', 'patient-mariam'};
+      List<Map<String, dynamic>> patientsData;
       try {
-        final patientsData = await ApiService.instance.getDoctorPatients();
-        if (patientsData.isNotEmpty) {
-          patientIds = patientsData.map((p) => p['id']?.toString() ?? '').toSet();
-        }
-      } catch (_) {}
-
-      session = AccessSession(
-        userId: userId,
-        role: UserRole.doctor,
-        authorizedPatientIds: patientIds,
-        exportConsentPatientIds: patientIds,
+        patientsData = await ApiService.instance.getDoctorPatients();
+        // Validate real server records before opening the workspace.
+        DoctorWorkspaceController(
+          AccessSession(
+            userId: res['user_id'] as String,
+            role: UserRole.doctor,
+          ),
+          patientData: patientsData,
+        ).dispose();
+      } catch (_) {
+        await ApiService.instance.logout();
+        rethrow;
+      }
+      final session = AccessSession(
+        userId: res['user_id'] as String,
+        role: UserRole.values.byName(res['role'] as String),
+        authorizedPatientIds: patientsData
+            .map((p) => p['patient_id'] as String)
+            .toSet(),
+        expiresAt: DateTime.now().add(
+          Duration(seconds: res['expires_in'] as int),
+        ),
+      );
+      if (!mounted) return;
+      await openPage(
+        context,
+        DoctorPortalScreen(session: session, patientData: patientsData),
       );
     } catch (_) {
-      // Offline fallback: use mock session for seamless offline testing
-      session = const AccessSession(
-        userId: 'doctor-demo',
-        role: UserRole.doctor,
-        authorizedPatientIds: {'patient-salma', 'patient-nour', 'patient-mariam'},
-        exportConsentPatientIds: {'patient-salma'},
-      );
+      if (mounted) {
+        showDermaireSnack(
+          context,
+          'Doctor sign-in failed. Use a provisioned doctor account and try again.',
+        );
+      }
+    } finally {
+      if (mounted) setState(() => loading = false);
     }
-
-    if (!mounted) return;
-    setState(() => loading = false);
-    await openPage(context, DoctorPortalScreen(session: session));
   }
 
   @override
   Widget build(BuildContext context) => DermairePage(
     eyebrow: 'Clinician workspace',
     title: 'Doctor sign in',
-    subtitle:
-        'Demo environment — no real clinical records or credentials are used.',
+    subtitle: 'Sign in with your verified, provisioned clinician account.',
     children: [
       const Notice(
         icon: '🔒',
         text:
-            'Production access requires verified identity, MFA, server-side authorization and an audit service.',
+            'Clinician accounts are provisioned by trusted staff after identity verification.',
         color: DermaireColors.unknownBackground,
       ),
       Form(
@@ -205,6 +226,7 @@ class _DoctorSignInScreenState extends State<DoctorSignInScreen> {
         child: Column(
           children: [
             TextFormField(
+              key: const Key('doctorEmail'),
               controller: email,
               keyboardType: TextInputType.emailAddress,
               decoration: const InputDecoration(
@@ -216,11 +238,12 @@ class _DoctorSignInScreenState extends State<DoctorSignInScreen> {
             ),
             const SizedBox(height: 12),
             TextFormField(
-              controller: license,
-              decoration: const InputDecoration(labelText: 'License ID'),
-              validator: (value) => (value?.trim().length ?? 0) >= 4
-                  ? null
-                  : 'Enter a valid license ID',
+              key: const Key('doctorPassword'),
+              controller: password,
+              obscureText: true,
+              decoration: const InputDecoration(labelText: 'Password'),
+              validator: (value) =>
+                  (value ?? '').isNotEmpty ? null : 'Enter your password',
             ),
           ],
         ),
@@ -230,15 +253,20 @@ class _DoctorSignInScreenState extends State<DoctorSignInScreen> {
       FilledButton(
         key: const Key('doctorSignIn'),
         onPressed: loading ? null : submit,
-        child: const Text('Open clinician demo'),
+        child: Text(loading ? 'Please wait...' : 'Sign in'),
       ),
     ],
   );
 }
 
 class DoctorPortalScreen extends StatefulWidget {
-  const DoctorPortalScreen({super.key, required this.session});
+  const DoctorPortalScreen({
+    super.key,
+    required this.session,
+    this.patientData = const [],
+  });
   final AccessSession session;
+  final List<Map<String, dynamic>> patientData;
 
   @override
   State<DoctorPortalScreen> createState() => _DoctorPortalScreenState();
@@ -247,6 +275,7 @@ class DoctorPortalScreen extends StatefulWidget {
 class _DoctorPortalScreenState extends State<DoctorPortalScreen> {
   late final DoctorWorkspaceController controller = DoctorWorkspaceController(
     widget.session,
+    patientData: widget.patientData,
   );
 
   @override
@@ -269,12 +298,15 @@ class _DoctorPortalScreenState extends State<DoctorPortalScreen> {
       animation: controller,
       builder: (context, _) => DermairePage(
         showBack: false,
-        eyebrow: 'Doctor dashboard · Demo',
+        eyebrow: 'Doctor dashboard',
         title: 'Patient reviews',
         actions: [
           IconButton(
             tooltip: 'Sign out',
-            onPressed: () => Navigator.pop(context),
+            onPressed: () async {
+              await ApiService.instance.logout();
+              if (context.mounted) Navigator.pop(context);
+            },
             icon: const Icon(Icons.logout_rounded),
           ),
         ],
@@ -282,7 +314,7 @@ class _DoctorPortalScreenState extends State<DoctorPortalScreen> {
           const Notice(
             icon: 'ⓘ',
             text:
-                'Demonstration data only. Recommendations require clinician review and patient consent.',
+                'Only patients with active, consented server access are listed.',
           ),
           SearchBar(
             hintText: 'Search authorized patients',
@@ -398,34 +430,20 @@ class _PatientDetailScreenState extends State<PatientDetailScreen> {
   Widget build(BuildContext context) => AnimatedBuilder(
     animation: widget.controller,
     builder: (context, _) => DermairePage(
-      eyebrow: 'Authorized patient · Demo',
+      eyebrow: 'Authorized patient',
       title: widget.patient.name,
       subtitle:
           '${widget.patient.experiment} · Last activity ${widget.patient.lastCheckIn}',
       children: [
-        const Row(
-          children: [
-            Expanded(child: MetricTile('−8%', 'Redness')),
-            SizedBox(width: 10),
-            Expanded(child: MetricTile('−12%', 'Texture')),
-          ],
-        ),
-        const SizedBox(height: 12),
-        _clinicalSection(
-          'Baseline',
-          '5 comparable check-ins · established Apr 8',
-        ),
+        _clinicalSection('Experiment', widget.patient.experiment),
         _clinicalSection(
           'Products',
-          '${widget.patient.activeProducts} active products · interaction status reviewed',
+          '${widget.patient.activeProducts} active products',
         ),
+        _clinicalSection('Last check-in', widget.patient.lastCheckIn),
         _clinicalSection(
-          'Journal',
-          'Last entry today · hydration good · no severe symptom recorded',
-        ),
-        _clinicalSection(
-          'Report',
-          'Latest trend report available for clinician review',
+          'Clinical notes',
+          (widget.controller.notes[widget.patient.id] ?? []).join('\n'),
         ),
         TextField(
           key: const Key('clinicalNote'),
@@ -441,19 +459,27 @@ class _PatientDetailScreenState extends State<PatientDetailScreen> {
         ),
         FilledButton(
           key: const Key('addClinicalNote'),
-          onPressed: () {
-            final error = widget.controller.validateNote(note.text);
-            setState(() => noteError = error);
-            if (error != null) return;
-            final saved = widget.controller.addNote(widget.patient, note.text);
-            if (saved) {
-              note.clear();
-              showDermaireSnack(
-                context,
-                'Clinical note added to the audit history.',
-              );
-            }
-          },
+          onPressed: widget.controller.loading
+              ? null
+              : () async {
+                  final error = widget.controller.validateNote(note.text);
+                  setState(() => noteError = error);
+                  if (error != null) return;
+                  final saved = await widget.controller.addNote(
+                    widget.patient,
+                    note.text,
+                  );
+                  if (!context.mounted) return;
+                  if (saved) {
+                    note.clear();
+                    showDermaireSnack(context, 'Clinical note saved.');
+                  } else {
+                    showDermaireSnack(
+                      context,
+                      'Clinical note was not saved. Please retry.',
+                    );
+                  }
+                },
           child: const Text('Add clinical note'),
         ),
         const SizedBox(height: 8),
@@ -466,7 +492,10 @@ class _PatientDetailScreenState extends State<PatientDetailScreen> {
           label: const Text('Message patient'),
         ),
         const SizedBox(height: 18),
-        Text('Audit history', style: Theme.of(context).textTheme.titleLarge),
+        Text(
+          'Confirmed activity',
+          style: Theme.of(context).textTheme.titleLarge,
+        ),
         const SizedBox(height: 8),
         ...(widget.controller.audit[widget.patient.id] ??
                 const <ClinicalAuditEvent>[])

@@ -76,6 +76,7 @@ class ApiService {
   Future<Map<String, dynamic>> login({
     required String email,
     required String password,
+    String? requiredRole,
   }) async {
     final res = await http.post(
       Uri.parse('$baseUrl/auth/login'),
@@ -89,6 +90,14 @@ class ApiService {
     }
     final data = jsonDecode(res.body) as Map<String, dynamic>;
     if (res.statusCode >= 200 && res.statusCode < 300) {
+      if (requiredRole != null &&
+          (data['role'] != requiredRole ||
+              data['user_id'] is! String ||
+              (data['user_id'] as String).trim().isEmpty ||
+              data['expires_in'] is! int ||
+              (data['expires_in'] as int) <= 0)) {
+        throw ApiException('This account is not authorized for the clinician workspace');
+      }
       await _persistAuth(data);
       return data;
     }
@@ -437,7 +446,7 @@ class ApiService {
       final list = jsonDecode(res.body) as List<dynamic>;
       return list.cast<Map<String, dynamic>>();
     }
-    return [];
+    throw ApiException('Could not load authorized patients');
   }
 
   Future<Map<String, dynamic>> addClinicalNote({
@@ -455,7 +464,16 @@ class ApiService {
         'follow_up': followUp,
       }),
     );
-    return jsonDecode(res.body) as Map<String, dynamic>;
+    if (res.statusCode != 201) {
+      throw ApiException('Clinical note could not be saved');
+    }
+    final data = jsonDecode(res.body) as Map<String, dynamic>;
+    if (data['id'] is! String || (data['id'] as String).isEmpty ||
+        data['patient_id'] != patientId || data['content'] is! String ||
+        data['created_at'] is! String || DateTime.tryParse(data['created_at'] as String) == null) {
+      throw ApiException('Invalid clinical note confirmation');
+    }
+    return data;
   }
 
   Future<Map<String, dynamic>> redeemReward(String rewardId) async {

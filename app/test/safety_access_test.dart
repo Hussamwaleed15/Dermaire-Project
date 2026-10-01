@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
 import 'package:dermaire_app/access_control.dart';
 import 'package:dermaire_app/chatbot.dart';
 import 'package:dermaire_app/doctor_portal.dart';
@@ -57,41 +60,63 @@ void main() {
     expect(AccessControl.allows(patient, Permission.addClinicalNote), isFalse);
   });
 
-  test('clinical notes require authorization, content and an open record', () {
-    const session = AccessSession(
-      userId: 'doctor-1',
-      role: UserRole.doctor,
-      authorizedPatientIds: {'patient-1'},
-    );
-    final controller = DoctorWorkspaceController(session);
-    const allowed = DoctorPatient(
-      id: 'patient-1',
-      name: 'Demo Patient',
-      lastCheckIn: 'Today',
-      experiment: 'Baseline',
-      priority: PatientPriority.routine,
-      activeProducts: 1,
-    );
-    const closed = DoctorPatient(
-      id: 'patient-1',
-      name: 'Closed Demo Patient',
-      lastCheckIn: 'Today',
-      experiment: 'Complete',
-      priority: PatientPriority.routine,
-      activeProducts: 1,
-      fileClosed: true,
-    );
-    expect(controller.addNote(allowed, 'short'), isFalse);
-    expect(
-      controller.addNote(allowed, 'Reviewed trend and requested follow-up.'),
-      isTrue,
-    );
-    expect(controller.audit['patient-1'], hasLength(1));
-    expect(
-      controller.addNote(closed, 'This should never change a closed record.'),
-      isFalse,
-    );
-  });
+  test(
+    'clinical notes require authorization, content and an open record',
+    () async {
+      const session = AccessSession(
+        userId: 'doctor-1',
+        role: UserRole.doctor,
+        authorizedPatientIds: {'patient-1'},
+      );
+      final controller = DoctorWorkspaceController(session);
+      const allowed = DoctorPatient(
+        id: 'patient-1',
+        name: 'Demo Patient',
+        lastCheckIn: 'Today',
+        experiment: 'Baseline',
+        priority: PatientPriority.routine,
+        activeProducts: 1,
+      );
+      const closed = DoctorPatient(
+        id: 'patient-1',
+        name: 'Closed Demo Patient',
+        lastCheckIn: 'Today',
+        experiment: 'Complete',
+        priority: PatientPriority.routine,
+        activeProducts: 1,
+        fileClosed: true,
+      );
+      expect(await controller.addNote(allowed, 'short'), isFalse);
+      expect(
+        await http.runWithClient(
+          () => controller.addNote(
+            allowed,
+            'Reviewed trend and requested follow-up.',
+          ),
+          () => MockClient(
+            (_) async => http.Response(
+              jsonEncode({
+                'id': 'note-1',
+                'patient_id': 'patient-1',
+                'content': 'Reviewed trend and requested follow-up.',
+                'created_at': '2026-10-01T10:00:00Z',
+              }),
+              201,
+            ),
+          ),
+        ),
+        isTrue,
+      );
+      expect(controller.audit['patient-1'], hasLength(1));
+      expect(
+        await controller.addNote(
+          closed,
+          'This should never change a closed record.',
+        ),
+        isFalse,
+      );
+    },
+  );
 
   test('chatbot escalates red flags and avoids diagnosis language', () {
     final emergency = SkinAssistantSafety.reply(

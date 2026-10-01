@@ -56,14 +56,15 @@ def claim_patient_access(
     try:
         decoded = decode_token(payload.access_token)
         patient_id = decoded.get("patient_id")
-        if not patient_id:
+        if decoded.get("type") != "doctor_qr_access" or not patient_id:
             raise DermaireException("Invalid QR access token payload.")
     except Exception:
         raise DermaireException("QR access code has expired or is invalid.")
 
     access_record = db.query(DoctorPatientAccess).filter(
-        DoctorPatientAccess.access_token == payload.access_token
-    ).first()
+        DoctorPatientAccess.access_token == payload.access_token,
+        DoctorPatientAccess.patient_id == patient_id
+    ).with_for_update().first()
     if not access_record or access_record.status == "revoked":
         raise DermaireException("This access code is no longer valid or has been revoked by the patient.")
 
@@ -71,6 +72,9 @@ def claim_patient_access(
         access_record.status = "expired"
         db.commit()
         raise DermaireException("This clinical access code has expired.")
+
+    if access_record.doctor_id and access_record.doctor_id != current_doctor.id:
+        raise PermissionDeniedException("This access code is already assigned to another clinician.")
 
     access_record.doctor_id = current_doctor.id
     access_record.status = "active"
@@ -112,7 +116,8 @@ def list_authorized_patients(
     # Retrieve all active links for this doctor
     access_links = db.query(DoctorPatientAccess).filter(
         DoctorPatientAccess.doctor_id == current_doctor.id,
-        DoctorPatientAccess.status == "active"
+        DoctorPatientAccess.status == "active",
+        DoctorPatientAccess.expires_at > datetime.now(timezone.utc)
     ).all()
 
     patient_ids = [link.patient_id for link in access_links]
@@ -157,7 +162,8 @@ def add_clinical_note(
     authorized = db.query(DoctorPatientAccess).filter(
         DoctorPatientAccess.doctor_id == current_doctor.id,
         DoctorPatientAccess.patient_id == patient_id,
-        DoctorPatientAccess.status == "active"
+        DoctorPatientAccess.status == "active",
+        DoctorPatientAccess.expires_at > datetime.now(timezone.utc)
     ).first()
     if not authorized:
         raise PermissionDeniedException("You are not authorized to write notes for this patient.")
