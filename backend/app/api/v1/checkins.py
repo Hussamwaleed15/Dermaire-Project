@@ -6,6 +6,9 @@ from app.core.database import get_db
 from app.api.deps import get_current_user, record_audit
 from app.models import User, CheckIn, Experiment
 from app.schemas import CheckInResponse
+from app.core.exceptions import DermaireException, EntityNotFoundException
+from app.services.baseline import baseline_snapshot
+import math
 from app.services.azure_blob import azure_blob_service
 from app.services.azure_vision import azure_vision_service
 
@@ -45,9 +48,9 @@ def get_checkins_history(
 @router.post("", response_model=CheckInResponse, status_code=status.HTTP_201_CREATED)
 async def submit_daily_checkin(
     time_of_day: str = Form("Morning"),
-    hydration_score: float = Form(75.0),
-    texture_score: float = Form(80.0),
-    redness_score: float = Form(20.0),
+    hydration_score: Optional[float] = Form(None),
+    texture_score: Optional[float] = Form(None),
+    redness_score: Optional[float] = Form(None),
     notes: Optional[str] = Form(None),
     experiment_id: Optional[str] = Form(None),
     photo: Optional[UploadFile] = File(None),
@@ -56,36 +59,42 @@ async def submit_daily_checkin(
 ):
     blob_name = None
     sas_url = None
-    ai_analysis = None
+    ai_analysis = {"measurement_source": "manual"}
+    exp = None
+    if experiment_id:
+        exp = db.query(Experiment).filter(Experiment.id == experiment_id,
+                                         Experiment.user_id == current_user.id).first()
+        if not exp:
+            raise EntityNotFoundException("Experiment", experiment_id)
+    has_photo = bool(photo and photo.filename)
+    if not has_photo and not all(v is not None and math.isfinite(v) and 0 <= v <= 100
+                               for v in (hydration_score, texture_score, redness_score)):
+        raise DermaireException("Provide three valid measurements or a photo.",
+                               error_code="MEASUREMENT_REQUIRED", status_code=422)
 
     if photo and photo.filename:
         photo_bytes = await photo.read()
-        # Upload to Azure Blob with SAS
-        blob_name, sas_url = azure_blob_service.upload_image(
-            file_bytes=photo_bytes,
-            original_filename=photo.filename,
-            content_type=photo.content_type or "image/jpeg",
-            owner_id=current_user.id
-        )
-        # Process visual features via Azure Vision
         ai_analysis = azure_vision_service.analyze_skin_image(photo_bytes)
-        # Override scores if vision generated real measurements
-        if "erythema_redness_score" in ai_analysis:
-            redness_score = ai_analysis["erythema_redness_score"]
-            texture_score = ai_analysis["surface_texture_score"]
-            hydration_score = ai_analysis["estimated_hydration_score"]
+        values = [ai_analysis.get(k) for k in ("estimated_hydration_score",
+                  "surface_texture_score", "erythema_redness_score")]
+        if ai_analysis.get("azure_vision_status") != "ANALYSIS_COMPLETE" or not all(
+                isinstance(v, (int, float)) and math.isfinite(v) and 0 <= v <= 100 for v in values):
+            raise DermaireException("Photo measurement unavailable. No check-in was saved.",
+                                   error_code="MEASUREMENT_UNAVAILABLE", status_code=503)
+        hydration_score, texture_score, redness_score = values
+        ai_analysis["measurement_source"] = "image_proxy"
+        blob_name, sas_url = azure_blob_service.upload_image(
+            file_bytes=photo_bytes, original_filename=photo.filename,
+            content_type=photo.content_type or "image/jpeg", owner_id=current_user.id)
 
-    # Advance experiment if linked
-    if experiment_id:
-        exp = db.query(Experiment).filter(
-            Experiment.id == experiment_id,
-            Experiment.user_id == current_user.id
-        ).first()
-        if exp and exp.status == "active":
-            exp.current_day = min(exp.target_days, exp.current_day + 1)
-            # Recompute deltas
-            exp.redness_delta_percent = round((redness_score - 30.0) / 30.0 * 100.0, 1)
-            exp.texture_delta_percent = round((texture_score - 70.0) / 70.0 * 100.0, 1)
+    if exp and exp.status == "active":
+        exp.current_day = min(exp.target_days, exp.current_day + 1)
+        baseline = baseline_snapshot(db, current_user.id, before=exp.created_at)
+        for metric, score in (("redness", redness_score), ("texture", texture_score),
+                              ("hydration", hydration_score)):
+            reference = baseline["metrics"].get(metric, {}).get("mean")
+            delta = round((score - reference) / reference * 100, 1) if reference else None
+            setattr(exp, metric + "_delta_percent", delta)
 
     now = datetime.now(timezone.utc)
     checkin = CheckIn(

@@ -147,9 +147,9 @@ class ExperimentOut(BaseModel):
     current_day: int
     status: str
     primary_concern: str
-    redness_delta_percent: float
-    texture_delta_percent: float
-    hydration_delta_percent: float
+    redness_delta_percent: Optional[float] = None
+    texture_delta_percent: Optional[float] = None
+    hydration_delta_percent: Optional[float] = None
     start_date: datetime
     end_date: Optional[datetime] = None
     created_at: datetime
@@ -161,9 +161,9 @@ class ExperimentOut(BaseModel):
 class CheckInCreate(BaseModel):
     experiment_id: Optional[str] = None
     time_of_day: str = Field("Morning", pattern="^(Morning|Evening)$")
-    hydration_score: float = Field(75.0, ge=0.0, le=100.0)
-    texture_score: float = Field(80.0, ge=0.0, le=100.0)
-    redness_score: float = Field(20.0, ge=0.0, le=100.0)
+    hydration_score: float = Field(..., ge=0.0, le=100.0)
+    texture_score: float = Field(..., ge=0.0, le=100.0)
+    redness_score: float = Field(..., ge=0.0, le=100.0)
     notes: Optional[str] = Field(None, max_length=1500)
 
 class CheckInResponse(BaseModel):

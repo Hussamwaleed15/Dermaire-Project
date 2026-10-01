@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'baseline/baseline_controller.dart';
 import 'products/product_repository.dart';
 import 'products/products_controller.dart';
 import 'services/api_service.dart';
@@ -13,7 +14,9 @@ class JournalEntry {
 }
 
 class DermaireState extends ChangeNotifier {
-  DermaireState({ProductRepository? productRepository}) {
+  DermaireState({ProductRepository? productRepository, BaselineRepository? baselineRepository}) {
+    baseline = BaselineController(baselineRepository ?? RemoteBaselineRepository())
+      ..addListener(notifyListeners);
     ApiService.instance.addListener(clearAccountData);
     productController = ProductsController(
       productRepository ?? RemoteProductRepository(),
@@ -21,6 +24,7 @@ class DermaireState extends ChangeNotifier {
   }
 
   late final ProductsController productController;
+  late final BaselineController baseline;
   static const _darkModeKey = 'dermaire_dark_mode';
   static const _safetyAcceptedKey = 'dermaire_safety_accepted';
 
@@ -28,10 +32,10 @@ class DermaireState extends ChangeNotifier {
   bool safetyAccepted = false;
   int selectedTab = 0;
   int tokens = 0;
-  int baselineCheckIns = 0;
+  int? get baselineCheckIns => baseline.completedDays;
   int experimentDay = 1;
   bool experimentPaused = false;
-  bool todayCheckedIn = false;
+  bool get todayCheckedIn => baseline.todayCheckedIn;
   bool doctorLinkActive = false;
   String selectedGoal = 'Improve Skin Texture';
   final Set<String> skinConcerns = <String>{};
@@ -50,6 +54,7 @@ class DermaireState extends ChangeNotifier {
       notifyListeners();
       if (!ApiService.instance.isAuthenticated) return;
       await productController.load();
+      await baseline.refresh();
       safetyAccepted = preferences.getBool(_safetyAcceptedKey) ?? false;
       
       // Fetch live user profile from Azure
@@ -76,7 +81,6 @@ class DermaireState extends ChangeNotifier {
           final t = c['texture_score'] ?? 70;
           journal.add(JournalEntry(dateStr, timeStr, 'Hydration: $h · Redness: $r · Texture: $t'));
         }
-        baselineCheckIns = checkins.length.clamp(0, 5);
         tokens = checkins.length * 2;
       }
 
@@ -96,10 +100,9 @@ class DermaireState extends ChangeNotifier {
     safetyAccepted = false;
     selectedTab = 0;
     tokens = 0;
-    baselineCheckIns = 0;
+    baseline.clear();
     experimentDay = 1;
     experimentPaused = false;
-    todayCheckedIn = false;
     doctorLinkActive = false;
     selectedGoal = 'Improve Skin Texture';
     skinConcerns.clear();
@@ -163,17 +166,9 @@ class DermaireState extends ChangeNotifier {
     earnToken();
   }
 
-  /// Marks today as checked in locally. The actual measurement is submitted
-  /// to Azure separately (see CameraScreen._submitPhoto) — this only updates
-  /// the in-app state/reward tokens once that submission has succeeded, so
-  /// we never record two different sets of numbers for the same check-in.
-  void markTodayCheckedIn() {
-    if (!todayCheckedIn) {
-      todayCheckedIn = true;
-      baselineCheckIns = (baselineCheckIns + 1).clamp(0, 5);
-      earnToken();
-      notifyListeners();
-    }
+  // A confirmed write never increments baseline locally. Read its server projection.
+  Future<void> markTodayCheckedIn() async {
+    await baseline.refresh();
   }
 
   bool redeemReward() {
@@ -203,6 +198,9 @@ class DermaireState extends ChangeNotifier {
   @override
   void dispose() {
     ApiService.instance.removeListener(clearAccountData);
+    baseline
+      ..removeListener(notifyListeners)
+      ..dispose();
     productController
       ..removeListener(notifyListeners)
       ..dispose();

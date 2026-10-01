@@ -4,7 +4,8 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.exceptions import EntityNotFoundException, DermaireException
 from app.api.deps import get_current_user, record_audit
-from app.models import User, Experiment, Product
+from app.models import User, Experiment, Product, CheckIn
+from app.services.baseline import baseline_snapshot, confirmed_measurement
 from app.schemas import ExperimentCreate, ExperimentOut, ExperimentUpdate
 
 router = APIRouter(prefix="/experiments", tags=["Skin Experiments & Baselines"])
@@ -18,7 +19,22 @@ def get_current_experiment(
         Experiment.user_id == current_user.id,
         Experiment.status.in_(["active", "paused", "baseline"])
     ).order_by(Experiment.created_at.desc()).first()
-    return experiment
+    return experiment_projection(db, current_user.id, experiment)
+
+
+def experiment_projection(db, user_id, experiment):
+    if experiment is None:
+        return None
+    result = ExperimentOut.model_validate(experiment).model_dump()
+    baseline = baseline_snapshot(db, user_id, before=experiment.created_at)
+    latest = db.query(CheckIn).filter(CheckIn.experiment_id == experiment.id,
+        CheckIn.user_id == user_id).order_by(CheckIn.created_at.desc(), CheckIn.id.desc()).first()
+    confirmed = latest and confirmed_measurement(latest)
+    for metric in ("hydration", "redness", "texture"):
+        reference = baseline["metrics"].get(metric, {}).get("mean")
+        score = getattr(latest, metric + "_score") if confirmed else None
+        result[metric + "_delta_percent"] = round((score - reference) / reference * 100, 1) if reference and score is not None else None
+    return result
 
 @router.post("", response_model=ExperimentOut, status_code=status.HTTP_201_CREATED)
 def start_experiment(
@@ -53,16 +69,16 @@ def start_experiment(
         current_day=1,
         status="active",
         primary_concern=payload.primary_concern,
-        redness_delta_percent=0.0,
-        texture_delta_percent=0.0,
-        hydration_delta_percent=0.0
+        redness_delta_percent=None,
+        texture_delta_percent=None,
+        hydration_delta_percent=None
     )
     db.add(experiment)
     db.commit()
     db.refresh(experiment)
 
     record_audit(db, current_user.id, "EXPERIMENT_STARTED", "experiments", {"experiment_id": experiment.id})
-    return experiment
+    return experiment_projection(db, current_user.id, experiment)
 
 @router.patch("/{experiment_id}/toggle-pause", response_model=ExperimentOut)
 def toggle_pause_experiment(
@@ -85,4 +101,4 @@ def toggle_pause_experiment(
     db.commit()
     db.refresh(experiment)
     record_audit(db, current_user.id, "EXPERIMENT_PAUSE_TOGGLED", "experiments", {"new_status": experiment.status})
-    return experiment
+    return experiment_projection(db, current_user.id, experiment)

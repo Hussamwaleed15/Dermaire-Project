@@ -34,7 +34,7 @@ class User(Base):
 
     # Gamification
     tokens_balance = Column(Integer, default=6)
-    baseline_checkins_count = Column(Integer, default=2)
+    baseline_checkins_count = Column(Integer, default=0) # Legacy storage; not authoritative
 
     # Password reset (forgot-password flow)
     reset_token_hash = Column(String(255), nullable=True, index=True)
@@ -86,9 +86,9 @@ class Experiment(Base):
     current_day = Column(Integer, default=1)
     status = Column(String(50), default="active") # baseline, active, paused, completed
     primary_concern = Column(String(100), default="texture")
-    redness_delta_percent = Column(Float, default=-8.0)
-    texture_delta_percent = Column(Float, default=-12.0)
-    hydration_delta_percent = Column(Float, default=15.0)
+    redness_delta_percent = Column(Float, nullable=True)
+    texture_delta_percent = Column(Float, nullable=True)
+    hydration_delta_percent = Column(Float, nullable=True)
     start_date = Column(DateTime, default=utc_now)
     end_date = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=utc_now)

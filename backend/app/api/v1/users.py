@@ -10,8 +10,11 @@ from app.schemas import UserOut, SkinProfileUpdate
 router = APIRouter(prefix="/users", tags=["User Profile & Skin Setup"])
 
 @router.get("/me", response_model=UserOut)
-def get_current_user_profile(current_user: User = Depends(get_current_user)):
-    return current_user
+def get_current_user_profile(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    from app.services.baseline import baseline_snapshot
+    result = UserOut.model_validate(current_user).model_dump()
+    result["baseline_checkins_count"] = baseline_snapshot(db, current_user.id)["completed_days"]
+    return result
 
 @router.patch("/skin-profile", response_model=UserOut)
 def update_skin_profile(
@@ -34,7 +37,7 @@ def update_skin_profile(
         "selected_goal": current_user.selected_goal,
         "concerns": current_user.skin_concerns
     })
-    return current_user
+    return get_current_user_profile(current_user, db)
 
 
 @router.delete("/me", status_code=204)

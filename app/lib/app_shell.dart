@@ -147,9 +147,9 @@ class HomeTab extends StatelessWidget {
       const SizedBox(height: 16),
       const Row(
         children: [
-          Expanded(child: MetricTile('↓ 8%', 'Redness vs baseline')),
+          Expanded(child: MetricTile('Unavailable', 'Redness vs baseline')),
           SizedBox(width: 10),
-          Expanded(child: MetricTile('↓ 12%', 'Texture vs baseline')),
+          Expanded(child: MetricTile('Unavailable', 'Texture vs baseline')),
         ],
       ),
       const SizedBox(height: 14),
@@ -172,7 +172,7 @@ class HomeTab extends StatelessWidget {
                       Text(
                         state.todayCheckedIn
                             ? 'Completed'
-                            : 'Not yet completed',
+                            : state.baseline.available ? 'Not yet completed' : 'Progress unconfirmed',
                         style: const TextStyle(fontSize: 11.5),
                       ),
                     ],
@@ -280,6 +280,9 @@ class _ExperimentTabState extends State<ExperimentTab> {
 
   @override
   Widget build(BuildContext context) {
+    if (widget.state.baseline.hasProgress) {
+      return _baselineStep(context);
+    }
     if (step == 0) return _goalStep(context);
     if (step == 1) return _reviewStep(context);
     if (step == 2) return _safetyStep(context);
@@ -288,6 +291,11 @@ class _ExperimentTabState extends State<ExperimentTab> {
 
   Widget _goalStep(BuildContext context) => _TabPage(
     children: [
+      if (widget.state.baseline.error != null) Text(widget.state.baseline.error!),
+      OutlinedButton(
+        onPressed: widget.state.baseline.loading ? null : widget.state.baseline.refresh,
+        child: const Text('Refresh baseline'),
+      ),
       const Eyebrow('New experiment'),
       Text(
         'Choose your goal',
@@ -353,7 +361,7 @@ class _ExperimentTabState extends State<ExperimentTab> {
       const _LabeledValue('Target measurement', 'Texture'),
       const Row(
         children: [
-          Expanded(child: MetricTile('Apr 22', 'Start date')),
+          Expanded(child: MetricTile('Not started', 'Start date')),
           SizedBox(width: 10),
           Expanded(child: MetricTile('28 days', 'Duration')),
         ],
@@ -373,6 +381,7 @@ class _ExperimentTabState extends State<ExperimentTab> {
 
   Widget _safetyStep(BuildContext context) => _TabPage(
     children: [
+      if (widget.state.baseline.error != null) Text(widget.state.baseline.error!),
       const Eyebrow('Ready to begin?'),
       Text(
         'Experiment safety check',
@@ -395,7 +404,10 @@ class _ExperimentTabState extends State<ExperimentTab> {
         ),
       ),
       FilledButton(
-        onPressed: () => setState(() => step = 3),
+        onPressed: widget.state.baseline.loading ? null : () async {
+          final confirmed = await widget.state.baseline.refresh();
+          if (mounted && confirmed) setState(() => step = 3);
+        },
         child: const Text('Begin baseline'),
       ),
       const SizedBox(height: 14),
@@ -410,6 +422,12 @@ class _ExperimentTabState extends State<ExperimentTab> {
   Widget _baselineStep(BuildContext context) => _TabPage(
     children: [
       const Eyebrow('Baseline period'),
+      if (!widget.state.baseline.available)
+        Text(widget.state.baseline.error ?? 'Confirming baseline with server...'),
+      OutlinedButton(
+        onPressed: widget.state.baseline.loading ? null : widget.state.baseline.refresh,
+        child: const Text('Refresh baseline'),
+      ),
       Text(
         'Establishing your baseline',
         style: Theme.of(context).textTheme.headlineSmall,
@@ -424,12 +442,12 @@ class _ExperimentTabState extends State<ExperimentTab> {
           children: [
             const Text('Day', style: TextStyle(fontSize: 13)),
             Text(
-              '${widget.state.baselineCheckIns} of 5',
+              '${widget.state.baselineCheckIns ?? 'Unknown'} of 5 days',
               style: Theme.of(context).textTheme.headlineMedium,
             ),
             const SizedBox(height: 10),
             LinearProgressIndicator(
-              value: widget.state.baselineCheckIns / 5,
+              value: widget.state.baselineCheckIns == null ? null : widget.state.baselineCheckIns! / 5,
               minHeight: 6,
               color: DermaireColors.deep,
               backgroundColor: DermaireColors.line,
@@ -441,12 +459,12 @@ class _ExperimentTabState extends State<ExperimentTab> {
         children: [
           Expanded(
             child: MetricTile(
-              '${widget.state.baselineCheckIns}',
-              'Check-ins completed',
+              '${widget.state.baselineCheckIns ?? 'Unknown'}',
+              'Confirmed days',
             ),
           ),
           const SizedBox(width: 10),
-          const Expanded(child: MetricTile('96%', 'Consistency score')),
+          Expanded(child: MetricTile(!widget.state.baseline.available ? 'Unknown' : widget.state.baseline.ready ? 'Ready' : 'Collecting', 'Baseline status')),
         ],
       ),
       const SizedBox(height: 14),
@@ -455,14 +473,12 @@ class _ExperimentTabState extends State<ExperimentTab> {
         child: const Text("Take today's check-in"),
       ),
       const SizedBox(height: 8),
-      OutlinedButton(
-        onPressed: widget.state.togglePause,
-        child: Text(
-          widget.state.experimentPaused
-              ? 'Resume experiment'
-              : 'Pause experiment',
-        ),
-      ),
+      const Text('Baseline uses five different UTC days. Experiment comparisons require all five days before that experiment began. Image estimates are proxies, not clinical measurements.'),
+      if (widget.state.baseline.ready)
+        ...widget.state.baseline.metrics.entries.map((entry) => _LabeledValue(
+          '${entry.key} baseline',
+          'Mean: ${entry.value['mean']} · Standard deviation: ${entry.value['standard_deviation']}',
+        )),
     ],
   );
 }
@@ -659,7 +675,7 @@ class ReportsTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) => _TabPage(
     children: [
-      const Eyebrow('Experiment complete'),
+      const Eyebrow('Demo results - not your measurements'),
       Text('Your results', style: Theme.of(context).textTheme.headlineSmall),
       const SizedBox(height: 6),
       const Text('Product X · 28-day experiment'),
@@ -769,7 +785,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
       DermaireColors.conflictBackground,
     ];
     return DermairePage(
-      eyebrow: 'Result interpretation',
+      eyebrow: 'Demo result interpretation - not your baseline data',
       title: 'What this means',
       children: [
         SegmentedButton<int>(
@@ -837,7 +853,7 @@ class ReportScreen extends StatelessWidget {
       ('1. Experiment', 'Product X · 28 days · Target: texture'),
       (
         '2. Baseline',
-        'Personal average and standard deviation computed from your first 5 check-ins',
+        'Example baseline average and standard deviation; not computed from your measurements',
       ),
       ('3–4. Measurements & change', 'Texture improved 18% vs. baseline'),
       (
@@ -851,7 +867,7 @@ class ReportScreen extends StatelessWidget {
       ('7. Data quality', '25 of 28 check-ins · 89% consistency'),
     ];
     return DermairePage(
-      eyebrow: 'AI-generated report',
+      eyebrow: 'Demo report - not your baseline data',
       title: 'Personal Skin Lab report',
       children: [
         ...sections.map((item) => _LabeledValue(item.$1, item.$2)),
@@ -1239,7 +1255,7 @@ class TimelineScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => DermairePage(
-    eyebrow: 'Experiment timeline',
+    eyebrow: 'Demo timeline - not your baseline history',
     title:
         '${state.productController.active.where((product) => product.inExperiment).firstOrNull?.name ?? 'No active product'} · Texture',
     actions: [
@@ -1362,10 +1378,7 @@ class _CameraScreenState extends State<CameraScreen> {
     Map<String, dynamic>? analysisResult;
     try {
       analysisResult = await ApiService.instance.submitCheckIn(
-        timeOfDay: DateTime.now().hour < 12 ? 'morning' : 'evening',
-        hydration: 72.0,
-        texture: 68.0,
-        redness: 25.0,
+        timeOfDay: DateTime.now().hour < 12 ? 'Morning' : 'Evening',
         photoBytes: _photoBytes,
         photoFilename: _photoFilename,
         notes: 'Skin photo captured via app',
@@ -1375,18 +1388,14 @@ class _CameraScreenState extends State<CameraScreen> {
         setState(() {
           _isUploading = false;
           _errorMessage =
-              "Couldn't reach Azure to analyze this photo. Check your connection and try again.\n($e)";
+              "Could not confirm this photo check-in. Check your connection and retry; the server may have received it.\n($e)";
         });
       }
       return;
     }
-    if (mounted) {
-      setState(() => _isUploading = false);
-    }
-
-    // Marks today as checked in locally; the actual measurement was already
-    // recorded above via submitCheckIn, so we don't submit a second one here.
-    widget.state.markTodayCheckedIn();
+    // The write is confirmed; separately confirm baseline progress on the server.
+    await widget.state.markTodayCheckedIn();
+    if (mounted) setState(() => _isUploading = false);
     if (!mounted) return;
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
@@ -1400,11 +1409,11 @@ class _CameraScreenState extends State<CameraScreen> {
 
   @override
   Widget build(BuildContext context) => DermairePage(
-    eyebrow: 'Azure AI Vision check-in',
+    eyebrow: 'Photo estimate check-in',
     title: 'Analyze your skin',
     subtitle: _photoBytes == null
-        ? 'Upload or take a clear, well-lit photo of your skin for Azure AI analysis.'
-        : 'Photo ready for Azure AI Vision 4.0 analysis.',
+        ? 'Upload or take a clear, well-lit photo for image-property estimates.'
+        : 'Photo ready for server processing.',
     children: [
       if (_photoBytes != null)
         Container(
@@ -1434,7 +1443,7 @@ class _CameraScreenState extends State<CameraScreen> {
                     children: [
                       Icon(Icons.check_circle, color: Colors.greenAccent, size: 14),
                       SizedBox(width: 4),
-                      Text('Azure AI Ready', style: TextStyle(color: Colors.white, fontSize: 11)),
+                      Text('Photo ready', style: TextStyle(color: Colors.white, fontSize: 11)),
                     ],
                   ),
                 ),
@@ -1457,8 +1466,8 @@ class _CameraScreenState extends State<CameraScreen> {
       Notice(
         icon: '🔒',
         text: _photoBytes == null
-            ? 'Photos are uploaded securely to Azure Blob Storage and analyzed with Azure AI Vision.'
-            : 'Image: ${_photoFilename ?? "Skin photo"} selected. Tap Analyze to process with Azure AI.',
+            ? 'Photos are stored by the server. Measurements are image-property proxies, not clinical analysis.'
+            : 'Image: ${_photoFilename ?? "Skin photo"} selected. Tap Analyze to process on the server.',
         color: DermaireColors.paper,
       ),
       FilledButton.icon(
@@ -1493,15 +1502,16 @@ class CheckInCompleteScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final redness = analysisData?['redness_score']?.toString() ?? 'Good';
-    final texture = analysisData?['texture_score']?.toString() ?? 'Stable';
-    final hydration = analysisData?['hydration_score']?.toString() ?? '72%';
+    final redness = analysisData?['redness_score']?.toString() ?? 'Unavailable';
+    final texture = analysisData?['texture_score']?.toString() ?? 'Unavailable';
+    final hydration = analysisData?['hydration_score']?.toString() ?? 'Unavailable';
 
     return DermairePage(
       title: 'Check-in complete',
-      subtitle: "Azure AI Vision has analyzed your skin and recorded it to your experiment.",
+      subtitle: "Server saved your image-property estimates. These are not clinical measurements.",
       centered: true,
       children: [
+        if (state.baseline.error != null) Text('Check-in saved; ${state.baseline.error}'),
         const SizedBox(height: 8),
         Row(
           children: [

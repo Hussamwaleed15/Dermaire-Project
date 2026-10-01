@@ -389,6 +389,15 @@ class ApiService extends ChangeNotifier {
     return jsonDecode(res.body) as Map<String, dynamic>;
   }
 
+  Future<Map<String, dynamic>> getBaseline() async {
+    final res = await _client.get(Uri.parse('$baseUrl/baseline'),
+        headers: _headers(false)).timeout(const Duration(seconds: 20));
+    if (res.statusCode != 200) {
+      throw ApiException('Could not load baseline (status ${res.statusCode})');
+    }
+    return jsonDecode(res.body) as Map<String, dynamic>;
+  }
+
   Future<List<Map<String, dynamic>>> getCheckIns() async {
     final res = await _client.get(
       Uri.parse('$baseUrl/checkins'),
@@ -403,9 +412,9 @@ class ApiService extends ChangeNotifier {
 
   Future<Map<String, dynamic>> submitCheckIn({
     required String timeOfDay,
-    required double hydration,
-    required double texture,
-    required double redness,
+    double? hydration,
+    double? texture,
+    double? redness,
     String? notes,
     String? experimentId,
     List<int>? photoBytes,
@@ -417,9 +426,9 @@ class ApiService extends ChangeNotifier {
     );
     request.headers.addAll(_headers(false));
     request.fields['time_of_day'] = timeOfDay;
-    request.fields['hydration_score'] = hydration.toString();
-    request.fields['texture_score'] = texture.toString();
-    request.fields['redness_score'] = redness.toString();
+    if (hydration != null) request.fields['hydration_score'] = hydration.toString();
+    if (texture != null) request.fields['texture_score'] = texture.toString();
+    if (redness != null) request.fields['redness_score'] = redness.toString();
     if (notes != null) request.fields['notes'] = notes;
     if (experimentId != null) request.fields['experiment_id'] = experimentId;
 
@@ -433,10 +442,22 @@ class ApiService extends ChangeNotifier {
       );
     }
 
-    final streamedRes = await _client.send(request);
+    final streamedRes = await _client.send(request).timeout(const Duration(seconds: 30));
     final res = await http.Response.fromStream(streamedRes);
     final data = jsonDecode(res.body) as Map<String, dynamic>;
-    if (res.statusCode >= 200 && res.statusCode < 300) {
+    if (res.statusCode == 201) {
+      final analysis = data['ai_vision_analysis'];
+      if (data['id'] is! String || (data['id'] as String).isEmpty ||
+          data['created_at'] is! String || DateTime.tryParse(data['created_at'] as String) == null ||
+          analysis is! Map || !['manual', 'image_proxy'].contains(analysis['measurement_source'])) {
+        throw ApiException('Invalid check-in confirmation. Refresh before retrying');
+      }
+      for (final key in ['hydration_score', 'texture_score', 'redness_score']) {
+        final value = data[key];
+        if (value is! num || !value.isFinite || value < 0 || value > 100) {
+          throw ApiException('Invalid check-in measurements');
+        }
+      }
       return data;
     }
     throw ApiException(data['message']?.toString() ?? 'Check-in failed', data);

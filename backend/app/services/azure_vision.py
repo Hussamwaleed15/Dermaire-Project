@@ -27,10 +27,12 @@ class AzureVisionService:
             # Smoothness/texture proxy from variance
             variance = sum(stat.var) / 3.0
             texture_score = min(100.0, max(20.0, round(100.0 - math.sqrt(variance) * 0.5, 1)))
-            hydration_score = round((100.0 - (redness_score * 0.4) + (texture_score * 0.6)) / 1.2, 1)
+            hydration_score = min(100.0, max(0.0, round((100.0 - (redness_score * 0.4) + (texture_score * 0.6)) / 1.2, 1)))
 
             return {
                 "azure_vision_status": "ANALYSIS_COMPLETE",
+                "measurement_source": "image_proxy",
+                "measurement_method": "Local image-property proxy; not Azure clinical analysis",
                 "image_resolution": f"{image.width}x{image.height}",
                 "erythema_redness_score": redness_score,
                 "surface_texture_score": texture_score,
@@ -40,10 +42,7 @@ class AzureVisionService:
             }
         except Exception as e:
             return {
-                "azure_vision_status": "FALLBACK_SIMULATED",
-                "erythema_redness_score": 22.5,
-                "surface_texture_score": 78.0,
-                "estimated_hydration_score": 75.0,
+                "azure_vision_status": "ANALYSIS_UNAVAILABLE",
                 "error": str(e)
             }
 
