@@ -7,23 +7,25 @@ from app.core.config import settings
 from app.core.exceptions import InvalidCredentialsException, PermissionDeniedException
 from app.models import User, AuditLog
 
+def get_token_subject(authorization: Optional[str] = Header(None)) -> str:
+    if not authorization or not authorization.startswith("Bearer "):
+        raise InvalidCredentialsException("Authorization header missing or invalid format")
+    try:
+        payload = jwt.decode(authorization[7:], settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        if payload.get("type") != "access" or not isinstance(payload.get("sub"), str):
+            raise InvalidCredentialsException("Invalid access token")
+        return payload["sub"]
+    except jwt.PyJWTError:
+        raise InvalidCredentialsException("Token is expired or invalid")
+
+
 def get_current_user(
     authorization: Optional[str] = Header(None),
     db: Session = Depends(get_db)
 ) -> User:
-    if not authorization or not authorization.startswith("Bearer "):
-        raise InvalidCredentialsException("Authorization header missing or invalid format")
-    
-    token = authorization.split(" ")[1]
-    try:
-        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
-        user_id: str = payload.get("sub")
-        if user_id is None:
-            raise InvalidCredentialsException("Token subject is missing")
-    except jwt.PyJWTError:
-        raise InvalidCredentialsException("Token is expired or invalid")
+    user_id = get_token_subject(authorization)
 
-    user = db.query(User).filter(User.id == user_id).first()
+    user = db.query(User).filter(User.id == user_id).with_for_update().first()
     if not user:
         raise InvalidCredentialsException("User no longer exists")
     return user

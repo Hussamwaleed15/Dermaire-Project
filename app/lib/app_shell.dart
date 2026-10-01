@@ -5,6 +5,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
 import 'chatbot.dart';
+import 'onboarding_screens.dart';
 import 'dermaire_state.dart';
 import 'dermaire_theme.dart';
 import 'dermaire_widgets.dart';
@@ -1502,9 +1503,17 @@ class ProfileTab extends StatelessWidget {
           onPressed: () async {
             Navigator.pop(dialogContext);
             showDermaireSnack(context, 'Deleting your account from Azure cloud…');
-            await ApiService.instance.deleteAccount();
+            final deleted = await ApiService.instance.deleteAccount();
             if (!context.mounted) return;
-            Navigator.of(context).popUntil((route) => route.isFirst);
+            if (!deleted) {
+              showDermaireSnack(context, 'Account deletion failed. Please retry.');
+              return;
+            }
+            state.clearAccountData();
+            Navigator.of(context).pushAndRemoveUntil(
+              MaterialPageRoute<void>(builder: (_) => WelcomeScreen(state: state)),
+              (_) => false,
+            );
           },
           child: const Text('Delete permanently'),
         ),

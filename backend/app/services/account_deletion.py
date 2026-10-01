@@ -1,0 +1,55 @@
+import hashlib
+import hmac
+import json
+
+from sqlalchemy import or_
+
+from app.core.config import settings
+from app.models import (User, Product, Experiment, CheckIn, DoctorPatientAccess,
+                        ClinicalNote, RewardRedemption, AuditLog)
+from app.services.azure_blob import azure_blob_service
+
+
+def delete_account(db, user_id):
+    user = db.query(User).filter(User.id == user_id).with_for_update().first()
+    if user is None:
+        return  # A valid access token can retry after the response was lost.
+    owned_models = (CheckIn, Experiment, Product, RewardRedemption)
+    identifiers = {user_id, user.email, user.full_name}
+    for model in owned_models:
+        identifiers.update(row.id for row in db.query(model).filter(model.user_id == user_id))
+    related = or_(DoctorPatientAccess.patient_id == user_id, DoctorPatientAccess.doctor_id == user_id)
+    identifiers.update(row.id for row in db.query(DoctorPatientAccess).filter(related))
+    notes = or_(ClinicalNote.patient_id == user_id, ClinicalNote.doctor_id == user_id)
+    identifiers.update(row.id for row in db.query(ClinicalNote).filter(notes))
+    # Refuse inconsistent legacy links rather than mutate another account.
+    experiment_ids = db.query(Experiment.id).filter(Experiment.user_id == user_id).scalar_subquery()
+    product_ids = db.query(Product.id).filter(Product.user_id == user_id).scalar_subquery()
+    foreign_checkin = db.query(CheckIn.id).filter(
+        CheckIn.user_id != user_id, CheckIn.experiment_id.in_(experiment_ids)).first()
+    foreign_experiment = db.query(Experiment.id).filter(
+        Experiment.user_id != user_id, Experiment.product_id.in_(product_ids)).first()
+    if foreign_checkin or foreign_experiment:
+        raise RuntimeError("Inconsistent cross-account links require repair before deletion")
+    # Keep ownership records until ALL external deletes succeed. Partial cleanup
+    # can safely retry because deleting an absent blob is a no-op.
+    for checkin in db.query(CheckIn).filter(CheckIn.user_id == user_id):
+        if checkin.image_blob_name:
+            azure_blob_service.delete_image(checkin.image_blob_name)
+    azure_blob_service.delete_owned_images(user_id)
+    pseudonym = hmac.new(settings.SECRET_KEY.encode(), user_id.encode(), hashlib.sha256).hexdigest()[:32]
+    for audit in db.query(AuditLog):
+        serialized = json.dumps(audit.details or {})
+        if audit.actor_id == user_id or any(value and value in serialized for value in identifiers):
+            if audit.actor_id == user_id:
+                audit.actor_id = pseudonym
+            audit.details = {}
+            audit.ip_address = None
+    db.query(ClinicalNote).filter(notes).delete(synchronize_session=False)
+    db.query(DoctorPatientAccess).filter(related).delete(synchronize_session=False)
+    # Explicit dependency order also works with enforced database foreign keys.
+    for model in owned_models:
+        db.query(model).filter(model.user_id == user_id).delete(synchronize_session=False)
+    db.query(User).filter(User.id == user_id).delete(synchronize_session=False)
+    db.add(AuditLog(actor_id=pseudonym, action="ACCOUNT_DELETED", target_resource="users", details={}))
+    db.commit()

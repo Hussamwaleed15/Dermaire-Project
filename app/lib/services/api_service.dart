@@ -201,11 +201,14 @@ class ApiService {
         Uri.parse('$baseUrl/users/me'),
         headers: _headers(false),
       );
-      await logout();
-      return res.statusCode >= 200 && res.statusCode < 300;
-    } catch (_) {
+      if (res.statusCode != 204) return false;
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('dermaire_products_v2');
+      await prefs.remove('dermaire_safety_accepted');
       await logout();
       return true;
+    } catch (_) {
+      return false;
     }
   }
 

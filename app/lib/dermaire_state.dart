@@ -103,6 +103,26 @@ class DermaireState extends ChangeNotifier {
     }
   }
 
+  void clearAccountData() {
+    safetyAccepted = false;
+    selectedTab = 0;
+    tokens = 0;
+    baselineCheckIns = 0;
+    experimentDay = 1;
+    experimentPaused = false;
+    todayCheckedIn = false;
+    doctorLinkActive = false;
+    selectedGoal = 'Improve Skin Texture';
+    skinConcerns.clear();
+    redemptionHistory.clear();
+    userName = 'Skin Lab User';
+    userEmail = '';
+    products.clear();
+    journal.clear();
+    productController.clear();
+    notifyListeners();
+  }
+
   Future<void> toggleTheme() async {
     themeMode = themeMode == ThemeMode.dark ? ThemeMode.light : ThemeMode.dark;
     notifyListeners();

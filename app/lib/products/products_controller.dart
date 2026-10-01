@@ -68,6 +68,15 @@ class ProductsController extends ChangeNotifier {
     return result;
   }
 
+  void clear() {
+    _products = [];
+    query = '';
+    categoryFilter = null;
+    statusFilter = null;
+    errorMessage = null;
+    notifyListeners();
+  }
+
   Future<void> load() async {
     isLoading = true;
     errorMessage = null;

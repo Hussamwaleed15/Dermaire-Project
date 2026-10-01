@@ -64,7 +64,8 @@ async def submit_daily_checkin(
         blob_name, sas_url = azure_blob_service.upload_image(
             file_bytes=photo_bytes,
             original_filename=photo.filename,
-            content_type=photo.content_type or "image/jpeg"
+            content_type=photo.content_type or "image/jpeg",
+            owner_id=current_user.id
         )
         # Process visual features via Azure Vision
         ai_analysis = azure_vision_service.analyze_skin_image(photo_bytes)
