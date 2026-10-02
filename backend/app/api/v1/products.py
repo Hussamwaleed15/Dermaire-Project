@@ -1,10 +1,11 @@
-﻿from typing import List, Optional
+from typing import List, Optional
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.exceptions import EntityNotFoundException, DermaireException
 from app.api.deps import get_current_user, record_audit
-from app.models import User, Product
+from app.models import User, Product, RoutineEntry
+from app.services.routine import lock_owner, deactivate
 from app.schemas import (
     ProductCreate, ProductUpdate, ProductOut,
     ProductInteractionCheckRequest, ProductInteractionCheckResponse
@@ -60,7 +61,7 @@ def create_product(
         routine_ingredients = []
         for p in active_products:
             routine_ingredients.extend(p.active_ingredients or [])
-        
+
         all_ingredients = list(set(routine_ingredients + payload.active_ingredients))
         if len(all_ingredients) >= 2:
             interaction = check_ingredients_interaction(all_ingredients)
@@ -118,6 +119,7 @@ def update_product(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+    lock_owner(db, current_user)
     product = db.query(Product).filter(
         Product.id == product_id,
         Product.user_id == current_user.id
@@ -144,6 +146,9 @@ def update_product(
     for key, value in data.items():
         setattr(product, key, value)
 
+    if product.status != "active":
+        for entry in db.query(RoutineEntry).filter_by(product_id=product.id, user_id=current_user.id, active=True):
+            deactivate(entry)
     db.commit()
     db.refresh(product)
     record_audit(db, current_user.id, "PRODUCT_UPDATED", "products", {"product_id": product.id})
@@ -155,6 +160,7 @@ def delete_product(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
+    lock_owner(db, current_user)
     product = db.query(Product).filter(
         Product.id == product_id,
         Product.user_id == current_user.id
@@ -168,6 +174,9 @@ def delete_product(
             error_code="PRODUCT_IN_ACTIVE_EXPERIMENT",
             status_code=status.HTTP_409_CONFLICT
         )
+
+    if db.query(RoutineEntry).filter_by(product_id=product.id).first():
+        raise DermaireException(message="Archive this product to preserve routine history.", error_code="PRODUCT_HAS_ROUTINE_HISTORY", status_code=409)
 
     db.delete(product)
     db.commit()

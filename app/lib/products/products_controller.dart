@@ -143,13 +143,13 @@ class ProductsController extends ChangeNotifier {
   Future<ProductOperationResult> add(Product product) async {
     if (ProductValidation.duplicate(product, _products)) {
       return const ProductOperationResult.failure(
-        'This product is already in your routine.',
+        'This product is already in your library.',
       );
     }
     return _commit(() async {
       final saved = await _repository.create(product);
       return [..._products, saved];
-    }, 'Product added to your routine.');
+    }, 'Product saved to your library.');
   }
 
   Future<ProductOperationResult> update(Product product) async {
@@ -159,7 +159,7 @@ class ProductsController extends ChangeNotifier {
       excludingId: product.id,
     )) {
       return const ProductOperationResult.failure(
-        'This product is already in your routine.',
+        'This product is already in your library.',
       );
     }
     return _commit(() async {

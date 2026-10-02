@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../dermaire_state.dart';
 import '../dermaire_theme.dart';
 import '../dermaire_widgets.dart';
+import '../routine/routine_ui.dart';
 import 'product.dart';
 import 'product_validation.dart';
 import 'products_controller.dart';
@@ -34,7 +35,7 @@ class ProductsFeatureTab extends StatelessWidget {
                           children: [
                             const Eyebrow('My products'),
                             Text(
-                              'Current routine',
+                              'Product library',
                               style: Theme.of(context).textTheme.headlineSmall,
                             ),
                           ],
@@ -62,6 +63,7 @@ class ProductsFeatureTab extends StatelessWidget {
                   ),
                 ),
               ),
+              SliverToBoxAdapter(child: Padding(padding: const EdgeInsets.symmetric(horizontal: 20), child: Column(children: [const Text('Saved products and usage preferences do not confirm routine use.'), OutlinedButton(onPressed: () => openPage(context, const RoutineScreen()), child: const Text('Manage my routine'))]))),
               if (controller.errorMessage != null && controller.all.isNotEmpty)
                 SliverToBoxAdapter(
                   child: Column(
@@ -234,7 +236,7 @@ class _EmptyProducts extends StatelessWidget {
       ),
       const SizedBox(height: 18),
       Text(
-        'Build your routine',
+        'Build your product library',
         textAlign: TextAlign.center,
         style: Theme.of(context).textTheme.headlineSmall,
       ),
@@ -634,7 +636,7 @@ class _ProductEditorScreenState extends State<ProductEditorScreen> {
               const SizedBox(height: 12),
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
-                title: const Text('Add to current routine'),
+                title: const Text('Save usage preference'),
                 value: inRoutine,
                 onChanged: (value) => setState(() => inRoutine = value),
               ),
@@ -757,7 +759,7 @@ class _ProductEditorScreenState extends State<ProductEditorScreen> {
         product,
         widget.state.productController.all,
       )) {
-        showDermaireSnack(context, 'This product is already in your routine.');
+        showDermaireSnack(context, 'This product is already in your library.');
         return;
       }
       await openPage(
@@ -858,7 +860,7 @@ class ProductInteractionScreen extends StatelessWidget {
           const SizedBox(height: 8),
           OutlinedButton(
             onPressed: () => _add(context, inRoutineOnly: true),
-            child: const Text('Add to routine only'),
+            child: const Text('Save product only'),
           ),
         ] else ...[
           FilledButton(
@@ -990,7 +992,7 @@ class ProductFeatureDetailScreen extends StatelessWidget {
           if (product.status != ProductStatus.archived) ...[
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
-              title: const Text('Part of my routine'),
+              title: const Text('Saved usage preference'),
               value: product.inRoutine,
               onChanged: state.productController.isSaving
                   ? null
@@ -1039,7 +1041,7 @@ class ProductFeatureDetailScreen extends StatelessWidget {
         'Archive this product?',
         product.inExperiment
             ? 'This product is being tested. End the experiment before archiving it.'
-            : 'It will leave your routine but remain in your history.',
+            : 'It will stop linked routine entries and remain in your history.',
         confirm: 'Archive',
         enabled: !product.inExperiment,
       );

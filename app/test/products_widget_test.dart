@@ -22,7 +22,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Build your routine'), findsOneWidget);
+    expect(find.text('Build your product library'), findsOneWidget);
     await tester.tap(find.text('Add my first product'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Enter manually'));

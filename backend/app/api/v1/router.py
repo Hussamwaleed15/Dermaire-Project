@@ -30,3 +30,5 @@ api_v1_router.include_router(rewards_router)
 api_v1_router.include_router(chat_router)
 
 api_v1_router.include_router(personal_skin_model_router)
+from app.api.v1.routine import router as routine_router
+api_v1_router.include_router(routine_router)

@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime, timezone
 from sqlalchemy import (
     Column, String, Integer, Float, Boolean, DateTime, Date,
-    ForeignKey, Text, JSON, UniqueConstraint, Enum as SQLEnum
+    ForeignKey, Text, JSON, UniqueConstraint, CheckConstraint, Enum as SQLEnum
 )
 from sqlalchemy.orm import relationship
 from app.core.database import Base
@@ -173,3 +173,56 @@ class DailyContext(Base):
     unusual_conditions = Column(Boolean, nullable=True)
     cycle_day = Column(Integer, nullable=True)
     updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
+
+class RoutineEntry(Base):
+    __tablename__ = "routine_entries"
+    __table_args__ = (
+        CheckConstraint("schedule IN ('AM', 'PM', 'BOTH')", name="ck_routine_schedule"),
+        CheckConstraint("frequency = 'daily'", name="ck_routine_frequency"),
+        CheckConstraint("am_order BETWEEN 0 AND 100 AND pm_order BETWEEN 0 AND 100", name="ck_routine_order"),
+        CheckConstraint("source = 'user_configured'", name="ck_routine_source"),
+        CheckConstraint("(active AND end_date IS NULL) OR (NOT active AND end_date IS NOT NULL AND end_date >= start_date)", name="ck_routine_end"),
+        UniqueConstraint("active_am_product", name="uq_routine_active_am"),
+        UniqueConstraint("active_pm_product", name="uq_routine_active_pm"),
+    )
+    id = Column(String(36), primary_key=True, default=gen_uuid)
+    user_id = Column(String(36), ForeignKey("users.id"), nullable=False, index=True)
+    product_id = Column(String(36), ForeignKey("products.id"), nullable=False, index=True)
+    schedule = Column(String(4), nullable=False)
+    frequency = Column(String(20), nullable=False)
+    start_date = Column(Date, nullable=False)
+    end_date = Column(Date, nullable=True)
+    active = Column(Boolean, nullable=False, default=True)
+    instructions = Column(Text, nullable=True)
+    am_order = Column(Integer, nullable=False, default=0)
+    pm_order = Column(Integer, nullable=False, default=0)
+    active_am_product = Column(String(36), nullable=True)
+    active_pm_product = Column(String(36), nullable=True)
+    source = Column(String(30), nullable=False, default="user_configured")
+    created_at = Column(DateTime, nullable=False, default=utc_now)
+    updated_at = Column(DateTime, nullable=False, default=utc_now, onupdate=utc_now)
+
+    product = relationship("Product")
+
+    @property
+    def product_name(self):
+        return self.product.name
+
+class RoutineAdherence(Base):
+    __tablename__ = "routine_adherence"
+    __table_args__ = (
+        UniqueConstraint("routine_entry_id", "date", "slot", name="uq_adherence_entry_day_slot"),
+        CheckConstraint("slot IN ('AM', 'PM')", name="ck_adherence_slot"),
+        CheckConstraint("status IN ('completed', 'skipped')", name="ck_adherence_status"),
+        CheckConstraint("source = 'user_reported'", name="ck_adherence_source"),
+    )
+    id = Column(String(36), primary_key=True, default=gen_uuid)
+    user_id = Column(String(36), ForeignKey("users.id"), nullable=False, index=True)
+    routine_entry_id = Column(String(36), ForeignKey("routine_entries.id"), nullable=False, index=True)
+    date = Column(Date, nullable=False)
+    slot = Column(String(2), nullable=False)
+    status = Column(String(10), nullable=False)
+    note = Column(Text, nullable=True)
+    source = Column(String(30), nullable=False, default="user_reported")
+    created_at = Column(DateTime, nullable=False, default=utc_now)
+    configuration_snapshot = Column(JSON, nullable=False)

@@ -6,7 +6,7 @@ from sqlalchemy import or_
 
 from app.core.config import settings
 from app.models import (User, Product, Experiment, CheckIn, DoctorPatientAccess,
-                        ClinicalNote, RewardRedemption, AuditLog, DailyContext)
+                        ClinicalNote, RewardRedemption, AuditLog, DailyContext, RoutineEntry, RoutineAdherence)
 from app.services.azure_blob import azure_blob_service
 
 
@@ -14,7 +14,7 @@ def delete_account(db, user_id):
     user = db.query(User).filter(User.id == user_id).with_for_update().first()
     if user is None:
         return  # A valid access token can retry after the response was lost.
-    owned_models = (DailyContext, CheckIn, Experiment, Product, RewardRedemption)
+    owned_models = (RoutineAdherence, RoutineEntry, DailyContext, CheckIn, Experiment, Product, RewardRedemption)
     identifiers = {user_id, user.email, user.full_name}
     for model in owned_models:
         identifiers.update(row.id for row in db.query(model).filter(model.user_id == user_id))

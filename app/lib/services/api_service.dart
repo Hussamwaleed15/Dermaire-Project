@@ -301,6 +301,16 @@ class ApiService extends ChangeNotifier {
     throw ApiException(data['message']?.toString() ?? 'Chat failed', data);
   }
 
+  Future<dynamic> routineRequest(String resource, {String method = 'GET', Map<String, dynamic>? payload}) async {
+    final uri = Uri.parse('$baseUrl/routine/$resource');
+    final response = await (method == 'GET' ? _client.get(uri, headers: _headers(false)) :
+      method == 'PATCH' ? _client.patch(uri, headers: _headers(), body: jsonEncode(payload)) :
+      _client.post(uri, headers: _headers(), body: jsonEncode(payload))).timeout(const Duration(seconds: 20));
+    if (response.statusCode != (method == 'POST' ? 201 : 200)) {
+      throw ApiException('Routine request failed (status ${response.statusCode})');
+    }
+    return jsonDecode(response.body);
+  }
   Future<List<Map<String, dynamic>>> getProducts({
     String? category,
     bool? inRoutine,
