@@ -119,9 +119,12 @@ def combinations_for_products(a, b):
 
 def routine_intelligence(db, user):
     # Routine entries, not legacy in_routine markers, define current participation.
-    rows = db.query(Product).join(RoutineEntry, RoutineEntry.product_id == Product.id).filter(
-        Product.user_id == user.id, Product.status == "active", RoutineEntry.user_id == user.id,
-        RoutineEntry.active.is_(True)).order_by(Product.id).distinct().all()
+    active_product_ids = db.query(RoutineEntry.product_id).filter(
+        RoutineEntry.user_id == user.id, RoutineEntry.active.is_(True))
+    # Membership deduplicates IDs without DISTINCT over PostgreSQL JSON columns.
+    rows = db.query(Product).filter(
+        Product.user_id == user.id, Product.status == "active",
+        Product.id.in_(active_product_ids)).order_by(Product.id).all()
     products = [read_intelligence(db, product) for product in rows]
     return {"version": VERSION, "products": products,
             "warnings": warnings_for(products, (user.profile_context or {}).get("sensitivities_allergies")),

@@ -154,6 +154,33 @@ def test_current_owner_entries_only_and_deactivation(intelligence_context):
     assert client.get(ROUTINE, headers=other).json()["products"] == []
 
 
+def test_routine_membership_deduplicates_without_json_distinct(intelligence_context):
+    from sqlalchemy import event
+    client, db, auth, admin = intelligence_context
+    for schedule in ("AM", "PM"):
+        response = client.post("/api/v1/routine/entries", headers=auth,
+                               json={"product_id": "owned-product", "schedule": schedule,
+                                     "frequency": "daily", "start_date": "2026-01-01"})
+        assert response.status_code == 201, response.text
+    statements = []
+
+    def capture(conn, cursor, statement, parameters, context, executemany):
+        statements.append(statement)
+
+    engine = db.get_bind()
+    event.listen(engine, "before_cursor_execute", capture)
+    try:
+        response = client.get(ROUTINE, headers=auth)
+    finally:
+        event.remove(engine, "before_cursor_execute", capture)
+    assert response.status_code == 200
+    assert [p["product_id"] for p in response.json()["products"]] == ["owned-product"]
+    # PostgreSQL JSON has no equality operator: never DISTINCT whole product rows.
+    product_reads = [sql for sql in statements if "products.active_ingredients" in sql]
+    assert product_reads
+    assert all("SELECT DISTINCT" not in sql.upper() for sql in product_reads)
+
+
 def test_authorization_foreign_refs_and_retired_fallback(intelligence_context):
     client, db, auth, admin = intelligence_context
     other = {"Authorization": "Bearer " + create_access_token("delete-doctor", "doctor", hashed_password="unused")}
