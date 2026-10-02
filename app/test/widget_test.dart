@@ -184,19 +184,15 @@ void main() {
         await tester.tap(find.text('Start my skin experiment'));
         await tester.pumpAndSettle();
         expect(find.text('Tell us about your skin'), findsOneWidget);
-        for (final concern in [
-          'Acne',
-          'Redness',
-          'Texture',
-          'Dryness',
-          'Oiliness',
-          'Other',
-        ]) {
-          expect(find.text(concern), findsOneWidget);
-        }
+        expect(find.text('Skin type (optional)'), findsOneWidget);
+        expect(find.text('Skin concerns (optional)'), findsOneWidget);
+        expect(find.text('Not shared / clear'), findsOneWidget);
         await ApiService.instance.init();
       },
       () => MockClient((request) async {
+        if (request.url.path.endsWith('/users/me')) {
+          return http.Response('{"skin_concerns":[],"profile_context":null}', 200);
+        }
         if (request.url.path.endsWith('/auth/register')) {
           final body = jsonDecode(request.body) as Map<String, dynamic>;
           expect(body['email'], 'salma@example.com');

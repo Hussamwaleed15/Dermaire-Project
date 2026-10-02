@@ -888,9 +888,9 @@ class ProfileTab extends StatelessWidget {
       ),
       ActionCard(
         icon: '👤',
-        title: 'Account',
+        title: 'Account and skin profile',
         subtitle: '${state.userName}${state.userEmail.isNotEmpty ? " · ${state.userEmail}" : " · Verified Skin Lab Member"}',
-        onTap: () => showDermaireSnack(context, 'Account: ${state.userName} (${state.userEmail})'),
+        onTap: () => openPage(context, SkinProfileScreen(state: state, editing: true)),
       ),
       ActionCard(
         icon: '🔔',

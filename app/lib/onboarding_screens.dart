@@ -1029,90 +1029,295 @@ class AccountCreatedScreen extends StatelessWidget {
   );
 }
 
-class SkinProfileScreen extends StatelessWidget {
-  const SkinProfileScreen({super.key, required this.state});
+class SkinProfileScreen extends StatefulWidget {
+  const SkinProfileScreen({
+    super.key,
+    required this.state,
+    this.editing = false,
+  });
   final DermaireState state;
-
+  final bool editing;
   @override
-  Widget build(BuildContext context) {
-    const concerns = [
-      ('Acne', Icons.bubble_chart_outlined),
-      ('Redness', Icons.thermostat_outlined),
-      ('Texture', Icons.grain_rounded),
-      ('Dryness', Icons.water_drop_outlined),
-      ('Oiliness', Icons.opacity_rounded),
-      ('Other', Icons.add_circle_outline),
-    ];
-    return AnimatedBuilder(
-      animation: state,
-      builder: (context, _) => DermairePage(
-        eyebrow: 'Skin profile',
-        title: 'Tell us about your skin',
-        subtitle:
-            'Choose every concern you want to track. You can change these later.',
-        children: [
-          GridView.count(
-            crossAxisCount: 2,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            childAspectRatio: 1.65,
-            mainAxisSpacing: 10,
-            crossAxisSpacing: 10,
-            children: concerns.map((item) {
-              final selected = state.skinConcerns.contains(item.$1);
-              return InkWell(
-                onTap: () => state.toggleConcern(item.$1),
-                borderRadius: BorderRadius.circular(14),
-                child: AnimatedContainer(
-                  duration: const Duration(milliseconds: 180),
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: selected
-                        ? DermaireColors.caramel.withValues(alpha: .28)
-                        : Theme.of(context).colorScheme.surface,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(
-                      color: selected
-                          ? Theme.of(context).colorScheme.primary
-                          : Theme.of(context).dividerColor,
-                      width: selected ? 1.5 : 1,
-                    ),
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        item.$2,
-                        color: selected
-                            ? Theme.of(context).colorScheme.primary
-                            : Theme.of(context).colorScheme.onSurface,
-                      ),
-                      const SizedBox(height: 7),
-                      Text(
-                        item.$1,
-                        style: const TextStyle(fontWeight: FontWeight.w700),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
-          const SizedBox(height: 18),
-          FilledButton(
-            onPressed: () async {
-              try {
-                await ApiService.instance.updateSkinProfile(
-                  skinConcerns: state.skinConcerns.toList(),
-                );
-              } catch (_) {}
-              if (!context.mounted) return;
-              _openApp(context, state);
-            },
-            child: const Text('Continue to my skin lab'),
+  State<SkinProfileScreen> createState() => _SkinProfileScreenState();
+}
+
+class _SkinProfileScreenState extends State<SkinProfileScreen> {
+  Map<String, dynamic>? profile;
+  final draft = <String, dynamic>{};
+  final contextDraft = <String, dynamic>{};
+  String? error;
+  bool saving = false;
+  int section = 0;
+  @override
+  void initState() {
+    super.initState();
+    load();
+  }
+
+  Future<void> load() async {
+    setState(() {
+      error = null;
+    });
+    try {
+      final result = await ApiService.instance.getCurrentUser();
+      if (result == null) throw Exception('Profile unavailable');
+      if (mounted) {
+        setState(() {
+          profile = result;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          error = 'Could not load your profile. Retry before editing.';
+        });
+      }
+    }
+  }
+
+  dynamic value(String key, {bool root = false}) {
+    final source = root ? draft : contextDraft;
+    if (source.containsKey(key)) return source[key];
+    if (root) return profile?[key];
+    final saved = profile?['profile_context'] as Map?;
+    return saved?[key];
+  }
+
+  Widget choice(
+    String key,
+    String label,
+    Map<String, String> options, {
+    bool root = false,
+  }) {
+    final selected = value(key, root: root) as String?;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: DropdownButtonFormField<String>(
+        key: ValueKey('$key:$selected'),
+        initialValue: options.containsKey(selected) ? selected : '',
+        isExpanded: true,
+        decoration: InputDecoration(labelText: '$label (optional)'),
+        items: [
+          const DropdownMenuItem(value: '', child: Text('Not shared / clear')),
+          ...options.entries.map(
+            (e) => DropdownMenuItem(value: e.key, child: Text(e.value)),
           ),
         ],
+        onChanged: saving
+            ? null
+            : (v) => setState(() {
+                (root ? draft : contextDraft)[key] = v == '' ? null : v;
+                if (key == 'hormonal_disclosure') {
+                  contextDraft['hormonal_context'] = null;
+                }
+              }),
       ),
     );
   }
+
+  Widget entries(String key, String label, {bool root = false}) {
+    final values = (value(key, root: root) as List?)?.cast<String>();
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: TextFormField(
+        key: ValueKey(key),
+        initialValue: values?.join(', ') ?? '',
+        enabled: !saving,
+        maxLength: 1000,
+        decoration: InputDecoration(
+          labelText: '$label (optional)',
+          helperText: 'Separate entries with commas. Clear to remove.',
+        ),
+        onChanged: (v) {
+          (root ? draft : contextDraft)[key] = v.trim().isEmpty
+              ? []
+              : v
+                    .split(',')
+                    .map((s) => s.trim())
+                    .where((s) => s.isNotEmpty)
+                    .toList();
+        },
+      ),
+    );
+  }
+
+  Future<void> save() async {
+    setState(() {
+      saving = true;
+      error = null;
+    });
+    try {
+      final result = await ApiService.instance.updateSkinProfile(
+        fields: {
+          ...draft,
+          if (contextDraft.isNotEmpty) 'profile_context': contextDraft,
+        },
+      );
+      if (!mounted) return;
+      widget.state.skinConcerns
+        ..clear()
+        ..addAll((result['skin_concerns'] as List).cast<String>());
+      widget.state.selectGoal(result['selected_goal'] as String? ?? '');
+      if (widget.editing) {
+        Navigator.of(context).pop();
+      } else {
+        _openApp(context, widget.state);
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          saving = false;
+          error =
+              'Save was not confirmed. Your draft is still here. Please retry.';
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => DermairePage(
+    eyebrow: 'Skin profile',
+    title: [
+      'Tell us about your skin',
+      'Care and goals',
+      'Optional context',
+    ][section],
+    subtitle:
+        'Share only what you choose. These answers will provide context for a future personal skin model. No sensitive information is inferred.',
+    children: [
+      if (error != null) Text(error!, key: const Key('profileError')),
+      if (profile == null) ...[
+        if (error == null)
+          const Center(child: CircularProgressIndicator())
+        else
+          TextButton(onPressed: load, child: const Text('Retry')),
+      ] else ...[
+        if (section == 0) ...[
+          const Text(
+            'Skin type and concerns help organize the changes you want to track. Blank means not shared.',
+          ),
+          choice('skin_type', 'Skin type', {
+            'dry': 'Dry',
+            'oily': 'Oily',
+            'combination': 'Combination',
+            'normal': 'Normal',
+            'sensitive': 'Sensitive',
+          }, root: true),
+          entries('skin_concerns', 'Skin concerns', root: true),
+          entries('sensitivities_allergies', 'Known sensitivities / allergies'),
+          const Text(
+            'Known reactions help distinguish tolerated products from reported triggers. Empty entries do not mean no allergies.',
+          ),
+        ],
+        if (section == 1) ...[
+          const Text(
+            'Care and treatment details provide context for skin changes. Goals define what you want to track.',
+          ),
+          choice('dermatologist_care', 'Dermatologist care', {
+            'current': 'Currently receiving care',
+            'past': 'Previously received care',
+            'never': 'Never received care',
+            'prefer_not_to_say': 'Prefer not to say',
+          }),
+          entries('medications_treatments', 'Skin medications / treatments'),
+          entries('primary_goals', 'Primary goals'),
+        ],
+        if (section == 2) ...[
+          const Text(
+            'Age group and disclosed sex provide physiological context. Hormonal and menstrual context may help contextualize changes over time. All are optional; cycle questions are available to everyone without assuming applicability.',
+          ),
+          choice('age_band', 'Age group', {
+            'under_18': 'Under 18',
+            '18_24': '18–24',
+            '25_34': '25–34',
+            '35_44': '35–44',
+            '45_54': '45–54',
+            '55_64': '55–64',
+            '65_plus': '65+',
+            'prefer_not_to_say': 'Prefer not to say',
+          }),
+          choice('sex', 'Sex', {
+            'female': 'Female',
+            'male': 'Male',
+            'intersex': 'Intersex',
+            'prefer_not_to_say': 'Prefer not to say',
+          }),
+          choice('hormonal_disclosure', 'Hormonal context', {
+            'disclosed': 'Choose context to share',
+            'none_reported': 'No relevant context reported',
+            'prefer_not_to_say': 'Prefer not to say',
+          }),
+          if (value('hormonal_disclosure') == 'disclosed')
+            Wrap(
+              children:
+                  {
+                    'puberty': 'Puberty',
+                    'pregnancy': 'Pregnancy',
+                    'postpartum': 'Postpartum',
+                    'perimenopause': 'Perimenopause',
+                    'menopause': 'Menopause',
+                    'hormonal_contraception': 'Hormonal contraception',
+                    'hormone_therapy': 'Hormone therapy',
+                  }.entries.map((e) {
+                    final selected = List<String>.from(
+                      value('hormonal_context') as List? ?? [],
+                    );
+                    return FilterChip(
+                      label: Text(e.value),
+                      selected: selected.contains(e.key),
+                      onSelected: saving
+                          ? null
+                          : (on) => setState(() {
+                              on ? selected.add(e.key) : selected.remove(e.key);
+                              contextDraft['hormonal_context'] = selected;
+                            }),
+                    );
+                  }).toList(),
+            ),
+          choice('menstrual_context', 'Menstrual cycle context', {
+            'regular': 'Regular cycles',
+            'irregular': 'Irregular cycles',
+            'not_menstruating': 'Not menstruating',
+            'not_applicable': 'Not applicable',
+            'prefer_not_to_say': 'Prefer not to say',
+          }),
+        ],
+        if (section > 0)
+          TextButton(
+            onPressed: saving
+                ? null
+                : () => setState(() {
+                    section--;
+                  }),
+            child: const Text('Back'),
+          ),
+        if (section < 2)
+          TextButton(
+            onPressed: saving
+                ? null
+                : () => setState(() {
+                    section++;
+                  }),
+            child: const Text('Next optional section'),
+          ),
+        FilledButton(
+          key: const Key('saveProfile'),
+          onPressed: saving ? null : save,
+          child: Text(saving ? 'Saving…' : 'Save and continue'),
+        ),
+        TextButton(
+          onPressed: saving
+              ? null
+              : () {
+                  if (widget.editing) {
+                    Navigator.of(context).pop();
+                  } else {
+                    _openApp(context, widget.state);
+                  }
+                },
+          child: const Text('Skip / keep saved profile'),
+        ),
+      ],
+    ],
+  );
 }

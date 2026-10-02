@@ -1,6 +1,6 @@
 from datetime import datetime
-from typing import List, Optional, Any, Dict, Literal
-from pydantic import BaseModel, EmailStr, Field, ConfigDict
+from typing import List, Optional, Any, Dict, Literal, Annotated
+from pydantic import BaseModel, EmailStr, Field, ConfigDict, field_validator
 
 # ==================== User & Auth Schemas ====================
 
@@ -28,10 +28,26 @@ class AcceptSafetyRequest(BaseModel):
     accepted: bool = Field(True)
     policy_version: str = Field("1.0")
 
+ProfileText = Annotated[str, Field(min_length=1, max_length=200, pattern=r'\S')]
+
+class SkinContext(BaseModel):
+    age_band: Optional[Literal['under_18', '18_24', '25_34', '35_44', '45_54', '55_64', '65_plus', 'prefer_not_to_say']] = None
+    sex: Optional[Literal['female', 'male', 'intersex', 'prefer_not_to_say']] = None
+    sensitivities_allergies: Optional[List[ProfileText]] = Field(None, max_length=30)
+    dermatologist_care: Optional[Literal['current', 'past', 'never', 'prefer_not_to_say']] = None
+    medications_treatments: Optional[List[ProfileText]] = Field(None, max_length=30)
+    primary_goals: Optional[List[ProfileText]] = Field(None, max_length=10)
+    hormonal_context: Optional[List[Literal['puberty', 'pregnancy', 'postpartum', 'perimenopause', 'menopause', 'hormonal_contraception', 'hormone_therapy']]] = Field(None, max_length=7)
+    hormonal_disclosure: Optional[Literal['disclosed', 'none_reported', 'prefer_not_to_say']] = None
+    menstrual_context: Optional[Literal['regular', 'irregular', 'not_menstruating', 'not_applicable', 'prefer_not_to_say']] = None
+    model_config = ConfigDict(extra='forbid')
+
 class SkinProfileUpdate(BaseModel):
+    profile_context: Optional[SkinContext] = None
+    model_config = ConfigDict(extra='forbid')
     skin_type: Optional[str] = Field(None, pattern="^(dry|oily|combination|normal|sensitive)$")
     selected_goal: Optional[str] = Field(None, max_length=100)
-    skin_concerns: Optional[List[str]] = Field(None)
+    skin_concerns: Optional[List[ProfileText]] = Field(None, max_length=30)
 
 class UserOut(BaseModel):
     id: str
@@ -41,11 +57,17 @@ class UserOut(BaseModel):
     safety_accepted: bool
     safety_accepted_at: Optional[datetime] = None
     skin_type: Optional[str] = None
-    selected_goal: str
+    profile_context: Optional[SkinContext] = None
+    selected_goal: Optional[str] = None
     skin_concerns: List[str]
     tokens_balance: int
     baseline_checkins_count: int
     created_at: datetime
+
+    @field_validator('skin_concerns', mode='before')
+    @classmethod
+    def legacy_empty_concerns(cls, value):
+        return [] if value is None else value
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -230,7 +252,7 @@ class DoctorPatientOut(BaseModel):
     full_name: str
     email: EmailStr
     skin_type: Optional[str] = None
-    selected_goal: str
+    selected_goal: Optional[str] = None
     last_check_in: str
     active_experiment: Optional[str] = None
     priority: str

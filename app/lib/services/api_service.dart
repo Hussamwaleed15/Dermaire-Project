@@ -261,8 +261,9 @@ class ApiService extends ChangeNotifier {
     String? skinType,
     String? selectedGoal,
     List<String>? skinConcerns,
+    Map<String, dynamic>? fields,
   }) async {
-    final bodyMap = <String, dynamic>{};
+    final bodyMap = <String, dynamic>{...?fields};
     if (skinType != null) bodyMap['skin_type'] = skinType;
     if (selectedGoal != null) bodyMap['selected_goal'] = selectedGoal;
     if (skinConcerns != null) bodyMap['skin_concerns'] = skinConcerns;
@@ -273,7 +274,11 @@ class ApiService extends ChangeNotifier {
       body: jsonEncode(bodyMap),
     );
     final data = jsonDecode(res.body) as Map<String, dynamic>;
-    if (res.statusCode >= 200 && res.statusCode < 300) {
+    if (res.statusCode == 200 &&
+        data['skin_concerns'] is List &&
+        (data['skin_concerns'] as List).every((v) => v is String) &&
+        data.containsKey('profile_context') &&
+        (data['profile_context'] == null || data['profile_context'] is Map)) {
       _currentUser = data;
       return data;
     }

@@ -29,8 +29,10 @@ class User(Base):
 
     # Skin Profile
     skin_type = Column(String(50), nullable=True)
-    selected_goal = Column(String(100), default="Reduce Acne")
-    skin_concerns = Column(JSON, default=lambda: ["Redness"])
+    selected_goal = Column(String(100), nullable=True)
+    skin_concerns = Column(JSON, default=list)
+
+    profile_context = Column(JSON, nullable=True) # User-disclosed Profile v2; no inferred defaults
 
     # Gamification
     tokens_balance = Column(Integer, default=0)

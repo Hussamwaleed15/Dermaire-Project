@@ -44,7 +44,7 @@ class DermaireState extends ChangeNotifier {
   bool experimentPaused = false;
   bool get todayCheckedIn => baseline.todayCheckedIn;
   bool doctorLinkActive = false;
-  String selectedGoal = 'Improve Skin Texture';
+  String selectedGoal = '';
   final Set<String> skinConcerns = <String>{};
   String userName = 'Skin Lab User';
   String userEmail = '';
@@ -98,7 +98,7 @@ class DermaireState extends ChangeNotifier {
     experimentDay = 1;
     experimentPaused = false;
     doctorLinkActive = false;
-    selectedGoal = 'Improve Skin Texture';
+    selectedGoal = '';
     skinConcerns.clear();
     userName = 'Skin Lab User';
     userEmail = '';
