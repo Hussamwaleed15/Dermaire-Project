@@ -5,7 +5,7 @@ import json
 from sqlalchemy import or_
 
 from app.core.config import settings
-from app.models import (User, Product, Experiment, CheckIn, DoctorPatientAccess,
+from app.models import (User, Product, Experiment, ExperimentEvaluation, CheckIn, DoctorPatientAccess,
                         ClinicalNote, RewardRedemption, AuditLog, DailyContext, RoutineEntry, RoutineAdherence)
 from app.services.azure_blob import azure_blob_service
 
@@ -14,7 +14,7 @@ def delete_account(db, user_id):
     user = db.query(User).filter(User.id == user_id).with_for_update().first()
     if user is None:
         return  # A valid access token can retry after the response was lost.
-    owned_models = (RoutineAdherence, RoutineEntry, DailyContext, CheckIn, Experiment, Product, RewardRedemption)
+    owned_models = (ExperimentEvaluation, RoutineAdherence, DailyContext, CheckIn, Experiment, RoutineEntry, Product, RewardRedemption)
     identifiers = {user_id, user.email, user.full_name}
     for model in owned_models:
         identifiers.update(row.id for row in db.query(model).filter(model.user_id == user_id))
@@ -29,7 +29,10 @@ def delete_account(db, user_id):
         CheckIn.user_id != user_id, CheckIn.experiment_id.in_(experiment_ids)).first()
     foreign_experiment = db.query(Experiment.id).filter(
         Experiment.user_id != user_id, Experiment.product_id.in_(product_ids)).first()
-    if foreign_checkin or foreign_experiment:
+    entry_ids = db.query(RoutineEntry.id).filter_by(user_id=user_id).scalar_subquery()
+    foreign_entry_experiment = db.query(Experiment.id).filter(
+        Experiment.user_id != user_id, Experiment.routine_entry_id.in_(entry_ids)).first()
+    if foreign_checkin or foreign_experiment or foreign_entry_experiment:
         raise RuntimeError("Inconsistent cross-account links require repair before deletion")
     # Keep ownership records until ALL external deletes succeed. Partial cleanup
     # can safely retry because deleting an absent blob is a no-op.

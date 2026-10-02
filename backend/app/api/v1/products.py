@@ -4,7 +4,8 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.exceptions import EntityNotFoundException, DermaireException
 from app.api.deps import get_current_user, record_audit
-from app.models import User, Product, RoutineEntry
+from app.models import User, Product, RoutineEntry, Experiment
+from app.services.experiments import guard_routine_write
 from app.services.routine import lock_owner, deactivate
 from app.schemas import (
     ProductCreate, ProductUpdate, ProductOut,
@@ -127,6 +128,7 @@ def update_product(
     if not product:
         raise EntityNotFoundException("Product", product_id)
 
+    guard_routine_write(db, current_user.id)
     data = payload.model_dump(exclude_unset=True)
     required_fields = {"name", "category", "active_ingredients", "skin_concerns",
                        "usage_instructions", "frequency_per_week", "time_of_use",
@@ -168,6 +170,8 @@ def delete_product(
     if not product:
         raise EntityNotFoundException("Product", product_id)
 
+    if db.query(Experiment).filter_by(product_id=product.id).first():
+        raise DermaireException(message="Archive this product to preserve experiment history.", error_code="PRODUCT_HAS_EXPERIMENT_HISTORY", status_code=409)
     if product.in_experiment:
         raise DermaireException(
             message="Cannot delete a product currently linked to an active skin experiment. Archive or finish the experiment first.",

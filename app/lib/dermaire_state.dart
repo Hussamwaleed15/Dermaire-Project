@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'baseline/baseline_controller.dart';
+import 'experiments/experiment_controller.dart';
 import 'context_controller.dart';
 import 'home_controller.dart';
 import 'products/product_repository.dart';
@@ -16,13 +17,24 @@ class JournalEntry {
 }
 
 class DermaireState extends ChangeNotifier {
-  DermaireState({ProductRepository? productRepository, BaselineRepository? baselineRepository, ContextRepository? contextRepository, HomeRepository? homeRepository}) {
+  DermaireState({
+    ProductRepository? productRepository,
+    BaselineRepository? baselineRepository,
+    ContextRepository? contextRepository,
+    HomeRepository? homeRepository,
+    ExperimentRepository? experimentRepository,
+  }) {
+    experiments = ExperimentController(
+      experimentRepository ?? RemoteExperimentRepository(),
+    )..addListener(notifyListeners);
     home = HomeController(homeRepository ?? RemoteHomeRepository())
       ..addListener(notifyListeners);
-    dailyContext = ContextController(contextRepository ?? RemoteContextRepository())
-      ..addListener(notifyListeners);
-    baseline = BaselineController(baselineRepository ?? RemoteBaselineRepository())
-      ..addListener(notifyListeners);
+    dailyContext = ContextController(
+      contextRepository ?? RemoteContextRepository(),
+    )..addListener(notifyListeners);
+    baseline = BaselineController(
+      baselineRepository ?? RemoteBaselineRepository(),
+    )..addListener(notifyListeners);
     ApiService.instance.addListener(clearAccountData);
     productController = ProductsController(
       productRepository ?? RemoteProductRepository(),
@@ -33,6 +45,7 @@ class DermaireState extends ChangeNotifier {
   late final BaselineController baseline;
   late final ContextController dailyContext;
   late final HomeController home;
+  late final ExperimentController experiments;
   static const _darkModeKey = 'dermaire_dark_mode';
   static const _safetyAcceptedKey = 'dermaire_safety_accepted';
 
@@ -64,7 +77,7 @@ class DermaireState extends ChangeNotifier {
       await dailyContext.refresh();
       await home.refresh();
       safetyAccepted = preferences.getBool(_safetyAcceptedKey) ?? false;
-      
+
       // Fetch live user profile from Azure
       final userProfile = await ApiService.instance.getCurrentUser();
       if (userProfile != null) {
@@ -73,7 +86,9 @@ class DermaireState extends ChangeNotifier {
         selectedGoal = userProfile['selected_goal'] as String? ?? selectedGoal;
         if (userProfile['skin_concerns'] is List) {
           skinConcerns.clear();
-          skinConcerns.addAll((userProfile['skin_concerns'] as List).cast<String>());
+          skinConcerns.addAll(
+            (userProfile['skin_concerns'] as List).cast<String>(),
+          );
         }
       }
 
@@ -95,6 +110,7 @@ class DermaireState extends ChangeNotifier {
     baseline.clear();
     dailyContext.clear();
     home.clear();
+    experiments.clear();
     experimentDay = 1;
     experimentPaused = false;
     doctorLinkActive = false;
@@ -152,8 +168,7 @@ class DermaireState extends ChangeNotifier {
   }
 
   void togglePause() {
-    experimentPaused = !experimentPaused;
-    notifyListeners();
+    experiments.refresh();
   }
 
   void revokeDoctorLink() {
@@ -161,13 +176,18 @@ class DermaireState extends ChangeNotifier {
     notifyListeners();
     final user = ApiService.instance.currentUser;
     if (user != null && user['user_id'] != null) {
-      ApiService.instance.revokeDoctorAccess(user['user_id'].toString()).catchError((_) => false);
+      ApiService.instance
+          .revokeDoctorAccess(user['user_id'].toString())
+          .catchError((_) => false);
     }
   }
 
   @override
   void dispose() {
     ApiService.instance.removeListener(clearAccountData);
+    experiments
+      ..removeListener(notifyListeners)
+      ..dispose();
     home
       ..removeListener(notifyListeners)
       ..dispose();

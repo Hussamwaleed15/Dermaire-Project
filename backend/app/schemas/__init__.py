@@ -152,31 +152,7 @@ class ProductInteractionCheckResponse(BaseModel):
 
 # ==================== Experiment Schemas ====================
 
-class ExperimentCreate(BaseModel):
-    product_id: Optional[str] = None
-    target_days: int = Field(28, ge=7, le=90)
-    primary_concern: str = Field("texture", max_length=100)
-
-class ExperimentUpdate(BaseModel):
-    status: Optional[str] = Field(None, pattern="^(baseline|active|paused|completed)$")
-    current_day: Optional[int] = Field(None, ge=1, le=90)
-
-class ExperimentOut(BaseModel):
-    id: str
-    user_id: str
-    product_id: Optional[str] = None
-    target_days: int
-    current_day: int
-    status: str
-    primary_concern: str
-    redness_delta_percent: Optional[float] = None
-    texture_delta_percent: Optional[float] = None
-    hydration_delta_percent: Optional[float] = None
-    start_date: datetime
-    end_date: Optional[datetime] = None
-    created_at: datetime
-
-    model_config = ConfigDict(from_attributes=True)
+from app.schemas.experiments import ExperimentCreate, ExperimentUpdate, ExperimentOut
 
 # ==================== CheckIn Schemas ====================
 

@@ -23,7 +23,7 @@ def get_home(current_user: User = Depends(get_current_user), db: Session = Depen
         projection = experiment_projection(db, current_user.id, experiment)
         product = db.query(Product).filter(Product.id == experiment.product_id,
             Product.user_id == current_user.id).first()
-        summary = {key: projection[key] for key in (
+        summary = {key: getattr(projection, key) for key in (
             "id", "status", "current_day", "target_days", "primary_concern",
             "redness_delta_percent", "texture_delta_percent", "hydration_delta_percent")}
         summary["product_name"] = product.name if product else None

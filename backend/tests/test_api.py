@@ -109,9 +109,15 @@ def test_experiment_and_checkin_flow(client):
     token = login_res.json()["access_token"]
     headers = {"Authorization": f"Bearer {token}"}
 
-    # Start 28-day experiment
+    # v2 drafts require exactly one owned routine target.
+    from datetime import datetime, timezone
+    day = datetime.now(timezone.utc).date().isoformat()
+    products = client.get("/api/v1/products", headers=headers).json()
+    entry = client.post("/api/v1/routine/entries", headers=headers, json={
+        "product_id": products[0]["id"], "schedule": "AM", "frequency": "daily", "start_date": day}).json()
     exp_res = client.post("/api/v1/experiments", headers=headers, json={
-        "target_days": 28,
+        "routine_entry_id": entry["id"], "intervention": {"type": "start_entry", "schedule": "AM"},
+        "start_date": day, "target_days": 28,
         "primary_concern": "texture"
     })
     assert exp_res.status_code == 201

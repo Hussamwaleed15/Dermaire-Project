@@ -1,4 +1,4 @@
-﻿from datetime import datetime, timezone
+from datetime import datetime, timezone
 from typing import List, Optional
 from fastapi import APIRouter, Depends, UploadFile, File, Form, status
 from sqlalchemy.orm import Session
@@ -106,7 +106,7 @@ async def submit_daily_checkin(
             file_bytes=photo_bytes, original_filename=photo.filename,
             content_type=photo.content_type or "image/jpeg", owner_id=current_user.id)
 
-    if exp and exp.status == "active" and (valid_scores or has_photo):
+    if exp and exp.engine_version != 2 and exp.status == "active" and (valid_scores or has_photo):
         exp.current_day = min(exp.target_days, exp.current_day + 1)
         baseline = baseline_snapshot(db, current_user.id, before=exp.created_at)
         for metric, score in (("redness", redness_score), ("texture", texture_score),

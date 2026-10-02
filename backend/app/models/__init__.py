@@ -80,6 +80,10 @@ class Product(Base):
 
 class Experiment(Base):
     __tablename__ = "experiments"
+    __table_args__ = (
+        CheckConstraint("engine_version IS NULL OR (engine_version = 2 AND intervention IS NOT NULL AND routine_entry_id IS NOT NULL AND product_id IS NOT NULL AND source IS NOT NULL AND source = 'user_configured' AND status IS NOT NULL AND target_days IS NOT NULL AND status IN ('draft','active','completed','stopped','cancelled') AND target_days BETWEEN 7 AND 90)", name="ck_experiment_v2_definition"),
+        CheckConstraint("engine_version IS NULL OR ((status = 'active' AND active_owner IS NOT NULL AND active_owner = user_id AND activated_at IS NOT NULL AND definition_snapshot IS NOT NULL) OR (status <> 'active' AND active_owner IS NULL))", name="ck_experiment_v2_owner"),
+    )
 
     id = Column(String(36), primary_key=True, default=gen_uuid)
     user_id = Column(String(36), ForeignKey("users.id"), nullable=False, index=True)
@@ -95,8 +99,29 @@ class Experiment(Base):
     end_date = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=utc_now)
 
+    # Nullable version distinguishes quarantined legacy experiments.
+    engine_version = Column(Integer, nullable=True)
+    routine_entry_id = Column(String(36), ForeignKey("routine_entries.id"), nullable=True)
+    intervention = Column(JSON, nullable=True)
+    goal = Column(Text, nullable=True)
+    notes = Column(Text, nullable=True)
+    source = Column(String(30), nullable=True)
+    activated_at = Column(DateTime, nullable=True)
+    stopped_at = Column(DateTime, nullable=True)
+    definition_snapshot = Column(JSON, nullable=True)
+    # One active v2 experiment per user, including concurrent inserts.
+    active_owner = Column(String(36), unique=True, nullable=True)
+
     user = relationship("User", back_populates="experiments")
     checkins = relationship("CheckIn", back_populates="experiment")
+
+class ExperimentEvaluation(Base):
+    __tablename__ = "experiment_evaluations"
+    id = Column(String(36), primary_key=True, default=gen_uuid)
+    user_id = Column(String(36), ForeignKey("users.id"), nullable=False, index=True)
+    experiment_id = Column(String(36), ForeignKey("experiments.id"), nullable=False, index=True)
+    result = Column(JSON, nullable=False)
+    created_at = Column(DateTime, nullable=False, default=utc_now)
 
 class CheckIn(Base):
     __tablename__ = "checkins"

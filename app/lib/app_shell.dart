@@ -4,6 +4,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
 import 'chatbot.dart';
+import 'experiments/experiment_ui.dart';
 import 'onboarding_screens.dart';
 import 'dermaire_state.dart';
 import 'dermaire_theme.dart';
@@ -268,255 +269,20 @@ class HomeTab extends StatelessWidget {
   }
 }
 
-class ExperimentTab extends StatefulWidget {
+class ExperimentTab extends StatelessWidget {
   const ExperimentTab({super.key, required this.state});
   final DermaireState state;
-
   @override
-  State<ExperimentTab> createState() => _ExperimentTabState();
-}
-
-class _ExperimentTabState extends State<ExperimentTab> {
-  int step = 0;
-  static const goals = [
-    ('🔥', 'Reduce Acne'),
-    ('💧', 'Improve Hydration'),
-    ('✨', 'Even Skin Tone'),
-    ('🌸', 'Reduce Redness'),
-    ('⚪', 'Minimize Pores'),
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    if (widget.state.baseline.hasProgress) {
-      return _baselineStep(context);
-    }
-    if (step == 0) return _goalStep(context);
-    if (step == 1) return _reviewStep(context);
-    if (step == 2) return _safetyStep(context);
-    return _baselineStep(context);
-  }
-
-  Widget _goalStep(BuildContext context) => _TabPage(
-    children: [
-      if (widget.state.baseline.error != null) Text(widget.state.baseline.error!),
-      OutlinedButton(
-        onPressed: widget.state.baseline.loading ? null : widget.state.baseline.refresh,
-        child: const Text('Refresh baseline'),
-      ),
-      const Eyebrow('New experiment'),
-      Text(
-        'Choose your goal',
-        style: Theme.of(context).textTheme.headlineSmall,
-      ),
-      const SizedBox(height: 6),
-      const Text('What would you like to focus on?'),
-      const SizedBox(height: 16),
-      ...goals.map((goal) {
-        final selected = widget.state.selectedGoal == goal.$2;
-        return DermaireCard(
-          color: selected ? DermaireColors.paper : DermaireColors.card,
-          borderColor: selected ? DermaireColors.deep : DermaireColors.line,
-          onTap: () => widget.state.selectGoal(goal.$2),
-          child: Row(
-            children: [
-              Text(goal.$1),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  goal.$2,
-                  style: const TextStyle(fontWeight: FontWeight.w700),
-                ),
-              ),
-              Icon(
-                selected ? Icons.radio_button_checked : Icons.radio_button_off,
-                color: selected ? DermaireColors.deep : DermaireColors.caramel,
-              ),
-            ],
-          ),
-        );
-      }),
-      FilledButton(
-        onPressed: () {
-          ApiService.instance.updateSkinProfile(selectedGoal: widget.state.selectedGoal).catchError((_) => <String, dynamic>{});
-          setState(() => step = 1);
-        },
-        child: const Text('Next'),
-      ),
-    ],
-  );
-
-  Widget _reviewStep(BuildContext context) => _TabPage(
-    children: [
-      const Eyebrow('New experiment'),
-      Text(
-        'What do you want to test?',
-        style: Theme.of(context).textTheme.headlineSmall,
-      ),
-      const SizedBox(height: 16),
-      _LabeledValue(
-        'Question',
-        'Does ${widget.state.productController.active.where((product) => product.inExperiment).firstOrNull?.name ?? 'this product'} improve my skin texture?',
-      ),
-      _LabeledValue(
-        'Variable',
-        widget.state.productController.active
-                .where((product) => product.inExperiment)
-                .firstOrNull
-                ?.name ??
-            'Choose a product',
-      ),
-      const _LabeledValue('Target measurement', 'Texture'),
-      const Row(
-        children: [
-          Expanded(child: MetricTile('Not started', 'Start date')),
-          SizedBox(width: 10),
-          Expanded(child: MetricTile('28 days', 'Duration')),
-        ],
-      ),
-      const SizedBox(height: 14),
-      FilledButton(
-        onPressed: () => setState(() => step = 2),
-        child: const Text('Review'),
-      ),
-      const SizedBox(height: 8),
-      OutlinedButton(
-        onPressed: () => setState(() => step = 0),
-        child: const Text('Back'),
-      ),
-    ],
-  );
-
-  Widget _safetyStep(BuildContext context) => _TabPage(
-    children: [
-      if (widget.state.baseline.error != null) Text(widget.state.baseline.error!),
-      const Eyebrow('Ready to begin?'),
-      Text(
-        'Experiment safety check',
-        style: Theme.of(context).textTheme.headlineSmall,
-      ),
-      const SizedBox(height: 16),
-      _LabeledValue(
-        'Test',
-        '${widget.state.productController.active.where((product) => product.inExperiment).firstOrNull?.name ?? 'Choose a product'} · Texture · 28 days',
-      ),
-      const DermaireCard(
-        color: DermaireColors.safeBackground,
-        borderColor: Colors.transparent,
-        child: Column(
-          children: [
-            StatusPill('🟢 GO'),
-            SizedBox(height: 8),
-            Text('Your experiment can begin.', style: TextStyle(fontSize: 12)),
-          ],
-        ),
-      ),
-      FilledButton(
-        onPressed: widget.state.baseline.loading ? null : () async {
-          final confirmed = await widget.state.baseline.refresh();
-          if (mounted && confirmed) setState(() => step = 3);
-        },
-        child: const Text('Begin baseline'),
-      ),
-      const SizedBox(height: 14),
-      const Notice(
-        icon: 'ⓘ',
-        text:
-            'If an interaction check flags a conflict or unstable conditions, Dermaire blocks the experiment and explains the next step.',
-      ),
-    ],
-  );
-
-  Widget _baselineStep(BuildContext context) => _TabPage(
-    children: [
-      const Eyebrow('Baseline period'),
-      if (!widget.state.baseline.available)
-        Text(widget.state.baseline.error ?? 'Confirming baseline with server...'),
-      OutlinedButton(
-        onPressed: widget.state.baseline.loading ? null : widget.state.baseline.refresh,
-        child: const Text('Refresh baseline'),
-      ),
-      Text(
-        'Establishing your baseline',
-        style: Theme.of(context).textTheme.headlineSmall,
-      ),
-      const SizedBox(height: 6),
-      const Text(
-        "We're learning what your skin looks like before the experiment begins.",
-      ),
-      const SizedBox(height: 16),
-      DermaireCard(
-        child: Column(
-          children: [
-            const Text('Day', style: TextStyle(fontSize: 13)),
-            Text(
-              '${widget.state.baselineCheckIns ?? 'Unknown'} of 5 days',
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-            const SizedBox(height: 10),
-            LinearProgressIndicator(
-              value: widget.state.baselineCheckIns == null ? null : widget.state.baselineCheckIns! / 5,
-              minHeight: 6,
-              color: DermaireColors.deep,
-              backgroundColor: DermaireColors.line,
-            ),
-          ],
-        ),
-      ),
-      Row(
-        children: [
-          Expanded(
-            child: MetricTile(
-              '${widget.state.baselineCheckIns ?? 'Unknown'}',
-              'Confirmed days',
-            ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(child: MetricTile(!widget.state.baseline.available ? 'Unknown' : widget.state.baseline.ready ? 'Ready' : 'Collecting', 'Baseline status')),
-        ],
-      ),
-      const SizedBox(height: 14),
-      FilledButton(
-        onPressed: () => openPage(context, CameraScreen(state: widget.state)),
-        child: const Text("Take today's check-in"),
-      ),
-      const SizedBox(height: 8),
-      const Text('Baseline uses five different UTC days. Experiment comparisons require all five days before that experiment began. Image estimates are proxies, not clinical measurements.'),
-      if (widget.state.baseline.ready)
-        ...widget.state.baseline.metrics.entries.map((entry) => _LabeledValue(
-          '${entry.key} baseline',
-          'Mean: ${entry.value['mean']} · Standard deviation: ${entry.value['standard_deviation']}',
-        )),
-    ],
-  );
-}
-
-class _LabeledValue extends StatelessWidget {
-  const _LabeledValue(this.label, this.value);
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) => DermaireCard(
-    color: DermaireColors.card,
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 11.5,
-            color: DermaireColors.ink.withValues(alpha: .6),
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13.5),
-        ),
-      ],
-    ),
-  );
+  Widget build(BuildContext context) => ExperimentsView(controller: state.experiments, header: Padding(padding: const EdgeInsets.all(12), child: Column(children: [
+      Text('${state.baseline.completedDays ?? 'Unknown'} of 5 days'),
+      if (state.baseline.error != null) Text(state.baseline.error!),
+      OutlinedButton(onPressed: state.baseline.loading ? null : state.baseline.refresh, child: const Text('Refresh baseline')),
+      ExpansionTile(title: const Text('Personal baseline'), children: [
+        const Text('The baseline feature uses five confirmed UTC days. Each experiment freezes its own recent comparison window.'),
+        for (final metric in state.baseline.metrics.entries) Text('${metric.key}: mean ${metric.value['mean']}, standard deviation ${metric.value['standard_deviation']}'),
+        TextButton(onPressed: () => openPage(context, CameraScreen(state: state)), child: const Text('Record a check-in')),
+      ]),
+    ])));
 }
 
 class RewardsTab extends StatelessWidget {
@@ -538,213 +304,26 @@ class RewardsTab extends StatelessWidget {
 class ReportsTab extends StatelessWidget {
   const ReportsTab({super.key, required this.state});
   final DermaireState state;
-
-  @override
-  Widget build(BuildContext context) => _TabPage(
-    children: [
-      const Eyebrow('Demo results - not your measurements'),
-      Text('Your results', style: Theme.of(context).textTheme.headlineSmall),
-      const SizedBox(height: 6),
-      const Text('Product X · 28-day experiment'),
-      const SizedBox(height: 16),
-      const DermaireCard(
-        color: DermaireColors.card,
-        child: SizedBox(height: 160, child: _ProgressChart()),
-      ),
-      const Row(
-        children: [
-          Expanded(child: MetricTile('−18%', 'Texture change')),
-          SizedBox(width: 10),
-          Expanded(child: MetricTile('25/28', 'Check-ins logged')),
-        ],
-      ),
-      const SizedBox(height: 14),
-      const Notice(
-        icon: 'ⓘ',
-        text:
-            'Your result was adjusted for 3 days of recorded environmental conditions.',
-      ),
-      FilledButton(
-        onPressed: () => openPage(context, ResultsScreen(state: state)),
-        child: const Text('View full result'),
-      ),
-      const SizedBox(height: 8),
-      OutlinedButton(
-        onPressed: () => openPage(context, ReportScreen(state: state)),
-        child: const Text('Generate report'),
-      ),
-    ],
-  );
-}
-
-class _ProgressChart extends StatelessWidget {
-  const _ProgressChart();
-
   @override
   Widget build(BuildContext context) =>
-      CustomPaint(painter: _ChartPainter(), child: const SizedBox.expand());
+      ExperimentsView(controller: state.experiments);
 }
 
-class _ChartPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final grid = Paint()
-      ..color = DermaireColors.line
-      ..strokeWidth = 1;
-    for (var i = 1; i < 4; i++) {
-      canvas.drawLine(
-        Offset(0, size.height * i / 4),
-        Offset(size.width, size.height * i / 4),
-        grid,
-      );
-    }
-    final values = [.82, .74, .78, .57, .52, .33, .28, .13];
-    final path = Path();
-    for (var i = 0; i < values.length; i++) {
-      final point = Offset(
-        size.width * i / (values.length - 1),
-        size.height * values[i],
-      );
-      i == 0
-          ? path.moveTo(point.dx, point.dy)
-          : path.lineTo(point.dx, point.dy);
-    }
-    canvas.drawPath(
-      path,
-      Paint()
-        ..color = DermaireColors.deep
-        ..strokeWidth = 3
-        ..style = PaintingStyle.stroke
-        ..strokeCap = StrokeCap.round,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
-
-class ResultsScreen extends StatefulWidget {
+class ResultsScreen extends StatelessWidget {
   const ResultsScreen({super.key, required this.state});
   final DermaireState state;
-
   @override
-  State<ResultsScreen> createState() => _ResultsScreenState();
-}
-
-class _ResultsScreenState extends State<ResultsScreen> {
-  int interpretation = 0;
-
-  @override
-  Widget build(BuildContext context) {
-    const titles = [
-      'Your skin showed improvement',
-      'No significant change detected',
-      'Measurements changed negatively',
-    ];
-    const descriptions = [
-      'Texture improved by 18% compared with your personal baseline.',
-      'Your measurements stayed close to your personal baseline.',
-      'Some measurements moved away from your baseline during the experiment.',
-    ];
-    final colors = [
-      DermaireColors.safeBackground,
-      DermaireColors.paper,
-      DermaireColors.conflictBackground,
-    ];
-    return DermairePage(
-      eyebrow: 'Demo result interpretation - not your baseline data',
-      title: 'What this means',
-      children: [
-        SegmentedButton<int>(
-          segments: const [
-            ButtonSegment(value: 0, label: Text('Positive')),
-            ButtonSegment(value: 1, label: Text('No change')),
-            ButtonSegment(value: 2, label: Text('Negative')),
-          ],
-          selected: {interpretation},
-          onSelectionChanged: (value) =>
-              setState(() => interpretation = value.first),
-          showSelectedIcon: false,
-          style: const ButtonStyle(visualDensity: VisualDensity.compact),
-        ),
-        const SizedBox(height: 16),
-        DermaireCard(
-          color: colors[interpretation],
-          borderColor: Colors.transparent,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                '${interpretation == 0
-                    ? '🟢'
-                    : interpretation == 1
-                    ? '⚪'
-                    : '🟠'} ${titles[interpretation]}',
-                style: const TextStyle(fontWeight: FontWeight.w700),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                descriptions[interpretation],
-                style: const TextStyle(fontSize: 12.5),
-              ),
-            ],
-          ),
-        ),
-        if (interpretation == 0)
-          FilledButton(
-            onPressed: () =>
-                openPage(context, ReportScreen(state: widget.state)),
-            child: const Text('Generate report'),
-          )
-        else
-          FilledButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(
-              interpretation == 1
-                  ? 'Start another experiment'
-                  : 'Review experiment',
-            ),
-          ),
-      ],
-    );
-  }
+  Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(title: const Text('Experiment results')),
+    body: ExperimentsView(controller: state.experiments),
+  );
 }
 
 class ReportScreen extends StatelessWidget {
   const ReportScreen({super.key, required this.state});
   final DermaireState state;
-
   @override
-  Widget build(BuildContext context) {
-    const sections = [
-      ('1. Experiment', 'Product X · 28 days · Target: texture'),
-      (
-        '2. Baseline',
-        'Example baseline average and standard deviation; not computed from your measurements',
-      ),
-      ('3–4. Measurements & change', 'Texture improved 18% vs. baseline'),
-      (
-        '5. Context',
-        'User-reported daily context is stored separately. No weather exclusions or score adjustments are applied.',
-      ),
-      (
-        '6. Conclusion',
-        'The measured change was associated with the tested product during this controlled experiment.',
-      ),
-      ('7. Data quality', '25 of 28 check-ins · 89% consistency'),
-    ];
-    return DermairePage(
-      eyebrow: 'Demo report - not your baseline data',
-      title: 'Personal Skin Lab report',
-      children: [
-        ...sections.map((item) => _LabeledValue(item.$1, item.$2)),
-        FilledButton(
-          onPressed: () => openPage(context, DoctorAccessScreen(state: state)),
-          child: const Text('Share with doctor'),
-        ),
-      ],
-    );
-  }
+  Widget build(BuildContext context) => ResultsScreen(state: state);
 }
 
 class DoctorAccessScreen extends StatelessWidget {

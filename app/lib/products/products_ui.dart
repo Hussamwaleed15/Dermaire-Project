@@ -1001,17 +1001,10 @@ class ProductFeatureDetailScreen extends StatelessWidget {
                       state.productController.setRoutine(product.id, value),
                     ),
             ),
-            SwitchListTile(
+            const ListTile(
               contentPadding: EdgeInsets.zero,
-              title: const Text('Use in current experiment'),
-              subtitle: const Text('Only one active test product is allowed.'),
-              value: product.inExperiment,
-              onChanged: state.productController.isSaving
-                  ? null
-                  : (value) => _showResult(
-                      context,
-                      state.productController.setExperiment(product.id, value),
-                    ),
+              title: Text('Controlled experiments'),
+              subtitle: Text('Plan one routine change in the Experiment tab. A product marker does not start an experiment.'),
             ),
           ],
         ],

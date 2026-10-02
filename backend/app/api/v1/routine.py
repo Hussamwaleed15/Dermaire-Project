@@ -4,6 +4,7 @@ from app.api.deps import get_current_user
 from app.core.database import get_db
 from app.models import User, Product, RoutineEntry, RoutineAdherence
 from app.services.routine import today, lock_owner, owned_entry, slot_keys, commit, deactivate
+from app.services.experiments import guard_routine_write, stopped_experiment
 from app.schemas.routine import RoutineCreate, RoutineUpdate, RoutineOut, AdherenceCreate, AdherenceOut
 
 router = APIRouter(prefix="/routine", tags=["Routine"])
@@ -18,6 +19,7 @@ def entries(active: bool | None = None, user: User = Depends(get_current_user), 
 @router.post("/entries", response_model=RoutineOut, status_code=201)
 def create(payload: RoutineCreate, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     lock_owner(db, user)
+    guard_routine_write(db, user.id)
     product = db.query(Product).filter_by(id=payload.product_id, user_id=user.id).first()
     if product is None:
         raise HTTPException(404, "Product not found")
@@ -41,6 +43,7 @@ def read(entry_id: str, user: User = Depends(get_current_user), db: Session = De
 def update(entry_id: str, payload: RoutineUpdate, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     lock_owner(db, user)
     entry = owned_entry(db, user, entry_id)
+    guard_routine_write(db, user.id)
     data = payload.model_dump(exclude_unset=True)
     if any(value is None for key, value in data.items() if key != "instructions"):
         raise HTTPException(422, "Required configuration fields cannot be null")
@@ -59,6 +62,7 @@ def update(entry_id: str, payload: RoutineUpdate, user: User = Depends(get_curre
 def remove(entry_id: str, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     lock_owner(db, user)
     entry = owned_entry(db, user, entry_id)
+    guard_routine_write(db, user.id)
     if entry.active:
         deactivate(entry)
         commit(db)
@@ -75,8 +79,9 @@ def logs(routine_entry_id: str | None = None, limit: int = Query(100, ge=1, le=5
 def log(payload: AdherenceCreate, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     lock_owner(db, user)
     entry = owned_entry(db, user, payload.routine_entry_id)
-    if not entry.active:
-        raise HTTPException(409, "Cannot report new adherence for a stopped entry")
+    stopping = stopped_experiment(db, user.id, entry.id)
+    if not entry.active and (not stopping or payload.status != "skipped"):
+        raise HTTPException(409, "Stopped entries only accept skipped-use reports for an active stop experiment")
     if payload.slot not in (("AM", "PM") if entry.schedule == "BOTH" else (entry.schedule,)):
         raise HTTPException(422, "Slot is not configured for this entry")
     # Configuration is not versioned by day: do not project current settings into earlier days.

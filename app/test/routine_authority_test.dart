@@ -55,6 +55,46 @@ class Repository implements RoutineRepository {
 }
 
 void main() {
+  testWidgets(
+    'active stop experiment exposes only skipped-use reporting for its stopped target',
+    (tester) async {
+      final stopped = {...entry(), 'active': false, 'end_date': '2026-10-02'};
+      final repository = Repository()..entries = [stopped];
+      await tester.pumpWidget(
+        MaterialApp(home: RoutineScreen(repository: repository)),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('AM skipped today'), findsNothing);
+      await tester.pumpWidget(const SizedBox());
+      repository.pendingWrite = Completer();
+      await tester.pumpWidget(
+        MaterialApp(
+          home: RoutineScreen(repository: repository, stopEntryId: 'entry'),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('AM completed today'), findsNothing);
+      expect(find.text('Edit'), findsNothing);
+      await tester.tap(find.text('AM skipped today'));
+      await tester.pump();
+      expect(find.text('Saved on server'), findsNothing);
+      final evidence = {
+        'id': 'report',
+        'routine_entry_id': 'entry',
+        'date': DateTime.now().toUtc().toIso8601String().substring(0, 10),
+        'slot': 'AM',
+        'status': 'skipped',
+        'source': 'user_reported',
+        'created_at': '2026-10-02T12:00:00',
+        'configuration_snapshot': stopped,
+      };
+      repository.history = [evidence];
+      repository.pendingWrite!.complete(evidence);
+      repository.pendingWrite = null;
+      await tester.pumpAndSettle();
+      expect(find.text('Saved on server'), findsOneWidget);
+    },
+  );
   testWidgets('loading empty success and failure use remote state', (
     tester,
   ) async {

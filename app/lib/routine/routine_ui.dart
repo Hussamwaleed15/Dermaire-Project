@@ -3,8 +3,10 @@ import '../services/api_service.dart';
 import 'routine_controller.dart';
 
 class RoutineScreen extends StatefulWidget {
-  const RoutineScreen({super.key, this.repository});
+  const RoutineScreen({super.key, this.repository, this.stopEntryId});
   final RoutineRepository? repository;
+  // Passed from a server-confirmed active stop experiment; the API verifies it.
+  final String? stopEntryId;
   @override
   State<RoutineScreen> createState() => _RoutineScreenState();
 }
@@ -276,8 +278,8 @@ class _RoutineScreenState extends State<RoutineScreen> {
                             ),
                             if (entry['instructions'] != null)
                               Text(entry['instructions'] as String),
-                            if (entry['active'] == true) ...[
-                              Wrap(
+                            if (entry['active'] == true || entry['id'] == widget.stopEntryId) ...[
+                              if (entry['active'] == true) Wrap(
                                 children: [
                                   TextButton(
                                     onPressed: controller.saving
@@ -303,10 +305,7 @@ class _RoutineScreenState extends State<RoutineScreen> {
                                       : [entry['schedule'] as String])
                                 Wrap(
                                   children: [
-                                    for (final status in [
-                                      'completed',
-                                      'skipped',
-                                    ])
+                                    for (final status in entry['active'] == true ? ['completed', 'skipped'] : ['skipped'])
                                       TextButton(
                                         onPressed:
                                             controller.saving ||
