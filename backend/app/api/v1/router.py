@@ -1,4 +1,4 @@
-﻿from fastapi import APIRouter
+from fastapi import APIRouter
 from app.api.v1.auth import router as auth_router
 from app.api.v1.users import router as users_router
 from app.api.v1.products import router as products_router
@@ -14,6 +14,8 @@ from app.api.v1.context import router as context_router
 
 from app.api.v1.home import router as home_router
 
+from app.api.v1.personal_skin_model import router as personal_skin_model_router
+
 api_v1_router = APIRouter()
 api_v1_router.include_router(home_router)
 api_v1_router.include_router(context_router)
@@ -26,3 +28,5 @@ api_v1_router.include_router(checkins_router)
 api_v1_router.include_router(doctor_router)
 api_v1_router.include_router(rewards_router)
 api_v1_router.include_router(chat_router)
+
+api_v1_router.include_router(personal_skin_model_router)
