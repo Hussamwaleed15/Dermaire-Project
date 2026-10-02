@@ -17,6 +17,8 @@ from app.api.v1.home import router as home_router
 from app.api.v1.personal_skin_model import router as personal_skin_model_router
 
 api_v1_router = APIRouter()
+from app.api.v1.captures import router as captures_router
+api_v1_router.include_router(captures_router)
 api_v1_router.include_router(home_router)
 api_v1_router.include_router(context_router)
 api_v1_router.include_router(baseline_router)

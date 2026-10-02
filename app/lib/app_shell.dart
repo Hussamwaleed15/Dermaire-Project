@@ -1,9 +1,7 @@
-import 'dart:typed_data';
-
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
 import 'chatbot.dart';
+import 'capture/capture_panel.dart';
 import 'experiments/experiment_ui.dart';
 import 'onboarding_screens.dart';
 import 'dermaire_state.dart';
@@ -768,8 +766,6 @@ class CameraScreen extends StatefulWidget {
 }
 
 class _CameraScreenState extends State<CameraScreen> {
-  Uint8List? _photoBytes;
-  String? _photoFilename;
   bool _isUploading = false;
   String? _errorMessage;
   String? _overallChange;
@@ -780,24 +776,6 @@ class _CameraScreenState extends State<CameraScreen> {
   void dispose() {
     _notes.dispose();
     super.dispose();
-  }
-
-  Future<void> _pickPhoto() async {
-    try {
-      final file = await FilePicker.pickFile(
-        type: FileType.image,
-      );
-      if (file != null) {
-        final bytes = await file.readAsBytes();
-        setState(() {
-          _photoBytes = bytes;
-          _photoFilename = file.name;
-          _errorMessage = null;
-        });
-      }
-    } catch (e) {
-      setState(() => _errorMessage = 'Failed to select image: $e');
-    }
   }
 
   Future<void> _submitPhoto() async {
@@ -815,8 +793,6 @@ class _CameraScreenState extends State<CameraScreen> {
     try {
       analysisResult = await ApiService.instance.submitCheckIn(
         timeOfDay: DateTime.now().hour < 12 ? 'Morning' : 'Evening',
-        photoBytes: _photoBytes,
-        photoFilename: _photoFilename,
         notes: _notes.text.trim().isEmpty ? null : _notes.text.trim(),
         report: {'overall_change': _overallChange, 'symptoms': _symptoms.toList(),
           'routine_status': _routineStatus},
@@ -849,9 +825,7 @@ class _CameraScreenState extends State<CameraScreen> {
   Widget build(BuildContext context) => DermairePage(
     eyebrow: 'Structured skin check-in',
     title: 'Record your observation',
-    subtitle: _photoBytes == null
-        ? 'Report your skin change. A photo is optional.'
-        : 'Photo ready for server processing.',
+    subtitle: 'Report your skin change. Photo quality checking is separate from your observation.',
     children: [
       DropdownButtonFormField<String>(
         decoration: const InputDecoration(labelText: 'Overall change since last check-in'),
@@ -869,66 +843,9 @@ class _CameraScreenState extends State<CameraScreen> {
         onChanged: _isUploading ? null : (value) => setState(() => _routineStatus = value),
       ),
       TextField(controller: _notes, enabled: !_isUploading, maxLength: 1500, decoration: const InputDecoration(labelText: 'Notes (optional)')),
-      if (_photoBytes != null)
-        Container(
-          height: 240,
-          width: double.infinity,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: DermaireColors.line),
-            color: DermaireColors.paper,
-          ),
-          clipBehavior: Clip.antiAlias,
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              Image.memory(_photoBytes!, fit: BoxFit.cover),
-              Positioned(
-                bottom: 8,
-                right: 8,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.7),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.check_circle, color: Colors.greenAccent, size: 14),
-                      SizedBox(width: 4),
-                      Text('Photo ready', style: TextStyle(color: Colors.white, fontSize: 11)),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        )
-      else
-        const FaceGuide(
-          label: 'Take or choose\na skin photo',
-          warning: false,
-        ),
-      const SizedBox(height: 14),
+      const CapturePanel(),
       if (_errorMessage != null)
-        Notice(
-          icon: '⚠️',
-          text: _errorMessage!,
-          color: DermaireColors.unknownBackground,
-        ),
-      Notice(
-        icon: '🔒',
-        text: _photoBytes == null
-            ? 'Photos are stored by the server. Measurements are image-property proxies, not clinical analysis.'
-            : 'Image: ${_photoFilename ?? "Skin photo"} selected. Tap Analyze to process on the server.',
-        color: DermaireColors.paper,
-      ),
-      FilledButton.icon(
-        icon: const Icon(Icons.photo_library_rounded),
-        onPressed: _isUploading ? null : _pickPhoto,
-        label: Text(_photoBytes == null ? 'Select skin photo' : 'Choose another photo'),
-      ),
+        Notice(icon: '⚠️', text: _errorMessage!, color: DermaireColors.unknownBackground),
       const SizedBox(height: 8),
       FilledButton(
         style: FilledButton.styleFrom(backgroundColor: DermaireColors.deep),

@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:async';
+import 'package:http_parser/http_parser.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -7,6 +8,24 @@ import 'package:shared_preferences/shared_preferences.dart';
 class ApiService extends ChangeNotifier {
   ApiService._();
   static final ApiService instance = ApiService._();
+
+  Future<Map<String, dynamic>> submitCapture(Uint8List bytes, String filename) async {
+    final request = http.MultipartRequest('POST', Uri.parse('$baseUrl/captures'));
+    request.headers.addAll(_headers(false));
+    request.fields.addAll({'source': 'upload', 'view': 'front'});
+    final isPng = bytes.length >= 8 && bytes[0] == 137 && bytes[1] == 80 && bytes[2] == 78 && bytes[3] == 71;
+    request.files.add(http.MultipartFile.fromBytes('photo', bytes,
+        filename: isPng ? 'capture.png' : 'capture.jpg', contentType: MediaType.parse(isPng ? 'image/png' : 'image/jpeg')));
+    final response = await _client.send(request).then(http.Response.fromStream).timeout(const Duration(seconds: 60));
+    if (response.statusCode != 201) throw ApiException('Capture quality checking failed');
+    return jsonDecode(response.body) as Map<String, dynamic>;
+  }
+
+  Future<List<Map<String, dynamic>>> getCaptureHistory() async {
+    final response = await _client.get(Uri.parse('$baseUrl/captures'), headers: _headers()).timeout(const Duration(seconds: 30));
+    if (response.statusCode != 200) throw ApiException('Capture history unavailable');
+    return (jsonDecode(response.body) as List).cast<Map<String, dynamic>>();
+  }
 
   static const String _tokenKey = 'dermaire_jwt_token';
   static const String _userKey = 'dermaire_user_data';

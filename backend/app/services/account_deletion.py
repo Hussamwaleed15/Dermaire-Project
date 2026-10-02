@@ -8,13 +8,14 @@ from app.core.config import settings
 from app.models import (User, Product, Experiment, ExperimentEvaluation, CheckIn, DoctorPatientAccess,
                         ClinicalNote, RewardRedemption, AuditLog, DailyContext, RoutineEntry, RoutineAdherence)
 from app.services.azure_blob import azure_blob_service
+from app.models import Capture
 
 
 def delete_account(db, user_id):
     user = db.query(User).filter(User.id == user_id).with_for_update().first()
     if user is None:
         return  # A valid access token can retry after the response was lost.
-    owned_models = (ExperimentEvaluation, RoutineAdherence, DailyContext, CheckIn, Experiment, RoutineEntry, Product, RewardRedemption)
+    owned_models = (Capture, ExperimentEvaluation, RoutineAdherence, DailyContext, CheckIn, Experiment, RoutineEntry, Product, RewardRedemption)
     identifiers = {user_id, user.email, user.full_name}
     for model in owned_models:
         identifiers.update(row.id for row in db.query(model).filter(model.user_id == user_id))
@@ -36,6 +37,9 @@ def delete_account(db, user_id):
         raise RuntimeError("Inconsistent cross-account links require repair before deletion")
     # Keep ownership records until ALL external deletes succeed. Partial cleanup
     # can safely retry because deleting an absent blob is a no-op.
+    for capture in db.query(Capture).filter_by(user_id=user_id):
+        if capture.image_blob_name:
+            azure_blob_service.delete_image(capture.image_blob_name)
     for checkin in db.query(CheckIn).filter(CheckIn.user_id == user_id):
         if checkin.image_blob_name:
             azure_blob_service.delete_image(checkin.image_blob_name)

@@ -13,6 +13,24 @@ def gen_uuid() -> str:
 def utc_now() -> datetime:
     return datetime.now(timezone.utc)
 
+class Capture(Base):
+    __tablename__ = "captures"
+    __table_args__ = (
+        CheckConstraint("state IN ('accepted','rejected')", name="ck_capture_state"),
+        CheckConstraint("source IN ('camera','upload') AND view = 'front'", name="ck_capture_origin"),
+        CheckConstraint("(storage = 'not_persisted' AND image_blob_name IS NULL) OR (storage = 'azure_blob' AND image_blob_name IS NOT NULL AND state = 'accepted')", name="ck_capture_storage"),
+    )
+    id = Column(String(36), primary_key=True, default=gen_uuid)
+    user_id = Column(String(36), ForeignKey("users.id"), nullable=False, index=True)
+    state = Column(String(20), nullable=False)
+    source = Column(String(20), nullable=False)
+    view = Column(String(20), nullable=False)
+    received_at = Column(DateTime, default=utc_now, nullable=False)
+    quality = Column(JSON, nullable=False)
+    storage = Column(String(20), nullable=False)
+    image_blob_name = Column(String(500), nullable=True)
+    server_version = Column(String(50), nullable=False)
+
 class User(Base):
     __tablename__ = "users"
 

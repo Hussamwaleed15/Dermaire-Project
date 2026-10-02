@@ -37,6 +37,21 @@ class AzureBlobService:
                 f.write(file_bytes)
             return blob_name, f"/api/v1/static/uploads/{os.path.basename(blob_name)}"
 
+    def upload_capture(self, blob_name: str, data: bytes) -> None:
+        """Private real storage only; no local fallback and no SAS generation."""
+        if not self.is_live:
+            raise RuntimeError("Real image storage unavailable")
+        if self.container_client.get_container_properties().get("public_access"):
+            raise RuntimeError("Capture storage must be private")
+        from azure.storage.blob import ContentSettings
+        self.container_client.get_blob_client(blob_name).upload_blob(
+            data, overwrite=False, content_settings=ContentSettings(content_type="image/png"))
+
+    def read_capture(self, blob_name: str) -> bytes:
+        if not self.is_live:
+            raise RuntimeError("Real image storage unavailable")
+        return self.container_client.get_blob_client(blob_name).download_blob().readall()
+
     def delete_owned_images(self, owner_id: str) -> None:
         # Namespaced uploads also cover files whose subsequent DB save failed.
         if self.is_live:
