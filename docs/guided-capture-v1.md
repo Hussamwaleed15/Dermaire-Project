@@ -188,7 +188,7 @@ actionable reasons, retake, stale-result suppression and honest non-persistence.
 Full backend suite, Flutter suite, analyzer and `git diff --check` must pass before
 external closure. Exact run totals are recorded in the milestone handoff report.
 
-Measurement Engine v1 is a future milestone. It will need actual persisted images,
-calibrated comparability criteria, clear treatment of v1 unknowns, validated
-measurement provenance, and longitudinal evidence. This gate emits none of those
-measurements and does not start that milestone.
+Measurement Engine v1 now consumes accepted upload bytes synchronously before
+request discard; see `docs/measurement-engine-v1.md`. It cannot recover historical
+pixels from metadata-only captures. Current unknown quality dimensions block all
+production deltas; capture acceptance alone never establishes comparability.

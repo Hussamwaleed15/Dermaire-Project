@@ -31,6 +31,22 @@ class Capture(Base):
     image_blob_name = Column(String(500), nullable=True)
     server_version = Column(String(50), nullable=False)
 
+class Measurement(Base):
+    __tablename__ = "measurements"
+    __table_args__ = (
+        UniqueConstraint("capture_id", "algorithm_version", name="uq_measurement_capture_version"),
+        CheckConstraint("status IN ('measured','insufficient_quality','unavailable','failed')", name="ck_measurement_status"),
+    )
+    id = Column(String(36), primary_key=True, default=gen_uuid)
+    user_id = Column(String(36), ForeignKey("users.id"), nullable=False, index=True)
+    capture_id = Column(String(36), ForeignKey("captures.id"), nullable=False, index=True)
+    algorithm_version = Column(String(50), nullable=False)
+    status = Column(String(30), nullable=False)
+    measured_at = Column(DateTime, default=utc_now, nullable=False)
+    results = Column(JSON, nullable=False)
+    quality_reference = Column(JSON, nullable=False)
+    comparison = Column(JSON, nullable=False)
+
 class User(Base):
     __tablename__ = "users"
 

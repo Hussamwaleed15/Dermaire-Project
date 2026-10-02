@@ -8,7 +8,7 @@ from app.api.deps import get_current_user
 from app.core.database import get_db
 from app.core.config import settings
 from app.models import Capture, User
-from app.services import capture_quality
+from app.services import capture_quality, measurement
 from app.services.azure_blob import azure_blob_service
 
 router = APIRouter(prefix="/captures", tags=["Guided capture quality"])
@@ -51,9 +51,18 @@ async def create_capture(photo: UploadFile = File(...), source: Literal["camera"
             await run_in_threadpool(azure_blob_service.upload_capture, blob, buffer.getvalue())
             row.image_blob_name = blob
             row.storage = "azure_blob"
+        db.query(User).filter_by(id=current_user.id).with_for_update().first()
         db.add(row)
         db.flush()
+        if row.state == "accepted":
+            pixels, _ = capture_quality.decode_image(data, photo.content_type)
+            try:
+                measured = await run_in_threadpool(measurement.build, db, row, pixels)
+            finally:
+                pixels.close()
         result = response(row)
+        if row.state == "accepted":
+            result["measurement"] = measurement.response(measured)
         db.commit()
     except Exception:
         db.rollback()
