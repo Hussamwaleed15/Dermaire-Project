@@ -355,6 +355,26 @@ class ApiService extends ChangeNotifier {
     }
     return jsonDecode(response.body);
   }
+  Future<Map<String, dynamic>> getProductIntelligence(String id) async {
+    final token = authToken;
+    final responses = await Future.wait([
+      _client.get(Uri.parse('$baseUrl/products/${Uri.encodeComponent(id)}/intelligence'), headers: _headers(false)),
+      _client.get(Uri.parse('$baseUrl/routine/intelligence'), headers: _headers(false)),
+    ]).timeout(const Duration(seconds: 20));
+    if (token != authToken || responses.any((r) => r.statusCode != 200)) {
+      throw ApiException('Product intelligence unavailable. Refresh and retry.');
+    }
+    final product = jsonDecode(responses[0].body) as Map<String, dynamic>;
+    final routine = jsonDecode(responses[1].body) as Map<String, dynamic>;
+    if (product['product_id'] != id || product['ingredients'] is! List ||
+        product['facts'] is! Map || routine['warnings'] is! List || product['warnings'] is! List) {
+      throw ApiException('Invalid product intelligence response');
+    }
+    product['routine_warnings'] = (routine['warnings'] as List).where((w) =>
+      (w['evidence'] as List).any((e) => e['product_id'] == id)).toList();
+    return product;
+  }
+
   Future<List<Map<String, dynamic>>> getProducts({
     String? category,
     bool? inRoutine,

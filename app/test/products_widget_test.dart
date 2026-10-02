@@ -40,7 +40,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('saveProduct')));
     await tester.pumpAndSettle();
-    expect(find.text('No known conflict'), findsWidgets);
+    expect(find.text('Product details are user-reported'), findsOneWidget);
     await tester.tap(find.text('Add product'));
     await tester.pumpAndSettle();
     expect(find.text('Barrier Serum'), findsOneWidget);

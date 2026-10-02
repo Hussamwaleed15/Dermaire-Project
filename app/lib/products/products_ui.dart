@@ -7,6 +7,7 @@ import '../routine/routine_ui.dart';
 import 'product.dart';
 import 'product_validation.dart';
 import 'products_controller.dart';
+import 'product_intelligence_ui.dart';
 
 class ProductsFeatureTab extends StatelessWidget {
   const ProductsFeatureTab({super.key, required this.state});
@@ -63,7 +64,23 @@ class ProductsFeatureTab extends StatelessWidget {
                   ),
                 ),
               ),
-              SliverToBoxAdapter(child: Padding(padding: const EdgeInsets.symmetric(horizontal: 20), child: Column(children: [const Text('Saved products and usage preferences do not confirm routine use.'), OutlinedButton(onPressed: () => openPage(context, const RoutineScreen()), child: const Text('Manage my routine'))]))),
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Column(
+                    children: [
+                      const Text(
+                        'Saved products and usage preferences do not confirm routine use.',
+                      ),
+                      OutlinedButton(
+                        onPressed: () =>
+                            openPage(context, const RoutineScreen()),
+                        child: const Text('Manage my routine'),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
               if (controller.errorMessage != null && controller.all.isNotEmpty)
                 SliverToBoxAdapter(
                   child: Column(
@@ -306,7 +323,8 @@ class ProductAddChoiceScreen extends StatelessWidget {
       ),
       const Notice(
         icon: '🪙',
-        text: 'Rewards are not available. Adding products does not earn redeemable tokens.',
+        text:
+            'Rewards are not available. Adding products does not earn redeemable tokens.',
       ),
     ],
   );
@@ -788,96 +806,23 @@ class ProductInteractionScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final risk = state.productController.interactionRisk(product);
-    final (title, message, color, kind) = switch (risk) {
-      InteractionRisk.safe => (
-        'No known conflict',
-        'No known ingredient conflict was found in the current safety rules.',
-        DermaireColors.safeBackground,
-        StatusKind.safe,
-      ),
-      InteractionRisk.conflict => (
-        'Potential interaction',
-        'AHA and the retinol in your active experiment may increase irritation.',
-        DermaireColors.conflictBackground,
-        StatusKind.conflict,
-      ),
-      InteractionRisk.unknown => (
-        'Ingredients not verified',
-        'Add active ingredients before using this product in an experiment.',
-        DermaireColors.unknownBackground,
-        StatusKind.warning,
-      ),
-    };
     return DermairePage(
-      eyebrow: 'Interaction check',
-      title: title,
+      eyebrow: 'Save product',
+      title: 'Product details are user-reported',
       children: [
-        DermaireCard(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('NEW PRODUCT', style: TextStyle(fontSize: 10)),
-              Text(
-                product.name,
-                style: const TextStyle(fontWeight: FontWeight.w800),
-              ),
-              const Divider(height: 22),
-              const Text('CURRENT ROUTINE', style: TextStyle(fontSize: 10)),
-              Text(
-                state.productController.active
-                    .map((item) => item.name)
-                    .join(', '),
-                style: const TextStyle(fontWeight: FontWeight.w700),
-              ),
-            ],
-          ),
+        Text(product.name),
+        const Text(
+          'Saving does not verify ingredients or compatibility. Server-backed facts and routine warnings are available in saved product details.',
         ),
-        DermaireCard(
-          color: color,
-          borderColor: Colors.transparent,
-          child: Column(
-            children: [
-              StatusPill(title, kind: kind),
-              const SizedBox(height: 10),
-              Text(message, textAlign: TextAlign.center),
-            ],
-          ),
+        FilledButton(
+          onPressed: () => _add(context),
+          child: const Text('Add product'),
         ),
-        if (risk == InteractionRisk.safe)
-          FilledButton(
-            onPressed: () => _add(context),
-            child: const Text('Add product'),
-          )
-        else if (risk == InteractionRisk.conflict) ...[
-          FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: DermaireColors.conflict,
-            ),
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Don't add"),
-          ),
-          const SizedBox(height: 8),
-          OutlinedButton(
-            onPressed: () => _add(context, inRoutineOnly: true),
-            child: const Text('Save product only'),
-          ),
-        ] else ...[
-          FilledButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Enter ingredients'),
-          ),
-          const SizedBox(height: 8),
-          OutlinedButton(
-            onPressed: () => _add(context, inRoutineOnly: true),
-            child: const Text('Save without experiment'),
-          ),
-        ],
       ],
     );
   }
 
-  Future<void> _add(BuildContext context, {bool inRoutineOnly = false}) async {
+  Future<void> _add(BuildContext context) async {
     final result = await state.productController.add(
       product.copyWith(inExperiment: false, inRoutine: true),
     );
@@ -989,6 +934,10 @@ class ProductFeatureDetailScreen extends StatelessWidget {
                 : product.usageInstructions,
           ),
           if (product.notes != null) _DetailValue('Notes', product.notes!),
+          ProductIntelligencePanel(
+            key: ValueKey('intelligence-${product.id}-${product.updatedAt}'),
+            productId: product.id,
+          ),
           if (product.status != ProductStatus.archived) ...[
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
@@ -1004,7 +953,9 @@ class ProductFeatureDetailScreen extends StatelessWidget {
             const ListTile(
               contentPadding: EdgeInsets.zero,
               title: Text('Controlled experiments'),
-              subtitle: Text('Plan one routine change in the Experiment tab. A product marker does not start an experiment.'),
+              subtitle: Text(
+                'Plan one routine change in the Experiment tab. A product marker does not start an experiment.',
+              ),
             ),
           ],
         ],

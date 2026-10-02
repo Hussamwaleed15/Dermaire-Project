@@ -112,6 +112,15 @@ class Product(Base):
 
     user = relationship("User", back_populates="products")
 
+class ProductIntelligence(Base):
+    """Owner-specific evidence document; never a shared catalog record."""
+    __tablename__ = "product_intelligence"
+    id = Column(String(36), primary_key=True, default=gen_uuid)
+    user_id = Column(String(36), ForeignKey("users.id"), nullable=False, index=True)
+    product_id = Column(String(36), ForeignKey("products.id", ondelete="CASCADE"), nullable=False, unique=True)
+    document = Column(JSON, nullable=False)
+    updated_at = Column(DateTime, nullable=False, default=utc_now, onupdate=utc_now)
+
 class Experiment(Base):
     __tablename__ = "experiments"
     __table_args__ = (

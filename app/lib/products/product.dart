@@ -14,8 +14,6 @@ enum UsageTime { morning, evening, both, asNeeded }
 
 enum ProductSort { recentlyUpdated, name, newest, rating }
 
-enum InteractionRisk { safe, conflict, unknown }
-
 class Product {
   const Product({
     required this.id,

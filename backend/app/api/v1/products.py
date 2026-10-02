@@ -9,9 +9,8 @@ from app.services.experiments import guard_routine_write
 from app.services.routine import lock_owner, deactivate
 from app.schemas import (
     ProductCreate, ProductUpdate, ProductOut,
-    ProductInteractionCheckRequest, ProductInteractionCheckResponse
+    ProductInteractionCheckRequest
 )
-from app.services.conflict_engine import check_ingredients_interaction
 
 router = APIRouter(prefix="/products", tags=["Products & Routine Management"])
 
@@ -51,27 +50,6 @@ def create_product(
             error_code="PRODUCT_DUPLICATE_NAME",
             status_code=status.HTTP_409_CONFLICT
         )
-
-    # Automatic safety check: Compare new product ingredients with existing active products in routine
-    if payload.active_ingredients and payload.in_routine:
-        active_products = db.query(Product).filter(
-            Product.user_id == current_user.id,
-            Product.in_routine == True,
-            Product.status == "active"
-        ).all()
-        routine_ingredients = []
-        for p in active_products:
-            routine_ingredients.extend(p.active_ingredients or [])
-
-        all_ingredients = list(set(routine_ingredients + payload.active_ingredients))
-        if len(all_ingredients) >= 2:
-            interaction = check_ingredients_interaction(all_ingredients)
-            # We record warning in logs if high risk
-            if interaction.risk_level == "conflict":
-                record_audit(db, current_user.id, "PRODUCT_INTERACTION_WARNING", "products", {
-                    "new_product": payload.name,
-                    "conflicts": [c.model_dump() for c in interaction.conflicts]
-                })
 
     product = Product(
         user_id=current_user.id,
@@ -186,6 +164,6 @@ def delete_product(
     db.commit()
     record_audit(db, current_user.id, "PRODUCT_DELETED", "products", {"product_id": product_id})
 
-@router.post("/check-interactions", response_model=ProductInteractionCheckResponse)
-def check_interactions_endpoint(payload: ProductInteractionCheckRequest):
-    return check_ingredients_interaction(payload.ingredients)
+@router.post("/check-interactions", deprecated=True)
+def check_interactions_endpoint(payload: ProductInteractionCheckRequest, current_user: User = Depends(get_current_user)):
+    raise DermaireException(message="Use authenticated product/routine intelligence; free-text compatibility checks are retired.", error_code="PRODUCT_INTELLIGENCE_REQUIRED", status_code=410)

@@ -67,15 +67,11 @@ def test_products_and_conflict_check(client):
     token = login_res.json()["access_token"]
     headers = {"Authorization": f"Bearer {token}"}
 
-    # Standalone conflict check: Retinol + Glycolic Acid (AHA)
-    conflict_res = client.post("/api/v1/products/check-interactions", json={
+    # Compatibility assertions from free text are retired in Product Intelligence v1.
+    conflict_res = client.post("/api/v1/products/check-interactions", headers=headers, json={
         "ingredients": ["Retinol", "Glycolic Acid"]
     })
-    assert conflict_res.status_code == 200
-    c_data = conflict_res.json()
-    assert c_data["is_safe"] is False
-    assert c_data["risk_level"] == "conflict"
-    assert len(c_data["conflicts"]) > 0
+    assert conflict_res.status_code == 410
 
     # Add product Product X
     prod_res = client.post("/api/v1/products", headers=headers, json={

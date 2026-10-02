@@ -8,14 +8,14 @@ from app.core.config import settings
 from app.models import (User, Product, Experiment, ExperimentEvaluation, CheckIn, DoctorPatientAccess,
                         ClinicalNote, RewardRedemption, AuditLog, DailyContext, RoutineEntry, RoutineAdherence)
 from app.services.azure_blob import azure_blob_service
-from app.models import Capture, Measurement
+from app.models import Capture, Measurement, ProductIntelligence
 
 
 def delete_account(db, user_id):
     user = db.query(User).filter(User.id == user_id).with_for_update().first()
     if user is None:
         return  # A valid access token can retry after the response was lost.
-    owned_models = (Measurement, Capture, ExperimentEvaluation, RoutineAdherence, DailyContext, CheckIn, Experiment, RoutineEntry, Product, RewardRedemption)
+    owned_models = (ProductIntelligence, Measurement, Capture, ExperimentEvaluation, RoutineAdherence, DailyContext, CheckIn, Experiment, RoutineEntry, Product, RewardRedemption)
     identifiers = {user_id, user.email, user.full_name}
     for model in owned_models:
         identifiers.update(row.id for row in db.query(model).filter(model.user_id == user_id))
@@ -36,7 +36,9 @@ def delete_account(db, user_id):
     capture_ids = db.query(Capture.id).filter_by(user_id=user_id).scalar_subquery()
     foreign_measurement = db.query(Measurement.id).filter(
         Measurement.user_id != user_id, Measurement.capture_id.in_(capture_ids)).first()
-    if foreign_checkin or foreign_experiment or foreign_entry_experiment or foreign_measurement:
+    foreign_intelligence = db.query(ProductIntelligence.id).filter(
+        ProductIntelligence.user_id != user_id, ProductIntelligence.product_id.in_(product_ids)).first()
+    if foreign_checkin or foreign_experiment or foreign_entry_experiment or foreign_measurement or foreign_intelligence:
         raise RuntimeError("Inconsistent cross-account links require repair before deletion")
     # Keep ownership records until ALL external deletes succeed. Partial cleanup
     # can safely retry because deleting an absent blob is a no-op.

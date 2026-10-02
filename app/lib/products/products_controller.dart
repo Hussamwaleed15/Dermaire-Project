@@ -127,19 +127,6 @@ class ProductsController extends ChangeNotifier {
   Product? byId(String id) =>
       _products.where((item) => item.id == id).firstOrNull;
 
-  InteractionRisk interactionRisk(Product product) {
-    if (product.activeIngredients.isEmpty) return InteractionRisk.unknown;
-    final candidate = product.activeIngredients.join(' ').toLowerCase();
-    final current = active
-        .expand((item) => item.activeIngredients)
-        .join(' ')
-        .toLowerCase();
-    final retinolWithAcid =
-        (candidate.contains('aha') || candidate.contains('glycolic')) &&
-        current.contains('retinol');
-    return retinolWithAcid ? InteractionRisk.conflict : InteractionRisk.safe;
-  }
-
   Future<ProductOperationResult> add(Product product) async {
     if (ProductValidation.duplicate(product, _products)) {
       return const ProductOperationResult.failure(
