@@ -8,7 +8,7 @@ from app.core.config import settings
 from app.models import (User, Product, Experiment, ExperimentEvaluation, CheckIn, DoctorPatientAccess,
                         ClinicalNote, RewardRedemption, AuditLog, DailyContext, RoutineEntry, RoutineAdherence)
 from app.services.azure_blob import azure_blob_service
-from app.models import Capture, Measurement, ProductIntelligence
+from app.models import Capture, Measurement, ProductIntelligence, DoctorReviewAction
 
 
 def delete_account(db, user_id):
@@ -21,7 +21,12 @@ def delete_account(db, user_id):
         identifiers.update(row.id for row in db.query(model).filter(model.user_id == user_id))
     related = or_(DoctorPatientAccess.patient_id == user_id, DoctorPatientAccess.doctor_id == user_id)
     identifiers.update(row.id for row in db.query(DoctorPatientAccess).filter(related))
-    notes = or_(ClinicalNote.patient_id == user_id, ClinicalNote.doctor_id == user_id)
+    actions = or_(DoctorReviewAction.patient_id == user_id, DoctorReviewAction.doctor_id == user_id)
+    action_ids = [row.id for row in db.query(DoctorReviewAction).filter(actions)]
+    identifiers.update(action_ids)
+    # A note by another clinician can link to an action by the deleted doctor.
+    notes = or_(ClinicalNote.patient_id == user_id, ClinicalNote.doctor_id == user_id,
+                ClinicalNote.review_action_id.in_(action_ids))
     identifiers.update(row.id for row in db.query(ClinicalNote).filter(notes))
     # Refuse inconsistent legacy links rather than mutate another account.
     experiment_ids = db.query(Experiment.id).filter(Experiment.user_id == user_id).scalar_subquery()
@@ -58,6 +63,7 @@ def delete_account(db, user_id):
             audit.details = {}
             audit.ip_address = None
     db.query(ClinicalNote).filter(notes).delete(synchronize_session=False)
+    db.query(DoctorReviewAction).filter(actions).delete(synchronize_session=False)
     db.query(DoctorPatientAccess).filter(related).delete(synchronize_session=False)
     # Explicit dependency order also works with enforced database foreign keys.
     for model in owned_models:

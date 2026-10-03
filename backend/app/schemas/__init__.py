@@ -220,14 +220,26 @@ class GenerateQrResponse(BaseModel):
     instructions: str
 
 class ClaimAccessRequest(BaseModel):
-    access_token: str
+    model_config = ConfigDict(extra="forbid", strict=True)
+    access_token: str = Field(min_length=1, max_length=512)
 
 class ClinicalNoteCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True, strict=True)
+    category: Optional[str] = Field(None, min_length=1, max_length=50)
+    patient_visible: bool = False
+    timeline_item_id: Optional[str] = Field(None, min_length=1, max_length=255)
+    review_action_id: Optional[str] = Field(None, min_length=1, max_length=36)
     content: str = Field(..., min_length=10, max_length=1500, description="Clinical note must be between 10 and 1500 characters")
     priority: str = Field("routine", pattern="^(routine|review|urgent)$")
     follow_up: Optional[str] = Field(None, max_length=100)
 
 class ClinicalNoteOut(BaseModel):
+    category: Optional[str] = None
+    patient_visible: bool
+    timeline_item_id: Optional[str] = None
+    review_action_id: Optional[str] = None
+    updated_at: datetime
+    provenance: str = "clinician_authored"
     id: str
     doctor_id: str
     patient_id: str
@@ -239,6 +251,9 @@ class ClinicalNoteOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 class DoctorPatientOut(BaseModel):
+    safety: dict
+    review_state: str
+    access: list[dict]
     patient_id: str
     full_name: str
     email: EmailStr

@@ -64,6 +64,7 @@ def create_doctor_access_token(patient_id: str, minutes_valid: int = 60) -> str:
         "exp": expire,
         "patient_id": patient_id,
         "type": "doctor_qr_access",
+        "jti": str(uuid.uuid4()),
         "iat": datetime.now(timezone.utc)
     }
     return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)

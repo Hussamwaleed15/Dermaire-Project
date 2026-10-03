@@ -192,11 +192,35 @@ class DoctorPatientAccess(Base):
     id = Column(String(36), primary_key=True, default=gen_uuid)
     doctor_id = Column(String(36), ForeignKey("users.id"), nullable=True, index=True)
     patient_id = Column(String(36), ForeignKey("users.id"), nullable=False, index=True)
-    access_token = Column(String(255), unique=True, index=True, nullable=False)
+    access_token = Column(String(512), unique=True, index=True, nullable=False)
     status = Column(String(50), default="pending") # pending, active, revoked, expired
+    granted_by = Column(String(36), nullable=True) # Legacy unknown; new grants record patient actor.
+    claimed_at = Column(DateTime, nullable=True)
+    revoked_at = Column(DateTime, nullable=True)
+    revoked_by = Column(String(36), nullable=True)
     export_consent = Column(Boolean, default=True)
     expires_at = Column(DateTime, nullable=False)
     created_at = Column(DateTime, default=utc_now)
+
+class DoctorReviewAction(Base):
+    """Immutable clinician review events; current state is the latest event."""
+    __tablename__ = "doctor_review_actions"
+    __table_args__ = (
+        CheckConstraint("state IN ('pending','in_review','reviewed','follow_up_needed')", name="ck_doctor_review_state"),
+        CheckConstraint("recommendation IS NULL OR recommendation IN ('track','low_risk_self_care','doctor_review','urgent')", name="ck_doctor_recommendation"),
+    )
+    id = Column(String(36), primary_key=True, default=gen_uuid)
+    patient_id = Column(String(36), ForeignKey("users.id"), nullable=False, index=True)
+    doctor_id = Column(String(36), ForeignKey("users.id"), nullable=False, index=True)
+    access_id = Column(String(36), ForeignKey("doctor_patient_access.id"), nullable=False, index=True)
+    sequence = Column(Integer, nullable=False)
+    state = Column(String(30), nullable=False)
+    recommendation = Column(String(30), nullable=True)
+    rationale = Column(Text, nullable=True)
+    patient_visible = Column(Boolean, nullable=False, default=False)
+    safety_snapshot = Column(JSON, nullable=False)
+    created_at = Column(DateTime, nullable=False, default=utc_now)
+    __table_args__ = __table_args__ + (UniqueConstraint("patient_id", "sequence", name="uq_doctor_review_sequence"),)
 
 class ClinicalNote(Base):
     __tablename__ = "clinical_notes"
@@ -204,6 +228,11 @@ class ClinicalNote(Base):
     id = Column(String(36), primary_key=True, default=gen_uuid)
     doctor_id = Column(String(36), ForeignKey("users.id"), nullable=False, index=True)
     patient_id = Column(String(36), ForeignKey("users.id"), nullable=False, index=True)
+    category = Column(String(50), nullable=True)
+    patient_visible = Column(Boolean, nullable=False, default=False)
+    timeline_item_id = Column(String(255), nullable=True)
+    review_action_id = Column(String(36), ForeignKey("doctor_review_actions.id"), nullable=True)
+    updated_at = Column(DateTime, nullable=False, default=utc_now) # Equal to created_at; immutable.
     content = Column(Text, nullable=False)
     priority = Column(String(50), default="routine") # routine, review, urgent
     follow_up = Column(String(100), nullable=True)
