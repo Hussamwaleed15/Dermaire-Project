@@ -156,8 +156,23 @@ from app.schemas.experiments import ExperimentCreate, ExperimentUpdate, Experime
 
 # ==================== CheckIn Schemas ====================
 
+class SafetyDisclosure(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
+    severity: Optional[Literal["none", "mild", "moderate", "severe"]] = None
+    pain: Optional[Literal["none", "mild", "moderate", "severe"]] = None
+    breathing_difficulty: Optional[bool] = None
+    facial_or_mouth_swelling: Optional[bool] = None
+    eye_or_mucosal_involvement: Optional[bool] = None
+    fever_or_systemic_illness: Optional[bool] = None
+    rapid_spread: Optional[bool] = None
+    extensive_blistering_or_peeling: Optional[bool] = None
+    pus_or_hot_swollen_skin: Optional[bool] = None
+    new_medication_or_product_reaction: Optional[bool] = None
+
+
 class CheckInReport(BaseModel):
     model_config = ConfigDict(extra="forbid")
+    safety: Optional[SafetyDisclosure] = None
     overall_change: Literal["better", "same", "worse"]
     symptoms: List[Literal["redness", "dryness", "itching", "burning", "breakouts", "sensitivity", "texture"]] = Field(default_factory=list, max_length=7)
     routine_status: Optional[Literal["followed", "partial", "skipped", "not_applicable"]] = None

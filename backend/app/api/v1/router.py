@@ -40,3 +40,6 @@ api_v1_router.include_router(routine_router)
 
 from app.api.v1.measurements import router as measurements_router
 api_v1_router.include_router(measurements_router)
+
+from app.api.v1.safety import router as safety_router
+api_v1_router.include_router(safety_router)
