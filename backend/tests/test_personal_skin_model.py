@@ -62,7 +62,7 @@ def test_association(deletion_context):
     _,db,_=deletion_context
     for day in range(6,0,-1):
         row=add(db,day,change='same' if day>3 else 'worse')
-        db.add(DailyContext(user_id=row.user_id,date=row.created_at.date(),unusual_conditions=day<=3))
+        db.add(DailyContext(user_id=row.user_id,date=row.created_at.date(),unusual_conditions=day<=3, updated_at=row.created_at))
     db.commit()
     view=model(db)
     assert view['status']=='meaningful_change'
@@ -152,8 +152,8 @@ def test_context_unknown_not_false_and_owner_isolated(deletion_context):
     _,db,_=deletion_context
     for day in range(6,0,-1):
         row=add(db,day,change='worse' if day<=3 else 'same')
-        db.add(DailyContext(user_id='delete-doctor',date=row.created_at.date(),unusual_conditions=day<=3))
-        db.add(DailyContext(user_id=row.user_id,date=row.created_at.date(),unusual_conditions=True if day<=3 else None))
+        db.add(DailyContext(user_id='delete-doctor',date=row.created_at.date(),unusual_conditions=day<=3, updated_at=row.created_at))
+        db.add(DailyContext(user_id=row.user_id,date=row.created_at.date(),unusual_conditions=True if day<=3 else None, updated_at=row.created_at))
     db.commit()
     assert not model(db)['associations']
 

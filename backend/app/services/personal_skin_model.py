@@ -51,7 +51,7 @@ def personal_skin_model(db, user, now=None):
              and (measurement_of(r) or report_of(r))]
     reports = daily_first([r for r in valid if report_of(r) and utc(r.created_at) >= now - timedelta(days=28)])
     measurements = daily_first([r for r in valid if measurement_of(r)])
-    baseline = baseline_snapshot(db, user.id)
+    baseline = baseline_snapshot(db, user.id, before=now)
     changing, stable, associations, reasons = [], [], [], []
     reference = [r for r in measurements if r.id in baseline['checkin_ids']]
     if baseline['status'] == 'ready' and len(reference) == 5:
@@ -107,7 +107,7 @@ def personal_skin_model(db, user, now=None):
             (stable if direction == 'same' else changing).append(finding)
     else:
         reasons.append('Need six distinct report days in 28 days, including three in 14 days, for a report trend.')
-    contexts = {c.date: c for c in db.query(DailyContext).filter_by(user_id=user.id).all() if c.date <= now.date()}
+    contexts = {c.date: c for c in db.query(DailyContext).filter_by(user_id=user.id).all() if c.date <= now.date() and utc(c.updated_at) <= now}
     groups = {True: [], False: []}
     for row in reports:
         context = contexts.get(utc(row.created_at).date())
@@ -135,7 +135,7 @@ def personal_skin_model(db, user, now=None):
     profile_context = user.profile_context or {}
     goals = profile_context.get('primary_goals') or []
     products = db.query(Product).filter_by(user_id=user.id).order_by(Product.id).all()
-    return PersonalSkinModel(generated_at=now, status=state,
+    model = PersonalSkinModel(generated_at=now, status=state,
         statement={'no_data': 'No authoritative skin observations yet; start tracking.', 'stale': 'Current trajectory is unknown; record a fresh check-in.', 'meaningful_change': 'Tracking evidence suggests change; review the structured findings.', 'no_meaningful_change': 'No meaningful change detected; continue tracking.', 'insufficient_data': 'Insufficient comparable evidence; continue tracking.'}[state],
         strength='moderate' if any(f.strength == 'moderate' for f in changing + stable) else 'limited' if changing or stable else 'none',
         changing=changing, stable=stable, associations=associations,
@@ -145,7 +145,7 @@ def personal_skin_model(db, user, now=None):
             evidence=[evidence(user, ['profile_context.primary_goals'], source='profile')] if goals else []),
         products=[dict(id=p.id, status=p.status, evidence=evidence(p, ['status'], source='product')) for p in products],
         limitations=['Not diagnosis or medical certainty; tracking thresholds are engineering rules.',
-            'Routine excluded: product membership and self-reported adherence do not establish actual usage.',
+            'Configured routine and self-reported adherence are distinct; neither verifies application.',
             'Products describe current inventory, not verified exposure or product effects.',
             'Profile goals supply orientation only; sensitive profile attributes and cycle day are excluded from derivation and output.',
             'Context is mutable user-reported state joined by owner and UTC date, not a historical snapshot.',
@@ -153,3 +153,6 @@ def personal_skin_model(db, user, now=None):
             'Report symptoms record presence, not severity; free text and photos are not interpreted.'])
 
 
+
+    from app.services.personal_skin_model_v2 import enrich
+    return enrich(db, user, model, now, reports, contexts)
