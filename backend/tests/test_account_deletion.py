@@ -125,8 +125,9 @@ def test_namespaced_orphan_cleanup(tmp_path):
     service = object.__new__(AzureBlobService)
     service.is_live = False
     service.local_upload_dir = str(tmp_path)
-    blob_name, _ = service.upload_image(b"photo", "image.jpg", owner_id="owner-1")
-    service.upload_image(b"other", "image.jpg", owner_id="owner-2")
+    blob_name = "skin_photos/owner-1/owner-1_file.png"
+    (tmp_path / "owner-1_file.png").write_bytes(b"private")
+    (tmp_path / "owner-2_file.png").write_bytes(b"private")
     assert blob_name.startswith("skin_photos/owner-1/")
     service.delete_owned_images("owner-1")
     service.delete_owned_images("owner-1")

@@ -12,7 +12,8 @@ from test_capture_quality import context, photograph, encoded, upload
 
 
 def accepted(client, headers, image):
-    res = upload(client, headers, encoded(image))
+    from uuid import uuid4
+    res = upload(client, {**headers, "Idempotency-Key": str(uuid4())}, encoded(image))
     assert res.status_code == 201, res.text
     assert res.json()['state'] == 'accepted'
     return res.json()

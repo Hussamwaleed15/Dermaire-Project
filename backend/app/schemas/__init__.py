@@ -204,7 +204,10 @@ class CheckInResponse(BaseModel):
     redness_score: Optional[float] = None
     observation: Optional[CheckInObservation] = None
     notes: Optional[str] = None
-    image_sas_url: Optional[str] = None
+    image_sas_url: Optional[str] = None  # Deprecated; always null.
+    image_endpoint: Optional[str] = None
+    image_reference: Optional[str] = None
+    storage: str = "not_persisted"
     ai_vision_analysis: Optional[Dict[str, Any]] = None
     tokens_earned: int = 0
     created_at: datetime

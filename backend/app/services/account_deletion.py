@@ -45,6 +45,12 @@ def delete_account(db, user_id):
         ProductIntelligence.user_id != user_id, ProductIntelligence.product_id.in_(product_ids)).first()
     if foreign_checkin or foreign_experiment or foreign_entry_experiment or foreign_measurement or foreign_intelligence:
         raise RuntimeError("Inconsistent cross-account links require repair before deletion")
+    # Refuse a namespaced image reference pointing to another owner before deleting anything.
+    for model in (Capture, CheckIn):
+        for row in db.query(model).filter_by(user_id=user_id):
+            key = row.image_blob_name
+            if key and key.count("/") >= 2 and not key.startswith(f"skin_photos/{user_id}/{user_id}_"):
+                raise RuntimeError("Inconsistent image ownership requires repair before deletion")
     # Keep ownership records until ALL external deletes succeed. Partial cleanup
     # can safely retry because deleting an absent blob is a no-op.
     for capture in db.query(Capture).filter_by(user_id=user_id):

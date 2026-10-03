@@ -1,16 +1,25 @@
 from datetime import datetime, timezone
 from typing import List, Optional
-from fastapi import APIRouter, Depends, UploadFile, File, Form, status
+from fastapi import APIRouter, Depends, UploadFile, File, Form, status, HTTPException, Header
+from starlette.concurrency import run_in_threadpool
+from io import BytesIO
+from uuid import uuid5, NAMESPACE_URL
+import hashlib
+import json
+from app.services import capture_quality
 from sqlalchemy.orm import Session
 from app.core.database import get_db
-from app.api.deps import get_current_user, record_audit
-from app.models import User, CheckIn, Experiment, DailyContext
+from app.api.deps import get_current_user
+from app.models import User, CheckIn, Experiment, DailyContext, AuditLog
 from app.schemas import CheckInResponse, CheckInReport
 from pydantic import ValidationError
 from app.core.exceptions import DermaireException, EntityNotFoundException
 from app.services.baseline import baseline_snapshot, confirmed_measurement
 import math
 from app.services.azure_blob import azure_blob_service
+from app.services.image_reconciliation import cleanup_failed_upload
+from app.services.image_access import safe_reference
+import logging
 from app.services.azure_vision import azure_vision_service
 
 router = APIRouter(prefix="/checkins", tags=["Daily Skin Check-ins & Journal"])
@@ -29,9 +38,6 @@ def get_checkins_history(
         # Quarantine legacy default/simulated rows, without inventing provenance.
         if not c.observation and not confirmed_measurement(c):
             continue
-        sas_url = None
-        if c.image_blob_name:
-            sas_url = azure_blob_service.generate_sas_url(c.image_blob_name)
         results.append(CheckInResponse(
             id=c.id,
             user_id=c.user_id,
@@ -42,7 +48,10 @@ def get_checkins_history(
             texture_score=c.texture_score,
             redness_score=c.redness_score,
             notes=c.notes,
-            image_sas_url=sas_url,
+            image_sas_url=None,
+            image_endpoint=f"/api/v1/checkins/{c.id}/image" if safe_reference(c.image_blob_name) else None,
+            storage=("azure_blob" if (c.ai_vision_analysis or {}).get("image_storage") == "azure_blob" else "legacy_unverified") if c.image_blob_name else "not_persisted",
+            image_reference=safe_reference(c.image_blob_name),
             ai_vision_analysis=c.ai_vision_analysis,
             observation=c.observation,
             tokens_earned=0,
@@ -60,11 +69,11 @@ async def submit_daily_checkin(
     experiment_id: Optional[str] = Form(None),
     photo: Optional[UploadFile] = File(None),
     report: Optional[str] = Form(None),
+    idempotency_key: str | None = Header(None, max_length=128),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     blob_name = None
-    sas_url = None
     ai_analysis = {"measurement_source": "manual"}
     user_report = None
     if report is not None:
@@ -91,8 +100,39 @@ async def submit_daily_checkin(
     if not has_scores and not has_photo:
         ai_analysis = {"measurement_source": "none"}
 
+    identifier = None
+    normalized = None
     if photo and photo.filename:
-        photo_bytes = await photo.read()
+        photo_bytes = await photo.read(capture_quality.RULES.max_bytes + 1)
+        image, orientation = capture_quality.decode_image(photo_bytes, photo.content_type)
+        try:
+            try:
+                quality = await run_in_threadpool(capture_quality.assess, image, orientation)
+            except Exception:
+                raise HTTPException(503, "Quality checking unavailable. No check-in was saved.")
+            if quality["decision"] != "accepted":
+                raise HTTPException(422, "Photo quality rejected. No image or check-in was saved.")
+            buffer = BytesIO()
+            image.info.clear()
+            image.save(buffer, format="PNG")
+            normalized = buffer.getvalue()
+        finally:
+            image.close()
+        db.query(User).filter_by(id=current_user.id).with_for_update().first()
+        fingerprint = hashlib.sha256(json.dumps([time_of_day, notes, experiment_id,
+            user_report.model_dump() if user_report else None, photo.content_type,
+            hashlib.sha256(photo_bytes).hexdigest()], sort_keys=True).encode()).hexdigest()
+        identifier = str(uuid5(NAMESPACE_URL, json.dumps(["checkin-image-v1", current_user.id,
+            idempotency_key or (datetime.now(timezone.utc).date().isoformat() + fingerprint)])))
+        existing = db.query(CheckIn).filter_by(id=identifier, user_id=current_user.id).first()
+        if existing and (existing.ai_vision_analysis or {}).get("image_request_fingerprint") != fingerprint:
+            raise HTTPException(409, "Idempotency key belongs to a different upload.")
+        if existing:
+            result = CheckInResponse.model_validate(existing)
+            result.image_endpoint = f"/api/v1/checkins/{existing.id}/image" if safe_reference(existing.image_blob_name) else None
+            result.storage = "azure_blob" if existing.image_blob_name else "not_persisted"
+            result.image_reference = safe_reference(existing.image_blob_name)
+            return result
         ai_analysis = azure_vision_service.analyze_skin_image(photo_bytes)
         values = [ai_analysis.get(k) for k in ("estimated_hydration_score",
                   "surface_texture_score", "erythema_redness_score")]
@@ -102,9 +142,9 @@ async def submit_daily_checkin(
                                    error_code="MEASUREMENT_UNAVAILABLE", status_code=503)
         hydration_score, texture_score, redness_score = values
         ai_analysis["measurement_source"] = "image_proxy"
-        blob_name, sas_url = azure_blob_service.upload_image(
-            file_bytes=photo_bytes, original_filename=photo.filename,
-            content_type=photo.content_type or "image/jpeg", owner_id=current_user.id)
+        ai_analysis["image_storage"] = "azure_blob"
+        ai_analysis["image_request_fingerprint"] = fingerprint
+        blob_name = f"skin_photos/{current_user.id}/{current_user.id}_{identifier}.png"
 
     if exp and exp.engine_version != 2 and exp.status == "active" and (valid_scores or has_photo):
         exp.current_day = min(exp.target_days, exp.current_day + 1)
@@ -143,15 +183,24 @@ async def submit_daily_checkin(
         observation=observation,
         created_at=now
     )
-    db.add(checkin)
-
-    db.commit()
-    db.refresh(checkin)
-
-    record_audit(db, current_user.id, "CHECKIN_COMPLETED", "checkins", {
-        "checkin_id": checkin.id,
-        "has_photo": bool(blob_name)
-    })
+    if identifier:
+        checkin.id = identifier
+    try:
+        db.add(checkin)
+        db.flush()  # Validate database fields before any external write.
+        if blob_name:
+            await run_in_threadpool(azure_blob_service.upload_capture, blob_name, normalized)
+        db.add(AuditLog(actor_id=current_user.id, action="CHECKIN_COMPLETED", target_resource="checkins",
+                        details={"checkin_id": checkin.id, "has_photo": bool(blob_name)}))
+        db.commit()
+    except Exception:
+        db.rollback()
+        if blob_name:
+            try:
+                await run_in_threadpool(cleanup_failed_upload, db, azure_blob_service, current_user.id, blob_name)
+            except Exception:
+                logging.getLogger(__name__).warning("Image cleanup pending; run orphan reconciliation after recovery")
+        raise HTTPException(503, "Check-in could not be saved. Refresh history before retrying.")
 
     return CheckInResponse(
         id=checkin.id,
@@ -163,9 +212,18 @@ async def submit_daily_checkin(
         texture_score=checkin.texture_score,
         redness_score=checkin.redness_score,
         notes=checkin.notes,
-        image_sas_url=sas_url,
+        image_sas_url=None,
+        image_endpoint=f"/api/v1/checkins/{checkin.id}/image" if blob_name else None,
+        storage="azure_blob" if blob_name else "not_persisted",
+        image_reference=blob_name,
         ai_vision_analysis=checkin.ai_vision_analysis,
         observation=checkin.observation,
         tokens_earned=0,
         created_at=checkin.created_at
     )
+
+
+@router.get("/{checkin_id}/image")
+def get_image(checkin_id: str, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    from app.services.image_access import image_response
+    return image_response(db, current_user, db.query(CheckIn).filter_by(id=checkin_id).first())

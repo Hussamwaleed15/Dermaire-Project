@@ -91,8 +91,8 @@ def test_photo_failure_does_not_store_or_reward(deletion_context, monkeypatch):
         "azure_vision_status": "FALLBACK_SIMULATED", "erythema_redness_score": 22.5,
         "surface_texture_score": 78, "estimated_hydration_score": 75}))
     upload = Mock()
-    monkeypatch.setattr(azure_blob_service, "upload_image", upload)
-    response = client.post("/api/v1/checkins", headers=auth, files={"photo": ("skin.jpg", b"invalid", "image/jpeg")})
+    monkeypatch.setattr(azure_blob_service, "upload_capture", upload)
+    response = client.post("/api/v1/checkins", headers=auth, files={"photo": ("skin.png", valid_photo(), "image/png")})
     assert response.status_code == 503
     assert db.query(CheckIn).count() == before
     assert db.get(User, "delete-patient").tokens_balance == balance
@@ -104,9 +104,9 @@ def test_photo_proxy_is_explicit_and_server_supplies_measurements(deletion_conte
     monkeypatch.setattr(azure_vision_service, "analyze_skin_image", Mock(return_value={
         "azure_vision_status": "ANALYSIS_COMPLETE", "erythema_redness_score": 10,
         "surface_texture_score": 65, "estimated_hydration_score": 85}))
-    monkeypatch.setattr(azure_blob_service, "upload_image", Mock(return_value=(None, None)))
+    monkeypatch.setattr(azure_blob_service, "upload_capture", Mock())
     response = client.post("/api/v1/checkins", headers=auth,
-        files={"photo": ("skin.jpg", b"image", "image/jpeg")})
+        files={"photo": ("skin.png", valid_photo(), "image/png")})
     assert response.status_code == 201 and response.json()["texture_score"] == 65
     assert response.json()["ai_vision_analysis"]["measurement_source"] == "image_proxy"
     assert client.get("/api/v1/baseline", headers=auth).json()["completed_days"] == 1
@@ -132,9 +132,8 @@ def test_database_failure_never_confirms_write(deletion_context, monkeypatch):
     client, db, auth = deletion_context
     before = db.query(CheckIn).count()
     monkeypatch.setattr(db, "commit", Mock(side_effect=RuntimeError("Unavailable")))
-    with pytest.raises(RuntimeError):
-        client.post("/api/v1/checkins", headers=auth,
-                    data={"hydration_score": 80, "texture_score": 70, "redness_score": 20})
+    assert client.post("/api/v1/checkins", headers=auth,
+                    data={"hydration_score": 80, "texture_score": 70, "redness_score": 20}).status_code == 503
     db.rollback()
     assert db.query(CheckIn).count() == before
 
@@ -177,8 +176,19 @@ def test_storage_failure_cannot_advance_baseline(deletion_context, monkeypatch):
     monkeypatch.setattr(azure_vision_service, "analyze_skin_image", Mock(return_value={
         "azure_vision_status": "ANALYSIS_COMPLETE", "erythema_redness_score": 10,
         "surface_texture_score": 65, "estimated_hydration_score": 85}))
-    monkeypatch.setattr(azure_blob_service, "upload_image", Mock(side_effect=RuntimeError("Storage unavailable")))
-    with pytest.raises(RuntimeError):
-        client.post("/api/v1/checkins", headers=auth, files={"photo": ("skin.jpg", b"image", "image/jpeg")})
+    monkeypatch.setattr(azure_blob_service, "upload_capture", Mock(side_effect=RuntimeError("Storage unavailable")))
+    assert client.post("/api/v1/checkins", headers=auth, files={"photo": ("skin.png", valid_photo(), "image/png")}).status_code == 503
     assert db.query(CheckIn).count() == before
     assert db.get(User, "delete-patient").tokens_balance == balance
+
+
+
+def valid_photo():
+    from io import BytesIO
+    from pathlib import Path
+    from PIL import Image
+    image = Image.open(Path(__file__).parent / "fixtures/astronaut.png").crop((80, 0, 340, 320)).resize((800, 1000))
+    buffer = BytesIO()
+    image.save(buffer, format="PNG")
+    image.close()
+    return buffer.getvalue()

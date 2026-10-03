@@ -83,8 +83,7 @@ def test_failure_and_deletion_cleanup(deletion_context, monkeypatch):
     commit = db.commit
     monkeypatch.setattr(db, 'commit', Mock(side_effect=RuntimeError('Unavailable')))
     before = db.query(CheckIn).count()
-    with pytest.raises(RuntimeError):
-        submit(client, auth)
+    assert submit(client, auth).status_code == 503
     db.rollback()
     assert db.query(CheckIn).count() == before
     monkeypatch.setattr(db, 'commit', commit)
@@ -115,15 +114,28 @@ def test_photo_report_keeps_derived_provenance_and_link(deletion_context, monkey
     monkeypatch.setattr(azure_vision_service, 'analyze_skin_image', Mock(return_value={
         'azure_vision_status': 'ANALYSIS_COMPLETE', 'estimated_hydration_score': 80,
         'surface_texture_score': 60, 'erythema_redness_score': 20}))
-    monkeypatch.setattr(azure_blob_service, 'upload_image', Mock(return_value=('owned-photo', 'photo-url')))
-    monkeypatch.setattr(azure_blob_service, 'generate_sas_url', Mock(return_value='photo-url'))
+    monkeypatch.setattr(azure_blob_service, 'upload_capture', Mock())
     response = client.post('/api/v1/checkins', headers=auth,
         data={'report': json.dumps({'overall_change': 'worse', 'symptoms': ['redness']})},
-        files={'photo': ('skin.jpg', b'image', 'image/jpeg')})
+        files={'photo': ('skin.png', valid_photo(), 'image/png')})
     assert response.status_code == 201
     row = response.json()
     assert row['observation']['provenance']['measurements'] == 'system_derived'
     assert row['observation']['provenance']['photo'] == 'user_uploaded'
-    assert row['image_sas_url'] == 'photo-url'
-    assert db.get(CheckIn, row['id']).image_blob_name == 'owned-photo'
+    assert row['image_sas_url'] is None
+    assert row['image_endpoint'] == f"/api/v1/checkins/{row['id']}/image"
+    assert row['storage'] == 'azure_blob'
+    assert db.get(CheckIn, row['id']).image_blob_name == row['image_reference']
     assert client.get('/api/v1/checkins', headers=auth).json()[0] == row
+
+
+
+def valid_photo():
+    from io import BytesIO
+    from pathlib import Path
+    from PIL import Image
+    image = Image.open(Path(__file__).parent / "fixtures/astronaut.png").crop((80, 0, 340, 320)).resize((800, 1000))
+    buffer = BytesIO()
+    image.save(buffer, format="PNG")
+    image.close()
+    return buffer.getvalue()

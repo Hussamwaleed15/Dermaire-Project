@@ -31,7 +31,7 @@ app = FastAPI(
     description="""
 ## Dermaire Skin Lab Backend — Microsoft Imagine Cup 2027
 Advanced Evidence-Based Clinical Skin Tracker & AI Assistant powered by:
-- **Microsoft Azure Blob Storage** (Encrypted skin check-in photos with ephemeral SAS tokens)
+- **Microsoft Azure Blob Storage** (Private photos served through authenticated backend reads)
 - **Microsoft Azure AI Vision 4.0** (Erythema/Redness, texture smoothness, and lesion analysis)
 - **Microsoft Azure OpenAI Service (GPT-4o)** (Responsible medical skin assistant)
 - **Microsoft Azure AI Content Safety** (Real-time clinical emergency red-flag escalation)
@@ -60,12 +60,12 @@ app.add_exception_handler(Exception, unhandled_exception_handler)
 
 from fastapi.responses import FileResponse
 
-# Static files for local development fallback uploads and landing page
+# Public static files contain only the landing page; images have no static route.
 uploads_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "uploads"))
 static_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "static"))
 os.makedirs(uploads_dir, exist_ok=True)
 os.makedirs(static_dir, exist_ok=True)
-app.mount("/api/v1/static/uploads", StaticFiles(directory=uploads_dir), name="uploads")
+
 app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
 @app.get("/", tags=["NeoVague Team Showcase"])
@@ -87,12 +87,14 @@ app.include_router(api_v1_router, prefix=settings.API_V1_STR)
 
 @app.get("/health", tags=["System Health"])
 def health_check():
+    from app.services.azure_blob import azure_blob_service
+    blob = azure_blob_service.health()
     return {
-        "status": "healthy",
+        "status": "degraded" if blob["state"] == "degraded" or (blob["state"] == "unconfigured" and settings.ENVIRONMENT in {"production", "staging"}) else "healthy",
         "project": settings.PROJECT_NAME,
         "edition": settings.IMAGINE_COP_EDITION,
         "azure_services": {
-            "blob_storage": "Live" if settings.is_blob_live else "Local Mock / Offline Ready",
+            "blob_storage": blob,
             "ai_vision": "Live" if settings.is_vision_live else "Local Mock / Offline Ready",
             "openai_gpt4o": "Live" if settings.is_openai_live else "Local Mock / Offline Ready",
             "content_safety": "Live" if settings.is_safety_live else "Local Rules / Offline Ready"

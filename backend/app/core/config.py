@@ -59,7 +59,6 @@ class Settings(BaseSettings):
     # Microsoft Azure Blob Storage (Skin photos & medical reports)
     AZURE_STORAGE_CONNECTION_STRING: str = ""
     AZURE_STORAGE_CONTAINER: str = "skin-records"
-    AZURE_BLOB_SAS_EXPIRY_MINUTES: int = 30
 
     # Microsoft Azure AI Vision (Image Analysis 4.0)
     AZURE_VISION_ENDPOINT: str = ""
@@ -96,10 +95,10 @@ class Settings(BaseSettings):
                 )
         return self
 
-    # Mock mode flag: automatically active when Azure credentials are not provided
+    # Configuration presence only; the service health probe checks reachability/privacy.
     @property
     def is_blob_live(self) -> bool:
-        return bool(self.AZURE_STORAGE_CONNECTION_STRING)
+        return bool(self.AZURE_STORAGE_CONNECTION_STRING.strip())
 
     @property
     def is_vision_live(self) -> bool:
