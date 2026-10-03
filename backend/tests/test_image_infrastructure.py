@@ -6,6 +6,7 @@ from uuid import uuid4
 import pytest
 from PIL import Image
 from azure.core.exceptions import ResourceNotFoundError
+from azure.storage.blob import RetentionPolicy
 from app.models import Capture, CheckIn, User, DoctorPatientAccess, Measurement, AuditLog
 from app.core.security import create_access_token
 from app.core.config import settings
@@ -375,3 +376,41 @@ def test_checkin_idempotency_key_conflict(context, photograph, storage):
     assert checkin(client, auth, data).json()['id'] == first['id']
     assert checkin(client, auth, data, {'notes': 'changed'}).status_code == 409
     assert db.query(CheckIn).count() == storage[1].call_count == 1
+
+
+@pytest.mark.parametrize('policy', [{}, None, {'enabled': False}, RetentionPolicy(enabled=False)])
+def test_sdk_disabled_or_absent_retention_allows_storage(policy):
+    obj = service()
+    obj.client.get_service_properties.return_value = {
+        'delete_retention_policy': policy,
+        'container_delete_retention_policy': policy,
+        'is_versioning_enabled': False,
+    }
+    assert obj.health()['state'] == 'available'
+    assert obj.health()['durable_images'] is True
+    obj.upload_capture('owned', b'png')
+    obj.delete_image('owned')
+    obj.container_client.delete_blob.assert_called_once_with('owned', delete_snapshots='include')
+
+
+@pytest.mark.parametrize('field', ['delete_retention_policy', 'container_delete_retention_policy'])
+@pytest.mark.parametrize('policy', [{'enabled': True}, RetentionPolicy(enabled=True, days=7)])
+def test_sdk_retention_blocks_health_upload_and_delete(field, policy):
+    assert_storage_policy_blocks_operations({field: policy})
+
+
+def test_sdk_versioning_blocks_health_upload_and_delete():
+    assert_storage_policy_blocks_operations({'is_versioning_enabled': True})
+
+
+def assert_storage_policy_blocks_operations(properties):
+    obj = service()
+    obj.client.get_service_properties.return_value = properties
+    assert obj.health() == {'provider': 'azure_blob', 'state': 'degraded', 'durable_images': False}
+    with pytest.raises(RuntimeError, match='retention'):
+        obj.upload_capture('owned', b'png')
+    with pytest.raises(RuntimeError, match='retention'):
+        obj.delete_image('owned')
+    obj.container_client.get_blob_client.assert_not_called()
+    obj.container_client.list_blobs.assert_not_called()
+    obj.container_client.delete_blob.assert_not_called()

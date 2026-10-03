@@ -1,4 +1,5 @@
 ﻿import os
+from collections.abc import Mapping
 from app.core.config import settings
 
 class AzureBlobService:
@@ -24,15 +25,27 @@ class AzureBlobService:
         if self.container_client.get_container_properties().get("public_access"):
             raise RuntimeError("Image storage must be private")
 
+    @staticmethod
+    def _property(value, name):
+        """Azure properties may contain mappings, SDK models, or absent policies."""
+        if isinstance(value, Mapping):
+            return value.get(name)
+        return getattr(value, name, None)
+
+    @classmethod
+    def _has_retention_or_versioning(cls, properties):
+        return any(
+            cls._property(cls._property(properties, name), "enabled")
+            for name in ("delete_retention_policy", "container_delete_retention_policy")
+        ) or bool(cls._property(properties, "is_versioning_enabled"))
+
     def health(self):
         if not self.is_live:
             return {"provider": "none", "state": "unconfigured", "durable_images": False}
         try:
             self.require_private()
             properties = self.client.get_service_properties()
-            if (properties.get("delete_retention_policy", {}).get("enabled") or
-                    properties.get("container_delete_retention_policy", {}).get("enabled") or
-                    properties.get("is_versioning_enabled")):
+            if self._has_retention_or_versioning(properties):
                 raise RuntimeError("Retention incompatible with deletion")
             return {"provider": "azure_blob", "state": "available", "durable_images": True,
                     "probe": "private_container_metadata", "end_to_end_verified": False,
@@ -44,7 +57,7 @@ class AzureBlobService:
         """Private real storage only; no local fallback and no SAS generation."""
         self.require_private()
         properties = self.client.get_service_properties()
-        if properties.get("delete_retention_policy", {}).get("enabled"):
+        if self._has_retention_or_versioning(properties):
             raise RuntimeError("Storage retention incompatible with image cleanup")
         from azure.storage.blob import ContentSettings
         result = self.container_client.get_blob_client(blob_name).upload_blob(
@@ -73,7 +86,7 @@ class AzureBlobService:
         if self.is_live:
             from azure.core.exceptions import ResourceNotFoundError
             properties = self.client.get_service_properties()
-            if properties.get("delete_retention_policy", {}).get("enabled") or properties.get("is_versioning_enabled"):
+            if self._has_retention_or_versioning(properties):
                 raise RuntimeError("Storage retention prevents confirmed permanent deletion")
             # Historical versions/deleted blobs may remain after retention was
             # disabled. Do not claim completion while those copies still exist.
