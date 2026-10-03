@@ -122,7 +122,10 @@ class _SkinAssistantScreenState extends State<SkinAssistantScreen> {
       };
       reply = AssistantReply(replyText, kind);
     } catch (_) {
-      reply = SkinAssistantSafety.reply(value);
+      reply = const AssistantReply(
+        'The server assistant is unavailable. Your current skin context and safety status could not be checked. Retry, or seek medical guidance if symptoms concern you.',
+        AssistantReplyKind.uncertainty,
+      );
     }
     if (!mounted) return;
     setState(() {

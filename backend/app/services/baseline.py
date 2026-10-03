@@ -8,6 +8,9 @@ from app.models import CheckIn
 
 def confirmed_measurement(row):
     analysis = row.ai_vision_analysis or {}
+    if (analysis.get('simulated') or analysis.get('azure_vision_status') in
+            ('SIMULATED', 'SIMULATED_SUCCESS', 'FALLBACK_SIMULATED')):
+        return False
     values = [row.hydration_score, row.texture_score, row.redness_score]
     return analysis.get("measurement_source") in ("manual", "image_proxy") and all(
         v is not None and math.isfinite(v) and 0 <= v <= 100 for v in values)
@@ -21,7 +24,9 @@ def baseline_snapshot(db, user_id, before=None):
         CheckIn.created_at, CheckIn.id).all()
     days, selected = set(), []
     for row in rows:
-        if before and row.created_at >= before:
+        recorded = row.created_at.replace(tzinfo=timezone.utc) if row.created_at.tzinfo is None else row.created_at.astimezone(timezone.utc)
+        cutoff = before.replace(tzinfo=timezone.utc) if before and before.tzinfo is None else before or datetime.now(timezone.utc)
+        if cutoff and recorded >= cutoff:
             continue
         if not confirmed_measurement(row):
             continue  # Legacy/default/simulated measurements are quarantined.
