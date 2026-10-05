@@ -95,8 +95,8 @@ def health_check():
         "edition": settings.IMAGINE_COP_EDITION,
         "azure_services": {
             "blob_storage": blob,
-            "ai_vision": "Live" if settings.is_vision_live else "Local Mock / Offline Ready",
-            "openai_gpt4o": "Live" if settings.is_openai_live else "Local Mock / Offline Ready",
-            "content_safety": "Live" if settings.is_safety_live else "Local Rules / Offline Ready"
+            "ai_vision": "Configured; reachability unverified" if settings.AZURE_VISION_ENABLED else "Disabled; local image proxies",
+            "openai_gpt4o": "Configured; reachability unverified" if settings.CONTEXTUAL_AI_ENABLED else "Disabled; deterministic assistance",
+            "content_safety": "Configured; reachability unverified" if settings.is_safety_live else "Local Rules"
         }
     }

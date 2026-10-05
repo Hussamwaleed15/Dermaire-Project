@@ -21,7 +21,9 @@ class AzureSafetyService:
             from azure.core.credentials import AzureKeyCredential
             self.client = ContentSafetyClient(
                 endpoint=settings.AZURE_CONTENT_SAFETY_ENDPOINT,
-                credential=AzureKeyCredential(settings.AZURE_CONTENT_SAFETY_KEY)
+                credential=AzureKeyCredential(settings.AZURE_CONTENT_SAFETY_KEY),
+                connection_timeout=settings.AI_PROVIDER_TIMEOUT_SECONDS,
+                read_timeout=settings.AI_PROVIDER_TIMEOUT_SECONDS, retry_total=0
             )
 
     def analyze_message_safety(self, message: str) -> Tuple[bool, str, Dict[str, Any]]:
@@ -43,14 +45,7 @@ class AzureSafetyService:
                 from azure.ai.contentsafety.models import AnalyzeTextOptions
                 request = AnalyzeTextOptions(text=message)
                 response = self.client.analyze_text(request)
-                is_harmful = any(
-                    item.severity > 2 for item in [
-                        response.hate_result,
-                        response.self_harm_result,
-                        response.sexual_result,
-                        response.violence_result
-                    ] if item is not None
-                )
+                is_harmful = any(item.severity > 2 for item in response.categories_analysis)
                 if is_harmful:
                     return (
                         True,
@@ -58,8 +53,8 @@ class AzureSafetyService:
                         {"azure_safety_triggered": True}
                     )
             except Exception:
-                pass
+                return False, "", {"content_safety_state": "degraded"}
 
-        return False, "", {}
+        return False, "", {"content_safety_state": "not_invoked" if not self.is_live else "available"}
 
 azure_safety_service = AzureSafetyService()

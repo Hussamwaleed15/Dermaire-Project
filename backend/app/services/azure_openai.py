@@ -22,6 +22,7 @@ class AzureOpenAIService:
             self.client = AzureOpenAI(
                 azure_endpoint=settings.AZURE_OPENAI_ENDPOINT,
                 api_key=settings.AZURE_OPENAI_API_KEY,
+                timeout=settings.AI_PROVIDER_TIMEOUT_SECONDS, max_retries=0,
                 api_version=settings.AZURE_OPENAI_API_VERSION
             )
 
@@ -43,7 +44,9 @@ class AzureOpenAIService:
                     temperature=0.3,
                     max_tokens=450
                 )
-                reply_text = response.choices[0].message.content or ""
+                if response.choices[0].finish_reason != "stop" or not response.choices[0].message.content:
+                    raise ValueError("Incomplete provider output")
+                reply_text = response.choices[0].message.content
                 return reply_text, "education", False, {"source": "Azure OpenAI GPT-4o"}
             except Exception as e:
                 # Log and fallback gracefully

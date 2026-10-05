@@ -23,7 +23,7 @@ class AzureContextualProvider:
         with AzureOpenAI(azure_endpoint=settings.AZURE_OPENAI_ENDPOINT,
                         api_key=settings.AZURE_OPENAI_API_KEY,
                         api_version=settings.AZURE_OPENAI_API_VERSION,
-                        timeout=20.0, max_retries=0) as client:
+                        timeout=settings.AI_PROVIDER_TIMEOUT_SECONDS, max_retries=0) as client:
             response=client.chat.completions.create(model=settings.AZURE_OPENAI_DEPLOYMENT_NAME,
                 messages=[{'role':'system','content':POLICY},{'role':'user','content':json.dumps({
                     'task':task,'context':{

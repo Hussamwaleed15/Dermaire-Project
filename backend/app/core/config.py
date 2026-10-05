@@ -1,4 +1,5 @@
 from typing import List, Literal
+from urllib.parse import urlsplit
 from pydantic import field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -63,6 +64,8 @@ class Settings(BaseSettings):
     # Microsoft Azure AI Vision (Image Analysis 4.0)
     AZURE_VISION_ENDPOINT: str = ""
     AZURE_VISION_KEY: str = ""
+    AZURE_VISION_ENABLED: bool = False
+    AI_PROVIDER_TIMEOUT_SECONDS: float = 20.0
 
     # Microsoft Azure OpenAI Service (GPT-4o Medical Assistant)
     AZURE_OPENAI_ENDPOINT: str = ""
@@ -75,6 +78,34 @@ class Settings(BaseSettings):
     # Microsoft Azure AI Content Safety (Emergency Red Flag Escalation)
     AZURE_CONTENT_SAFETY_ENDPOINT: str = ""
     AZURE_CONTENT_SAFETY_KEY: str = ""
+
+    @model_validator(mode="after")
+    def validate_ai_configuration(self):
+        for endpoint_name, key_name in (
+            ("AZURE_VISION_ENDPOINT", "AZURE_VISION_KEY"),
+            ("AZURE_OPENAI_ENDPOINT", "AZURE_OPENAI_API_KEY"),
+            ("AZURE_CONTENT_SAFETY_ENDPOINT", "AZURE_CONTENT_SAFETY_KEY"),
+        ):
+            endpoint = getattr(self, endpoint_name).strip()
+            key = getattr(self, key_name).strip()
+            if bool(endpoint) != bool(key):
+                raise ValueError(f"{endpoint_name} and {key_name} must be configured together")
+            if endpoint:
+                url = urlsplit(endpoint)
+                if (url.scheme != "https" or not url.hostname or url.username or url.password
+                        or url.query or url.fragment or url.path not in ("", "/")):
+                    raise ValueError(f"{endpoint_name} must be an HTTPS resource base URL")
+                setattr(self, endpoint_name, endpoint.rstrip("/"))
+                setattr(self, key_name, key)
+        if not 1 <= self.AI_PROVIDER_TIMEOUT_SECONDS <= 60:
+            raise ValueError("AI_PROVIDER_TIMEOUT_SECONDS must be between 1 and 60")
+        if self.AZURE_VISION_ENABLED and not self.is_vision_live:
+            raise ValueError("AZURE_VISION_ENABLED requires Vision credentials")
+        if self.CONTEXTUAL_AI_ENABLED and (not self.is_openai_live
+                or not self.AZURE_OPENAI_DEPLOYMENT_NAME.strip()
+                or not self.AZURE_OPENAI_API_VERSION.strip()):
+            raise ValueError("CONTEXTUAL_AI_ENABLED requires complete OpenAI configuration")
+        return self
 
     @field_validator("ENVIRONMENT", mode="before")
     @classmethod

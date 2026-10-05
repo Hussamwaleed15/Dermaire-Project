@@ -8,11 +8,9 @@ class AzureVisionService:
         self.is_live = settings.is_vision_live
 
     def analyze_skin_image(self, image_bytes: bytes) -> Dict[str, Any]:
-        # In a real environment, send to Azure AI Vision 4.0 or pre-process with Pillow/OpenCV
-        if self.is_live:
-            # Azure AI Vision 4.0 call
-            pass
-
+        # Validate/decode locally before any transmission. Provider metadata never
+        # supplies clinical scores or changes deterministic measurement provenance.
+        provider = {"provider": "azure_vision", "state": "disabled", "authoritative": False}
         # Smart fallback image metrics calculation based on image properties
         try:
             from PIL import Image, ImageStat
@@ -29,7 +27,10 @@ class AzureVisionService:
             texture_score = min(100.0, max(20.0, round(100.0 - math.sqrt(variance) * 0.5, 1)))
             hydration_score = min(100.0, max(0.0, round((100.0 - (redness_score * 0.4) + (texture_score * 0.6)) / 1.2, 1)))
 
+            if settings.AZURE_VISION_ENABLED:
+                provider = self._analyze_provider(image_bytes)
             return {
+                "vision_provider": provider,
                 "azure_vision_status": "ANALYSIS_COMPLETE",
                 "measurement_source": "image_proxy",
                 "measurement_method": "Local image-property proxy; not Azure clinical analysis",
@@ -43,7 +44,29 @@ class AzureVisionService:
         except Exception as e:
             return {
                 "azure_vision_status": "ANALYSIS_UNAVAILABLE",
-                "error": str(e)
+                "error": "Invalid or unsupported image"
             }
+
+    def _analyze_provider(self, image_bytes):
+        import httpx
+        try:
+            with httpx.Client(timeout=settings.AI_PROVIDER_TIMEOUT_SECONDS,
+                              follow_redirects=False) as client:
+                response = client.post(
+                    settings.AZURE_VISION_ENDPOINT + "/computervision/imageanalysis:analyze",
+                    params={"api-version": "2024-02-01", "features": "tags"},
+                    headers={"Ocp-Apim-Subscription-Key": settings.AZURE_VISION_KEY,
+                             "Content-Type": "application/octet-stream"}, content=image_bytes)
+                response.raise_for_status()
+                result = response.json()
+                # Deliberately discard tags: general image labels are not medical facts.
+                if not isinstance(result.get("tagsResult", {}).get("values"), list):
+                    raise ValueError("Invalid provider envelope")
+                return {"provider": "azure_vision", "state": "available",
+                        "authoritative": False, "feature": "tags",
+                        "clinical_measurement": False}
+        except Exception:
+            return {"provider": "azure_vision", "state": "degraded",
+                    "authoritative": False, "reason": "provider_failure"}
 
 azure_vision_service = AzureVisionService()
