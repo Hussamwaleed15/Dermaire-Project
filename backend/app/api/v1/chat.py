@@ -23,6 +23,7 @@ def chat_with_assistant(payload: AssistanceRequest, current_user: User=Depends(g
         escalation_triggered=guarded or precaution,
         safety_details={'authoritative_safety': result.authoritative_safety.model_dump(mode='json'),
                         'contextual_assistance': result.model_dump(mode='json')},
-        azure_model_used='Safety Engine v1' if guarded else
+        azure_model_used='Clinician review' if result.metadata.reason=='clinician_precedence' else
+            'Safety Engine v1' if guarded else
             result.metadata.model if result.metadata.mode == 'grounded_ai' else
             'Deterministic Contextual AI v1 (AI unavailable or narrowed)')

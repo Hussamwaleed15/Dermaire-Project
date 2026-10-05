@@ -8,8 +8,12 @@ No diagnoses, prescriptions, causal conclusions, fabricated facts or medical cle
 
 1. Existing authenticated `get_current_user` verifies the account, credential stamp,
    access-token type, expiry and session revocation, and holds the owner lock.
-2. `assist` evaluates Safety Engine v1 first. `urgent`/`doctor_review` return its exact
-   guidance before context building, provider construction or any external invocation.
+2. `assist` evaluates Safety Engine v1 and the latest clinician review first. A
+   patient-visible `urgent`/`doctor_review` recommendation above the engine's rank
+   returns a clinician guard before any provider invocation. Engine decisions are
+   never downgraded. `authoritative_safety` remains the unchanged engine evaluation;
+   the additive `authoritative_clinician` field attributes a higher clinician guard.
+   Private reviews and superseded visible reviews are not disclosed or sent to AI.
 3. `build_context` reads owner-scoped records and emits `context-1.0`. It uses explicit
    projections and existing deterministic baseline, PSM v1, PI v1 and safety services.
 4. Supported tasks may call `ContextualProvider.generate` when independently enabled

@@ -1,10 +1,11 @@
 """Safety first, evidence selection second, canonical backend rendering last."""
 import json
 from app.core.config import settings
-from app.schemas.contextual_ai import AssistanceResponse, ProviderMetadata, ProviderSelection, InferredPoint
+from app.schemas.contextual_ai import AssistanceResponse, ProviderMetadata, ProviderSelection, InferredPoint, ClinicianDecision
+from app.models import DoctorReviewAction
 from app.services.context_builder import build_context
 from app.services.contextual_provider import get_contextual_provider
-from app.services.safety import evaluate_safety
+from app.services.safety import evaluate_safety, RANK
 from app.services.azure_safety import RED_FLAG_KEYWORDS
 
 STEPS = {
@@ -84,6 +85,26 @@ def assist(db,user,payload,provider=None,now=None):
     safety=evaluate_safety(db,user,now)
     task=resolve_task(payload)
     metadata=provider_metadata()
+    # Match the clinician projection: the latest event is current, with no
+    # fallback to an older visible decision when the latest one is private.
+    review=db.query(DoctorReviewAction).filter_by(patient_id=user.id).order_by(
+        DoctorReviewAction.sequence.desc()).first()
+    if (review and review.patient_visible
+            and review.recommendation in ('urgent','doctor_review')
+            and RANK[review.recommendation] > RANK[safety.status]):
+        decision=ClinicianDecision(id=review.id,sequence=review.sequence,
+                                   recommendation=review.recommendation)
+        guidance=('Your clinician recommends urgent medical assessment. Follow their guidance. '
+                  'For breathing difficulty or face, mouth or throat swelling, contact emergency services now.'
+                  if review.recommendation=='urgent' else
+                  'Your clinician recommends clinician review. Follow their guidance and arrange review. '
+                  'Seek urgent care if symptoms become severe or spread rapidly.')
+        metadata.mode='safety_guard'
+        metadata.reason='clinician_precedence'
+        return AssistanceResponse(task=task,message=guidance,grounded_facts_used=[],
+            inferred_points=[],uncertainties=safety.limitations,next_steps=[guidance],
+            escalation=review.recommendation,authoritative_safety=safety,
+            authoritative_clinician=decision,metadata=metadata)
     if safety.status in ('urgent','doctor_review'):
         metadata.mode='safety_guard'
         metadata.reason='safety_precedence'

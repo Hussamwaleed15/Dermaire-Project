@@ -72,6 +72,13 @@ class ProviderMetadata(Strict):
     mode: Literal['grounded_ai', 'degraded', 'safety_guard', 'narrowed']
     reason: str | None = None
 
+class ClinicianDecision(Strict):
+    """Current patient-visible decision, kept separate from engine evidence."""
+    id: str
+    sequence: int
+    recommendation: SafetyState
+    provenance: Literal['clinician_authored'] = 'clinician_authored'
+
 class AssistanceResponse(Strict):
     schema_version: Literal['contextual-ai-1.0'] = 'contextual-ai-1.0'
     context_version: Literal['context-1.0'] = 'context-1.0'
@@ -83,4 +90,5 @@ class AssistanceResponse(Strict):
     next_steps: list[str]
     escalation: SafetyState
     authoritative_safety: SafetyEvaluation
+    authoritative_clinician: ClinicianDecision | None = None
     metadata: ProviderMetadata
