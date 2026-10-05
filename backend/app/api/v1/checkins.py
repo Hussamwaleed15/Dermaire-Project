@@ -133,7 +133,7 @@ async def submit_daily_checkin(
             result.storage = "azure_blob" if existing.image_blob_name else "not_persisted"
             result.image_reference = safe_reference(existing.image_blob_name)
             return result
-        ai_analysis = azure_vision_service.analyze_skin_image(photo_bytes)
+        ai_analysis = await run_in_threadpool(azure_vision_service.analyze_skin_image, normalized)
         values = [ai_analysis.get(k) for k in ("estimated_hydration_score",
                   "surface_texture_score", "erythema_redness_score")]
         if ai_analysis.get("azure_vision_status") != "ANALYSIS_COMPLETE" or not all(
