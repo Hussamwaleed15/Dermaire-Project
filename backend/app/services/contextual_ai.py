@@ -1,12 +1,12 @@
 """Safety first, evidence selection second, canonical backend rendering last."""
 import json
 from app.core.config import settings
-from app.schemas.contextual_ai import AssistanceResponse, ProviderMetadata, ProviderSelection, InferredPoint, ClinicianDecision
+from app.schemas.contextual_ai import AssistanceResponse, ProviderMetadata, ProviderSelection, InferredPoint, ClinicianDecision, ModerationMetadata
 from app.models import DoctorReviewAction
 from app.services.context_builder import build_context
 from app.services.contextual_provider import get_contextual_provider
 from app.services.safety import evaluate_safety, RANK
-from app.services.azure_safety import RED_FLAG_KEYWORDS
+from app.services.azure_safety import RED_FLAG_KEYWORDS, azure_safety_service
 
 STEPS = {
     'record_checkin':'Record a fresh structured check-in including symptoms and the safety screen; unanswered fields remain unknown.',
@@ -85,6 +85,7 @@ def assist(db,user,payload,provider=None,now=None):
     safety=evaluate_safety(db,user,now)
     task=resolve_task(payload)
     metadata=provider_metadata()
+    moderation=ModerationMetadata(configured=azure_safety_service.is_live)
     # Match the clinician projection: the latest event is current, with no
     # fallback to an older visible decision when the latest one is private.
     review=db.query(DoctorReviewAction).filter_by(patient_id=user.id).order_by(
@@ -104,13 +105,13 @@ def assist(db,user,payload,provider=None,now=None):
         return AssistanceResponse(task=task,message=guidance,grounded_facts_used=[],
             inferred_points=[],uncertainties=safety.limitations,next_steps=[guidance],
             escalation=review.recommendation,authoritative_safety=safety,
-            authoritative_clinician=decision,metadata=metadata)
+            authoritative_clinician=decision,metadata=metadata,moderation=moderation)
     if safety.status in ('urgent','doctor_review'):
         metadata.mode='safety_guard'
         metadata.reason='safety_precedence'
         return AssistanceResponse(task=task,message=safety.guidance,grounded_facts_used=[],
             inferred_points=[],uncertainties=safety.limitations,next_steps=[safety.guidance],
-            escalation=safety.status,authoritative_safety=safety,metadata=metadata)
+            escalation=safety.status,authoritative_safety=safety,metadata=metadata,moderation=moderation)
     if any(flag in payload.message.casefold() for flag in RED_FLAG_KEYWORDS):
         # Request-level precaution only, never promote prose to structured symptoms
         # or mutate the canonical engine state. Retains the legacy chat safety warning.
@@ -123,7 +124,16 @@ def assist(db,user,payload,provider=None,now=None):
                  'safety check-in when safe; the stored assessment cannot rule out current risk.')
         return AssistanceResponse(task='unsupported',message=message,grounded_facts_used=[],
             inferred_points=[],uncertainties=['Symptoms mentioned in prose are not confirmed structured evidence.'],
-            next_steps=[message],escalation=safety.status,authoritative_safety=safety,metadata=metadata)
+            next_steps=[message],escalation=safety.status,authoritative_safety=safety,metadata=metadata,moderation=moderation)
+    # Content policy metadata is separate from clinical authority above.
+    try:
+        flagged, _, details=azure_safety_service.analyze_message_safety(payload.message)
+        moderation.invoked=moderation.configured
+        moderation.state=details.get('content_safety_state', 'degraded')
+        moderation.flagged=bool(flagged)
+    except Exception:
+        moderation.invoked=moderation.configured
+        moderation.state='degraded'
     context=build_context(db,user,safety,now)
     eligible=[f.id for f in context.facts if f.source in SOURCE_TASKS[task]
               and f.freshness in ('fresh','historical_reference')]
@@ -134,7 +144,12 @@ def assist(db,user,payload,provider=None,now=None):
     selected_ids=eligible[:8]
     next_steps=['record_adherence','record_checkin','seek_guidance'] if task=='routine' else ['record_checkin','ask_doctor','seek_guidance']
     inferences=[]
-    if task=='unsupported':
+    if moderation.flagged:
+        task='unsupported'
+        selected_ids=[]
+        metadata.mode='narrowed'
+        metadata.reason='content_policy'
+    elif task=='unsupported':
         metadata.mode='narrowed'
         metadata.reason='unsupported_question'
     elif metadata.configured and settings.CONTEXTUAL_AI_ENABLED:
@@ -167,4 +182,4 @@ def assist(db,user,payload,provider=None,now=None):
         steps.append(STEPS['seek_guidance'])
     return AssistanceResponse(task=task,message='\n'.join(sentences),grounded_facts_used=facts,
         inferred_points=inferences,uncertainties=context.unknowns,next_steps=steps,
-        escalation=safety.status,authoritative_safety=safety,metadata=metadata)
+        escalation=safety.status,authoritative_safety=safety,metadata=metadata,moderation=moderation)

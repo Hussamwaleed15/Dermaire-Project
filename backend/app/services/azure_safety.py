@@ -50,7 +50,7 @@ class AzureSafetyService:
                     return (
                         True,
                         "Message content flagged by safety policy. Please maintain clinical and medical queries only.",
-                        {"azure_safety_triggered": True}
+                        {"azure_safety_triggered": True, "content_safety_state": "available"}
                     )
             except Exception:
                 return False, "", {"content_safety_state": "degraded"}

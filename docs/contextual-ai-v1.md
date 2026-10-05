@@ -18,7 +18,9 @@ No diagnoses, prescriptions, causal conclusions, fabricated facts or medical cle
    projections and existing deterministic baseline, PSM v1, PI v1 and safety services.
 4. Supported tasks may call `ContextualProvider.generate` when independently enabled
    and Azure credentials/deployment are configured. The raw question is never clinical
-   evidence and never goes to the provider. Only the supported task and compact context do.
+   evidence and never goes to OpenAI. Only the supported task and compact context do.
+   The request text alone is sent to configured Azure Content Safety for moderation,
+   after local safety and clinician guards; stored context is not sent for moderation.
 5. The Azure adapter uses the existing OpenAI dependency, JSON mode, a 20-second timeout,
    no retries, and a strict policy plus response schema. No new dependencies are added.
 6. The server rejects unknown/stale citations, unsupported inferences/steps, changed
@@ -202,3 +204,7 @@ question routing with English canonical summaries (emergency caution bilingual),
 bounded history/ingredient projections, no new experiment recomputation, and no
 Doctor Loop v2, Personal Skin Model v2, Blob/Vision integration, notifications or UI
 polish. Structured API clients can use task explicitly when phrase routing is insufficient.
+
+Content Safety request moderation
+-------------------------------
+Both `/assistance` and `/chat` invoke AzureSafetyService through shared `assist`, after engine, clinician and request red-flag guards. `moderation` reports configuration, invocation, availability and content-policy flags separately from clinical escalation. Flagged content narrows to canonical unsupported guidance and skips OpenAI; it cannot overwrite Safety Engine or clinician decisions. Failed moderation retains evidence-grounded assistance without leaking provider errors. Moderation applies even when contextual generation is disabled. No request or moderation categories are persisted.

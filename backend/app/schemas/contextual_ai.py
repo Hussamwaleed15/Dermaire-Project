@@ -72,6 +72,14 @@ class ProviderMetadata(Strict):
     mode: Literal['grounded_ai', 'degraded', 'safety_guard', 'narrowed']
     reason: str | None = None
 
+class ModerationMetadata(Strict):
+    """Provider content policy only; never a clinical assessment."""
+    provider: Literal['azure_content_safety'] = 'azure_content_safety'
+    configured: bool = False
+    invoked: bool = False
+    state: Literal['not_invoked', 'available', 'degraded'] = 'not_invoked'
+    flagged: bool = False
+
 class ClinicianDecision(Strict):
     """Current patient-visible decision, kept separate from engine evidence."""
     id: str
@@ -92,3 +100,4 @@ class AssistanceResponse(Strict):
     authoritative_safety: SafetyEvaluation
     authoritative_clinician: ClinicianDecision | None = None
     metadata: ProviderMetadata
+    moderation: ModerationMetadata = Field(default_factory=ModerationMetadata)
