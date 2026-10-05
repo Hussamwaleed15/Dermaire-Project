@@ -7,7 +7,7 @@ services:
     restart: always
     environment:
       POSTGRES_USER: dermaire_user
-      POSTGRES_PASSWORD: dermaire_secure_password_2027
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set a unique database password}
       POSTGRES_DB: dermaire_db
     ports:
       - "5432:5432"
@@ -26,7 +26,7 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - DATABASE_URL=postgresql://dermaire_user:dermaire_secure_password_2027@db:5432/dermaire_db
+      - DATABASE_URL=${DATABASE_URL:?Set a postgresql+psycopg URL matching the database credentials}
       - SECRET_KEY=${SECRET_KEY:?Set a unique production SECRET_KEY}
       - ENVIRONMENT=production
       - DEBUG=False

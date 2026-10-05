@@ -127,7 +127,7 @@ async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONR
     return create_error_response(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         error_code="INTERNAL_SERVER_ERROR",
-        message="An unexpected server error occurred. Our engineering team has been notified.",
+        message="An unexpected server error occurred. Please retry later.",
         path=request.url.path,
-        details=[{"debug": str(exc)}]
+        details=[]
     )
