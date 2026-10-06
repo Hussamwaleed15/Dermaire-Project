@@ -35,6 +35,42 @@ def test_readiness_db_failure(monkeypatch):
     assert b"sensitive" not in response.body
 
 
+def test_managed_readiness_requires_independent_journal(monkeypatch):
+    from app.main import readiness
+    from app.core.config import settings
+    from app.services.deletion_journal import deletion_journal
+    db = Mock()
+    db.execute.return_value.scalars.return_value.all.return_value = ["20261006_01"]
+    monkeypatch.setattr(settings, "ENVIRONMENT", "staging")
+    monkeypatch.setattr(azure_blob_service, "health", lambda: {"state": "available"})
+    monkeypatch.setattr(deletion_journal, "health", lambda: "unavailable")
+    assert readiness(db).status_code == 503
+    monkeypatch.setattr(deletion_journal, "health", lambda: "available")
+    assert readiness(db).status_code == 200
+
+
+def test_database_timeout_is_retryable_and_private(client, monkeypatch):
+    from sqlalchemy.exc import OperationalError
+    from app.core.database import get_db
+    from app.main import app
+    def unavailable():
+        raise OperationalError("SELECT private", {"email": "private@example.invalid"},
+                               RuntimeError("sensitive SQL driver text"))
+        yield
+    previous = app.dependency_overrides.get(get_db)
+    app.dependency_overrides[get_db] = unavailable
+    try:
+        response = client.get("/health/ready")
+        assert response.status_code == 503
+        assert response.json()["errorCode"] == "DATABASE_UNAVAILABLE"
+        assert "sensitive" not in response.text and "private@example.invalid" not in response.text
+    finally:
+        if previous is None:
+            app.dependency_overrides.pop(get_db, None)
+        else:
+            app.dependency_overrides[get_db] = previous
+
+
 def test_request_telemetry_excludes_query_and_personal_path(client, caplog):
     response = client.get("/not-a-route/private@example.com?token=secret")
     assert response.headers["x-request-id"]

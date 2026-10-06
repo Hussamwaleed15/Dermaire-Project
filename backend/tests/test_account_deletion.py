@@ -83,6 +83,18 @@ def test_cleanup_failure_can_retry(deletion_context, monkeypatch):
     assert client.delete("/api/v1/users/me", headers=headers).status_code == 204
 
 
+def test_journal_failure_precedes_every_destructive_operation(deletion_context, monkeypatch):
+    from app.services.account_deletion import deletion_journal
+    client, db, headers = deletion_context
+    monkeypatch.setattr(deletion_journal, "record", Mock(side_effect=OSError("journal unavailable")))
+    delete = Mock()
+    monkeypatch.setattr(azure_blob_service, "delete_image", delete)
+    assert client.delete("/api/v1/users/me", headers=headers).status_code == 503
+    delete.assert_not_called()
+    assert db.query(User).count() == 2
+    assert db.query(CheckIn).count() == 1
+
+
 def test_database_failure_rolls_back(deletion_context, monkeypatch):
     client, db, headers = deletion_context
     monkeypatch.setattr(azure_blob_service, "delete_image", Mock())

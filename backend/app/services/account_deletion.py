@@ -8,6 +8,7 @@ from app.core.config import settings
 from app.models import (User, Product, Experiment, ExperimentEvaluation, CheckIn, DoctorPatientAccess,
                         ClinicalNote, RewardRedemption, AuditLog, DailyContext, RoutineEntry, RoutineAdherence)
 from app.services.azure_blob import azure_blob_service
+from app.services.deletion_journal import deletion_journal
 from app.models import Capture, Measurement, ProductIntelligence, DoctorReviewAction
 
 
@@ -51,6 +52,12 @@ def delete_account(db, user_id):
             key = row.image_blob_name
             if key and key.count("/") >= 2 and not key.startswith(f"skin_photos/{user_id}/{user_id}_"):
                 raise RuntimeError("Inconsistent image ownership requires repair before deletion")
+    # Durable intent must precede every destructive operation. A DB rollback
+    # leaves the privacy request pending for retry/replay, never loses it.
+    image_keys = [row.image_blob_name for model in (Capture, CheckIn)
+                  for row in db.query(model).filter_by(user_id=user_id)
+                  if row.image_blob_name]
+    deletion_journal.record(user_id, image_keys)
     # Keep ownership records until ALL external deletes succeed. Partial cleanup
     # can safely retry because deleting an absent blob is a no-op.
     for capture in db.query(Capture).filter_by(user_id=user_id):

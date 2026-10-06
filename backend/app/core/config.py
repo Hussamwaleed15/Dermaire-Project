@@ -70,6 +70,12 @@ class Settings(BaseSettings):
     AZURE_STORAGE_CONNECTION_STRING: str = ""
     AZURE_STORAGE_CONTAINER: str = "skin-records"
 
+    # Independent store: never restored with the application database/photos.
+    DELETION_JOURNAL_CONNECTION_STRING: str = ""
+    DELETION_JOURNAL_CONTAINER: str = "deletion-journal"
+    DELETION_JOURNAL_HMAC_KEY: str = ""
+    DELETION_JOURNAL_REQUIRED: bool = False
+
     # Microsoft Azure AI Vision (Image Analysis 4.0)
     AZURE_VISION_ENDPOINT: str = ""
     AZURE_VISION_KEY: str = ""

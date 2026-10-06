@@ -135,3 +135,13 @@ async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONR
     if request_id:
         response.headers["x-request-id"] = request_id
     return response
+
+
+async def database_unavailable_handler(request: Request, exc: Exception) -> JSONResponse:
+    # Lock/statement timeouts are retryable availability failures. Never log SQL,
+    # parameters or driver exception text, which can contain account identifiers.
+    from app.core.observability import operation_event
+    operation_event("database", "unavailable")
+    return create_error_response(503, "DATABASE_UNAVAILABLE",
+                                 "Database operation unavailable; retry later.",
+                                 request.url.path)

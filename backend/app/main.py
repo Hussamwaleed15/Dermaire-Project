@@ -2,6 +2,7 @@ import os
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, status, Depends
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import OperationalError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.exceptions import RequestValidationError
@@ -15,7 +16,8 @@ from app.core.exceptions import (
     dermaire_exception_handler,
     validation_exception_handler,
     starlette_http_exception_handler,
-    unhandled_exception_handler
+    unhandled_exception_handler,
+    database_unavailable_handler
 )
 from app.api.v1.router import api_v1_router
 
@@ -61,6 +63,7 @@ app.add_exception_handler(DermaireException, dermaire_exception_handler)
 app.add_exception_handler(RequestValidationError, validation_exception_handler)
 app.add_exception_handler(StarletteHTTPException, starlette_http_exception_handler)
 app.add_exception_handler(Exception, unhandled_exception_handler)
+app.add_exception_handler(OperationalError, database_unavailable_handler)
 
 from fastapi.responses import FileResponse
 
@@ -100,6 +103,7 @@ def readiness(db: Session = Depends(get_db)):
     from sqlalchemy import text
     from fastapi.responses import JSONResponse
     from app.services.azure_blob import azure_blob_service
+    from app.services.deletion_journal import deletion_journal
     try:
         db.execute(text("SELECT 1"))
         if settings.ENVIRONMENT in {"staging", "production"}:
@@ -112,11 +116,14 @@ def readiness(db: Session = Depends(get_db)):
     storage = azure_blob_service.health()["state"]
     operation_event("database", database)
     operation_event("blob", storage)
+    journal = deletion_journal.health()
+    operation_event("deletion_journal", journal)
     ready = database == "available" and (storage == "available" or
-        (storage == "unconfigured" and settings.ENVIRONMENT in {"development", "test"}))
+        (storage == "unconfigured" and settings.ENVIRONMENT in {"development", "test"})) and (
+        journal == "available" or settings.ENVIRONMENT in {"development", "test"})
     return JSONResponse(status_code=200 if ready else 503, content={
         "status": "ready" if ready else "unavailable", "database": database,
-        "storage": storage})
+        "storage": storage, "deletion_journal": journal})
 
 @app.get("/health", tags=["System Health"])
 def health_check():
