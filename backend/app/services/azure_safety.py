@@ -1,5 +1,6 @@
 ﻿from typing import Dict, Any, Tuple
 from app.core.config import settings
+from app.core.observability import operation_event
 
 RED_FLAG_KEYWORDS = [
     # English
@@ -45,6 +46,7 @@ class AzureSafetyService:
                 from azure.ai.contentsafety.models import AnalyzeTextOptions
                 request = AnalyzeTextOptions(text=message)
                 response = self.client.analyze_text(request)
+                operation_event("content_safety", "available")
                 is_harmful = any(item.severity > 2 for item in response.categories_analysis)
                 if is_harmful:
                     return (
@@ -53,6 +55,7 @@ class AzureSafetyService:
                         {"azure_safety_triggered": True, "content_safety_state": "available"}
                     )
             except Exception:
+                operation_event("content_safety", "degraded")
                 return False, "", {"content_safety_state": "degraded"}
 
         return False, "", {"content_safety_state": "not_invoked" if not self.is_live else "available"}

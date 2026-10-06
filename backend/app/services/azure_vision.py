@@ -2,6 +2,7 @@
 import math
 from typing import Dict, Any
 from app.core.config import settings
+from app.core.observability import operation_event
 
 class AzureVisionService:
     def __init__(self):
@@ -62,10 +63,12 @@ class AzureVisionService:
                 # Deliberately discard tags: general image labels are not medical facts.
                 if not isinstance(result.get("tagsResult", {}).get("values"), list):
                     raise ValueError("Invalid provider envelope")
+                operation_event("vision", "available")
                 return {"provider": "azure_vision", "state": "available",
                         "authoritative": False, "feature": "tags",
                         "clinical_measurement": False}
         except Exception:
+            operation_event("vision", "degraded")
             return {"provider": "azure_vision", "state": "degraded",
                     "authoritative": False, "reason": "provider_failure"}
 

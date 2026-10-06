@@ -57,6 +57,15 @@ class Settings(BaseSettings):
     # Database (Defaults to SQLite for instant local zero-dependency run, can switch to Azure Postgres)
     DATABASE_URL: str = "sqlite:///./dermaire_dev.db"
 
+    @field_validator("DATABASE_URL")
+    @classmethod
+    def select_installed_postgres_driver(cls, value):
+        # SQLAlchemy's bare PostgreSQL URL defaults to psycopg2; this project
+        # installs psycopg 3. Preserve the complete authority and TLS options.
+        if value.startswith("postgresql://"):
+            return "postgresql+psycopg://" + value[len("postgresql://"):]
+        return value
+
     # Microsoft Azure Blob Storage (Skin photos & medical reports)
     AZURE_STORAGE_CONNECTION_STRING: str = ""
     AZURE_STORAGE_CONTAINER: str = "skin-records"

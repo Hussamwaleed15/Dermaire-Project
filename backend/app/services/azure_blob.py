@@ -1,6 +1,7 @@
 ﻿import os
 from collections.abc import Mapping
 from app.core.config import settings
+from app.core.observability import observed_dependency
 
 class AzureBlobService:
     def __init__(self):
@@ -19,10 +20,10 @@ class AzureBlobService:
             self.local_upload_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "uploads"))
             os.makedirs(self.local_upload_dir, exist_ok=True)
 
-    def require_private(self):
+    def require_private(self, **probe_options):
         if not self.is_live:
             raise RuntimeError("Real image storage unavailable")
-        if self.container_client.get_container_properties().get("public_access"):
+        if self.container_client.get_container_properties(**probe_options).get("public_access"):
             raise RuntimeError("Image storage must be private")
 
     @staticmethod
@@ -43,8 +44,9 @@ class AzureBlobService:
         if not self.is_live:
             return {"provider": "none", "state": "unconfigured", "durable_images": False}
         try:
-            self.require_private()
-            properties = self.client.get_service_properties()
+            probe_options = {"connection_timeout": 3, "read_timeout": 3, "retry_total": 0}
+            self.require_private(**probe_options)
+            properties = self.client.get_service_properties(**probe_options)
             if self._has_retention_or_versioning(properties):
                 raise RuntimeError("Retention incompatible with deletion")
             return {"provider": "azure_blob", "state": "available", "durable_images": True,
@@ -53,6 +55,7 @@ class AzureBlobService:
         except Exception:
             return {"provider": "azure_blob", "state": "degraded", "durable_images": False}
 
+    @observed_dependency("blob_upload")
     def upload_capture(self, blob_name: str, data: bytes) -> None:
         """Private real storage only; no local fallback and no SAS generation."""
         self.require_private()
@@ -65,6 +68,7 @@ class AzureBlobService:
         if isinstance(result, dict) and result.get("version_id"):
             raise RuntimeError("Versioned storage requires infrastructure repair before uploads")
 
+    @observed_dependency("blob_read")
     def read_capture(self, blob_name: str) -> bytes:
         self.require_private()
         return self.container_client.get_blob_client(blob_name).download_blob().readall()
@@ -78,6 +82,7 @@ class AzureBlobService:
         for name in names:
             self.delete_image(name)
 
+    @observed_dependency("blob_delete")
     def delete_image(self, blob_name: str) -> None:
         # Inconsistent legacy URLs require repair, never publish/follow them.
         if any(character in blob_name for character in (":", "?", "#")):

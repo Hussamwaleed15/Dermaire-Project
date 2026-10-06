@@ -6,11 +6,14 @@ from app.core.config import settings
 connect_args = {}
 if settings.DATABASE_URL.startswith("sqlite"):
     connect_args["check_same_thread"] = False
+elif settings.DATABASE_URL.startswith("postgresql"):
+    connect_args.update(connect_timeout=5, options="-c statement_timeout=5000")
 
 engine = create_engine(
     settings.DATABASE_URL,
     connect_args=connect_args,
-    echo=settings.DEBUG and not settings.DATABASE_URL.startswith("sqlite")
+    pool_pre_ping=True,
+    echo=settings.DEBUG and settings.ENVIRONMENT == "development" and not settings.DATABASE_URL.startswith("sqlite")
 )
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
@@ -25,4 +28,6 @@ def get_db() -> Generator[Session, None, None]:
         db.close()
 
 def init_db() -> None:
-    Base.metadata.create_all(bind=engine)
+    # Managed environments use reviewed migrations, never implicit startup DDL.
+    if settings.ENVIRONMENT in {"development", "test"}:
+        Base.metadata.create_all(bind=engine)

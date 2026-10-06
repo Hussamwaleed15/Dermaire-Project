@@ -124,10 +124,14 @@ async def starlette_http_exception_handler(request: Request, exc: StarletteHTTPE
     )
 
 async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
-    return create_error_response(
+    response = create_error_response(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         error_code="INTERNAL_SERVER_ERROR",
         message="An unexpected server error occurred. Please retry later.",
         path=request.url.path,
         details=[]
     )
+    request_id = getattr(request.state, "request_id", None)
+    if request_id:
+        response.headers["x-request-id"] = request_id
+    return response

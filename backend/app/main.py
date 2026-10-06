@@ -1,13 +1,15 @@
 import os
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, status
+from fastapi import FastAPI, status, Depends
+from sqlalchemy.orm import Session
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.core.config import settings
-from app.core.database import init_db
+from app.core.database import init_db, get_db
+from app.core.observability import RequestTelemetry, operation_event, boot_id, process_started
 from app.core.exceptions import (
     DermaireException,
     dermaire_exception_handler,
@@ -23,6 +25,7 @@ async def lifespan(app: FastAPI):
     init_db()
     # Ensure local upload directory exists
     os.makedirs(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "uploads")), exist_ok=True)
+    operation_event("startup", "complete")
     yield
 
 app = FastAPI(
@@ -51,6 +54,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.add_middleware(RequestTelemetry)
 
 # Exception Handlers Registration
 app.add_exception_handler(DermaireException, dermaire_exception_handler)
@@ -84,6 +88,35 @@ def serve_dermaire_page():
 
 # Include API v1 Router
 app.include_router(api_v1_router, prefix=settings.API_V1_STR)
+
+@app.get("/health/live", tags=["System Health"])
+def liveness():
+    import time
+    return {"status": "alive", "boot_id": boot_id,
+            "uptime_seconds": round(time.monotonic() - process_started, 2)}
+
+@app.get("/health/ready", tags=["System Health"])
+def readiness(db: Session = Depends(get_db)):
+    from sqlalchemy import text
+    from fastapi.responses import JSONResponse
+    from app.services.azure_blob import azure_blob_service
+    try:
+        db.execute(text("SELECT 1"))
+        if settings.ENVIRONMENT in {"staging", "production"}:
+            revision = db.execute(text("SELECT version_num FROM alembic_version")).scalars().all()
+            if revision != ["20261006_01"]:
+                raise RuntimeError("Schema revision unavailable")
+        database = "available"
+    except Exception:
+        database = "unavailable"
+    storage = azure_blob_service.health()["state"]
+    operation_event("database", database)
+    operation_event("blob", storage)
+    ready = database == "available" and (storage == "available" or
+        (storage == "unconfigured" and settings.ENVIRONMENT in {"development", "test"}))
+    return JSONResponse(status_code=200 if ready else 503, content={
+        "status": "ready" if ready else "unavailable", "database": database,
+        "storage": storage})
 
 @app.get("/health", tags=["System Health"])
 def health_check():

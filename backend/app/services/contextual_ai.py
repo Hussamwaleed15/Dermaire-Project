@@ -5,6 +5,7 @@ from app.schemas.contextual_ai import AssistanceResponse, ProviderMetadata, Prov
 from app.models import DoctorReviewAction
 from app.services.context_builder import build_context
 from app.services.contextual_provider import get_contextual_provider
+from app.core.observability import operation_event
 from app.services.safety import evaluate_safety, RANK
 from app.services.azure_safety import RED_FLAG_KEYWORDS, azure_safety_service
 
@@ -163,10 +164,12 @@ def assist(db,user,payload,provider=None,now=None):
                 evidence_ids=i.evidence_ids) for i in plan.inferred_points]
             metadata.mode='grounded_ai'
             metadata.availability='available'
+            operation_event("openai", "available")
             metadata.reason=None
         except Exception:
             metadata.availability='failed'
             metadata.reason='provider_failure_or_invalid_output'
+            operation_event("openai", "degraded")
     facts=[next(f for f in context.facts if f.id==key) for key in selected_ids]
     sentences=[INTRO[task]]
     if metadata.mode=='degraded':
