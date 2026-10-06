@@ -8,6 +8,9 @@ from functools import wraps
 
 logger = logging.getLogger("dermaire.operations")
 logger.setLevel(logging.INFO)
+if not logger.handlers:
+    # Uvicorn configures its own loggers, not the application's root logger.
+    logger.addHandler(logging.StreamHandler())
 correlation_id = ContextVar("request_id", default=None)
 boot_id = str(uuid.uuid4())
 process_started = time.monotonic()
