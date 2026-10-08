@@ -1,0 +1,173 @@
+{
+  "observedUTC": "2026-10-08T13:02:57.301326+00:00",
+  "resources": [
+    {
+      "group": "GesturaEchoRG",
+      "name": "GesturaEchoVision",
+      "type": "Microsoft.CognitiveServices/accounts"
+    },
+    {
+      "group": "GesturaEchoRG",
+      "name": "GesturaEchoVision-Prediction",
+      "type": "Microsoft.CognitiveServices/accounts"
+    },
+    {
+      "group": "dermaire-rg",
+      "name": "dermaire-db-server",
+      "type": "Microsoft.DBforPostgreSQL/flexibleServers"
+    },
+    {
+      "group": "dermaire-rg",
+      "name": "2022170636_asp_2794",
+      "type": "Microsoft.Web/serverFarms"
+    },
+    {
+      "group": "dermaire-rg",
+      "name": "dermaire-api",
+      "type": "Microsoft.Web/sites"
+    },
+    {
+      "group": "dermaire-rg",
+      "name": "dermaire-email",
+      "type": "Microsoft.Communication/EmailServices"
+    },
+    {
+      "group": "dermaire-rg",
+      "name": "dermaire-email/AzureManagedDomain",
+      "type": "Microsoft.Communication/EmailServices/Domains"
+    },
+    {
+      "group": "dermaire-rg",
+      "name": "dermaire-communication",
+      "type": "Microsoft.Communication/CommunicationServices"
+    },
+    {
+      "group": "dermaire-rg",
+      "name": "dermaireimg479341",
+      "type": "Microsoft.Storage/storageAccounts"
+    },
+    {
+      "group": "dermaire-rg",
+      "name": "dermaire-openai-hossam",
+      "type": "Microsoft.CognitiveServices/accounts"
+    },
+    {
+      "group": "dermaire-rg",
+      "name": "dermaire-vision",
+      "type": "Microsoft.CognitiveServices/accounts"
+    },
+    {
+      "group": "dermaire-rg",
+      "name": "dermaire-content-safety",
+      "type": "Microsoft.CognitiveServices/accounts"
+    },
+    {
+      "group": "dermaire-rg",
+      "name": "dermaire-api-staging",
+      "type": "Microsoft.Web/sites"
+    },
+    {
+      "group": "dermaire-readiness-nonprod-20261006",
+      "name": "dermaire-rehearsal-20261006",
+      "type": "Microsoft.DBforPostgreSQL/flexibleServers"
+    },
+    {
+      "group": "dermaire-readiness-nonprod-20261006",
+      "name": "dermairerehearsal261006",
+      "type": "Microsoft.Storage/storageAccounts"
+    },
+    {
+      "group": "dermaire-readiness-nonprod-20261006",
+      "name": "dermaire-readiness-logs",
+      "type": "Microsoft.OperationalInsights/workspaces"
+    },
+    {
+      "group": "dermaire-readiness-nonprod-20261006",
+      "name": "dermaire-readiness-owners",
+      "type": "Microsoft.Insights/actiongroups"
+    },
+    {
+      "group": "dermaire-readiness-nonprod-20261006",
+      "name": "dermaire-staging-http5xx",
+      "type": "Microsoft.Insights/metricalerts"
+    },
+    {
+      "group": "dermaire-readiness-nonprod-20261006",
+      "name": "dermaire-staging-latency",
+      "type": "Microsoft.Insights/metricalerts"
+    },
+    {
+      "group": "dermaire-readiness-nonprod-20261006",
+      "name": "dermaire-staging-memory",
+      "type": "Microsoft.Insights/metricalerts"
+    },
+    {
+      "group": "dermaire-readiness-nonprod-20261006",
+      "name": "dermaire-staging-database",
+      "type": "Microsoft.Insights/scheduledqueryrules"
+    },
+    {
+      "group": "dermaire-readiness-nonprod-20261006",
+      "name": "dermaire-staging-blob",
+      "type": "Microsoft.Insights/scheduledqueryrules"
+    },
+    {
+      "group": "dermaire-readiness-nonprod-20261006",
+      "name": "dermaire-staging-provider",
+      "type": "Microsoft.Insights/scheduledqueryrules"
+    },
+    {
+      "group": "dermaire-readiness-nonprod-20261006",
+      "name": "dermaire-staging-startup",
+      "type": "Microsoft.Insights/scheduledqueryrules"
+    },
+    {
+      "group": "dermaire-readiness-nonprod-20261006",
+      "name": "dermaire-staging-ready",
+      "type": "Microsoft.Insights/scheduledqueryrules"
+    },
+    {
+      "group": "cloud-shell-storage-westeurope",
+      "name": "csb100320025cf197a3",
+      "type": "Microsoft.Storage/storageAccounts"
+    }
+  ],
+  "servers": [
+    {
+      "backup": {
+        "backupRetentionDays": 7,
+        "earliestRestoreDate": "2026-10-06T07:13:02.618406+00:00",
+        "geoRedundantBackup": "Disabled"
+      },
+      "name": "dermaire-rehearsal-20261006",
+      "sourceServerResourceId": null
+    },
+    {
+      "backup": {
+        "backupRetentionDays": 7,
+        "earliestRestoreDate": "2026-10-02T07:14:08.190528+00:00",
+        "geoRedundantBackup": "Disabled"
+      },
+      "name": "dermaire-db-server",
+      "sourceServerResourceId": null
+    }
+  ],
+  "storage": [
+    {
+      "group": "cloud-shell-storage-westeurope",
+      "name": "csb100320025cf197a3"
+    },
+    {
+      "group": "dermaire-rg",
+      "name": "dermaireimg479341"
+    },
+    {
+      "group": "dermaire-readiness-nonprod-20261006",
+      "name": "dermairerehearsal261006"
+    }
+  ],
+  "graphDriveMetadata": {
+    "readSucceeded": false,
+    "reason": "CLI read unavailable; raw diagnostics withheld"
+  }
+}

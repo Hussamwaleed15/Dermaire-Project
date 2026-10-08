@@ -2,7 +2,53 @@
 
 **Gate: BLOCKED. Production was not mutated.** This read-only continuation started from clean/pushed main `99ca9ce56fb7ff59ddbb3e4f5c72e75a4031b2a6`. Evidence was gathered on 8 October 2026 (Africa/Cairo). No deployment, restart, traffic/configuration/policy change, SQL write, deletion, fixture, resource creation, credential rotation or restore was performed. Management actions named listKeys, list appsettings, list publishing credentials and POST backup/list were read operations; credentials remained in process memory and were not saved or printed. Reading services can generate ordinary provider access/audit logs; “untouched” means no intentional production mutation.
 
-## Decision
+## OneDrive closure continuation — 8 October 2026
+
+**Gate remains BLOCKED.** This continuation started from clean main `239f6480aca35d8845c5deeb7ea696a267215d60`; fetch confirmed origin/main at the same commit. Only documentation and privacy-preserving aggregate evidence are changed. No production write, restore, deployment, policy change, deletion or quarantine cleanup occurred. The earlier Azure/App Service/GitHub inventory below is historical evidence from this date unless explicitly refreshed here.
+
+### Current OneDrive copies and provenance
+
+Both project DB files are byte-identical. Each still has 3 users, 10 audit rows, 1 product, 1 experiment and 2 check-ins; doctor grants, clinical notes and reward redemptions are empty. The legacy eight-table schema differs from the current sixteen-table main schema. Adjacent backend Git reports a latest commit date of 15 September; all three user creation dates are 18 September 2026. This is consistent with local development, but neither dates, UUID-shaped IDs nor schema age establish production exclusion.
+
+In each DB, 2 of 3 email addresses use reserved example domains and have test/demo local-part indicators; the third uses a common consumer email provider. No exact address matches the inspected known test sources or adjacent project code/docs. Zero audit rows use the explicitly checked loopback/testclient IP values; IP values themselves were not emitted. No passwords, names, email addresses, IDs, clinical content, audit details or raw rows are included in evidence. Indicator counts are evidence of a mixed-looking development dataset, not proof that the third account or any photo is synthetic.
+
+Each uploads directory has one nonempty image (14,785,139 bytes) plus an empty placeholder. The two nonempty files are byte-identical, and each is referenced by one check-in. No hash match was found in the inspected test and current mobile asset locations. Images were read only for byte comparison, never displayed or copied into reports; visual appearance would not certify origin. **Both DBs and both upload images remain unresolved / possibly production-derived.** They can recreate application accounts/rows and photo bytes, and cannot be excluded from deletion replay coverage. Their current local lifetime is unbounded; remote historic versions may differ from current files.
+
+### OneDrive account and authoritative retention
+
+Read-only client registry maps the project root `C:/Users/Hossam/OneDrive` to the Personal account slot. A Business1 slot exists but exposes no configured local folder through the checked UserFolder value; it does not establish that an organizational policy covers these files. No retention/recycle/version/hold/preservation values were found in the checked HKCU/HKLM `Software/Policies/Microsoft/OneDrive` keys. Absence of local policy values is **not** absence of cloud retention or preservation.
+
+The available browser inventory exposed only the in-app browser, with no authenticated OneDrive tab. Opening OneDrive and following Sign in reached `https://onedrive.live.com/login`, displaying Email or phone / Next. No credentials were entered. A read-only existing Azure CLI attempt at Microsoft Graph `/v1.0/me/drive?$select=driveType` failed; no drive metadata or cloud file policy was returned. No callable OneDrive connector is available in this session. No cached authentication tokens, passwords or browser profiles were extracted.
+
+**Authoritative retention proven: none for these OneDrive files.** Cloud upload/sync completion, item IDs, version inventory and expiry, both recycle-bin stages if applicable, account restore, retention labels, preservation policies/holds and any applicable organizational policy remain unverified. Personal client mapping is not authoritative cloud policy evidence. No Microsoft default duration is assumed, and neither 7d nor 35d is certified. Closure requires authenticated account/file-history evidence and, if organizational policy applies, authoritative administrator policy/hold evidence; a generic statement of OneDrive defaults is insufficient.
+
+### Additional-copy discovery and limits
+
+Fresh scoped discovery inspected eight clearly relevant project roots: main repo, the three OneDrive Dermaire/DERAIRE folders, `C:/Projects/dermaire_app`, `C:/flutter_builds/dermaire_app`, and the two named local Dermaire workspaces. It inspected only project-named top-level archives in Desktop/Downloads/Documents/OneDrive Desktop, excluding unrelated personal contents and dependency/build/cache directories. Twenty-eight DB/archive/SQL candidates were classified. Only the already known two OneDrive DBs are populated. Repo DBs and their deploy ZIP embedded DBs remain empty; other ZIP inventories show no application DB/dump/upload payload. SQL candidates are tracked migrations/schema or the previously reviewed orders/paydetails sample. Ten DBs in the five previously inventoried Codex backend workspaces were reread and remain empty. No additional populated Dermaire DB, application-data archive or production dump was discovered in this scope.
+
+No Google Drive/Dropbox mount under the inspected user root or callable connector was discovered; neither service's remote contents were certified. Arbitrarily renamed files, unrelated directories, other users/devices, offline media, OS backups, inaccessible cloud history and unconnected services remain excluded. Previously completed GitHub/App Service scans are carried forward, not claimed as newly exhaustive. Discovery is not global absence certification.
+
+Azure resource discovery refreshed all 26 resources in the accessible subscription: the same production and rehearsal PostgreSQL servers and three storage accounts; no additional DB, storage account or backup vault resource appeared. Seven native production backups are still listed, with the known server backup retention 7d and geo backup Disabled. Blob SDK follow-up evidence records current project container object/history counts and export-candidate counts. Failed CLI blob/share metadata reads are retained as failures, never interpreted as zero; successful SDK reads supersede blob-list failures only. Prior File-share/Kudu/GitHub classifications remain dated evidence, not newly verified here.
+
+### Quarantine and accountable owners
+
+**Quarantine <=7d is not proven.** The runbook/journal design specifies a seven-day target, but no audited universal enforcement or maximum expiry is established for restored copies, local quarantine, OneDrive recovery/history or inaccessible copies/holds. A seven-day native Azure backup setting does not bound post-restore or cloud-recycle lifetime. Keep the policy fail-closed: no intent/key expiry while any recoverable source survives or its lifetime is unknown. Forty-two days stays conditional on every recoverable source <=35d plus quarantine <=7d; a surviving copy blocks expiry regardless of age.
+
+No reviewed repo/docs nominate a teammate for these roles. Usernames, Git authors, sign-in identity and notification recipients are not owner designations. Placeholders: release **TBD**, recovery **TBD**, privacy **TBD**, on-call **TBD**; existing reachable alert contact **TBD confirmation**. Minimal MVP recommendation: the user explicitly accepts all four roles temporarily, with an alternate optional. No identity was silently assigned.
+
+### Exact remaining closure evidence
+
+- Human lineage fact: whether **all** three accounts, linked application rows and the upload image are exclusively synthetic/dev, and whether these copies ever incorporated production exports; evidence for image origin is required separately from email patterns. Otherwise keep possible-production classification.
+- Authoritative account/file retention and version/recycle/preservation/hold evidence (or controlled retirement proof covering every recoverable version) for the two OneDrive projects. Local file deletion alone would not resolve history. No cleanup is authorized/performed here.
+- Evidence of a maximum seven-day recovery quarantine across relevant sources, including restored copies and recycle/history paths; a policy target alone is insufficient.
+- Human attestation about copies outside all accessed systems: absent, or register source/custodian/location/expiry/holds and resurrection ability.
+- Explicit named release/recovery/privacy/on-call mapping and reachable existing alert contact; one person may accept all four.
+
+Because technical retention/provenance/quarantine evidence remains unresolved, the remaining blockers are **not only** external-copy knowledge and owner names. Phase 0 cannot PASS, and journal expiry cannot become eligible. Fresh Phase 0 is required after closure; this documentation commit does not authorize a production rollout.
+
+Aggregate evidence: [OneDrive indicators](evidence/onedrive-closure-20261008/onedrive-privacy-evidence.json), [local discovery](evidence/onedrive-closure-20261008/additional-copy-discovery.json), [workspace/access reads](evidence/onedrive-closure-20261008/workspace-and-access-evidence.json), [Azure metadata](evidence/onedrive-closure-20261008/cloud-followup-evidence.json), [CLI storage/backup reads](evidence/onedrive-closure-20261008/cloud-copy-discovery.json), [SDK blob reads](evidence/onedrive-closure-20261008/cloud-sdk-discovery.json). Documentation/JSON/link/secret-pattern/diff validation is required before push; no application tests are needed for this documentation-only change.
+
+## Prior inventory decision (superseded for OneDrive by continuation above)
 
 Seven days is the **maximum proven configured native production DB recovery horizon**, not a global recoverable-data limit. Seven automatic full backups exist, 2–8 October; earliest PITR metadata is `2026-10-02T07:14:08.190528+00:00`. Latest full backup completed `2026-10-08T07:19:42.755562+00:00`; that is not the latest usable WAL restore point or an RPO proof. Two persistent OneDrive development databases contain application rows, and each corresponding uploads directory contains one photo; their provenance and expiry are unknown. Current evidence therefore cannot prove that every relevant application-data copy expires within 35 days. No journal/key expiration is eligible.
 
@@ -60,7 +106,7 @@ Production photo storage has zero objects, including enumerated snapshots, versi
 - Direct vault APIs return zero vaults. [Microsoft documents LTR as a distinct Azure Backup feature](https://learn.microsoft.com/en-us/azure/backup/quick-backup-postgresql-flexible-server-portal); a 7d server setting alone cannot rule out LTR elsewhere. No LTR vault/protection source was discovered in the accessible subscription; no global absence claimed.
 - Only one enabled accessible subscription returned by account list. Cross-tenant/subscription, deleted-server recoverability and out-of-band exports remain outside the proven horizon.
 
-## Owners and required human facts
+## Prior owners and required human facts (see current continuation)
 
 No clearly supported role designation was found. GitHub username, Azure sign-in and notification recipients do not establish accountability. Minimal MVP model: one explicitly nominated primary may hold **release + recovery + privacy + on-call**; a named alternate is recommended for absence/recovery, not invented or made a new prerequisite. Record the primary name/handle and reachable existing alert channel; split roles only if the team chooses. All four current role assignments: **TBD**.
 

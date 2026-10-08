@@ -1,0 +1,144 @@
+{
+  "previouslyInventoriedWorkspaceDBs": [
+    {
+      "path": "C:\\Users\\Hossam\\Documents\\Codex\\2026-10-05\\referenced-chatgpt-conversation-this-is-an-4\\work\\activation-control\\backend\\dermaire_dev.db",
+      "tableCounts": {
+        "users": 0,
+        "audit_logs": 0,
+        "captures": 0,
+        "products": 0,
+        "doctor_patient_access": 0,
+        "reward_redemptions": 0,
+        "daily_contexts": 0,
+        "measurements": 0,
+        "product_intelligence": 0,
+        "doctor_review_actions": 0,
+        "routine_entries": 0,
+        "experiments": 0,
+        "clinical_notes": 0,
+        "routine_adherence": 0,
+        "experiment_evaluations": 0,
+        "checkins": 0
+      },
+      "classification": "empty current DB"
+    },
+    {
+      "path": "C:\\Users\\Hossam\\Documents\\Codex\\2026-10-05\\referenced-chatgpt-conversation-this-is-an-4\\work\\activation-control\\backend\\test_dermaire.db",
+      "tableCounts": {},
+      "classification": "empty current DB"
+    },
+    {
+      "path": "C:\\Users\\Hossam\\Documents\\Codex\\2026-10-05\\referenced-chatgpt-conversation-this-is-an-4\\work\\isolated-ai-vision\\backend\\dermaire_dev.db",
+      "tableCounts": {
+        "users": 0,
+        "audit_logs": 0,
+        "captures": 0,
+        "products": 0,
+        "doctor_patient_access": 0,
+        "reward_redemptions": 0,
+        "daily_contexts": 0,
+        "measurements": 0,
+        "product_intelligence": 0,
+        "doctor_review_actions": 0,
+        "routine_entries": 0,
+        "experiments": 0,
+        "clinical_notes": 0,
+        "routine_adherence": 0,
+        "experiment_evaluations": 0,
+        "checkins": 0
+      },
+      "classification": "empty current DB"
+    },
+    {
+      "path": "C:\\Users\\Hossam\\Documents\\Codex\\2026-10-05\\referenced-chatgpt-conversation-this-is-an-4\\work\\isolated-ai-vision\\backend\\test_dermaire.db",
+      "tableCounts": {},
+      "classification": "empty current DB"
+    },
+    {
+      "path": "C:\\Users\\Hossam\\Documents\\Codex\\2026-10-05\\referenced-chatgpt-conversation-this-is-an-5\\work\\caller-isolated\\backend\\dermaire_dev.db",
+      "tableCounts": {
+        "users": 0,
+        "audit_logs": 0,
+        "captures": 0,
+        "products": 0,
+        "doctor_patient_access": 0,
+        "reward_redemptions": 0,
+        "daily_contexts": 0,
+        "measurements": 0,
+        "product_intelligence": 0,
+        "doctor_review_actions": 0,
+        "routine_entries": 0,
+        "experiments": 0,
+        "clinical_notes": 0,
+        "routine_adherence": 0,
+        "experiment_evaluations": 0,
+        "checkins": 0
+      },
+      "classification": "empty current DB"
+    },
+    {
+      "path": "C:\\Users\\Hossam\\Documents\\Codex\\2026-10-05\\referenced-chatgpt-conversation-this-is-an-5\\work\\caller-isolated\\backend\\test_dermaire.db",
+      "tableCounts": {},
+      "classification": "empty current DB"
+    },
+    {
+      "path": "C:\\Users\\Hossam\\Documents\\Codex\\2026-10-05\\referenced-chatgpt-conversation-this-is-an-7\\work\\upstream\\backend\\dermaire_dev.db",
+      "tableCounts": {
+        "users": 0,
+        "audit_logs": 0,
+        "captures": 0,
+        "products": 0,
+        "doctor_patient_access": 0,
+        "reward_redemptions": 0,
+        "daily_contexts": 0,
+        "measurements": 0,
+        "product_intelligence": 0,
+        "doctor_review_actions": 0,
+        "routine_entries": 0,
+        "experiments": 0,
+        "clinical_notes": 0,
+        "routine_adherence": 0,
+        "experiment_evaluations": 0,
+        "checkins": 0
+      },
+      "classification": "empty current DB"
+    },
+    {
+      "path": "C:\\Users\\Hossam\\Documents\\Codex\\2026-10-05\\referenced-chatgpt-conversation-this-is-an-7\\work\\upstream\\backend\\test_dermaire.db",
+      "tableCounts": {},
+      "classification": "empty current DB"
+    },
+    {
+      "path": "C:\\Users\\Hossam\\Documents\\Codex\\2026-10-05\\referenced-chatgpt-conversation-this-is-an-8\\work\\readiness-checkout\\backend\\dermaire_dev.db",
+      "tableCounts": {
+        "users": 0,
+        "audit_logs": 0,
+        "captures": 0,
+        "products": 0,
+        "doctor_patient_access": 0,
+        "reward_redemptions": 0,
+        "daily_contexts": 0,
+        "measurements": 0,
+        "product_intelligence": 0,
+        "doctor_review_actions": 0,
+        "routine_entries": 0,
+        "experiments": 0,
+        "clinical_notes": 0,
+        "routine_adherence": 0,
+        "experiment_evaluations": 0,
+        "checkins": 0
+      },
+      "classification": "empty current DB"
+    },
+    {
+      "path": "C:\\Users\\Hossam\\Documents\\Codex\\2026-10-05\\referenced-chatgpt-conversation-this-is-an-8\\work\\readiness-checkout\\backend\\test_dermaire.db",
+      "tableCounts": {},
+      "classification": "empty current DB"
+    }
+  ],
+  "graphReadOutcome": {
+    "readSucceeded": false,
+    "errorCodes": [],
+    "requiresInteractiveLogin": false
+  }
+}

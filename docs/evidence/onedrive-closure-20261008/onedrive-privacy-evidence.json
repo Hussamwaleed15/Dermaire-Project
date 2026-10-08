@@ -1,0 +1,121 @@
+{
+  "observedUTC": "2026-10-08T13:00:22.365228+00:00",
+  "databases": [
+    {
+      "location": "DERAIRE_BAKEND/backend/dermaire_dev.db",
+      "tableCounts": {
+        "users": 3,
+        "audit_logs": 10,
+        "products": 1,
+        "doctor_patient_access": 0,
+        "clinical_notes": 0,
+        "reward_redemptions": 0,
+        "experiments": 1,
+        "checkins": 2
+      },
+      "emailIndicators": {
+        "reservedExampleOrTestDomain": 2,
+        "testOrDemoLocalPart": 2,
+        "exactEmailInKnownTestSource": 0,
+        "otherDomains": 1,
+        "reservedExampleDomain": 2,
+        "commonConsumerMailProvider": 1,
+        "exactEmailInProjectCodeOrDocs": 0
+      },
+      "idIndicators": {
+        "count": 3,
+        "allUUIDShape": true
+      },
+      "userCreatedDateRange": [
+        "2026-09-18",
+        "2026-09-18"
+      ],
+      "auditLoopbackRows": 0,
+      "uploads": [
+        {
+          "bytes": 14785139,
+          "fixtureOrAssetHashMatches": 0,
+          "referencedByCheckins": 1,
+          "modifiedUTC": "2026-09-18T09:24:30.852430+00:00"
+        }
+      ],
+      "classification": "unknown/possibly production-derived; test indicators do not establish exclusive synthetic lineage",
+      "schemaProvenance": "8 legacy application tables; current main has 16. Legacy schema and local code do not prove record origin.",
+      "dbTrackedInAdjacentGit": false
+    },
+    {
+      "location": "dermaire_flutter_app/backend/dermaire_dev.db",
+      "tableCounts": {
+        "users": 3,
+        "audit_logs": 10,
+        "products": 1,
+        "doctor_patient_access": 0,
+        "clinical_notes": 0,
+        "reward_redemptions": 0,
+        "experiments": 1,
+        "checkins": 2
+      },
+      "emailIndicators": {
+        "reservedExampleOrTestDomain": 2,
+        "testOrDemoLocalPart": 2,
+        "exactEmailInKnownTestSource": 0,
+        "otherDomains": 1,
+        "reservedExampleDomain": 2,
+        "commonConsumerMailProvider": 1,
+        "exactEmailInProjectCodeOrDocs": 0
+      },
+      "idIndicators": {
+        "count": 3,
+        "allUUIDShape": true
+      },
+      "userCreatedDateRange": [
+        "2026-09-18",
+        "2026-09-18"
+      ],
+      "auditLoopbackRows": 0,
+      "uploads": [
+        {
+          "bytes": 14785139,
+          "fixtureOrAssetHashMatches": 0,
+          "referencedByCheckins": 1,
+          "modifiedUTC": "2026-09-18T09:24:30.852430+00:00"
+        }
+      ],
+      "classification": "unknown/possibly production-derived; test indicators do not establish exclusive synthetic lineage",
+      "schemaProvenance": "8 legacy application tables; current main has 16. Legacy schema and local code do not prove record origin.",
+      "dbTrackedInAdjacentGit": false
+    }
+  ],
+  "dbFilesIdentical": true,
+  "oneDriveAccountMapping": [
+    {
+      "slot": "Personal",
+      "configuredLocalFolder": "C:\\Users\\Hossam\\OneDrive",
+      "coversProjectPaths": true
+    },
+    {
+      "slot": "Business1",
+      "configuredLocalFolder": null,
+      "coversProjectPaths": false
+    }
+  ],
+  "matchingLocalOneDrivePolicyValues": [],
+  "retentionConclusion": "No authoritative cloud history/recycle/hold retention obtained. Local client registry is not tenant policy proof.",
+  "imageFilesIdentical": true,
+  "browserAccess": {
+    "inventory": "Only in-app browser exposed; no existing authenticated OneDrive tab",
+    "observedLoginURL": "https://onedrive.live.com/login",
+    "state": "Sign in; Email or phone; Next",
+    "authenticatedRetentionRead": false
+  },
+  "quarantine": {
+    "configuredTargetDays": 7,
+    "enforcedMaximumProven": false,
+    "unknowns": [
+      "restored-copy cleanup/expiry enforcement",
+      "OneDrive cloud recycle/history/preservation maximum",
+      "off-device copies and holds"
+    ],
+    "expiryDecision": "deny intent/key expiration"
+  }
+}

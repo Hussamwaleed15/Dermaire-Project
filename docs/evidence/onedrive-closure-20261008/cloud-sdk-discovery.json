@@ -1,0 +1,43 @@
+{
+  "observedUTC": "2026-10-08T13:04:55.665853+00:00",
+  "storage": [
+    {
+      "account": "dermaireimg479341",
+      "containers": [
+        {
+          "name": "skin-images",
+          "deleted": null,
+          "objectCount": 0,
+          "versions": 0,
+          "snapshots": 0,
+          "dumpBackupExportCandidateCount": 0
+        }
+      ]
+    },
+    {
+      "account": "dermairerehearsal261006",
+      "containers": [
+        {
+          "name": "deletion-journal",
+          "deleted": null,
+          "objectCount": 4,
+          "versions": 0,
+          "snapshots": 0,
+          "dumpBackupExportCandidateCount": 0
+        },
+        {
+          "name": "skin-images",
+          "deleted": null,
+          "objectCount": 0,
+          "versions": 0,
+          "snapshots": 0,
+          "dumpBackupExportCandidateCount": 0
+        }
+      ]
+    },
+    {
+      "account": "csb100320025cf197a3",
+      "containers": []
+    }
+  ]
+}

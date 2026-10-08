@@ -1,0 +1,127 @@
+{
+  "observedUTC": "2026-10-08T13:03:37.321070+00:00",
+  "storage": [
+    {
+      "account": "dermaireimg479341",
+      "containers": [
+        {
+          "name": "skin-images",
+          "deleted": null,
+          "objectCount": null,
+          "dumpBackupExportCandidateCount": null,
+          "error": {
+            "error": "read unavailable; diagnostics withheld"
+          }
+        }
+      ],
+      "sharesCount": null,
+      "tablesCount": 0,
+      "queuesCount": 0
+    },
+    {
+      "account": "dermairerehearsal261006",
+      "containers": [
+        {
+          "name": "deletion-journal",
+          "deleted": null,
+          "objectCount": null,
+          "dumpBackupExportCandidateCount": null,
+          "error": {
+            "error": "read unavailable; diagnostics withheld"
+          }
+        },
+        {
+          "name": "skin-images",
+          "deleted": null,
+          "objectCount": null,
+          "dumpBackupExportCandidateCount": null,
+          "error": {
+            "error": "read unavailable; diagnostics withheld"
+          }
+        }
+      ],
+      "sharesCount": null,
+      "tablesCount": 0,
+      "queuesCount": 0
+    },
+    {
+      "account": "csb100320025cf197a3",
+      "containers": [],
+      "sharesCount": null,
+      "tablesCount": 0,
+      "queuesCount": 0
+    }
+  ],
+  "productionNativeBackups": [
+    {
+      "backupType": "Full",
+      "completedTime": "2026-10-02T07:14:08.190528+00:00",
+      "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.DBforPostgreSQL/flexibleServers/dermaire-db-server/backups/backup_639265220471905287",
+      "name": "backup_639265220471905287",
+      "resourceGroup": "dermaire-rg",
+      "source": "Automatic",
+      "systemData": null,
+      "type": "Microsoft.DBforPostgreSQL/flexibleServers/backups"
+    },
+    {
+      "backupType": "Full",
+      "completedTime": "2026-10-03T07:14:56.706764+00:00",
+      "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.DBforPostgreSQL/flexibleServers/dermaire-db-server/backups/backup_639266084957067641",
+      "name": "backup_639266084957067641",
+      "resourceGroup": "dermaire-rg",
+      "source": "Automatic",
+      "systemData": null,
+      "type": "Microsoft.DBforPostgreSQL/flexibleServers/backups"
+    },
+    {
+      "backupType": "Full",
+      "completedTime": "2026-10-04T07:16:05.690807+00:00",
+      "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.DBforPostgreSQL/flexibleServers/dermaire-db-server/backups/backup_639266949646908077",
+      "name": "backup_639266949646908077",
+      "resourceGroup": "dermaire-rg",
+      "source": "Automatic",
+      "systemData": null,
+      "type": "Microsoft.DBforPostgreSQL/flexibleServers/backups"
+    },
+    {
+      "backupType": "Full",
+      "completedTime": "2026-10-05T07:17:03.465276+00:00",
+      "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.DBforPostgreSQL/flexibleServers/dermaire-db-server/backups/backup_639267814224652764",
+      "name": "backup_639267814224652764",
+      "resourceGroup": "dermaire-rg",
+      "source": "Automatic",
+      "systemData": null,
+      "type": "Microsoft.DBforPostgreSQL/flexibleServers/backups"
+    },
+    {
+      "backupType": "Full",
+      "completedTime": "2026-10-06T07:17:53.741457+00:00",
+      "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.DBforPostgreSQL/flexibleServers/dermaire-db-server/backups/backup_639268678727414574",
+      "name": "backup_639268678727414574",
+      "resourceGroup": "dermaire-rg",
+      "source": "Automatic",
+      "systemData": null,
+      "type": "Microsoft.DBforPostgreSQL/flexibleServers/backups"
+    },
+    {
+      "backupType": "Full",
+      "completedTime": "2026-10-07T07:18:33.806745+00:00",
+      "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.DBforPostgreSQL/flexibleServers/dermaire-db-server/backups/backup_639269543128067457",
+      "name": "backup_639269543128067457",
+      "resourceGroup": "dermaire-rg",
+      "source": "Automatic",
+      "systemData": null,
+      "type": "Microsoft.DBforPostgreSQL/flexibleServers/backups"
+    },
+    {
+      "backupType": "Full",
+      "completedTime": "2026-10-08T07:19:42.755562+00:00",
+      "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.DBforPostgreSQL/flexibleServers/dermaire-db-server/backups/backup_639270407817555627",
+      "name": "backup_639270407817555627",
+      "resourceGroup": "dermaire-rg",
+      "source": "Automatic",
+      "systemData": null,
+      "type": "Microsoft.DBforPostgreSQL/flexibleServers/backups"
+    }
+  ]
+}
