@@ -1,0 +1,19 @@
+{
+  "origin": {
+    "system_identifier": "7687509194730582065"
+  },
+  "differences": [
+    "('remove_index', Index('ix_experiments_routine_entry_id', Column('routine_entry_id', VARCHAR(length=36), table=<experiments>)))",
+    "('remove_index', Index('uq_experiments_active_owner', Column('active_owner', VARCHAR(length=36), table=<experiments>), unique=True))",
+    "('add_constraint', UniqueConstraint(Column('active_owner', NullType(), table=<experiments>)))",
+    "('add_index', Index('ix_users_reset_token_hash', Column('reset_token_hash', String(length=255), table=<users>)))"
+  ],
+  "differenceKinds": [
+    "remove_index",
+    "remove_index",
+    "add_constraint",
+    "add_index"
+  ],
+  "tableCount": 16,
+  "gate": "FAILED"
+}

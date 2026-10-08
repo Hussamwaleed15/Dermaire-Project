@@ -1,0 +1,35 @@
+{
+  "verdict": "ROLLOUT HALTED/ROLLED BACK",
+  "actualOutcome": "HALTED before production mutation; rollback not needed",
+  "initialMain": "6c1a08460521469e4f7d25dd131144b8b355e8d5",
+  "policyWindowHours": 24,
+  "backupValidity": "PASS",
+  "preflight": "FAILED schema equivalence",
+  "fullPITR": "SKIPPED",
+  "productionMutations": [],
+  "scratchActions": [
+    "Downloaded hash-verified pinned psycopg wheels to isolated /tmp runner directory via SCM; application code/settings unchanged",
+    "Ran read-only ORM/Alembic compare using exact repository models and verify-full TLS",
+    "Removed exact temporary runner directory; absent verified"
+  ],
+  "runtime": "dermaireadmin",
+  "rolesCreated": false,
+  "baselineStamped": false,
+  "appState": "Running, unchanged",
+  "trafficChanged": false,
+  "rollbackPerformed": false,
+  "rtoCertified": false,
+  "tests": {
+    "passed": 62,
+    "warnings": 1,
+    "initialSetup": "Global Python lacked cv2; existing test environment rerun passed"
+  },
+  "providerState": {
+    "AZURE_VISION_ENABLED": "ABSENT",
+    "CONTEXTUAL_AI_ENABLED": "true",
+    "contentSafetyConfigured": false,
+    "contentSafetyEnableFlag": "none in target build; credential driven",
+    "visionConfigured": false,
+    "openaiConfigured": true
+  }
+}

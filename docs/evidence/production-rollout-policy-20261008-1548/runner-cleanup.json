@@ -1,0 +1,15 @@
+{
+  "scratchCleanup": [
+    {
+      "path": "/tmp/dermaire-release-libs-20261008",
+      "existed": true,
+      "absent": true
+    },
+    {
+      "path": "/tmp/dermaire-reviewed-rollout-20261008",
+      "existed": false,
+      "absent": true
+    }
+  ],
+  "applicationFilesChanged": false
+}

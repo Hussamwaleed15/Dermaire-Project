@@ -1,0 +1,19 @@
+{
+  "scratchOnly": true,
+  "installed": [
+    {
+      "filename": "psycopg-3.2.13-py3-none-any.whl",
+      "sha256": "a481374514f2da627157f767a9336705ebefe93ea7a0522a6cbacba165da179a"
+    },
+    {
+      "filename": "psycopg_binary-3.2.13-cp311-cp311-manylinux2014_x86_64.manylinux_2_17_x86_64.whl",
+      "sha256": "27150515de5f709e4142429db6fd36a1d01f0b8b17d915b5f7bb095364465398"
+    }
+  ],
+  "versions": {
+    "psycopg": "3.2.13",
+    "sqlalchemy": "2.0.54",
+    "alembic": "1.20.0"
+  },
+  "gate": "PASS"
+}

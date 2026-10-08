@@ -1,0 +1,14 @@
+{
+  "db-catalog.json": "554502be5fe44ee740cbe78528bdf32d9ff9309afc526a73741b2f3195929386",
+  "direct-db-probe.json": "3da71b8fd28b750f226b59bb0e38602b55676b3c69dc3d72eb541f69eaabad4a",
+  "fresh-preflight.json": "4ef80d85cb3f38152c07ff3b028244de76bd55bde27e7ef2dc6e18fa451adaf4",
+  "monitoring-preflight.json": "28e6408e8033d536d7576204ac208676c728cf95fe2d8a23b0edbbca9af5aa2b",
+  "orm-preflight.json": "747fff8c9e5d2ffb9c85a2c355791b18ae200a2a5a2b9b2c5494895a0f156a22",
+  "phase1-preparation.json": "3be3432beaee64d8139c58bf52a7dd38604f1907fada5ef410a9f7b7b5c5e2d4",
+  "policy-comparison.json": "e506a398e1d10236ca844f3810a2bd2f5e786322c49b24f121dac63db1b37d78",
+  "release-runner-preparation.json": "50794334b11d1bea7ba7323363436bed1d8bc82a8f130be60d5bdde760926bcf",
+  "rollback-artifact-metadata.json": "b87a22d36d28af48628706bd18fc1869f67a4b415108e4fdcceafaace24b8bf7",
+  "rollout-result.json": "31820ed0bfa422051dda4843dee2a783fd1e18d7907f27af1177541f36d77dec",
+  "runner-cleanup.json": "9852a163010a00f888fb0ce4d8d85d8857f29599972b2d251e9b49551c505391",
+  "supplement-preflight.json": "4d69126618b09efc69cebfae3d6d45e58fe7bf2c0878cf6f4b488c92e3c96e04"
+}

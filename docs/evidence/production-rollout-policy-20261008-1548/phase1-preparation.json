@@ -1,0 +1,4 @@
+{
+  "gate": "FAILED",
+  "reason": "Read-only migration environment/schema verification unavailable; details withheld"
+}

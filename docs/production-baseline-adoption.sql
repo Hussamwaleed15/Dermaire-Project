@@ -1,4 +1,10 @@
 -- REVIEW TEMPLATE: no production changes are authorized by this file.
+-- STOP: 8 Oct 2026 fresh ORM comparison found additional unresolved index drift:
+-- production has ix_experiments_routine_entry_id, absent from frozen ORM/baseline;
+-- production lacks ix_users_reset_token_hash, required by ORM/frozen baseline.
+-- The unique-index conversion below alone cannot establish schema equivalence.
+-- Review/rehearse an additive repair and preserve the useful existing index;
+-- do not stamp, drop that index, or run empty-baseline CREATE statements.
 -- Verified 6 Oct 2026: PostgreSQL 18.6, 16 business tables, no Alembic version.
 -- Active-owner uniqueness ALREADY EXISTS as this valid, ready, nonpartial index.
 -- No missing column, type, nullability or collation drift was detected.
