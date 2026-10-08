@@ -1,0 +1,23 @@
+{
+  "utc": "2026-10-08T18:32:46.738489+00:00",
+  "journalSettingNames": [
+    "DELETION_JOURNAL_ACCOUNT_URL",
+    "DELETION_JOURNAL_CONTAINER",
+    "DELETION_JOURNAL_HMAC_KEY",
+    "DELETION_JOURNAL_REQUIRED"
+  ],
+  "endpointMatches": true,
+  "containerMatches": true,
+  "required": true,
+  "keyReferenceConfigured": true,
+  "referencePropertyNames": [],
+  "referenceStatuses": {
+    "DELETION_JOURNAL_HMAC_KEY": {
+      "status": "Resolved",
+      "vaultName": "dermaire-journal-prod-kv",
+      "secretName": "deletion-journal-hmac-v1",
+      "secretVersion": "70e20448ce904bd0b2e04ae21583b652",
+      "identityType": "SystemAssigned"
+    }
+  }
+}

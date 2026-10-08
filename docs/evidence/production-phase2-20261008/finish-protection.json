@@ -1,0 +1,32 @@
+{
+  "startedUTC": "2026-10-08T20:20:33.194534+00:00",
+  "mutations": [
+    {
+      "requestedUTC": "2026-10-08T20:20:33.201533+00:00",
+      "action": "narrow checkpoint owner secret access to one read-only HMAC secret",
+      "status": "SUCCESS",
+      "completedUTC": "2026-10-08T20:20:37.461718+00:00"
+    },
+    {
+      "requestedUTC": "2026-10-08T20:20:37.462720+00:00",
+      "action": "remove temporary primary-vault Secrets Officer",
+      "status": "SUCCESS",
+      "completedUTC": "2026-10-08T20:20:40.615493+00:00"
+    },
+    {
+      "requestedUTC": "2026-10-08T20:20:40.616494+00:00",
+      "action": "protect vault control-plane deletion dermaire-journal-prod-kv",
+      "status": "SUCCESS",
+      "completedUTC": "2026-10-08T20:20:42.557931+00:00"
+    },
+    {
+      "requestedUTC": "2026-10-08T20:20:42.558932+00:00",
+      "action": "protect vault control-plane deletion dermaire-jrnl-backup-kv",
+      "status": "SUCCESS",
+      "completedUTC": "2026-10-08T20:20:44.739834+00:00"
+    }
+  ],
+  "checkpointSecretReadAssignment": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-journal-prod/providers/Microsoft.KeyVault/vaults/dermaire-journal-prod-kv/secrets/deletion-journal-hmac-v1/providers/Microsoft.Authorization/roleAssignments/c87ba75f-7bd5-482a-a4e7-658e5830f537",
+  "gate": "PASS",
+  "finishedUTC": "2026-10-08T20:20:44.740928+00:00"
+}

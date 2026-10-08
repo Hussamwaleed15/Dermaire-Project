@@ -1,0 +1,54 @@
+{
+  "startedUTC": "2026-10-08T18:40:50.586713+00:00",
+  "businessPhotoReadsOrDeletes": 0,
+  "rollbackProperties": {
+    "isVersioningEnabled": null,
+    "deleteRetentionPolicy": {
+      "allowPermanentDelete": false,
+      "enabled": false
+    },
+    "containerDeleteRetentionPolicy": null,
+    "restorePolicy": null
+  },
+  "policyMutationRequestedUTC": "2026-10-08T18:40:52.710153+00:00",
+  "policyMutationAcknowledgedUTC": "2026-10-08T18:40:53.786747+00:00",
+  "policyAfter": {
+    "isVersioningEnabled": false,
+    "deleteRetentionPolicy": {
+      "enabled": false
+    },
+    "containerDeleteRetentionPolicy": {
+      "enabled": false
+    },
+    "restorePolicy": {
+      "enabled": false
+    }
+  },
+  "accountPolicy": {
+    "allowBlobPublicAccess": false,
+    "enableHttpsTrafficOnly": true,
+    "minimumTlsVersion": "TLS1_2"
+  },
+  "drill": {
+    "uploadRead": "PASS",
+    "deleteAndRetry": "PASS",
+    "liveDeletedVersionsSnapshotsRemaining": 0,
+    "fixtureContainsSensitiveData": false,
+    "completedUTC": "2026-10-08T18:41:03.304437+00:00"
+  },
+  "finalInventory": [
+    {
+      "container": "skin-images",
+      "private": true,
+      "deletedContainer": false,
+      "objects": 0,
+      "versions": 0,
+      "snapshots": 0,
+      "deletedObjects": 0,
+      "legalHolds": 0,
+      "immutability": 0
+    }
+  ],
+  "gate": "PASS",
+  "finishedUTC": "2026-10-08T18:41:03.738561+00:00"
+}

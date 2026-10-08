@@ -1,0 +1,26 @@
+{
+  "startedUTC": "2026-10-08T20:19:34.179511+00:00",
+  "scope": "local SQLite in-memory synthetic DB and disposable nonproduction Azure photo container; independently protected copied production journal is read-only",
+  "productionRowsReadOrModified": 0,
+  "productionJournalMutations": 0,
+  "first": {
+    "restored_accounts_removed": 2,
+    "image_cleanup_calls": 0,
+    "journal_intents": 17
+  },
+  "repeat": {
+    "restored_accounts_removed": 0,
+    "image_cleanup_calls": 0,
+    "journal_intents": 17
+  },
+  "v1Compatibility": true,
+  "v2Completeness": true,
+  "legacyAndOrphanRemoved": true,
+  "keptFixtureSurvived": true,
+  "corruptionRejectedBeforeCallback": true,
+  "unavailableStorageFailClosed": true,
+  "sourceJournalUnchanged": true,
+  "gate": "PASS",
+  "temporaryNonproductionContainersRemoved": 2,
+  "finishedUTC": "2026-10-08T20:20:06.949499+00:00"
+}

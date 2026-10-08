@@ -1,0 +1,18 @@
+{
+  "startedUTC": "2026-10-08T18:39:56.336423+00:00",
+  "businessPhotoReadsOrDeletes": 0,
+  "rollbackProperties": {
+    "isVersioningEnabled": null,
+    "deleteRetentionPolicy": {
+      "allowPermanentDelete": false,
+      "enabled": false
+    },
+    "containerDeleteRetentionPolicy": null,
+    "restorePolicy": null
+  },
+  "policyMutationRequestedUTC": "2026-10-08T18:39:58.264182+00:00",
+  "gate": "FAIL",
+  "failureType": "HTTPError",
+  "failureStatus": null,
+  "finishedUTC": "2026-10-08T18:39:58.993635+00:00"
+}

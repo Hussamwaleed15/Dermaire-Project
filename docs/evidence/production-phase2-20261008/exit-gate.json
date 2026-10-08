@@ -1,0 +1,28 @@
+{
+  "verdict": "PHASE 2 COMPLETE",
+  "gateChecks": {
+    "synthetic-validation": "PASS",
+    "revoke-restore": "PASS",
+    "offline-replay": "PASS",
+    "offline-backup-replay": "PASS",
+    "photo-policy-drill": "PASS",
+    "key-recovery-proof": "PASS",
+    "checkpoint": "PASS",
+    "restart-proof": "PASS",
+    "finish-protection": "PASS",
+    "final-audit": "PASS",
+    "harness-cleanup": "PASS",
+    "fresh-gate": "PASS",
+    "catalog-comparison": "PASS"
+  },
+  "relevantTestsPassed": 43,
+  "fullTestsPassed": 678,
+  "warnings": 91,
+  "productionUserRowsReadOrModified": 0,
+  "productionRealPhotosReadOrModified": 0,
+  "syntheticIntentsRetained": 17,
+  "independentCopiedIntents": 17,
+  "expiry": "DISABLED INDEFINITELY",
+  "phase3Started": false,
+  "finalAuditUTC": "2026-10-08T20:22:42.665242+00:00"
+}

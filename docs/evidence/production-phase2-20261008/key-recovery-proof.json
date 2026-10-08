@@ -1,0 +1,41 @@
+{
+  "startedUTC": "2026-10-08T18:42:29.649147+00:00",
+  "scope": "Azure encrypted secret backup restored to separate restricted purge-protected Canada East vault; no plaintext persisted",
+  "mutations": [
+    {
+      "requestedUTC": "2026-10-08T18:42:30.075364+00:00",
+      "action": "create separate purge-protected recovery key vault",
+      "status": "SUCCESS",
+      "completedUTC": "2026-10-08T18:43:05.052430+00:00"
+    },
+    {
+      "requestedUTC": "2026-10-08T18:43:05.053427+00:00",
+      "action": "allow one recovery/provisioning device egress",
+      "status": "SUCCESS",
+      "completedUTC": "2026-10-08T18:43:08.036588+00:00"
+    },
+    {
+      "requestedUTC": "2026-10-08T18:43:08.036588+00:00",
+      "action": "temporary backup-restore officer on recovery vault",
+      "status": "SUCCESS",
+      "completedUTC": "2026-10-08T18:43:12.613538+00:00"
+    },
+    {
+      "requestedUTC": "2026-10-08T18:43:18.754652+00:00",
+      "action": "remove temporary recovery-vault officer",
+      "status": "SUCCESS",
+      "completedUTC": "2026-10-08T18:43:22.023121+00:00"
+    }
+  ],
+  "vaultId": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-journal-prod/providers/Microsoft.KeyVault/vaults/dermaire-jrnl-backup-kv",
+  "temporaryAssignmentId": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-journal-prod/providers/Microsoft.KeyVault/vaults/dermaire-jrnl-backup-kv/providers/Microsoft.Authorization/roleAssignments/b48ad3db-2f58-45ed-a7b8-525b2569ba5e",
+  "restoreRequestedUTC": "2026-10-08T18:43:15.596654+00:00",
+  "restoredSecretId": "https://dermaire-jrnl-backup-kv.vault.azure.net/secrets/deletion-journal-hmac-v1/70e20448ce904bd0b2e04ae21583b652",
+  "restoreAcknowledgedUTC": "2026-10-08T18:43:16.852922+00:00",
+  "restoredValueMatchesInMemory": true,
+  "restoredKeyExpiry": null,
+  "runtimeHasRecoveryVaultAccess": false,
+  "gate": "PASS",
+  "temporaryOfficerRemoved": true,
+  "finishedUTC": "2026-10-08T18:43:22.024120+00:00"
+}

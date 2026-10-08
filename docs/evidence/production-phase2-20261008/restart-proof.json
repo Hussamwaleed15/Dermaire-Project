@@ -1,0 +1,16 @@
+{
+  "requestedUTC": "2026-10-08T20:18:23.513217+00:00",
+  "budgetSeconds": 180,
+  "scope": "unchanged deployed build health plus actual app-container production journal identity/key/read-write readiness; no target build deployment",
+  "restartAcknowledgedUTC": "2026-10-08T20:18:26.811372+00:00",
+  "proof": {
+    "journalReadWriteVerified": true,
+    "resolvedHmac": true,
+    "durableIntents": 17,
+    "observedUTC": "2026-10-08T20:19:13.437245+00:00",
+    "noRealUserMutation": true
+  },
+  "elapsedSeconds": 52.203,
+  "gate": "PASS",
+  "finishedUTC": "2026-10-08T20:19:15.728409+00:00"
+}

@@ -1,0 +1,261 @@
+{
+  "startedUTC": "2026-10-08T20:22:12.704009+00:00",
+  "app": {
+    "httpsOnly": true,
+    "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.Web/sites/dermaire-api",
+    "identity": {
+      "principalId": "c519ee0d-f1d3-4c2d-ba24-d204eb1fd976",
+      "tenantId": "6845d6ca-1ec5-4c0e-9e9d-34130ce0a0b8",
+      "type": "SystemAssigned",
+      "userAssignedIdentities": null
+    },
+    "state": "Running",
+    "subnet": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-journal-prod/providers/Microsoft.Network/virtualNetworks/dermaire-journal-prod-vnet/subnets/app-integration"
+  },
+  "appConfig": {
+    "routeAll": true
+  },
+  "deploymentSource": {
+    "branch": null,
+    "isGitHubAction": false,
+    "repoUrl": null
+  },
+  "photoPolicy": {
+    "blobRetention": false,
+    "containerRetention": false,
+    "restore": false,
+    "versioning": false
+  },
+  "customRole": {
+    "assignableScopes": [
+      "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-journal-prod"
+    ],
+    "createdBy": "54618e9f-4033-47e0-b642-ce415b8ba89a",
+    "createdOn": "2026-10-08T18:20:12.199445+00:00",
+    "description": "Production journal block create/read/list only; independent indefinite legal hold required",
+    "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/providers/Microsoft.Authorization/roleDefinitions/8f578748-85e6-44da-98b6-4acb83cf89a5",
+    "name": "8f578748-85e6-44da-98b6-4acb83cf89a5",
+    "permissions": [
+      {
+        "actions": [
+          "Microsoft.Storage/storageAccounts/blobServices/containers/read"
+        ],
+        "condition": null,
+        "conditionVersion": null,
+        "dataActions": [
+          "Microsoft.Storage/storageAccounts/blobServices/containers/blobs/read",
+          "Microsoft.Storage/storageAccounts/blobServices/containers/blobs/write"
+        ],
+        "notActions": [],
+        "notDataActions": []
+      }
+    ],
+    "roleName": "Dermaire Journal Read Write No Delete Prod",
+    "roleType": "CustomRole",
+    "systemData": null,
+    "type": "Microsoft.Authorization/roleDefinitions",
+    "updatedBy": "54618e9f-4033-47e0-b642-ce415b8ba89a",
+    "updatedOn": "2026-10-08T18:20:12.199445+00:00"
+  },
+  "locks": [
+    {
+      "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourcegroups/dermaire-journal-prod/providers/Microsoft.KeyVault/vaults/dermaire-journal-prod-kv/providers/Microsoft.Authorization/locks/retain-journal-key-indefinitely",
+      "level": "CanNotDelete",
+      "name": "retain-journal-key-indefinitely"
+    },
+    {
+      "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourcegroups/dermaire-journal-prod/providers/Microsoft.KeyVault/vaults/dermaire-jrnl-backup-kv/providers/Microsoft.Authorization/locks/retain-journal-key-indefinitely",
+      "level": "CanNotDelete",
+      "name": "retain-journal-key-indefinitely"
+    }
+  ],
+  "servers": [
+    {
+      "name": "dermaire-rehearsal-20261006",
+      "resourceGroup": "dermaire-readiness-nonprod-20261006",
+      "state": "Ready"
+    },
+    {
+      "name": "dermaire-db-server",
+      "resourceGroup": "dermaire-rg",
+      "state": "Ready"
+    }
+  ],
+  "runtimeRoles": [
+    {
+      "role": "Dermaire Journal Read Write No Delete Prod",
+      "scope": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-journal-prod/providers/Microsoft.Storage/storageAccounts/dermairejrnlprod261008/blobServices/default/containers/intents",
+      "assignmentId": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-journal-prod/providers/Microsoft.Storage/storageAccounts/dermairejrnlprod261008/blobServices/default/containers/intents/providers/Microsoft.Authorization/roleAssignments/a3af91a4-bf22-4fd0-84d6-417c6108f856"
+    },
+    {
+      "role": "Key Vault Secrets User",
+      "scope": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-journal-prod/providers/Microsoft.KeyVault/vaults/dermaire-journal-prod-kv/secrets/deletion-journal-hmac-v1",
+      "assignmentId": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-journal-prod/providers/Microsoft.KeyVault/vaults/dermaire-journal-prod-kv/secrets/deletion-journal-hmac-v1/providers/Microsoft.Authorization/roleAssignments/14a9fe36-f577-410e-a0ad-fef3fd68bf58"
+    }
+  ],
+  "temporarySecretOfficerAssignmentsAbsent": true,
+  "providerRegistrationEvents": [
+    {
+      "eventTimestamp": "2026-10-08T18:16:25.5274022Z",
+      "resourceId": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/providers/Microsoft.KeyVault",
+      "operationName": {
+        "localizedValue": "Register Subscription",
+        "value": "Microsoft.KeyVault/register/action"
+      },
+      "status": {
+        "localizedValue": "Succeeded",
+        "value": "Succeeded"
+      }
+    },
+    {
+      "eventTimestamp": "2026-10-08T18:16:25.324201Z",
+      "resourceId": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/providers/Microsoft.KeyVault",
+      "operationName": {
+        "localizedValue": "Register Subscription",
+        "value": "Microsoft.KeyVault/register/action"
+      },
+      "status": {
+        "localizedValue": "Started",
+        "value": "Started"
+      }
+    },
+    {
+      "eventTimestamp": "2026-10-08T18:14:43.2252554Z",
+      "resourceId": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/providers/Microsoft.Network",
+      "operationName": {
+        "localizedValue": "Register Subscription",
+        "value": "Microsoft.Network/register/action"
+      },
+      "status": {
+        "localizedValue": "Succeeded",
+        "value": "Succeeded"
+      }
+    },
+    {
+      "eventTimestamp": "2026-10-08T18:14:40.209406Z",
+      "resourceId": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/providers/Microsoft.Network",
+      "operationName": {
+        "localizedValue": "Register Subscription",
+        "value": "Microsoft.Network/register/action"
+      },
+      "status": {
+        "localizedValue": "Started",
+        "value": "Started"
+      }
+    }
+  ],
+  "journalPosture": {
+    "dermairejrnlprod261008": {
+      "allowBlobPublicAccess": false,
+      "sharedKeyAccess": false,
+      "httpsOnly": true,
+      "minimumTls": "TLS1_2",
+      "networkDefault": "Deny",
+      "bypass": "None",
+      "ipRuleCount": 1,
+      "vnetRuleCount": 1,
+      "containers": {
+        "intents": {
+          "publicAccess": "None",
+          "hasLegalHold": true,
+          "protectedAppendWrites": false,
+          "objects": 17,
+          "syntheticMarked": 17
+        }
+      },
+      "lifecyclePolicy": "ABSENT; expiry disabled indefinitely"
+    },
+    "dermairejrnlbkprod261008": {
+      "allowBlobPublicAccess": false,
+      "sharedKeyAccess": false,
+      "httpsOnly": true,
+      "minimumTls": "TLS1_2",
+      "networkDefault": "Deny",
+      "bypass": "None",
+      "ipRuleCount": 1,
+      "vnetRuleCount": 0,
+      "containers": {
+        "protected-evidence": {
+          "publicAccess": "None",
+          "hasLegalHold": true,
+          "protectedAppendWrites": false,
+          "objects": 2,
+          "syntheticMarked": 0
+        },
+        "intents-copy": {
+          "publicAccess": "None",
+          "hasLegalHold": true,
+          "protectedAppendWrites": false,
+          "objects": 17,
+          "syntheticMarked": 17
+        }
+      },
+      "lifecyclePolicy": "ABSENT; expiry disabled indefinitely"
+    }
+  },
+  "settingNames": [
+    "ACCESS_TOKEN_EXPIRE_MINUTES",
+    "ALGORITHM",
+    "AZURE_BLOB_SAS_EXPIRY_MINUTES",
+    "AZURE_COMMUNICATION_CONNECTION_STRING",
+    "AZURE_EMAIL_SENDER",
+    "AZURE_OPENAI_API_KEY",
+    "AZURE_OPENAI_API_VERSION",
+    "AZURE_OPENAI_DEPLOYMENT_NAME",
+    "AZURE_OPENAI_ENDPOINT",
+    "AZURE_STORAGE_CONNECTION_STRING",
+    "AZURE_STORAGE_CONTAINER",
+    "CONTEXTUAL_AI_ENABLED",
+    "DATABASE_URL",
+    "DEBUG",
+    "DELETION_JOURNAL_ACCOUNT_URL",
+    "DELETION_JOURNAL_CONTAINER",
+    "DELETION_JOURNAL_HMAC_KEY",
+    "DELETION_JOURNAL_REQUIRED",
+    "ENVIRONMENT",
+    "EXPOSE_PASSWORD_RESET_TOKEN",
+    "GOOGLE_WEB_CLIENT_ID",
+    "REFRESH_TOKEN_EXPIRE_DAYS",
+    "SCM_DO_BUILD_DURING_DEPLOYMENT",
+    "SECRET_KEY",
+    "WEBSITES_PORT",
+    "WEBSITE_HTTPLOGGING_RETENTION_DAYS"
+  ],
+  "keyReferencePinned": true,
+  "runtimeDbVerifyFull": true,
+  "database": {
+    "walArchive": [
+      {
+        "archived_count": "5382",
+        "last_archived_time": "2026-10-08 20:19:12.042475+00",
+        "failed_count": "0",
+        "last_failed_time": "",
+        "stats_reset": "2026-09-20 07:02:00.858492+00",
+        "observed_at": "2026-10-08 20:22:42.260335+00"
+      }
+    ],
+    "identity": [
+      {
+        "current_user": "dermaire_runtime",
+        "readonly": "on"
+      }
+    ],
+    "revision": [
+      {
+        "version_num": "20261008_01"
+      }
+    ],
+    "tls": [
+      {
+        "ssl": "t",
+        "version": "TLSv1.3"
+      }
+    ]
+  },
+  "walAgeSeconds": 210.21786,
+  "legacyHealth": 200,
+  "expiry": "DISABLED INDEFINITELY",
+  "liveBusinessCoverageBoundaryUTC": null,
+  "gate": "PASS",
+  "finishedUTC": "2026-10-08T20:22:42.665242+00:00"
+}

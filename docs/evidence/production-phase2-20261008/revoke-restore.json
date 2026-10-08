@@ -1,0 +1,26 @@
+{
+  "startedUTC": "2026-10-08T18:34:30.968608+00:00",
+  "businessDeletions": 0,
+  "assignmentId": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-journal-prod/providers/Microsoft.Storage/storageAccounts/dermairejrnlprod261008/blobServices/default/containers/intents/providers/Microsoft.Authorization/roleAssignments/a3af91a4-bf22-4fd0-84d6-417c6108f856",
+  "scope": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-journal-prod/providers/Microsoft.Storage/storageAccounts/dermairejrnlprod261008/blobServices/default/containers/intents",
+  "assignmentProperties": {
+    "roleDefinitionId": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/providers/Microsoft.Authorization/roleDefinitions/8f578748-85e6-44da-98b6-4acb83cf89a5",
+    "principalId": "c519ee0d-f1d3-4c2d-ba24-d204eb1fd976",
+    "principalType": "ServicePrincipal"
+  },
+  "revokeRequestedUTC": "2026-10-08T18:34:38.557634+00:00",
+  "revokeAcknowledgedUTC": "2026-10-08T18:34:42.553706+00:00",
+  "denialStatus": 403,
+  "recordFailClosed": true,
+  "replayFailClosed": true,
+  "observedUTC": "2026-10-08T18:36:46.290244+00:00",
+  "restoreRequestedUTC": "2026-10-08T18:36:46.145097+00:00",
+  "restoreAcknowledgedUTC": "2026-10-08T18:36:48.752652+00:00",
+  "recovery": {
+    "restoreReadWriteRecovery": true,
+    "durableCount": 15,
+    "observedUTC": "2026-10-08T18:37:56.051129+00:00"
+  },
+  "gate": "PASS",
+  "finishedUTC": "2026-10-08T18:37:55.838686+00:00"
+}

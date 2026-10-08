@@ -1,0 +1,51 @@
+{
+  "startedUTC": "2026-10-08T18:33:12.468754+00:00",
+  "scope": "actual production app-container Managed Identity, journal and HMAC reference; disposable reserved identifiers only",
+  "businessDeletions": 0,
+  "tokenIdentityObjectId": "c519ee0d-f1d3-4c2d-ba24-d204eb1fd976",
+  "keyReferenceMatchesVaultVersion": true,
+  "conditionalCreateConflictStatus": 409,
+  "createReadSignatureContentIdempotencyConflict": "PASS",
+  "2Writers": {
+    "acknowledgedUnique": 2,
+    "durableVerifiable": 2
+  },
+  "12Writers": {
+    "acknowledgedUnique": 12,
+    "durableVerifiable": 12
+  },
+  "countInvariant": {
+    "acknowledgedUnique": 15,
+    "durableVerifiable": 15,
+    "lost": 0
+  },
+  "deleteDenied": {
+    "status": 403,
+    "code": "AuthorizationPermissionMismatch"
+  },
+  "overwriteDenied": {
+    "status": 409,
+    "code": "BlobImmutableDueToLegalHold"
+  },
+  "syntheticMetadataMarked": true,
+  "syntheticReplayPolicy": "Verify all signatures; reserved synthetic owners/images match only disposable fixtures. Metadata never bypasses verification or deletes evidence.",
+  "objectNames": [
+    "v2/002c3a76670c19e4ce70bb0045fd437ea87aee2526f5b2ad5796afb313416316.json",
+    "v2/1c68b8cec48f1cca3b4c84a3fff9da9f402c1f852ae2e63fca4e060c828e6b02.json",
+    "v2/1f6c9c47252df8582e7f0944176f87a268a589a35794f58a5e2c4c4226f60d4b.json",
+    "v2/2771c3353f2985765db022d948c4f1807ce36cc1f50aebc7bd4d74204fc2a965.json",
+    "v2/3977e998df8d3fc96ef98266fbf379af767cee184d024bf1b54afc07f60c2ac7.json",
+    "v2/5425772fb386b18b50bd83537734c76ad66411b47b73beddfc339860a613fc39.json",
+    "v2/8a570b69f5fdcdcbe6ca10d23b695e4523a8e819ad6f67e7b74f9f34fbb84827.json",
+    "v2/8cc02dff60a3a2ca5476d885a5ae6e4576f455abf7022afeb5811c99b39c4c92.json",
+    "v2/952b5bd148ae822158683add31434501c0167185c4788328099208f8e2d8f8e1.json",
+    "v2/c3aa7b4fbb0f41ce230407990bb1fd7dc0d5d7b1e1549bcb23b0d034a44514b9.json",
+    "v2/de51d0566b020095fcc5f795bd28791562abfadd01f3822a64a43de5b492bea2.json",
+    "v2/e9ae328d5bae1054785b8f827a911738a124e4e246a0a481be2b1c405fcd2b7b.json",
+    "v2/f4206e869c9aa101c6c0efdb3bc56e0674eec13c83566349ee100cf35b89b580.json",
+    "v2/f7ad7982e0eea900fa5b11e5288e46e405b32c200c2b7676d9cfddd5ce978de7.json",
+    "v2/f997b176563c45333438481396169ccbeacbc7c3041992894f4da41784c1d2da.json"
+  ],
+  "gate": "PASS",
+  "finishedUTC": "2026-10-08T18:33:25.961569+00:00"
+}

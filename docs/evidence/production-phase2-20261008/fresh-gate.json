@@ -1,0 +1,66 @@
+{
+  "observedUTC": "2026-10-08T20:15:19.588143+00:00",
+  "checks": {
+    "id": true,
+    "location": true,
+    "sku": true,
+    "version": true,
+    "minorVersion": true,
+    "backup": true,
+    "storage": true,
+    "network": true,
+    "authConfig": true,
+    "highAvailability": true,
+    "availabilityZone": true,
+    "fullyQualifiedDomainName": true,
+    "wal": true,
+    "noDBConfigurationOperations": true,
+    "pitrWithin24h": true,
+    "encryption": true
+  },
+  "walAgeSeconds": 42.921569,
+  "wal": {
+    "archived_count": "5381",
+    "last_archived_time": "2026-10-08 20:14:03.958975+00",
+    "failed_count": "0",
+    "last_failed_time": "",
+    "stats_reset": "2026-09-20 07:02:00.858492+00",
+    "observed_at": "2026-10-08 20:14:46.880544+00"
+  },
+  "dbOperations": [],
+  "activityCount": 48,
+  "deployedBuild": {
+    "app/services/account_deletion.py": {
+      "present": true,
+      "sha256": "1e59bc0c6fc4ae24ca958cbbe4e62252a6923221807230db9c3ad9c649282f71",
+      "journalReferenced": false,
+      "identitySupported": false,
+      "v2Referenced": false
+    },
+    "app/services/deletion_journal.py": {
+      "present": false,
+      "sha256": null,
+      "journalReferenced": false,
+      "identitySupported": false,
+      "v2Referenced": false
+    },
+    "app/core/config.py": {
+      "present": true,
+      "sha256": "f63619794a6bdcce108a8e83ce172c0baa03287d88171f8ea845d333e0e850c5",
+      "journalReferenced": false,
+      "identitySupported": false,
+      "v2Referenced": false
+    },
+    "app/main.py": {
+      "present": true,
+      "sha256": "c0f349aa11b3407817537839a0fc66577b12531315f9b24f5d16ea1a6302ed08",
+      "journalReferenced": false,
+      "identitySupported": false,
+      "v2Referenced": false
+    }
+  },
+  "pitrVerifiedUTC": "2026-10-08T15:03:38.626468+00:00",
+  "pitrExpiresUTC": "2026-10-09T15:03:38.626468+00:00",
+  "catalogBaseline": "production-phase1-20261008/phase1-catalog.json",
+  "gate": "PASS"
+}

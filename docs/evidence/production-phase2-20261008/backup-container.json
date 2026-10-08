@@ -1,0 +1,30 @@
+{
+  "startedUTC": "2026-10-08T20:10:57.176372+00:00",
+  "mutations": [
+    {
+      "requestedUTC": "2026-10-08T20:10:57.185374+00:00",
+      "action": "create separate private backup intents container",
+      "status": "SUCCESS",
+      "completedUTC": "2026-10-08T20:11:01.564087+00:00"
+    },
+    {
+      "requestedUTC": "2026-10-08T20:11:01.565088+00:00",
+      "action": "protect backup intents with indefinite legal hold",
+      "status": "SUCCESS",
+      "completedUTC": "2026-10-08T20:11:03.784428+00:00"
+    },
+    {
+      "requestedUTC": "2026-10-08T20:11:03.784428+00:00",
+      "action": "grant checkpoint owner no-delete access on backup intents only",
+      "status": "SUCCESS",
+      "completedUTC": "2026-10-08T20:11:09.206536+00:00"
+    }
+  ],
+  "scope": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-journal-prod/providers/Microsoft.Storage/storageAccounts/dermairejrnlbkprod261008/blobServices/default/containers/intents-copy",
+  "assignmentId": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-journal-prod/providers/Microsoft.Storage/storageAccounts/dermairejrnlbkprod261008/blobServices/default/containers/intents-copy/providers/Microsoft.Authorization/roleAssignments/5a23e0bd-8f54-4402-a967-4b0d88880a93",
+  "gate": "FAIL",
+  "failureType": "HttpResponseError",
+  "finishedUTC": "2026-10-08T20:11:11.997243+00:00",
+  "finalSetupState": "READY after unchanged read-only access recheck; see backup-access-read.json",
+  "initialFailureWasBeforeAnyCopy": true
+}

@@ -1,0 +1,18 @@
+{
+  "startedUTC": "2026-10-08T20:23:22.850951+00:00",
+  "applicationBuildChanged": false,
+  "journalOrKeyDeleted": false,
+  "appContainer": {
+    "temporaryRuntimeSdkRemoved": false,
+    "absentVerified": true,
+    "utc": "2026-10-08T20:23:36.230885+00:00"
+  },
+  "scm": {
+    "lastSdkArchiveModifiedUTC": "2026-10-08T18:24:32.722627+00:00",
+    "scmTemporarySdkAbsent": true,
+    "persistentDependencyZipAbsent": true,
+    "utc": "2026-10-08T20:23:38.416592+00:00"
+  },
+  "gate": "PASS",
+  "finishedUTC": "2026-10-08T20:23:37.770243+00:00"
+}

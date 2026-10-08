@@ -1,0 +1,9 @@
+{
+  "gate": "PASS",
+  "observed_utc": "2026-10-08T20:16:42.467868+00:00",
+  "source_verified": 17,
+  "independent_backup_verified": 17,
+  "manifest": "checkpoints/2026-10-08T201642.467868_0000.json",
+  "manifest_sha256": "85da8c8bb93cc3b787828d20025c093c45b049a99b7ea634b00c9c4210970071",
+  "source_unchanged": true
+}

@@ -1,0 +1,13 @@
+{
+  "observedUTC": "2026-10-08T20:12:14.146885+00:00",
+  "deviceMatchesAllowedEgress": true,
+  "networkDefaultDeny": true,
+  "properties": {
+    "result": "PASS",
+    "count": null
+  },
+  "list": {
+    "result": "PASS",
+    "count": 0
+  }
+}

@@ -1,0 +1,305 @@
+{
+  "startedUTC": "2026-10-08T18:14:27.306389+00:00",
+  "mutations": [
+    {
+      "requestedUTC": "2026-10-08T18:14:35.408118+00:00",
+      "action": "create independent production journal resource group",
+      "status": "SUCCESS",
+      "completedUTC": "2026-10-08T18:14:37.299960+00:00"
+    },
+    {
+      "requestedUTC": "2026-10-08T18:14:37.302962+00:00",
+      "action": "create production journal VNet",
+      "status": "SUCCESS",
+      "completedUTC": "2026-10-08T18:16:33.627668+00:00"
+    },
+    {
+      "requestedUTC": "2026-10-08T18:16:33.628669+00:00",
+      "action": "create delegated app subnet and service endpoints",
+      "status": "SUCCESS",
+      "completedUTC": "2026-10-08T18:16:48.559236+00:00"
+    },
+    {
+      "requestedUTC": "2026-10-08T18:16:48.560235+00:00",
+      "action": "create protected storage boundary dermairejournalprod261008",
+      "status": "REJECTED_ACCOUNT_NAME_INVALID"
+    },
+    {
+      "requestedUTC": "2026-10-08T18:19:02.846942+00:00",
+      "action": "create protected storage boundary dermairejrnlprod261008",
+      "status": "SUCCESS",
+      "completedUTC": "2026-10-08T18:19:26.469585+00:00"
+    },
+    {
+      "requestedUTC": "2026-10-08T18:19:26.473583+00:00",
+      "action": "allow single provisioning egress on dermairejrnlprod261008",
+      "status": "SUCCESS",
+      "completedUTC": "2026-10-08T18:19:29.429697+00:00"
+    },
+    {
+      "requestedUTC": "2026-10-08T18:19:29.430700+00:00",
+      "action": "allow production app subnet on primary journal",
+      "status": "SUCCESS",
+      "completedUTC": "2026-10-08T18:19:33.146494+00:00"
+    },
+    {
+      "requestedUTC": "2026-10-08T18:19:33.146494+00:00",
+      "action": "create private container dermairejrnlprod261008/intents",
+      "status": "SUCCESS",
+      "completedUTC": "2026-10-08T18:19:35.236473+00:00"
+    },
+    {
+      "requestedUTC": "2026-10-08T18:19:35.236473+00:00",
+      "action": "set indefinite legal hold dermairejrnlprod261008/intents",
+      "status": "SUCCESS",
+      "completedUTC": "2026-10-08T18:19:37.492333+00:00"
+    },
+    {
+      "requestedUTC": "2026-10-08T18:19:37.493334+00:00",
+      "action": "create protected storage boundary dermairejrnlbkprod261008",
+      "status": "SUCCESS",
+      "completedUTC": "2026-10-08T18:20:00.759038+00:00"
+    },
+    {
+      "requestedUTC": "2026-10-08T18:20:00.761041+00:00",
+      "action": "allow single provisioning egress on dermairejrnlbkprod261008",
+      "status": "SUCCESS",
+      "completedUTC": "2026-10-08T18:20:03.875689+00:00"
+    },
+    {
+      "requestedUTC": "2026-10-08T18:20:03.875689+00:00",
+      "action": "create private container dermairejrnlbkprod261008/protected-evidence",
+      "status": "SUCCESS",
+      "completedUTC": "2026-10-08T18:20:06.188671+00:00"
+    },
+    {
+      "requestedUTC": "2026-10-08T18:20:06.189672+00:00",
+      "action": "set indefinite legal hold dermairejrnlbkprod261008/protected-evidence",
+      "status": "SUCCESS",
+      "completedUTC": "2026-10-08T18:20:08.334295+00:00"
+    },
+    {
+      "requestedUTC": "2026-10-08T18:20:09.833820+00:00",
+      "action": "create no-delete production journal role",
+      "status": "SUCCESS",
+      "completedUTC": "2026-10-08T18:20:12.944703+00:00"
+    },
+    {
+      "requestedUTC": "2026-10-08T18:20:12.945704+00:00",
+      "action": "grant provisioning caller narrow evidence data role dermairejrnlprod261008",
+      "status": "SUCCESS",
+      "completedUTC": "2026-10-08T18:20:16.910101+00:00"
+    },
+    {
+      "requestedUTC": "2026-10-08T18:20:16.911099+00:00",
+      "action": "grant provisioning caller narrow evidence data role dermairejrnlbkprod261008",
+      "status": "SUCCESS",
+      "completedUTC": "2026-10-08T18:20:22.441498+00:00"
+    },
+    {
+      "requestedUTC": "2026-10-08T18:20:22.442498+00:00",
+      "action": "create purge-protected journal secret vault",
+      "status": "SUCCESS",
+      "completedUTC": "2026-10-08T18:20:57.394355+00:00"
+    },
+    {
+      "requestedUTC": "2026-10-08T18:20:57.396355+00:00",
+      "action": "allow single provisioning egress on key vault",
+      "status": "SUCCESS",
+      "completedUTC": "2026-10-08T18:20:59.515783+00:00"
+    },
+    {
+      "requestedUTC": "2026-10-08T18:20:59.516783+00:00",
+      "action": "allow production app subnet on key vault",
+      "status": "SUCCESS",
+      "completedUTC": "2026-10-08T18:21:04.891160+00:00"
+    },
+    {
+      "requestedUTC": "2026-10-08T18:21:04.892162+00:00",
+      "action": "temporary provisioning secret officer",
+      "status": "SUCCESS",
+      "completedUTC": "2026-10-08T18:21:08.910793+00:00"
+    },
+    {
+      "requestedUTC": "2026-10-08T18:21:13.983661+00:00",
+      "action": "generate independent nonexpiring HMAC in purge-protected Key Vault",
+      "status": "SUCCESS",
+      "completedUTC": "2026-10-08T18:21:26.633167+00:00"
+    },
+    {
+      "requestedUTC": "2026-10-08T18:21:32.444396+00:00",
+      "action": "enable production app system-assigned Managed Identity",
+      "status": "SUCCESS",
+      "completedUTC": "2026-10-08T18:21:38.851162+00:00"
+    },
+    {
+      "requestedUTC": "2026-10-08T18:21:39.815818+00:00",
+      "action": "grant app no-delete role only on production intents container",
+      "status": "SUCCESS",
+      "completedUTC": "2026-10-08T18:21:44.238020+00:00"
+    },
+    {
+      "requestedUTC": "2026-10-08T18:21:44.239019+00:00",
+      "action": "grant app read-only secret access scoped to one HMAC secret",
+      "status": "SUCCESS",
+      "completedUTC": "2026-10-08T18:21:47.871653+00:00"
+    },
+    {
+      "requestedUTC": "2026-10-08T18:21:47.873652+00:00",
+      "action": "integrate production app with dedicated journal subnet",
+      "status": "SUCCESS",
+      "completedUTC": "2026-10-08T18:22:27.977509+00:00"
+    },
+    {
+      "requestedUTC": "2026-10-08T18:22:29.051995+00:00",
+      "action": "route production outbound through integration subnet",
+      "status": "SUCCESS",
+      "completedUTC": "2026-10-08T18:22:34.551019+00:00"
+    },
+    {
+      "requestedUTC": "2026-10-08T18:22:35.662210+00:00",
+      "action": "configure production journal names and pinned Key Vault reference",
+      "status": "LOCAL_CMD_ARGUMENT_PARSING_REJECTED"
+    },
+    {
+      "requestedUTC": "2026-10-08T18:23:58.263087+00:00",
+      "action": "configure production journal settings via structured ARM API",
+      "status": "SUCCESS",
+      "completedUTC": "2026-10-08T18:23:59.976381+00:00"
+    }
+  ],
+  "expiry": "DISABLED INDEFINITELY",
+  "liveEnablementUTC": null,
+  "rollback": {
+    "appIdentity": null,
+    "appSubnet": null,
+    "routeAll": null,
+    "journalSettingNames": [],
+    "newResourceGroupAbsent": true,
+    "photoPolicy": {
+      "delete_retention_policy": "{'additional_properties': {}, 'enabled': False, 'days': None, 'allow_permanent_delete': None}",
+      "container_delete_retention_policy": null,
+      "is_versioning_enabled": null,
+      "restore_policy": null
+    }
+  },
+  "provisioningObjectId": "54618e9f-4033-47e0-b642-ce415b8ba89a",
+  "subnetId": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-journal-prod/providers/Microsoft.Network/virtualNetworks/dermaire-journal-prod-vnet/subnets/app-integration",
+  "correctedSetupError": {
+    "utc": "2026-10-08T18:18:50.941290+00:00",
+    "code": "AccountNameInvalid",
+    "originalName": "dermairejournalprod261008",
+    "correctedName": "dermairejrnlprod261008",
+    "accountCreated": false,
+    "securityValidationFailed": false
+  },
+  "accounts": {
+    "dermairejrnlprod261008": {
+      "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-journal-prod/providers/Microsoft.Storage/storageAccounts/dermairejrnlprod261008",
+      "region": "canadacentral",
+      "sku": "Standard_ZRS",
+      "container": "intents",
+      "scope": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-journal-prod/providers/Microsoft.Storage/storageAccounts/dermairejrnlprod261008/blobServices/default/containers/intents",
+      "provisioningAssignment": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-journal-prod/providers/Microsoft.Storage/storageAccounts/dermairejrnlprod261008/blobServices/default/containers/intents/providers/Microsoft.Authorization/roleAssignments/24d7b594-c4e4-41ae-8604-3db2701de5dc"
+    },
+    "dermairejrnlbkprod261008": {
+      "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-journal-prod/providers/Microsoft.Storage/storageAccounts/dermairejrnlbkprod261008",
+      "region": "canadaeast",
+      "sku": "Standard_LRS",
+      "container": "protected-evidence",
+      "scope": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-journal-prod/providers/Microsoft.Storage/storageAccounts/dermairejrnlbkprod261008/blobServices/default/containers/protected-evidence",
+      "provisioningAssignment": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-journal-prod/providers/Microsoft.Storage/storageAccounts/dermairejrnlbkprod261008/blobServices/default/containers/protected-evidence/providers/Microsoft.Authorization/roleAssignments/a06da88b-2b62-4ae2-89cc-809581b5cdb6"
+    }
+  },
+  "role": {
+    "name": "Dermaire Journal Read Write No Delete Prod",
+    "definitionId": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/providers/Microsoft.Authorization/roleDefinitions/8f578748-85e6-44da-98b6-4acb83cf89a5",
+    "permissions": {
+      "Name": "Dermaire Journal Read Write No Delete Prod",
+      "IsCustom": true,
+      "Description": "Production journal block create/read/list only; independent indefinite legal hold required",
+      "Actions": [
+        "Microsoft.Storage/storageAccounts/blobServices/containers/read"
+      ],
+      "DataActions": [
+        "Microsoft.Storage/storageAccounts/blobServices/containers/blobs/read",
+        "Microsoft.Storage/storageAccounts/blobServices/containers/blobs/write"
+      ],
+      "NotActions": [],
+      "NotDataActions": [],
+      "AssignableScopes": [
+        "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-journal-prod"
+      ]
+    }
+  },
+  "vaultId": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-journal-prod/providers/Microsoft.KeyVault/vaults/dermaire-journal-prod-kv",
+  "vaultUri": "https://dermaire-journal-prod-kv.vault.azure.net/",
+  "vaultProvisioningAssignment": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-journal-prod/providers/Microsoft.KeyVault/vaults/dermaire-journal-prod-kv/providers/Microsoft.Authorization/roleAssignments/5780bbc6-0903-4809-9faa-de3735998c28",
+  "provisioningStage": "IDENTITY_KEY_CONFIGURED",
+  "network": {
+    "defaultAction": "Deny",
+    "bypass": "None",
+    "deviceIPv4Count": 1,
+    "primarySubnetCount": 1,
+    "backupSubnetCount": 0,
+    "publicEndpoint": "restricted enabled",
+    "sharedKeyAccess": false
+  },
+  "hmacSecretId": "https://dermaire-journal-prod-kv.vault.azure.net/secrets/deletion-journal-hmac-v1/70e20448ce904bd0b2e04ae21583b652",
+  "secretAttributes": {
+    "enabled": true,
+    "exp": null,
+    "nbf": null
+  },
+  "keyBackup": {
+    "name": "key-backups/deletion-journal-hmac-v1-20261008T182131Z.azure-encrypted.json",
+    "format": "Azure encrypted Key Vault secret backup; no plaintext persisted",
+    "sha256": "08333b45eda384ff8f723f85afdca6af202f4e4cfee8928b3073793d8a601221",
+    "verifiedUTC": "2026-10-08T18:21:31.315307+00:00",
+    "restoreConstraint": "same Azure subscription and geography; reviewed recovery only",
+    "restoreApiStatus": 409,
+    "restoreProof": "existing secret conflict; encrypted backup creation/read proven, separate recovery restore unverified"
+  },
+  "startupChecks": [
+    {
+      "utc": "2026-10-08T18:21:39.813817+00:00",
+      "seconds": 7.36,
+      "legacyHealth": 200
+    },
+    {
+      "utc": "2026-10-08T18:22:29.050993+00:00",
+      "seconds": 41.17,
+      "legacyHealth": 200
+    },
+    {
+      "utc": "2026-10-08T18:22:35.661203+00:00",
+      "seconds": 6.59,
+      "legacyHealth": 200
+    },
+    {
+      "utc": "2026-10-08T18:26:52.969103+00:00",
+      "seconds": 174.7,
+      "legacyHealth": 200
+    }
+  ],
+  "productionIdentity": {
+    "mode": "System-assigned Managed Identity / Entra OAuth",
+    "objectId": "c519ee0d-f1d3-4c2d-ba24-d204eb1fd976",
+    "tenantId": "6845d6ca-1ec5-4c0e-9e9d-34130ce0a0b8"
+  },
+  "runtimeJournalAssignment": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-journal-prod/providers/Microsoft.Storage/storageAccounts/dermairejrnlprod261008/blobServices/default/containers/intents/providers/Microsoft.Authorization/roleAssignments/a3af91a4-bf22-4fd0-84d6-417c6108f856",
+  "runtimeSecretAssignment": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-journal-prod/providers/Microsoft.KeyVault/vaults/dermaire-journal-prod-kv/secrets/deletion-journal-hmac-v1/providers/Microsoft.Authorization/roleAssignments/14a9fe36-f577-410e-a0ad-fef3fd68bf58",
+  "correctedSettingsSetupError": {
+    "utc": "2026-10-08T18:23:55.865539+00:00",
+    "reason": "Windows cmd parsing of Key Vault reference parentheses; no request sent",
+    "securityValidationFailed": false
+  },
+  "configuredSettingNames": [
+    "DELETION_JOURNAL_ACCOUNT_URL",
+    "DELETION_JOURNAL_CONTAINER",
+    "DELETION_JOURNAL_HMAC_KEY",
+    "DELETION_JOURNAL_REQUIRED"
+  ],
+  "configurationBoundaryUTC": "2026-10-08T18:26:52.969103+00:00",
+  "historicalCoverage": "No historical or current live deletion coverage claimed; existing build has no journal hooks; Phase 3 separate"
+}
