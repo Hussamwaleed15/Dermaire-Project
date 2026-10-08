@@ -1,5 +1,20 @@
 # Phase 0 recoverable-copy inventory — 8 October 2026
 
+## Current policy decision - 8 October 2026 (supersedes earlier gate conclusions)
+
+**Phase 0: PASS for policy/design readiness under indefinite fail-closed retention.** This is not production rollout or production compliance certification. No concrete unresolved Phase 0 policy blocker remains: uncertain legacy and undiscovered external copies are conservatively covered by indefinite retention and reviewed manual recovery. A complete bounded inventory is required only for future expiry re-enablement. Production remains untouched; historical evidence below is preserved and has not been refreshed through production access in this task.
+
+OneDrive copies are **LEGACY/UNKNOWN-PROVENANCE**, potentially production-derived recoverable sources. Their retention/history/holds and quarantine are unknown; no <=35-day horizon is certified. **Deletion-journal and HMAC key expiry is FAIL-CLOSED / DISABLED INDEFINITELY** while any unknown recoverable source exists or its retention/hold state is unknown. No age-based cleanup or lifecycle expiry may be enabled. The 42-day rule is a future conditional target only: every source must have proven provenance, lifetime <=35d, quarantine <=7d and no hold; no surviving recoverable copy may need the intent, and keys must outlive retained signed intents. Unknown off-platform/other-device copies are also covered by this indefinite block; this does not assert they are absent.
+
+Legacy sources are excluded from automatic restore selection and are **not valid operational production restore sources**. Any exceptional use requires explicit recovery/privacy review by the Primary project owner (temporary), registration of every derived target, isolated offline recovery with traffic/writes disabled, complete independent journal coverage and verified signed deletion-tombstone replay before any traffic/writes resume. Unknown journal completeness, an unverifiable legacy identity/image mapping, or failed replay means recovery cannot proceed. Legacy copies do not meet the operational RPO and cannot be selected as an automatic fallback. Neither these files nor their cloud history were edited/deleted.
+
+MVP owner: **Primary project owner (temporary)** carries release, recovery, privacy and on-call responsibilities until explicitly delegated. No real-world identity is inferred. The working Gmail receiver is an alert destination only. Named delegation and verified contact/escalation details are required before broader production/on-call operations.
+
+See [durable legacy inventory](legacy-recoverable-sources.json) and [restore procedure](deletion-journal-restore.md). Accepted startup 180s, DB RPO <=5m and RTO <=30m remain unchanged. Protected production journal/key provisioning, independent protection/backup, completeness and replay verification (including legacy mapping), runtime/migrator least privilege, health endpoints/deployment, production alert routing and traffic-opening smoke remain **unimplemented/unverified production rollout steps**, not completed Phase 0 evidence. A failed rollout preflight must keep traffic closed.
+
+## Historical inspection record (earlier BLOCKED verdicts superseded above)
+
+
 **Gate: BLOCKED. Production was not mutated.** This read-only continuation started from clean/pushed main `99ca9ce56fb7ff59ddbb3e4f5c72e75a4031b2a6`. Evidence was gathered on 8 October 2026 (Africa/Cairo). No deployment, restart, traffic/configuration/policy change, SQL write, deletion, fixture, resource creation, credential rotation or restore was performed. Management actions named listKeys, list appsettings, list publishing credentials and POST backup/list were read operations; credentials remained in process memory and were not saved or printed. Reading services can generate ordinary provider access/audit logs; “untouched” means no intentional production mutation.
 
 ## OneDrive closure continuation — 8 October 2026
