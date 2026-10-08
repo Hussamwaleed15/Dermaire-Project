@@ -1,0 +1,213 @@
+{
+  "startedUTC": "2026-10-08T17:37:17.978522+00:00",
+  "mutations": [],
+  "settingNames": [
+    "ACCESS_TOKEN_EXPIRE_MINUTES",
+    "ALGORITHM",
+    "AZURE_BLOB_SAS_EXPIRY_MINUTES",
+    "AZURE_COMMUNICATION_CONNECTION_STRING",
+    "AZURE_EMAIL_SENDER",
+    "AZURE_OPENAI_API_KEY",
+    "AZURE_OPENAI_API_VERSION",
+    "AZURE_OPENAI_DEPLOYMENT_NAME",
+    "AZURE_OPENAI_ENDPOINT",
+    "AZURE_STORAGE_CONNECTION_STRING",
+    "AZURE_STORAGE_CONTAINER",
+    "CONTEXTUAL_AI_ENABLED",
+    "DATABASE_URL",
+    "DEBUG",
+    "ENVIRONMENT",
+    "EXPOSE_PASSWORD_RESET_TOKEN",
+    "GOOGLE_WEB_CLIENT_ID",
+    "REFRESH_TOKEN_EXPIRE_DAYS",
+    "SCM_DO_BUILD_DURING_DEPLOYMENT",
+    "SECRET_KEY",
+    "WEBSITES_PORT",
+    "WEBSITE_HTTPLOGGING_RETENTION_DAYS"
+  ],
+  "journalSettingNames": [],
+  "databaseVerifyFull": true,
+  "app": {
+    "host": "dermaire-api.azurewebsites.net",
+    "httpsOnly": true,
+    "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.Web/sites/dermaire-api",
+    "state": "Running"
+  },
+  "db": {
+    "backup": {
+      "backupRetentionDays": 7,
+      "earliestRestoreDate": "2026-10-02T07:14:08.190528+00:00",
+      "geoRedundantBackup": "Disabled"
+    },
+    "dataEncryption": {
+      "geoBackupEncryptionKeyStatus": null,
+      "geoBackupFederatedIdentityClientId": null,
+      "geoBackupKeyUri": null,
+      "geoBackupUserAssignedIdentityId": null,
+      "primaryEncryptionKeyStatus": null,
+      "primaryFederatedIdentityClientId": null,
+      "primaryKeyUri": null,
+      "primaryUserAssignedIdentityId": null,
+      "type": "SystemManaged"
+    },
+    "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.DBforPostgreSQL/flexibleServers/dermaire-db-server",
+    "location": "Canada Central",
+    "network": {
+      "delegatedSubnetResourceId": null,
+      "privateDnsZoneArmResourceId": null,
+      "publicNetworkAccess": "Enabled"
+    },
+    "state": "Ready",
+    "version": "18"
+  },
+  "backups": [
+    {
+      "backupType": "Full",
+      "completedTime": "2026-10-02T07:14:08.190528+00:00",
+      "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.DBforPostgreSQL/flexibleServers/dermaire-db-server/backups/backup_639265220471905287",
+      "name": "backup_639265220471905287",
+      "resourceGroup": "dermaire-rg",
+      "source": "Automatic",
+      "systemData": null,
+      "type": "Microsoft.DBforPostgreSQL/flexibleServers/backups"
+    },
+    {
+      "backupType": "Full",
+      "completedTime": "2026-10-03T07:14:56.706764+00:00",
+      "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.DBforPostgreSQL/flexibleServers/dermaire-db-server/backups/backup_639266084957067641",
+      "name": "backup_639266084957067641",
+      "resourceGroup": "dermaire-rg",
+      "source": "Automatic",
+      "systemData": null,
+      "type": "Microsoft.DBforPostgreSQL/flexibleServers/backups"
+    },
+    {
+      "backupType": "Full",
+      "completedTime": "2026-10-04T07:16:05.690807+00:00",
+      "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.DBforPostgreSQL/flexibleServers/dermaire-db-server/backups/backup_639266949646908077",
+      "name": "backup_639266949646908077",
+      "resourceGroup": "dermaire-rg",
+      "source": "Automatic",
+      "systemData": null,
+      "type": "Microsoft.DBforPostgreSQL/flexibleServers/backups"
+    },
+    {
+      "backupType": "Full",
+      "completedTime": "2026-10-05T07:17:03.465276+00:00",
+      "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.DBforPostgreSQL/flexibleServers/dermaire-db-server/backups/backup_639267814224652764",
+      "name": "backup_639267814224652764",
+      "resourceGroup": "dermaire-rg",
+      "source": "Automatic",
+      "systemData": null,
+      "type": "Microsoft.DBforPostgreSQL/flexibleServers/backups"
+    },
+    {
+      "backupType": "Full",
+      "completedTime": "2026-10-06T07:17:53.741457+00:00",
+      "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.DBforPostgreSQL/flexibleServers/dermaire-db-server/backups/backup_639268678727414574",
+      "name": "backup_639268678727414574",
+      "resourceGroup": "dermaire-rg",
+      "source": "Automatic",
+      "systemData": null,
+      "type": "Microsoft.DBforPostgreSQL/flexibleServers/backups"
+    },
+    {
+      "backupType": "Full",
+      "completedTime": "2026-10-07T07:18:33.806745+00:00",
+      "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.DBforPostgreSQL/flexibleServers/dermaire-db-server/backups/backup_639269543128067457",
+      "name": "backup_639269543128067457",
+      "resourceGroup": "dermaire-rg",
+      "source": "Automatic",
+      "systemData": null,
+      "type": "Microsoft.DBforPostgreSQL/flexibleServers/backups"
+    },
+    {
+      "backupType": "Full",
+      "completedTime": "2026-10-08T07:19:42.755562+00:00",
+      "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.DBforPostgreSQL/flexibleServers/dermaire-db-server/backups/backup_639270407817555627",
+      "name": "backup_639270407817555627",
+      "resourceGroup": "dermaire-rg",
+      "source": "Automatic",
+      "systemData": null,
+      "type": "Microsoft.DBforPostgreSQL/flexibleServers/backups"
+    }
+  ],
+  "photoAccount": {
+    "allowBlobPublicAccess": false,
+    "httpsOnly": true,
+    "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.Storage/storageAccounts/dermaireimg479341",
+    "minimumTlsVersion": "TLS1_2",
+    "sku": "Standard_LRS"
+  },
+  "storageAccounts": [
+    {
+      "location": "westeurope",
+      "name": "csb100320025cf197a3",
+      "resourceGroup": "cloud-shell-storage-westeurope"
+    },
+    {
+      "location": "canadacentral",
+      "name": "dermaireimg479341",
+      "resourceGroup": "dermaire-rg"
+    },
+    {
+      "location": "canadacentral",
+      "name": "dermairerehearsal261006",
+      "resourceGroup": "dermaire-readiness-nonprod-20261006"
+    }
+  ],
+  "database": {
+    "walArchive": [
+      {
+        "archived_count": "5349",
+        "last_archived_time": "2026-10-08 17:34:04.704911+00",
+        "failed_count": "0",
+        "last_failed_time": "",
+        "stats_reset": "2026-09-20 07:02:00.858492+00",
+        "observed_at": "2026-10-08 17:37:30.893798+00"
+      }
+    ],
+    "identity": [
+      {
+        "current_user": "dermaire_runtime",
+        "readonly": "on"
+      }
+    ],
+    "revision": [
+      {
+        "version_num": "20261008_01"
+      }
+    ],
+    "tls": [
+      {
+        "ssl": "t",
+        "version": "TLSv1.3"
+      }
+    ]
+  },
+  "blobPolicy": {
+    "delete_retention_policy": "{'additional_properties': {}, 'enabled': False, 'days': None, 'allow_permanent_delete': None}",
+    "container_delete_retention_policy": null,
+    "is_versioning_enabled": null,
+    "restore_policy": null
+  },
+  "blobInventory": [
+    {
+      "container": "skin-images",
+      "publicAccess": null,
+      "deleted": false,
+      "objects": 0,
+      "versions": 0,
+      "snapshots": 0,
+      "deletedObjects": 0,
+      "holds": 0,
+      "immutability": 0
+    }
+  ],
+  "health": {
+    "/health": 200,
+    "/health/live": 404,
+    "/health/ready": 404
+  },
+  "finishedUTC": "2026-10-08T17:37:35.881008+00:00"
+}

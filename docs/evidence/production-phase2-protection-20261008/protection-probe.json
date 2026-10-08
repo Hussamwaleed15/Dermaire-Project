@@ -1,0 +1,11 @@
+{
+  "startedUTC": "2026-10-08T17:39:32.255401+00:00",
+  "scope": "synthetic nonproduction container only",
+  "account": "dermairerehearsal261006",
+  "gate": "FAIL",
+  "failureType": "HttpResponseError",
+  "status": 403,
+  "code": "StorageErrorCode.AUTHORIZATION_FAILURE",
+  "cleanup": "temporary nonproduction hold cleared and synthetic container deleted",
+  "finishedUTC": "2026-10-08T17:39:38.369032+00:00"
+}
