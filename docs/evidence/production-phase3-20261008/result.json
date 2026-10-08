@@ -1,0 +1,29 @@
+{
+  "verdict": "PHASE 3 HALTED/ROLLED BACK",
+  "haltStage": "3A source gate",
+  "productionMutations": [],
+  "rollbackNeeded": false,
+  "targetCommit": "80707ec80e70a12027a7d6e9c2e25e8cd8eb3090",
+  "newArtifact": null,
+  "deploymentId": null,
+  "phase4Started": false,
+  "realUserDataModified": false,
+  "blocker": "Orphan reconciliation and failed-upload photo cleanup lacked durable photo-only intents. Account intents cannot substitute because replay deletes accounts.",
+  "sourceCorrection": "photo-only-owner HMAC domain within existing v2 format; wired before both cleanup paths; source only",
+  "tests": {
+    "relevantPassed": 83,
+    "fullSuite": {
+      "passed": 684,
+      "warnings": 91,
+      "seconds": 82.94
+    },
+    "compile": "PASS",
+    "whitespace": "PASS"
+  },
+  "observedUTC": "2026-10-08T20:40:55.007869+00:00",
+  "databaseObserver": {
+    "current_user": "dermaire_runtime",
+    "transaction_read_only": true,
+    "TLS": "TLSv1.3"
+  }
+}

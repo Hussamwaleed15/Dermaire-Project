@@ -49,6 +49,36 @@ def test_private_signed_intents_union_and_key_separation():
         journal.validate(tampered)
 
 
+def test_photo_only_v2_replay_preserves_account_and_sibling_photos():
+    container = Container(); journal = DeletionJournal(container, "j" * 32, True)
+    image = "skin_photos/kept/deleted.png"
+    name = journal.record_photos("kept", [image])
+    assert journal.record_photos("kept", [image, image]) == name
+    assert len(journal.inventory()) == 1
+    assert journal.inventory()[0]["schema"] == 2
+    assert journal.inventory()[0]["owner"] != journal.token("owner", "kept")
+    assert b"kept" not in container.data[name] and image.encode() not in container.data[name]
+    db = Mock(); db.query.return_value = [SimpleNamespace(id="kept")]
+    photos = {image, "skin_photos/kept/sibling.png"}
+    storage = Mock(is_live=True)
+    storage.container_client.list_blobs.side_effect = lambda **_: [SimpleNamespace(name=n) for n in photos]
+    storage.delete_image.side_effect = photos.remove
+    delete = Mock(); snapshot = dict(container.data)
+    result = journal.replay(db, storage, delete)
+    delete.assert_not_called()
+    assert result["restored_accounts_removed"] == 0 and result["image_cleanup_calls"] == 1
+    assert photos == {"skin_photos/kept/sibling.png"}
+    assert journal.replay(db, storage, delete)["image_cleanup_calls"] == 0
+    assert container.data == snapshot
+
+
+def test_photo_only_unavailable_journal_and_empty_keys_fail_closed():
+    with pytest.raises(RuntimeError):
+        DeletionJournal(None, "j" * 32, True).record_photos("kept", ["photo"])
+    with pytest.raises(ValueError):
+        DeletionJournal(Container(), "j" * 32, True).record_photos("kept", [])
+
+
 def test_required_store_failure_and_invalid_key_fail_closed():
     with pytest.raises(RuntimeError):
         DeletionJournal(None, "j" * 32, True).record("u", [])

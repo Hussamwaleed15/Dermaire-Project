@@ -1,5 +1,26 @@
 # Independent deletion journal and offline restore
 
+## Photo-only v2 cleanup intents (8 October 2026)
+
+Phase 3A source review found orphan reconciliation and failed-upload cleanup
+could remove a photo without durable evidence. Both now call `record_photos`
+before Blob deletion. Failure to persist/read/verify the intent prevents deletion.
+Dry-run reconciliation and photos referenced by a committed retry are unchanged.
+
+Photo-only intents retain the existing signed schema-2 envelope, canonical image
+tokens, atomic create and verified read-back. Their owner token uses the separate
+`photo-only-owner` HMAC domain, rather than the account `owner` domain. Existing
+v1/v2 replay readers therefore clean only the explicit image tokens and cannot
+select the owning account or its other photos for deletion. Do not change either
+domain or reinterpret a photo-only token as an account token. No new photo-delete
+API is introduced. No key, expiry, permission or Blob policy changes are needed.
+
+This correction is locally verified source, **not a deployed production hook**.
+Phase 3 was halted before production mutation. A fresh release must package this
+corrected commit, repeat the production preflight and verify the deployed hooks;
+the old deployed artifact must never be used to reopen unrestricted writes after
+journal activation. No historical photo-deletion coverage is claimed.
+
 The application writes a durable deletion intent before deleting any photograph or database row. New intents contain schema version 2, an HMAC-SHA256 owner token, HMAC-SHA256 image-key tokens, and a signature over the canonical record. It contains no raw account ID, email, name, image path, IP, clinical data, or request payload. These tokens remain pseudonymous personal data: restrict access accordingly. Use a separate random secret of at least 32 characters, never SECRET_KEY. Retain the key while any recoverable backup or intent exists. Key rotation requires an explicit dual-key migration; changing it directly makes old intents unverifiable.
 
 Configure either DELETION_JOURNAL_ACCOUNT_URL with managed identity (preferred) or legacy DELETION_JOURNAL_CONNECTION_STRING, plus DELETION_JOURNAL_CONTAINER, DELETION_JOURNAL_HMAC_KEY and DELETION_JOURNAL_REQUIRED=true. Test/development can leave the journal disabled; managed staging/production readiness now refuses to report ready without a configured private required journal. Metadata health does not prove write permission: a synthetic create/read/replay rehearsal is required before rollout.

@@ -2,6 +2,7 @@
 import re
 from datetime import datetime, timedelta, timezone
 from app.models import User, Capture, CheckIn
+from app.services.deletion_journal import deletion_journal
 
 
 def reconcile(db, storage, apply=False, minimum_age_hours=24):
@@ -21,6 +22,7 @@ def reconcile(db, storage, apply=False, minimum_age_hours=24):
         if not referenced:
             counts["candidates"] += 1
             if apply:
+                deletion_journal.record_photos(owner, [blob.name])
                 storage.delete_image(blob.name)
                 counts["deleted"] += 1
         db.rollback()
@@ -35,6 +37,7 @@ def cleanup_failed_upload(db, storage, owner_id, blob_name):
         referenced = any(db.query(model.id).filter_by(image_blob_name=blob_name).first()
                          for model in (Capture, CheckIn))
         if not referenced:
+            deletion_journal.record_photos(owner_id, [blob_name])
             storage.delete_image(blob_name)
     finally:
         db.rollback()

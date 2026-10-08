@@ -96,6 +96,19 @@ class DeletionJournal:
         return records
 
     def record(self, owner_id, image_keys):
+        return self._record("owner", owner_id, image_keys)
+
+    def record_photos(self, owner_id, image_keys):
+        """V2 explicit-image intent; never authorizes account/namespace deletion.
+
+        A separate HMAC domain cannot match replay's account-owner tokens.
+        Existing v2 readers replay only the explicit image tokens for this intent.
+        """
+        if not image_keys:
+            raise ValueError("Photo deletion requires explicit image keys")
+        return self._record("photo-only-owner", owner_id, image_keys)
+
+    def _record(self, owner_domain, owner_id, image_keys):
         if self.container is None:
             if self.required:
                 raise RuntimeError("Deletion journal unavailable")
@@ -103,7 +116,7 @@ class DeletionJournal:
         if self.container.get_container_properties().get("public_access"):
             raise RuntimeError("Journal must be private")
         from azure.core.exceptions import ResourceExistsError
-        record = {"schema": 2, "owner": self.token("owner", owner_id),
+        record = {"schema": 2, "owner": self.token(owner_domain, owner_id),
                   "images": sorted({self.token("image", name) for name in image_keys})}
         blob = self.container.get_blob_client(self.record_name(record))
         payload = json.dumps({"record": record, "signature": self.signature(record)}).encode()

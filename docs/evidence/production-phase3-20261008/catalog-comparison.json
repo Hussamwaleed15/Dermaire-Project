@@ -1,0 +1,22 @@
+{
+  "checks": {
+    "columns": true,
+    "indexes": true,
+    "constraints": true,
+    "objects": true,
+    "schema": true,
+    "functions": true,
+    "triggers": true,
+    "policies": true,
+    "databaseAcl": true,
+    "defaultPrivileges": true,
+    "extensions": true,
+    "indexValidity": true,
+    "roles": true,
+    "memberships": true,
+    "runtimeGrants": true
+  },
+  "gate": "PASS",
+  "observer": "dermaire_runtime read-only; no business queries",
+  "baselineObserver": "dermaireadmin; role/grant visibility normalized"
+}
