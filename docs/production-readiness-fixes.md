@@ -22,11 +22,14 @@ On B1, use a documented redeploy/maintenance rollback or separately provisioned
 blue/green apps; slot swap requires Standard or higher. Prove cold start, restart,
 bounded readiness and provider-enabled request latency on the selected plan.
 
-Health currently probes Blob metadata only. It is not a database readiness check
-or a live AI-provider test. Configure privacy-safe metrics, alerts with an owner,
+`/health/ready` now probes database/revision, private photo storage and the independent required deletion journal; `/health/live` reports process life and boot ID. Readiness is not a live AI-provider test. Configure privacy-safe metrics, alerts with an owner,
 and a synthetic check without real patient text. Do not log authorization headers,
 credentials, request bodies or raw provider exception messages.
 
 Account deletion fails closed for retained/historical Blob copies. Decide and
 verify infrastructure policy, private access, historical-copy remediation and
 backup retention/deletion semantics before promising permanent deletion.
+
+## Accepted readiness continuation (8 October 2026)
+
+See [production-release-runbook.md](production-release-runbook.md) for accepted startup 180s, DB RPO <=5min, recovery RTO <=30min and journal 42d conditional on all recoverable backups/exports <=35d and quarantine <=7d, plus the review-only least-privilege/TLS/adoption/photo/protected-journal checklist. No production change is authorized. Current alert diagnosis and test evidence: [readiness-closure-20261008.md](readiness-closure-20261008.md).
