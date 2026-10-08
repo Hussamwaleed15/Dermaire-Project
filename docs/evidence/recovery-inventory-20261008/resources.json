@@ -1,0 +1,158 @@
+[
+  {
+    "group": "GesturaEchoRG",
+    "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/GesturaEchoRG/providers/Microsoft.CognitiveServices/accounts/GesturaEchoVision",
+    "name": "GesturaEchoVision",
+    "type": "Microsoft.CognitiveServices/accounts"
+  },
+  {
+    "group": "GesturaEchoRG",
+    "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/GesturaEchoRG/providers/Microsoft.CognitiveServices/accounts/GesturaEchoVision-Prediction",
+    "name": "GesturaEchoVision-Prediction",
+    "type": "Microsoft.CognitiveServices/accounts"
+  },
+  {
+    "group": "dermaire-rg",
+    "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.DBforPostgreSQL/flexibleServers/dermaire-db-server",
+    "name": "dermaire-db-server",
+    "type": "Microsoft.DBforPostgreSQL/flexibleServers"
+  },
+  {
+    "group": "dermaire-rg",
+    "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.Web/serverFarms/2022170636_asp_2794",
+    "name": "2022170636_asp_2794",
+    "type": "Microsoft.Web/serverFarms"
+  },
+  {
+    "group": "dermaire-rg",
+    "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.Web/sites/dermaire-api",
+    "name": "dermaire-api",
+    "type": "Microsoft.Web/sites"
+  },
+  {
+    "group": "dermaire-rg",
+    "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.Communication/EmailServices/dermaire-email",
+    "name": "dermaire-email",
+    "type": "Microsoft.Communication/EmailServices"
+  },
+  {
+    "group": "dermaire-rg",
+    "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.Communication/EmailServices/dermaire-email/Domains/AzureManagedDomain",
+    "name": "dermaire-email/AzureManagedDomain",
+    "type": "Microsoft.Communication/EmailServices/Domains"
+  },
+  {
+    "group": "dermaire-rg",
+    "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.Communication/CommunicationServices/dermaire-communication",
+    "name": "dermaire-communication",
+    "type": "Microsoft.Communication/CommunicationServices"
+  },
+  {
+    "group": "dermaire-rg",
+    "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.Storage/storageAccounts/dermaireimg479341",
+    "name": "dermaireimg479341",
+    "type": "Microsoft.Storage/storageAccounts"
+  },
+  {
+    "group": "dermaire-rg",
+    "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.CognitiveServices/accounts/dermaire-openai-hossam",
+    "name": "dermaire-openai-hossam",
+    "type": "Microsoft.CognitiveServices/accounts"
+  },
+  {
+    "group": "dermaire-rg",
+    "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.CognitiveServices/accounts/dermaire-vision",
+    "name": "dermaire-vision",
+    "type": "Microsoft.CognitiveServices/accounts"
+  },
+  {
+    "group": "dermaire-rg",
+    "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.CognitiveServices/accounts/dermaire-content-safety",
+    "name": "dermaire-content-safety",
+    "type": "Microsoft.CognitiveServices/accounts"
+  },
+  {
+    "group": "dermaire-rg",
+    "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.Web/sites/dermaire-api-staging",
+    "name": "dermaire-api-staging",
+    "type": "Microsoft.Web/sites"
+  },
+  {
+    "group": "dermaire-readiness-nonprod-20261006",
+    "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-readiness-nonprod-20261006/providers/Microsoft.DBforPostgreSQL/flexibleServers/dermaire-rehearsal-20261006",
+    "name": "dermaire-rehearsal-20261006",
+    "type": "Microsoft.DBforPostgreSQL/flexibleServers"
+  },
+  {
+    "group": "dermaire-readiness-nonprod-20261006",
+    "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-readiness-nonprod-20261006/providers/Microsoft.Storage/storageAccounts/dermairerehearsal261006",
+    "name": "dermairerehearsal261006",
+    "type": "Microsoft.Storage/storageAccounts"
+  },
+  {
+    "group": "dermaire-readiness-nonprod-20261006",
+    "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-readiness-nonprod-20261006/providers/Microsoft.OperationalInsights/workspaces/dermaire-readiness-logs",
+    "name": "dermaire-readiness-logs",
+    "type": "Microsoft.OperationalInsights/workspaces"
+  },
+  {
+    "group": "dermaire-readiness-nonprod-20261006",
+    "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-readiness-nonprod-20261006/providers/Microsoft.Insights/actiongroups/dermaire-readiness-owners",
+    "name": "dermaire-readiness-owners",
+    "type": "Microsoft.Insights/actiongroups"
+  },
+  {
+    "group": "dermaire-readiness-nonprod-20261006",
+    "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-readiness-nonprod-20261006/providers/Microsoft.Insights/metricalerts/dermaire-staging-http5xx",
+    "name": "dermaire-staging-http5xx",
+    "type": "Microsoft.Insights/metricalerts"
+  },
+  {
+    "group": "dermaire-readiness-nonprod-20261006",
+    "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-readiness-nonprod-20261006/providers/Microsoft.Insights/metricalerts/dermaire-staging-latency",
+    "name": "dermaire-staging-latency",
+    "type": "Microsoft.Insights/metricalerts"
+  },
+  {
+    "group": "dermaire-readiness-nonprod-20261006",
+    "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-readiness-nonprod-20261006/providers/Microsoft.Insights/metricalerts/dermaire-staging-memory",
+    "name": "dermaire-staging-memory",
+    "type": "Microsoft.Insights/metricalerts"
+  },
+  {
+    "group": "dermaire-readiness-nonprod-20261006",
+    "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-readiness-nonprod-20261006/providers/Microsoft.Insights/scheduledqueryrules/dermaire-staging-database",
+    "name": "dermaire-staging-database",
+    "type": "Microsoft.Insights/scheduledqueryrules"
+  },
+  {
+    "group": "dermaire-readiness-nonprod-20261006",
+    "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-readiness-nonprod-20261006/providers/Microsoft.Insights/scheduledqueryrules/dermaire-staging-blob",
+    "name": "dermaire-staging-blob",
+    "type": "Microsoft.Insights/scheduledqueryrules"
+  },
+  {
+    "group": "dermaire-readiness-nonprod-20261006",
+    "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-readiness-nonprod-20261006/providers/Microsoft.Insights/scheduledqueryrules/dermaire-staging-provider",
+    "name": "dermaire-staging-provider",
+    "type": "Microsoft.Insights/scheduledqueryrules"
+  },
+  {
+    "group": "dermaire-readiness-nonprod-20261006",
+    "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-readiness-nonprod-20261006/providers/Microsoft.Insights/scheduledqueryrules/dermaire-staging-startup",
+    "name": "dermaire-staging-startup",
+    "type": "Microsoft.Insights/scheduledqueryrules"
+  },
+  {
+    "group": "dermaire-readiness-nonprod-20261006",
+    "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-readiness-nonprod-20261006/providers/Microsoft.Insights/scheduledqueryrules/dermaire-staging-ready",
+    "name": "dermaire-staging-ready",
+    "type": "Microsoft.Insights/scheduledqueryrules"
+  },
+  {
+    "group": "cloud-shell-storage-westeurope",
+    "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/cloud-shell-storage-westeurope/providers/Microsoft.Storage/storageAccounts/csb100320025cf197a3",
+    "name": "csb100320025cf197a3",
+    "type": "Microsoft.Storage/storageAccounts"
+  }
+]

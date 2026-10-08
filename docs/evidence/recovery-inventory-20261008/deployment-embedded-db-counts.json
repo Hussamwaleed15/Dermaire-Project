@@ -1,0 +1,29 @@
+[
+  {
+    "archive": "backend\\deploy.zip",
+    "entry": "./dermaire_dev.db",
+    "counts": {
+      "users": 0,
+      "audit_logs": 0,
+      "products": 0,
+      "doctor_patient_access": 0,
+      "clinical_notes": 0,
+      "reward_redemptions": 0,
+      "experiments": 0,
+      "checkins": 0,
+      "daily_contexts": 0,
+      "routine_entries": 0,
+      "routine_adherence": 0,
+      "captures": 0,
+      "experiment_evaluations": 0,
+      "measurements": 0,
+      "product_intelligence": 0,
+      "doctor_review_actions": 0
+    }
+  },
+  {
+    "archive": "backend\\deploy.zip",
+    "entry": "./test_dermaire.db",
+    "counts": {}
+  }
+]

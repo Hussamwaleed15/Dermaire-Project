@@ -1,0 +1,36 @@
+{
+  "automaticSnapshotPolicyEnabled": null,
+  "changeFeed": null,
+  "containerDeleteRetentionPolicy": {
+    "allowPermanentDelete": null,
+    "days": null,
+    "enabled": false
+  },
+  "cors": {
+    "corsRules": []
+  },
+  "defaultServiceVersion": null,
+  "deleteRetentionPolicy": {
+    "allowPermanentDelete": false,
+    "days": null,
+    "enabled": false
+  },
+  "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-readiness-nonprod-20261006/providers/Microsoft.Storage/storageAccounts/dermairerehearsal261006/blobServices/default",
+  "isVersioningEnabled": false,
+  "lastAccessTimeTrackingPolicy": null,
+  "name": "default",
+  "resourceGroup": "dermaire-readiness-nonprod-20261006",
+  "restorePolicy": null,
+  "sku": {
+    "name": "Standard_LRS",
+    "tier": "Standard"
+  },
+  "staticWebsite": {
+    "defaultIndexDocumentPath": null,
+    "enabled": false,
+    "errorDocument404Path": null,
+    "indexDocument": null
+  },
+  "systemData": null,
+  "type": "Microsoft.Storage/storageAccounts/blobServices"
+}

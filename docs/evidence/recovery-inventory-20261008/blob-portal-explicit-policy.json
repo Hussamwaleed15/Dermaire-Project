@@ -1,0 +1,18 @@
+{
+  "observedUTC": "2026-10-08T11:28:31.981933+00:00",
+  "surface": "Authenticated Azure Portal storage account Overview > Properties",
+  "account": "dermaireimg479341",
+  "readOnly": true,
+  "displayedPolicy": {
+    "Blob anonymous access": "Disabled",
+    "Blob soft delete": "Disabled",
+    "Container soft delete": "Disabled",
+    "Versioning": "Disabled",
+    "Change feed": "Disabled",
+    "File service soft delete": "Enabled (7 days)",
+    "Require secure transfer for REST API operations": "Enabled",
+    "Minimum TLS version": "Version 1.2",
+    "Allow cross-tenant replication": "Disabled"
+  },
+  "note": "Values read from rendered accessibility tree; no checkbox edited or Save action invoked. ARM/data-plane omissions retained as distinct evidence."
+}

@@ -1,0 +1,50 @@
+[
+  {
+    "container": "deletion-journal",
+    "deleted": null,
+    "properties": {
+      "etag": "\"0x8DF237856931E54\"",
+      "hasImmutabilityPolicy": false,
+      "hasLegalHold": false,
+      "lastModified": "2026-10-06T07:06:26+00:00",
+      "lease": {
+        "duration": null,
+        "state": "available",
+        "status": "unlocked"
+      },
+      "publicAccess": null
+    },
+    "objectCount": null,
+    "versions": null,
+    "snapshots": null,
+    "deletedObjects": null,
+    "error": {
+      "error": "storage metadata read failed",
+      "detail": "ERROR: unrecognized arguments: s v i\n\nhttps://aka.ms/cli_ref\nRead more about the command in reference docs\n"
+    }
+  },
+  {
+    "container": "skin-images",
+    "deleted": null,
+    "properties": {
+      "etag": "\"0x8DF2378567CA0CE\"",
+      "hasImmutabilityPolicy": false,
+      "hasLegalHold": false,
+      "lastModified": "2026-10-06T07:06:26+00:00",
+      "lease": {
+        "duration": null,
+        "state": "available",
+        "status": "unlocked"
+      },
+      "publicAccess": null
+    },
+    "objectCount": null,
+    "versions": null,
+    "snapshots": null,
+    "deletedObjects": null,
+    "error": {
+      "error": "storage metadata read failed",
+      "detail": "ERROR: unrecognized arguments: s v i\n\nhttps://aka.ms/cli_ref\nRead more about the command in reference docs\n"
+    }
+  }
+]

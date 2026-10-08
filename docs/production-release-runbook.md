@@ -13,6 +13,10 @@ Status on 8 October 2026: **READY FOR PRODUCTION ROLLOUT** (MVP infrastructure r
 
 These are accepted objectives, not production-scale guarantees. `app.core.operational_targets` records values and provides fail-closed offline retention review helpers; it does not enable expiration. Keep lifecycle expiration disabled until a complete backup/export/restored-target inventory and journal/key protection review proves eligibility. Keys must also outlive every retained signed intent. No executable 120-second readiness threshold was found in backend/deployment; active runbook thresholds now use 180 seconds. Historical evidence remains unchanged.
 
+## Phase 0 inventory continuation (8 October 2026)
+
+**BLOCKED** for production recovery/privacy certification. Read [recoverable-copy inventory](recoverable-copy-inventory-20261008.md) and [Phase 0 checklist](phase-0-recovery-privacy-checklist.md). Native production DB retention is proven seven days, but populated OneDrive DB/photo copies have unknown provenance/expiry. Production Portal explicitly verifies versioning/blob/container soft delete Disabled, and the rollback ZIP plus nested archive were revalidated as code only. Named owners and copy-provenance/retention/external attestation remain required. Infrastructure readiness above does not override these gates. Production remains untouched.
+
 ## Production preparation checklist (review only)
 
 1. Name release, recovery/privacy and on-call owners. Securely archive exact deployed artifact/settings; inventory every backup, off-platform export, restored target, snapshot, hold and key version. A seven-day server setting does not prove absence of longer-lived copies.

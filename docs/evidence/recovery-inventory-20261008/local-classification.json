@@ -1,0 +1,239 @@
+[
+  {
+    "path": "C:\\Users\\Hossam\\Desktop\\Dermaire-Project\\app\\lib.zip",
+    "entries": 18,
+    "dataCandidates": []
+  },
+  {
+    "path": "C:\\Users\\Hossam\\Desktop\\Dermaire-Project\\backend\\deploy.zip",
+    "entries": 218,
+    "dataCandidates": [
+      "./dermaire_dev.db",
+      "./test_dermaire.db",
+      "./uploads/",
+      "./uploads/.gitkeep"
+    ]
+  },
+  {
+    "path": "C:\\Users\\Hossam\\Desktop\\Dermaire-Project\\backend\\dermaire_dev.db",
+    "tableCounts": {
+      "users": 0,
+      "audit_logs": 0,
+      "products": 0,
+      "doctor_patient_access": 0,
+      "clinical_notes": 0,
+      "reward_redemptions": 0,
+      "experiments": 0,
+      "checkins": 0,
+      "daily_contexts": 0,
+      "routine_entries": 0,
+      "routine_adherence": 0,
+      "captures": 0,
+      "experiment_evaluations": 0,
+      "measurements": 0,
+      "product_intelligence": 0,
+      "doctor_review_actions": 0
+    }
+  },
+  {
+    "path": "C:\\Users\\Hossam\\Desktop\\Dermaire-Project\\backend\\test_dermaire.db",
+    "tableCounts": {}
+  },
+  {
+    "path": "C:\\Users\\Hossam\\Documents\\Codex\\2026-10-05\\referenced-chatgpt-conversation-this-is-an-4\\work\\activation-control\\backend\\dermaire_dev.db",
+    "tableCounts": {
+      "users": 0,
+      "audit_logs": 0,
+      "captures": 0,
+      "products": 0,
+      "doctor_patient_access": 0,
+      "reward_redemptions": 0,
+      "daily_contexts": 0,
+      "measurements": 0,
+      "product_intelligence": 0,
+      "doctor_review_actions": 0,
+      "routine_entries": 0,
+      "experiments": 0,
+      "clinical_notes": 0,
+      "routine_adherence": 0,
+      "experiment_evaluations": 0,
+      "checkins": 0
+    }
+  },
+  {
+    "path": "C:\\Users\\Hossam\\Documents\\Codex\\2026-10-05\\referenced-chatgpt-conversation-this-is-an-4\\work\\activation-control\\backend\\test_dermaire.db",
+    "tableCounts": {}
+  },
+  {
+    "path": "C:\\Users\\Hossam\\Documents\\Codex\\2026-10-05\\referenced-chatgpt-conversation-this-is-an-4\\work\\isolated-ai-vision\\backend\\dermaire_dev.db",
+    "tableCounts": {
+      "users": 0,
+      "audit_logs": 0,
+      "captures": 0,
+      "products": 0,
+      "doctor_patient_access": 0,
+      "reward_redemptions": 0,
+      "daily_contexts": 0,
+      "measurements": 0,
+      "product_intelligence": 0,
+      "doctor_review_actions": 0,
+      "routine_entries": 0,
+      "experiments": 0,
+      "clinical_notes": 0,
+      "routine_adherence": 0,
+      "experiment_evaluations": 0,
+      "checkins": 0
+    }
+  },
+  {
+    "path": "C:\\Users\\Hossam\\Documents\\Codex\\2026-10-05\\referenced-chatgpt-conversation-this-is-an-4\\work\\isolated-ai-vision\\backend\\test_dermaire.db",
+    "tableCounts": {}
+  },
+  {
+    "path": "C:\\Users\\Hossam\\Documents\\Codex\\2026-10-05\\referenced-chatgpt-conversation-this-is-an-5\\work\\caller-isolated\\backend\\dermaire_dev.db",
+    "tableCounts": {
+      "users": 0,
+      "audit_logs": 0,
+      "captures": 0,
+      "products": 0,
+      "doctor_patient_access": 0,
+      "reward_redemptions": 0,
+      "daily_contexts": 0,
+      "measurements": 0,
+      "product_intelligence": 0,
+      "doctor_review_actions": 0,
+      "routine_entries": 0,
+      "experiments": 0,
+      "clinical_notes": 0,
+      "routine_adherence": 0,
+      "experiment_evaluations": 0,
+      "checkins": 0
+    }
+  },
+  {
+    "path": "C:\\Users\\Hossam\\Documents\\Codex\\2026-10-05\\referenced-chatgpt-conversation-this-is-an-5\\work\\caller-isolated\\backend\\test_dermaire.db",
+    "tableCounts": {}
+  },
+  {
+    "path": "C:\\Users\\Hossam\\Documents\\Codex\\2026-10-05\\referenced-chatgpt-conversation-this-is-an-7\\work\\upstream\\backend\\dermaire_dev.db",
+    "tableCounts": {
+      "users": 0,
+      "audit_logs": 0,
+      "captures": 0,
+      "products": 0,
+      "doctor_patient_access": 0,
+      "reward_redemptions": 0,
+      "daily_contexts": 0,
+      "measurements": 0,
+      "product_intelligence": 0,
+      "doctor_review_actions": 0,
+      "routine_entries": 0,
+      "experiments": 0,
+      "clinical_notes": 0,
+      "routine_adherence": 0,
+      "experiment_evaluations": 0,
+      "checkins": 0
+    }
+  },
+  {
+    "path": "C:\\Users\\Hossam\\Documents\\Codex\\2026-10-05\\referenced-chatgpt-conversation-this-is-an-7\\work\\upstream\\backend\\test_dermaire.db",
+    "tableCounts": {}
+  },
+  {
+    "path": "C:\\Users\\Hossam\\Documents\\Codex\\2026-10-05\\referenced-chatgpt-conversation-this-is-an-8\\work\\readiness-checkout\\backend\\dermaire_dev.db",
+    "tableCounts": {
+      "users": 0,
+      "audit_logs": 0,
+      "captures": 0,
+      "products": 0,
+      "doctor_patient_access": 0,
+      "reward_redemptions": 0,
+      "daily_contexts": 0,
+      "measurements": 0,
+      "product_intelligence": 0,
+      "doctor_review_actions": 0,
+      "routine_entries": 0,
+      "experiments": 0,
+      "clinical_notes": 0,
+      "routine_adherence": 0,
+      "experiment_evaluations": 0,
+      "checkins": 0
+    }
+  },
+  {
+    "path": "C:\\Users\\Hossam\\Documents\\Codex\\2026-10-05\\referenced-chatgpt-conversation-this-is-an-8\\work\\readiness-checkout\\backend\\test_dermaire.db",
+    "tableCounts": {}
+  },
+  {
+    "path": "C:\\Users\\Hossam\\Downloads\\Dermaire-app-main.zip",
+    "entries": 220,
+    "dataCandidates": []
+  },
+  {
+    "path": "C:\\Users\\Hossam\\Downloads\\Dermaire-Project-main (1).zip",
+    "entries": 281,
+    "dataCandidates": [
+      "Dermaire-Project-main/backend/uploads/",
+      "Dermaire-Project-main/backend/uploads/.gitkeep",
+      "Dermaire-Project-main/data/sql.sql"
+    ]
+  },
+  {
+    "path": "C:\\Users\\Hossam\\Downloads\\Dermaire-Project-main.zip",
+    "entries": 281,
+    "dataCandidates": [
+      "Dermaire-Project-main/backend/uploads/",
+      "Dermaire-Project-main/backend/uploads/.gitkeep",
+      "Dermaire-Project-main/data/sql.sql"
+    ]
+  },
+  {
+    "path": "C:\\Users\\Hossam\\OneDrive\\Desktop\\dermaire_flutter_app (2).zip",
+    "entries": 904,
+    "dataCandidates": []
+  },
+  {
+    "path": "C:\\Users\\Hossam\\OneDrive\\Desktop\\dermaire_flutter_app.zip",
+    "entries": 69,
+    "dataCandidates": []
+  },
+  {
+    "path": "C:\\Users\\Hossam\\OneDrive\\Desktop\\dermaire_flutter_apppppppp.zip",
+    "entries": 72,
+    "dataCandidates": []
+  },
+  {
+    "path": "C:\\Users\\Hossam\\OneDrive\\Desktop\\DERAIRE_BAKEND\\backend\\dermaire_dev.db",
+    "tableCounts": {
+      "users": 3,
+      "audit_logs": 10,
+      "products": 1,
+      "doctor_patient_access": 0,
+      "clinical_notes": 0,
+      "reward_redemptions": 0,
+      "experiments": 1,
+      "checkins": 2
+    }
+  },
+  {
+    "path": "C:\\Users\\Hossam\\OneDrive\\Desktop\\DERAIRE_BAKEND\\backend\\test_dermaire.db",
+    "tableCounts": {}
+  },
+  {
+    "path": "C:\\Users\\Hossam\\OneDrive\\Desktop\\dermaire_flutter_app\\backend\\dermaire_dev.db",
+    "tableCounts": {
+      "users": 3,
+      "audit_logs": 10,
+      "products": 1,
+      "doctor_patient_access": 0,
+      "clinical_notes": 0,
+      "reward_redemptions": 0,
+      "experiments": 1,
+      "checkins": 2
+    }
+  },
+  {
+    "path": "C:\\Users\\Hossam\\OneDrive\\Desktop\\dermaire_flutter_app\\backend\\test_dermaire.db",
+    "tableCounts": {}
+  }
+]

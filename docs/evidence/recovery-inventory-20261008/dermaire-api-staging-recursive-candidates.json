@@ -1,0 +1,23 @@
+{
+  "files": [
+    {
+      "path": "dermaire-rollback-0f97dc2.zip",
+      "size": 144249200,
+      "mtime": "2026-10-06T08:57:12.1128024+00:00"
+    },
+    {
+      "path": "dermaire_staging.db",
+      "size": 311296,
+      "mtime": "2026-10-06T06:48:32.0184897+00:00"
+    }
+  ],
+  "errors": [],
+  "skippedDependencyDirectories": [
+    ".cache",
+    "ASP.NET",
+    "services",
+    "site/CodeProfiler",
+    "LogFiles/CodeProfiler"
+  ],
+  "directoriesScanned": 30
+}

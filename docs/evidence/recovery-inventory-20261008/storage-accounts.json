@@ -1,0 +1,26 @@
+[
+  {
+    "allowBlobPublicAccess": false,
+    "group": "cloud-shell-storage-westeurope",
+    "https": true,
+    "name": "csb100320025cf197a3",
+    "sku": "Standard_LRS",
+    "tls": "TLS1_2"
+  },
+  {
+    "allowBlobPublicAccess": false,
+    "group": "dermaire-rg",
+    "https": true,
+    "name": "dermaireimg479341",
+    "sku": "Standard_LRS",
+    "tls": "TLS1_2"
+  },
+  {
+    "allowBlobPublicAccess": false,
+    "group": "dermaire-readiness-nonprod-20261006",
+    "https": true,
+    "name": "dermairerehearsal261006",
+    "sku": "Standard_LRS",
+    "tls": "TLS1_2"
+  }
+]

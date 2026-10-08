@@ -1,0 +1,24 @@
+[
+  {
+    "backup": {
+      "backupRetentionDays": 7,
+      "earliestRestoreDate": "2026-10-06T07:13:02.618406+00:00",
+      "geoRedundantBackup": "Disabled"
+    },
+    "name": "dermaire-rehearsal-20261006",
+    "replicationRole": "Primary",
+    "resourceGroup": "dermaire-readiness-nonprod-20261006",
+    "sourceServerResourceId": null
+  },
+  {
+    "backup": {
+      "backupRetentionDays": 7,
+      "earliestRestoreDate": "2026-10-02T07:14:08.190528+00:00",
+      "geoRedundantBackup": "Disabled"
+    },
+    "name": "dermaire-db-server",
+    "replicationRole": "Primary",
+    "resourceGroup": "dermaire-rg",
+    "sourceServerResourceId": null
+  }
+]

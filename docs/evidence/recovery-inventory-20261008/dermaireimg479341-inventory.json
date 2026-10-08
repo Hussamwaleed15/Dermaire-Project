@@ -1,0 +1,26 @@
+[
+  {
+    "container": "skin-images",
+    "deleted": null,
+    "properties": {
+      "etag": "\"0x8DF217C3D87012D\"",
+      "hasImmutabilityPolicy": false,
+      "hasLegalHold": false,
+      "lastModified": "2026-10-03T18:29:20+00:00",
+      "lease": {
+        "duration": null,
+        "state": "available",
+        "status": "unlocked"
+      },
+      "publicAccess": null
+    },
+    "objectCount": null,
+    "versions": null,
+    "snapshots": null,
+    "deletedObjects": null,
+    "error": {
+      "error": "storage metadata read failed",
+      "detail": "ERROR: unrecognized arguments: s v i\n\nhttps://aka.ms/cli_ref\nRead more about the command in reference docs\n"
+    }
+  }
+]

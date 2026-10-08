@@ -1,0 +1,11 @@
+{
+  "actions/artifacts": {
+    "total_count": 0,
+    "artifacts": []
+  },
+  "releases": [],
+  "actions/caches": {
+    "total_count": 0,
+    "caches": []
+  }
+}

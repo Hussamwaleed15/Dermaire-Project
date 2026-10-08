@@ -1,0 +1,4 @@
+{
+  "error": "Azure read failed",
+  "detail": "ERROR: Method Not Allowed(<Error><Message>The requested resource does not support http method 'GET'.</Message></Error>)\n"
+}

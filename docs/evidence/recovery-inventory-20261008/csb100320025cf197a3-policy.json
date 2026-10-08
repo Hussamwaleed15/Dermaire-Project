@@ -1,0 +1,32 @@
+{
+  "automaticSnapshotPolicyEnabled": null,
+  "changeFeed": null,
+  "containerDeleteRetentionPolicy": null,
+  "cors": {
+    "corsRules": []
+  },
+  "defaultServiceVersion": null,
+  "deleteRetentionPolicy": {
+    "allowPermanentDelete": false,
+    "days": null,
+    "enabled": false
+  },
+  "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/cloud-shell-storage-westeurope/providers/Microsoft.Storage/storageAccounts/csb100320025cf197a3/blobServices/default",
+  "isVersioningEnabled": null,
+  "lastAccessTimeTrackingPolicy": null,
+  "name": "default",
+  "resourceGroup": "cloud-shell-storage-westeurope",
+  "restorePolicy": null,
+  "sku": {
+    "name": "Standard_LRS",
+    "tier": "Standard"
+  },
+  "staticWebsite": {
+    "defaultIndexDocumentPath": null,
+    "enabled": false,
+    "errorDocument404Path": null,
+    "indexDocument": null
+  },
+  "systemData": null,
+  "type": "Microsoft.Storage/storageAccounts/blobServices"
+}

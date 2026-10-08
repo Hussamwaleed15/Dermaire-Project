@@ -1,0 +1,4 @@
+{
+  "error": "Azure read failed",
+  "detail": "ERROR: 'list-deleted' is misspelled or not recognized by the system.\n\nhttps://aka.ms/cli_ref\nRead more about the command in reference docs\n"
+}

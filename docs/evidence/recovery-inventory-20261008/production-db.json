@@ -1,0 +1,15 @@
+{
+  "backup": {
+    "backupRetentionDays": 7,
+    "earliestRestoreDate": "2026-10-02T07:14:08.190528+00:00",
+    "geoRedundantBackup": "Disabled"
+  },
+  "replica": {
+    "capacity": 5,
+    "promoteMode": null,
+    "promoteOption": null,
+    "replicationState": null,
+    "role": "Primary"
+  },
+  "state": "Ready"
+}

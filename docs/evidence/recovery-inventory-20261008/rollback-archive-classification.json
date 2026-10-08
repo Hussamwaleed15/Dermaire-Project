@@ -1,0 +1,36 @@
+{
+  "nestedArchives": [
+    {
+      "archive": "output.tar.zst",
+      "entries": 13199,
+      "dataCandidates": []
+    }
+  ],
+  "memberNames": [
+    "output.tar.zst",
+    "oryx-manifest.toml",
+    "requirements.txt",
+    ".ostype"
+  ],
+  "bytes": 144249200,
+  "sha256": "7ce9bbbd5a459fa73f2268f2e9cecd63af948d4ebf3639206402c6ea1b656ff8",
+  "entries": 4,
+  "dataCandidates": [],
+  "note": "Archive member inventory; dependency fixture assets require distinction from application payload.",
+  "classification": "Code/dependencies/runtime metadata only in current ZIP and nested zstd tar member inventory",
+  "applicationDataCandidates": [],
+  "dependencyUploadsCandidates": [
+    "./antenv/lib/python3.12/site-packages/openai/types/uploads/part_create_params.py",
+    "./antenv/lib/python3.12/site-packages/openai/types/uploads/__pycache__/upload_part.cpython-312.pyc",
+    "./antenv/lib/python3.12/site-packages/openai/types/uploads/__pycache__/part_create_params.cpython-312.pyc",
+    "./antenv/lib/python3.12/site-packages/openai/types/uploads/__pycache__/__init__.cpython-312.pyc",
+    "./antenv/lib/python3.12/site-packages/openai/types/uploads/__init__.py",
+    "./antenv/lib/python3.12/site-packages/openai/types/uploads/upload_part.py",
+    "./antenv/lib/python3.12/site-packages/openai/resources/uploads/parts.py",
+    "./antenv/lib/python3.12/site-packages/openai/resources/uploads/__pycache__/uploads.cpython-312.pyc",
+    "./antenv/lib/python3.12/site-packages/openai/resources/uploads/__pycache__/parts.cpython-312.pyc",
+    "./antenv/lib/python3.12/site-packages/openai/resources/uploads/__pycache__/__init__.cpython-312.pyc",
+    "./antenv/lib/python3.12/site-packages/openai/resources/uploads/__init__.py",
+    "./antenv/lib/python3.12/site-packages/openai/resources/uploads/uploads.py"
+  ]
+}

@@ -1,0 +1,33 @@
+[
+  {
+    "defaultEncryptionScope": "$account-encryption-key",
+    "deleted": false,
+    "deletedTime": null,
+    "denyEncryptionScopeOverride": false,
+    "enableNfsV3AllSquash": null,
+    "enableNfsV3RootSquash": null,
+    "etag": "\"0x8DF217C3D87012D\"",
+    "hasImmutabilityPolicy": false,
+    "hasLegalHold": false,
+    "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.Storage/storageAccounts/dermaireimg479341/blobServices/default/containers/skin-images",
+    "immutabilityPolicy": null,
+    "immutableStorageWithVersioning": {
+      "enabled": false,
+      "migrationState": null,
+      "timeStamp": null
+    },
+    "lastModifiedTime": "2026-10-03T18:29:20+00:00",
+    "leaseDuration": null,
+    "leaseState": "Available",
+    "leaseStatus": "Unlocked",
+    "legalHold": null,
+    "metadata": null,
+    "name": "skin-images",
+    "publicAccess": "None",
+    "remainingRetentionDays": 0,
+    "resourceGroup": "dermaire-rg",
+    "systemData": null,
+    "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
+    "version": null
+  }
+]

@@ -1,0 +1,110 @@
+{
+  "": {
+    "error": "TimeoutError",
+    "status": null
+  },
+  "site/": [
+    {
+      "name": "build",
+      "size": 0,
+      "mime": "inode/directory",
+      "mtime": "2026-09-20T07:12:34.7970052+00:00"
+    },
+    {
+      "name": "CodeProfiler",
+      "size": 0,
+      "mime": "inode/directory",
+      "mtime": "2026-09-20T07:13:26.8710256+00:00"
+    },
+    {
+      "name": "config",
+      "size": 0,
+      "mime": "inode/directory",
+      "mtime": "2026-09-20T07:12:34.9579465+00:00"
+    },
+    {
+      "name": "deployments",
+      "size": 0,
+      "mime": "inode/directory",
+      "mtime": "2026-10-03T19:06:52.7366975+00:00"
+    },
+    {
+      "name": "locks",
+      "size": 0,
+      "mime": "inode/directory",
+      "mtime": "2026-10-03T19:04:17.7460523+00:00"
+    },
+    {
+      "name": "repository",
+      "size": 0,
+      "mime": "inode/directory",
+      "mtime": "2026-09-20T07:09:55.4857708+00:00"
+    },
+    {
+      "name": "wwwroot",
+      "size": 0,
+      "mime": "inode/directory",
+      "mtime": "2026-10-03T19:06:44.39446+00:00"
+    }
+  ],
+  "data/": {
+    "error": "HTTPError",
+    "status": 404
+  },
+  "LogFiles/": [
+    {
+      "name": "2026_10_06_lw1sdlwk00024X_default_docker.log",
+      "size": 2668,
+      "mime": "text/plain",
+      "mtime": "2026-10-06T21:17:47.1591611+00:00"
+    },
+    {
+      "name": "2026_10_07_lw1sdlwk00024X_default_docker.log",
+      "size": 85,
+      "mime": "text/plain",
+      "mtime": "2026-10-07T21:19:46.3766705+00:00"
+    },
+    {
+      "name": "2026_10_08_lw1sdlwk00024X_default_docker.log",
+      "size": 0,
+      "mime": "text/plain",
+      "mtime": "2026-10-08T11:05:19.0231524+00:00"
+    },
+    {
+      "name": "2026_10_08_lw1sdlwk00024X_default_scm_docker.log",
+      "size": 1960,
+      "mime": "text/plain",
+      "mtime": "2026-10-08T11:17:24.8940277+00:00"
+    },
+    {
+      "name": "AppServiceAppLogs_Feature_Installer",
+      "size": 0,
+      "mime": "inode/directory",
+      "mtime": "2026-09-20T07:13:26.3127919+00:00"
+    },
+    {
+      "name": "CodeProfiler",
+      "size": 0,
+      "mime": "inode/directory",
+      "mtime": "2026-09-20T07:13:26.2373902+00:00"
+    },
+    {
+      "name": "kudu",
+      "size": 0,
+      "mime": "inode/directory",
+      "mtime": "2026-09-20T07:09:57.7016079+00:00"
+    },
+    {
+      "name": "StartupLogs",
+      "size": 0,
+      "mime": "inode/directory",
+      "mtime": "2026-10-08T04:27:01.299498+00:00"
+    },
+    {
+      "name": "webssh",
+      "size": 0,
+      "mime": "inode/directory",
+      "mtime": "2026-09-20T07:09:38.3229824+00:00"
+    }
+  ]
+}

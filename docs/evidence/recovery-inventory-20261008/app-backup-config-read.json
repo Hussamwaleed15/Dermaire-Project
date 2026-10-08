@@ -1,0 +1,3 @@
+{
+  "error": "ERROR: Not Found({\"Code\":\"NotFound\",\"Message\":\"Backup configuration not found for site 'dermaire-api' with slot 'Production'\",\"Target\":null,\"Details\":[{\"Message\":\"Backup configuration not found for site 'dermaire-api' with slot 'Production'\"},{\"Code\":\"NotFound\"},{\"ErrorEntity\":{\"ExtendedCode\":\"04211\",\"MessageTemplate\":\"Backup configuration not found for site '{0}' with slot '{1}'\",\"Parameters\":[\"dermaire-api\",\"Production\"],\"Code\":\"NotFound\",\"Message\":\"Backup configuration not found for site 'dermaire-api' with slot 'Production'\"}}],\"Innererror\":null})\n"
+}

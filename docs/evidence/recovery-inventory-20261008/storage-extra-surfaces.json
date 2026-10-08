@@ -1,0 +1,16 @@
+{
+  "dermaireimg479341": {
+    "fileShares": [],
+    "management": {
+      "allowBlobPublicAccess": false,
+      "immutableStorageWithVersioning": null
+    }
+  },
+  "dermairerehearsal261006": {
+    "fileShares": [],
+    "management": {
+      "allowBlobPublicAccess": false,
+      "immutableStorageWithVersioning": null
+    }
+  }
+}

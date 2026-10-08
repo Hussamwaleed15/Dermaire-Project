@@ -1,0 +1,56 @@
+[
+  {
+    "operation": "Microsoft.DBforPostgreSQL/flexibleServers/firewallRules/delete",
+    "resourceId": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-readiness-nonprod-20261006/providers/Microsoft.DBforPostgreSQL/flexibleServers/dermaire-rehearsal-20261006/firewallRules/rehearsal-client",
+    "status": "Succeeded",
+    "time": "2026-10-06T09:49:22.641723Z"
+  },
+  {
+    "operation": "Microsoft.DBforPostgreSQL/flexibleServers/firewallRules/delete",
+    "resourceId": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-readiness-nonprod-20261006/providers/Microsoft.DBforPostgreSQL/flexibleServers/dermaire-rehearsal-20261006/firewallRules/rehearsal-client",
+    "status": "Accepted",
+    "time": "2026-10-06T09:48:22.75792Z"
+  },
+  {
+    "operation": "Microsoft.DBforPostgreSQL/flexibleServers/firewallRules/delete",
+    "resourceId": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-readiness-nonprod-20261006/providers/Microsoft.DBforPostgreSQL/flexibleServers/dermaire-rehearsal-20261006/firewallRules/rehearsal-client",
+    "status": "Started",
+    "time": "2026-10-06T09:48:21.3828411Z"
+  },
+  {
+    "operation": "Microsoft.DBforPostgreSQL/flexibleServers/databases/delete",
+    "resourceId": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-readiness-nonprod-20261006/providers/Microsoft.DBforPostgreSQL/flexibleServers/dermaire-rehearsal-20261006/databases/rehearsal_adoption",
+    "status": "Succeeded",
+    "time": "2026-10-06T08:16:00.2079851Z"
+  },
+  {
+    "operation": "Microsoft.DBforPostgreSQL/flexibleServers/databases/delete",
+    "resourceId": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-readiness-nonprod-20261006/providers/Microsoft.DBforPostgreSQL/flexibleServers/dermaire-rehearsal-20261006/databases/rehearsal_adoption",
+    "status": "Accepted",
+    "time": "2026-10-06T08:15:49.9078089Z"
+  },
+  {
+    "operation": "Microsoft.DBforPostgreSQL/flexibleServers/databases/delete",
+    "resourceId": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-readiness-nonprod-20261006/providers/Microsoft.DBforPostgreSQL/flexibleServers/dermaire-rehearsal-20261006/databases/rehearsal_adoption",
+    "status": "Started",
+    "time": "2026-10-06T08:15:49.7828057Z"
+  },
+  {
+    "operation": "Microsoft.DBforPostgreSQL/flexibleServers/delete",
+    "resourceId": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourcegroups/dermaire-readiness-nonprod-20261006/providers/Microsoft.DBforPostgreSQL/flexibleServers/dermaire-pitr-20261006",
+    "status": "Succeeded",
+    "time": "2026-10-06T07:35:21.7483513Z"
+  },
+  {
+    "operation": "Microsoft.DBforPostgreSQL/flexibleServers/delete",
+    "resourceId": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-readiness-nonprod-20261006/providers/Microsoft.DBforPostgreSQL/flexibleServers/dermaire-pitr-20261006",
+    "status": "Accepted",
+    "time": "2026-10-06T07:34:19.1844825Z"
+  },
+  {
+    "operation": "Microsoft.DBforPostgreSQL/flexibleServers/delete",
+    "resourceId": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-readiness-nonprod-20261006/providers/Microsoft.DBforPostgreSQL/flexibleServers/dermaire-pitr-20261006",
+    "status": "Started",
+    "time": "2026-10-06T07:34:18.9969736Z"
+  }
+]

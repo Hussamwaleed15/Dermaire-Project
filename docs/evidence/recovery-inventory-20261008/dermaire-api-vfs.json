@@ -1,0 +1,26 @@
+{
+  "": {
+    "error": "HTTPError",
+    "status": 401
+  },
+  "site/": {
+    "error": "HTTPError",
+    "status": 401
+  },
+  "site/wwwroot/": {
+    "error": "HTTPError",
+    "status": 401
+  },
+  "data/": {
+    "error": "HTTPError",
+    "status": 401
+  },
+  "LogFiles/": {
+    "error": "HTTPError",
+    "status": 401
+  },
+  "site/deployments/": {
+    "error": "HTTPError",
+    "status": 401
+  }
+}

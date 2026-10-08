@@ -1,0 +1,13 @@
+{
+  "files": [],
+  "errors": [],
+  "skippedDependencyDirectories": [
+    ".cache",
+    "ASP.NET",
+    "services",
+    "site/CodeProfiler",
+    "site/wwwroot/antenv",
+    "LogFiles/CodeProfiler"
+  ],
+  "directoriesScanned": 31
+}

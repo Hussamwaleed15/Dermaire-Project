@@ -1,0 +1,17 @@
+{
+  "recordedUTC": "2026-10-08T11:22:19.357454+00:00",
+  "clientTimezone": "Africa/Cairo",
+  "startingCommit": "99ca9ce56fb7ff59ddbb3e4f5c72e75a4031b2a6",
+  "productionMutation": false,
+  "gate": "BLOCKED",
+  "globalRecoveryHorizonDays": null,
+  "nativeProductionDBRetentionDays": 7,
+  "completedUTC": "2026-10-08T11:30:08.160508+00:00",
+  "productionBlobExplicitPolicyVerified": true,
+  "remainingGateFacts": [
+    "OneDrive populated DB/photo provenance and bounded retention including cloud history",
+    "External/manual-copy inventory or attested absence",
+    "Quarantine at most 7 days",
+    "Named release/recovery/privacy/on-call mapping"
+  ]
+}

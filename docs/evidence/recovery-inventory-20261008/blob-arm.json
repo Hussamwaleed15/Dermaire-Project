@@ -1,0 +1,21 @@
+{
+  "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.Storage/storageAccounts/dermaireimg479341/blobServices/default",
+  "name": "default",
+  "properties": {
+    "cors": {
+      "corsRules": []
+    },
+    "deleteRetentionPolicy": {
+      "allowPermanentDelete": false,
+      "enabled": false
+    },
+    "staticWebsite": {
+      "enabled": false
+    }
+  },
+  "sku": {
+    "name": "Standard_LRS",
+    "tier": "Standard"
+  },
+  "type": "Microsoft.Storage/storageAccounts/blobServices"
+}

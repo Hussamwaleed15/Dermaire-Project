@@ -1,0 +1,10 @@
+[
+  {
+    "oid": "e0c748f9385cddbbe577ffa77bcbce0c834ceab4",
+    "path": "app/lib.zip"
+  },
+  {
+    "oid": "f32d0f6dedfe335d918cbecb4dcbaf49c0cc9fc0",
+    "path": "backend/deploy.zip"
+  }
+]

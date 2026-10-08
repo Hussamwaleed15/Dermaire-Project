@@ -1,0 +1,57 @@
+{
+  "files": [
+    {
+      "path": "C:\\Projects\\dermaire_app\\.dart_tool\\package_config.json",
+      "bytes": 24026
+    },
+    {
+      "path": "C:\\Projects\\dermaire_app\\.dart_tool\\package_graph.json",
+      "bytes": 20277
+    },
+    {
+      "path": "C:\\Projects\\dermaire_app\\.dart_tool\\hooks_runner\\objective_c\\337ce265dc\\dependencies.dependencies_hash_file.json",
+      "bytes": 556
+    },
+    {
+      "path": "C:\\Projects\\dermaire_app\\.dart_tool\\hooks_runner\\objective_c\\337ce265dc\\hook.dependencies_hash_file.json",
+      "bytes": 339
+    },
+    {
+      "path": "C:\\Projects\\dermaire_app\\.dart_tool\\hooks_runner\\objective_c\\337ce265dc\\input.json",
+      "bytes": 469
+    },
+    {
+      "path": "C:\\Projects\\dermaire_app\\.dart_tool\\hooks_runner\\objective_c\\337ce265dc\\output.json",
+      "bytes": 95
+    },
+    {
+      "path": "C:\\Projects\\dermaire_app\\ios\\Runner\\Assets.xcassets\\AppIcon.appiconset\\Contents.json",
+      "bytes": 2641
+    },
+    {
+      "path": "C:\\Projects\\dermaire_app\\ios\\Runner\\Assets.xcassets\\LaunchImage.imageset\\Contents.json",
+      "bytes": 414
+    },
+    {
+      "path": "C:\\Projects\\dermaire_app\\macos\\Runner\\Assets.xcassets\\AppIcon.appiconset\\Contents.json",
+      "bytes": 1359
+    },
+    {
+      "path": "C:\\Projects\\dermaire_app\\web\\manifest.json",
+      "bytes": 947
+    },
+    {
+      "path": "C:\\flutter_builds\\dermaire_app\\flutter_assets\\FontManifest.json",
+      "bytes": 208
+    }
+  ],
+  "errors": [
+    "PermissionError",
+    "PermissionError",
+    "PermissionError",
+    "PermissionError",
+    "PermissionError",
+    "PermissionError",
+    "PermissionError"
+  ]
+}

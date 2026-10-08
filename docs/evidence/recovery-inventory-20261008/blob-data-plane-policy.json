@@ -1,0 +1,12 @@
+{
+  "delete_retention_policy": {
+    "additional_properties": {},
+    "enabled": false,
+    "days": null,
+    "allow_permanent_delete": null
+  },
+  "container_delete_retention_policy": null,
+  "is_versioning_enabled": null,
+  "restore_policy": null,
+  "change_feed": null
+}
