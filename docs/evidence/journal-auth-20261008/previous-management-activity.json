@@ -1,0 +1,38 @@
+[
+  {
+    "operation": "Microsoft.Storage/storageAccounts/blobServices/containers/clearLegalHold/action",
+    "resource": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-readiness-nonprod-20261006/providers/Microsoft.Storage/storageAccounts/dermairerehearsal261006/blobServices/default/containers/phase2-protection-2a58514a226a",
+    "status": "Succeeded",
+    "time": "2026-10-08T17:39:38.6214448Z"
+  },
+  {
+    "operation": "Microsoft.Storage/storageAccounts/blobServices/containers/clearLegalHold/action",
+    "resource": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-readiness-nonprod-20261006/providers/Microsoft.Storage/storageAccounts/dermairerehearsal261006/blobServices/default/containers/phase2-protection-2a58514a226a",
+    "status": "Started",
+    "time": "2026-10-08T17:39:38.3870709Z"
+  },
+  {
+    "operation": "Microsoft.Storage/storageAccounts/blobServices/containers/setLegalHold/action",
+    "resource": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-readiness-nonprod-20261006/providers/Microsoft.Storage/storageAccounts/dermairerehearsal261006/blobServices/default/containers/phase2-protection-2a58514a226a",
+    "status": "Succeeded",
+    "time": "2026-10-08T17:39:35.7279525Z"
+  },
+  {
+    "operation": "Microsoft.Storage/storageAccounts/blobServices/containers/setLegalHold/action",
+    "resource": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-readiness-nonprod-20261006/providers/Microsoft.Storage/storageAccounts/dermairerehearsal261006/blobServices/default/containers/phase2-protection-2a58514a226a",
+    "status": "Started",
+    "time": "2026-10-08T17:39:35.3842012Z"
+  },
+  {
+    "operation": "Microsoft.Storage/storageAccounts/listKeys/action",
+    "resource": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-readiness-nonprod-20261006/providers/Microsoft.Storage/storageAccounts/dermairerehearsal261006",
+    "status": "Succeeded",
+    "time": "2026-10-08T17:39:32.6056228Z"
+  },
+  {
+    "operation": "Microsoft.Storage/storageAccounts/listKeys/action",
+    "resource": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-readiness-nonprod-20261006/providers/Microsoft.Storage/storageAccounts/dermairerehearsal261006",
+    "status": "Started",
+    "time": "2026-10-08T17:39:32.4962478Z"
+  }
+]

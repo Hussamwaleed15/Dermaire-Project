@@ -1,0 +1,98 @@
+{
+  "production_mutations": 0,
+  "account": "dermairerehearsal261006",
+  "resource_group": "dermaire-readiness-nonprod-20261006",
+  "identity": {
+    "mode": "Entra service principal OAuth",
+    "app_id": "7d8b15df-bae0-4458-9934-be5b4d2fa67a",
+    "object_id": "42c20987-c42c-49a9-891b-153e779cd9ce",
+    "tenant": "6845d6ca-1ec5-4c0e-9e9d-34130ce0a0b8"
+  },
+  "rbac": {
+    "name": "Dermaire Journal Read Write No Delete Nonprod",
+    "scope": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-readiness-nonprod-20261006/providers/Microsoft.Storage/storageAccounts/dermairerehearsal261006/blobServices/default/containers/journal-concurrency-53e6f15af88f",
+    "definition": {
+      "Name": "Dermaire Journal Read Write No Delete Nonprod",
+      "IsCustom": true,
+      "Description": "Read/list and block blob write only; requires WORM hold",
+      "Actions": [
+        "Microsoft.Storage/storageAccounts/blobServices/containers/read"
+      ],
+      "DataActions": [
+        "Microsoft.Storage/storageAccounts/blobServices/containers/blobs/read",
+        "Microsoft.Storage/storageAccounts/blobServices/containers/blobs/write"
+      ],
+      "NotActions": [],
+      "NotDataActions": [],
+      "AssignableScopes": [
+        "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-readiness-nonprod-20261006"
+      ]
+    }
+  },
+  "properties_oauth": "PASS",
+  "sibling_container_denied": {
+    "status": 403
+  },
+  "2_writers": {
+    "acknowledged": 2,
+    "retained": 2
+  },
+  "16_writers": {
+    "acknowledged": 16,
+    "retained": 16
+  },
+  "stress": {
+    "batches": 10,
+    "writers": 16,
+    "acknowledged_unique": 179,
+    "durable_verifiable": 179,
+    "successful_calls": 210,
+    "lost": 0
+  },
+  "azure_create_conflict_status": 409,
+  "ambiguous_write": {
+    "failure_unacknowledged": true,
+    "retry_verified": true,
+    "acknowledged_unique": 180,
+    "durable_verifiable": 180
+  },
+  "replay": {
+    "first": {
+      "restored_accounts_removed": 1,
+      "image_cleanup_calls": 0,
+      "journal_intents": 181
+    },
+    "repeat": {
+      "restored_accounts_removed": 0,
+      "image_cleanup_calls": 0,
+      "journal_intents": 181
+    },
+    "source_unchanged": true,
+    "legacy_orphan_removed": true
+  },
+  "fail_closed": {
+    "corruption": true,
+    "unavailable_storage": true
+  },
+  "final_durable_intents": 181,
+  "final_acknowledged_unique": 181,
+  "mixed_v1_v2_replay": {
+    "restored_accounts_removed": 0,
+    "image_cleanup_calls": 0,
+    "journal_intents": 182
+  },
+  "v1_compatibility": true,
+  "delete_denied": {
+    "status": 403,
+    "code": "AuthorizationPermissionMismatch"
+  },
+  "overwrite_denied": {
+    "status": 409,
+    "code": "BlobImmutableDueToLegalHold"
+  },
+  "revoked_write_fail_closed": true,
+  "revoke_fail_closed": true,
+  "restore_recovery": true,
+  "seconds": 594.297,
+  "temporary_containers_removed": true
+}

@@ -1,0 +1,21 @@
+{
+  "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-readiness-nonprod-20261006/providers/Microsoft.Storage/storageAccounts/dermairerehearsal261006",
+  "networkRuleSet": {
+    "bypass": "None",
+    "defaultAction": "Deny",
+    "ipRules": [
+      {
+        "action": "Allow",
+        "ipAddressOrRange": "196.139.208.78"
+      }
+    ],
+    "ipv6Rules": [],
+    "resourceAccessRules": null,
+    "virtualNetworkRules": []
+  },
+  "publicNetworkAccess": "Enabled",
+  "allowSharedKeyAccess": null,
+  "allowBlobPublicAccess": false,
+  "enableHttpsTrafficOnly": true,
+  "minimumTlsVersion": "TLS1_2"
+}

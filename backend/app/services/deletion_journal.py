@@ -10,6 +10,23 @@ class DeletionJournal:
         self.container = container
         self.key = key if key is not None else settings.DELETION_JOURNAL_HMAC_KEY
         self.required = required if required is not None else settings.DELETION_JOURNAL_REQUIRED
+        if container is None and settings.DELETION_JOURNAL_ACCOUNT_URL:
+            from urllib.parse import urlsplit
+            from azure.identity import ManagedIdentityCredential
+            from azure.storage.blob import BlobServiceClient
+            if settings.DELETION_JOURNAL_CONNECTION_STRING:
+                raise ValueError("Choose one journal authentication mode")
+            endpoint = urlsplit(settings.DELETION_JOURNAL_ACCOUNT_URL)
+            if (endpoint.scheme != "https" or not endpoint.hostname
+                    or endpoint.username or endpoint.password or endpoint.query
+                    or endpoint.fragment or endpoint.path not in {"", "/"}):
+                raise ValueError("Credential-free HTTPS journal account endpoint required")
+            credential = ManagedIdentityCredential(
+                client_id=settings.DELETION_JOURNAL_MANAGED_IDENTITY_CLIENT_ID or None)
+            client = BlobServiceClient(settings.DELETION_JOURNAL_ACCOUNT_URL,
+                                      credential=credential, connection_timeout=5,
+                                      read_timeout=10, retry_total=2)
+            self.container = client.get_container_client(settings.DELETION_JOURNAL_CONTAINER)
         if container is None and settings.DELETION_JOURNAL_CONNECTION_STRING:
             from azure.storage.blob import BlobServiceClient
             client = BlobServiceClient.from_connection_string(

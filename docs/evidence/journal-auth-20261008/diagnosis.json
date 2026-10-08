@@ -1,0 +1,82 @@
+{
+  "account": "dermairerehearsal261006",
+  "resource_group": "dermaire-readiness-nonprod-20261006",
+  "endpoint": "https://dermairerehearsal261006.blob.core.windows.net",
+  "previous_auth": "Shared-Key-signed service/container SAS (HTTPS rcl)",
+  "management_caller_object_id": "54618e9f-4033-47e0-b642-ce415b8ba89a",
+  "management_inherited_roles": [
+    "Owner",
+    "Contributor"
+  ],
+  "management_scope": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c",
+  "network_before": {
+    "defaultAction": "Allow",
+    "bypass": "None",
+    "ipRules": []
+  },
+  "matrix": [
+    {
+      "legal_hold": false,
+      "sas_permissions": "rcl",
+      "container_properties": {
+        "status": 403,
+        "code": "AuthorizationFailure"
+      },
+      "create": "PASS",
+      "read": "PASS",
+      "list": "PASS",
+      "duplicate": {
+        "status": 403,
+        "code": "UnauthorizedBlobOverwrite"
+      }
+    },
+    {
+      "legal_hold": false,
+      "sas_permissions": "rcwl",
+      "container_properties": {
+        "status": 403,
+        "code": "AuthorizationFailure"
+      },
+      "create": "PASS",
+      "read": "PASS",
+      "list": "PASS",
+      "duplicate": {
+        "status": 409,
+        "code": "BlobAlreadyExists"
+      }
+    },
+    {
+      "legal_hold": true,
+      "sas_permissions": "rcl",
+      "container_properties": {
+        "status": 403,
+        "code": "AuthorizationFailure"
+      },
+      "create": "PASS",
+      "read": "PASS",
+      "list": "PASS",
+      "duplicate": {
+        "status": 403,
+        "code": "UnauthorizedBlobOverwrite"
+      }
+    },
+    {
+      "legal_hold": true,
+      "sas_permissions": "rcwl",
+      "container_properties": {
+        "status": 403,
+        "code": "AuthorizationFailure"
+      },
+      "create": "PASS",
+      "read": "PASS",
+      "list": "PASS",
+      "duplicate": {
+        "status": 409,
+        "code": "BlobAlreadyExists"
+      }
+    }
+  ],
+  "production_mutations": 0,
+  "diagnostic_containers_removed": true,
+  "previous_container": "phase2-protection-2a58514a226a"
+}

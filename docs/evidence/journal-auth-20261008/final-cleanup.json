@@ -1,0 +1,16 @@
+{
+  "verified_utc": "2026-10-08T18:05:39.039575+00:00",
+  "principal_object_id": "42c20987-c42c-49a9-891b-153e779cd9ce",
+  "app_id": "7d8b15df-bae0-4458-9934-be5b4d2fa67a",
+  "remaining_assignments": [],
+  "remaining_apps": [],
+  "remaining_service_principals": [],
+  "temporary_containers_absent_verified_in_rehearsal": true,
+  "production_mutations": 0,
+  "production_auto_deployment_source": {
+    "repoUrl": null,
+    "branch": null,
+    "isGitHubAction": false
+  },
+  "repository_github_workflows_present": false
+}

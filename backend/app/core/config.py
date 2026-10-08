@@ -72,6 +72,8 @@ class Settings(BaseSettings):
 
     # Independent store: never restored with the application database/photos.
     DELETION_JOURNAL_CONNECTION_STRING: str = ""
+    DELETION_JOURNAL_ACCOUNT_URL: str = ""
+    DELETION_JOURNAL_MANAGED_IDENTITY_CLIENT_ID: str = ""
     DELETION_JOURNAL_CONTAINER: str = "deletion-journal"
     DELETION_JOURNAL_HMAC_KEY: str = ""
     DELETION_JOURNAL_REQUIRED: bool = False
