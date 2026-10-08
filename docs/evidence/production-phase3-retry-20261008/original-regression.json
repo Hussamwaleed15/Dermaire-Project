@@ -1,0 +1,12 @@
+{
+  "target": "eed61b8",
+  "exitCode": 1,
+  "summary": [
+    "FAILED tests/test_image_infrastructure.py::test_retry_after_journaled_cleanup_survives_replay[False-captures]",
+    "FAILED tests/test_image_infrastructure.py::test_retry_after_journaled_cleanup_survives_replay[False-checkins]",
+    "FAILED tests/test_image_infrastructure.py::test_retry_after_journaled_cleanup_survives_replay[True-captures]",
+    "FAILED tests/test_image_infrastructure.py::test_retry_after_journaled_cleanup_survives_replay[True-checkins]",
+    "4 failed, 52 deselected, 1 warning in 3.34s"
+  ],
+  "sourceRestored": true
+}

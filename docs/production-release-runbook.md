@@ -1,5 +1,14 @@
 # Production release gate and rollback runbook
 
+**Latest Phase 3 retry: HALTED before production mutation (8 October 2026).**
+[Fresh source audit, retry identity correction, validation and unchanged production](production-phase3-retry-20261008.md).
+Do not deploy eed61b8: cleanup intents can cover later successful uploads because
+Blob keys were reused across failed attempts. Attempt keys/create-only uploads
+are now corrected and tested. The broader all-user-data gate also identifies
+uncovered product hard deletion; it remains unresolved. No Phase 3 deploy or
+Phase 4 smoke occurred. A new rollout requires a clean source gate and a verified
+privacy-compatible rollback archive.
+
 **Latest authorized Phase 3: HALTED at source gate before production mutation
 (8 October 2026).** [Fresh observations, correction and remaining gates](production-phase3-20261008.md).
 Orphan/failed-upload cleanup needed durable photo-only v2 intents; source is now

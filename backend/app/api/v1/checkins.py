@@ -3,7 +3,7 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, UploadFile, File, Form, status, HTTPException, Header
 from starlette.concurrency import run_in_threadpool
 from io import BytesIO
-from uuid import uuid5, NAMESPACE_URL
+from uuid import uuid4, uuid5, NAMESPACE_URL
 import hashlib
 import json
 from app.services import capture_quality
@@ -144,7 +144,8 @@ async def submit_daily_checkin(
         ai_analysis["measurement_source"] = "image_proxy"
         ai_analysis["image_storage"] = "azure_blob"
         ai_analysis["image_request_fingerprint"] = fingerprint
-        blob_name = f"skin_photos/{current_user.id}/{current_user.id}_{identifier}.png"
+        # Keep request idempotency in the DB; storage attempts have distinct keys.
+        blob_name = f"skin_photos/{current_user.id}/{current_user.id}_{uuid4()}.png"
 
     if exp and exp.engine_version != 2 and exp.status == "active" and (valid_scores or has_photo):
         exp.current_day = min(exp.target_days, exp.current_day + 1)

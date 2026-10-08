@@ -64,7 +64,7 @@ class AzureBlobService:
             raise RuntimeError("Storage retention incompatible with image cleanup")
         from azure.storage.blob import ContentSettings
         result = self.container_client.get_blob_client(blob_name).upload_blob(
-            data, overwrite=True, content_settings=ContentSettings(content_type="image/png"))
+            data, overwrite=False, content_settings=ContentSettings(content_type="image/png"))
         if isinstance(result, dict) and result.get("version_id"):
             raise RuntimeError("Versioned storage requires infrastructure repair before uploads")
 

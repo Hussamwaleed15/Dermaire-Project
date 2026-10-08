@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from uuid import uuid5, NAMESPACE_URL
+from uuid import uuid4, uuid5, NAMESPACE_URL
 import hashlib
 import json
 from typing import Literal
@@ -78,7 +78,8 @@ async def create_capture(photo: UploadFile = File(...), source: Literal["camera"
             image.info.clear()
             image.save(buffer, format="PNG")
             image.close()
-            blob = f"skin_photos/{current_user.id}/{current_user.id}_{identifier}.png"
+            # A retry must never reuse a key retired by a cleanup intent.
+            blob = f"skin_photos/{current_user.id}/{current_user.id}_{uuid4()}.png"
             await run_in_threadpool(azure_blob_service.upload_capture, blob, buffer.getvalue())
             row.image_blob_name = blob
             row.storage = "azure_blob"

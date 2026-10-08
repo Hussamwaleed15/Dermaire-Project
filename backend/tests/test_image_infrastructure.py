@@ -37,6 +37,53 @@ def checkin(client, headers, data, fields=None):
     return client.post('/api/v1/checkins', headers=headers, files={'photo': ('private.png', data, 'image/png')}, data=fields or {})
 
 
+@pytest.mark.parametrize('kind', ['captures', 'checkins'])
+@pytest.mark.parametrize('cleanup_pending', [False, True])
+def test_retry_after_journaled_cleanup_survives_replay(
+        context, photograph, storage, monkeypatch, kind, cleanup_pending):
+    from app.services import image_reconciliation
+    from app.services.deletion_journal import DeletionJournal
+    from test_deletion_journal import Container
+    client, db, headers = context
+    journal = DeletionJournal(Container(), 'synthetic-test-key-' * 3, True)
+    monkeypatch.setattr(image_reconciliation, 'deletion_journal', journal)
+    blobs, store = storage
+    remove = azure_blob_service.delete_image
+    if cleanup_pending:
+        monkeypatch.setattr(azure_blob_service, 'delete_image',
+                            Mock(side_effect=RuntimeError('synthetic storage denial')))
+    original_commit = db.commit
+    monkeypatch.setattr(db, 'commit', Mock(side_effect=RuntimeError('synthetic DB failure')))
+    auth = {**headers[0], 'Idempotency-Key': 'retry-after-cleanup'}
+    data = encoded(photograph)
+    submit = lambda: upload(client, auth, data) if kind == 'captures' else checkin(client, auth, data)
+    assert submit().status_code == 503
+    retired_key = store.call_args.args[0]
+    assert len(journal.inventory()) == 1
+    monkeypatch.setattr(db, 'commit', original_commit)
+    monkeypatch.setattr(azure_blob_service, 'delete_image', remove)
+    result = submit()
+    assert result.status_code == 201
+    active_key = result.json()['image_reference']
+    assert active_key != retired_key
+    assert submit().json()['id'] == result.json()['id']
+    assert store.call_count == 2  # Successful request retries use the committed row.
+    replay_storage = Mock(is_live=True)
+    replay_storage.container_client.list_blobs.side_effect = lambda **_: [
+        SimpleNamespace(name=name) for name in blobs]
+    replay_storage.delete_image.side_effect = lambda name: blobs.pop(name)
+    delete_account = Mock()
+    snapshot = dict(journal.container.data)
+    replay_db = Mock()
+    replay_db.query.return_value = [SimpleNamespace(id='capture-user-0')]
+    journal.replay(replay_db, replay_storage, delete_account)
+    delete_account.assert_not_called()
+    assert active_key in blobs and retired_key not in blobs
+    assert client.get(f"/api/v1/{kind}/{result.json()['id']}/image", headers=auth).status_code == 200
+    assert db.query(Capture if kind == 'captures' else CheckIn).count() == 1
+    assert journal.container.data == snapshot
+
+
 def test_capture_persist_read_retry_measurement(context, photograph, storage):
     client, db, headers = context
     blobs, store = storage
@@ -186,7 +233,7 @@ def test_sdk_upload_read_and_missing_delete():
     obj = service()
     obj.upload_capture('skin_photos/owner/owner_file.png', b'png')
     blob = obj.container_client.get_blob_client.return_value
-    assert blob.upload_blob.call_args.kwargs['overwrite'] is True
+    assert blob.upload_blob.call_args.kwargs['overwrite'] is False
     assert blob.upload_blob.call_args.kwargs['content_settings'].content_type == 'image/png'
     blob.download_blob.return_value.readall.return_value = b'png'
     assert obj.read_capture('skin_photos/owner/owner_file.png') == b'png'
