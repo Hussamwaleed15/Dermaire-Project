@@ -1,0 +1,11 @@
+{
+  "observedUTC": "2026-10-08T15:37:07.302842+00:00",
+  "target": {
+    "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-readiness-nonprod-20261006/providers/Microsoft.DBforPostgreSQL/flexibleServers/dermaire-prod-pitr-verify-20261008-1529",
+    "httpStatus": 404
+  },
+  "verifier": {
+    "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-readiness-nonprod-20261006/providers/Microsoft.ContainerInstance/containerGroups/dermaire-pitr-client-20261008-1529",
+    "httpStatus": 404
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "compatible-rollback-inspection.json": "7379e340682ba21a4b1a28b918384e350dd6144d4839e32c04b5146f03c56202",
+  "db-catalog.json": "016541e034881e2c07ab2cdc9ea9e53c3c3c549fdc2bbea48fffa9edca1a774c",
+  "deployed-dotenv-metadata.json": "96a2740975859a6a4b0bb64d208bba6d1e3b29ffd3ec7dbdce4dc75e5cc32f5d",
+  "fresh-checkpoint-verification.json": "10016f0e8a98bc40609dae40b6aa0ae440b3f88b9ec868e41db104de5a021134",
+  "fresh-preflight.json": "2ec2ddb33e1302fbc987090a4b3d2b6fa99db9cdf1baaaa8c4ee36fec134cc13",
+  "independent-cleanup-proof.json": "f74555e400b3fee363a32415b7548b352ddabb65500b125ae6603a687330d097",
+  "monitoring-preflight.json": "1c5896c091cbe6873d91fdfcb8b65c82b2c0b909381bc3c1b864200167a19993",
+  "rollback-artifact-metadata.json": "77cb30ce9b4c831e4c75320bd163a6719473e4508df9be9effa5c212b7874612",
+  "rollout-result.json": "84f7a8875dcf232eddf70c26d02bd39db819b8961115c6941f85535e0a1a6ae1"
+}

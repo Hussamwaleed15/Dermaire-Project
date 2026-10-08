@@ -1,0 +1,15 @@
+{
+  "sha256": "7ce9bbbd5a459fa73f2268f2e9cecd63af948d4ebf3639206402c6ea1b656ff8",
+  "bytes": 144249200,
+  "archiveMembers": [
+    "output.tar.zst",
+    "oryx-manifest.toml",
+    "requirements.txt",
+    ".ostype"
+  ],
+  "nestedEntries": 13199,
+  "dotenvMembers": [],
+  "source": "existing staging /home/dermaire-rollback-0f97dc2.zip",
+  "localCopyRetained": false,
+  "deploymentPerformed": false
+}

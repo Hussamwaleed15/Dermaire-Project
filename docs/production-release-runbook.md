@@ -1,5 +1,9 @@
 # Production release gate and rollback runbook
 
+## Authorized rollout resume — 8 October 2026, 15:25 UTC
+
+The [fresh authorized resume](production-rollout-resume-halted-20261008-1525.md) halted before production mutation: its single isolated fresh-checkpoint target reached Ready, but the target-only credential operation returned a terminal async failure before DB usability verification. The target was deleted (404 independently rechecked), no verifier was created, and production server/firewall/App Settings before/after fingerprints agree. Prior observed-checkpoint RPO PASS and Phase 0 policy PASS remain unchanged; this new checkpoint gate was not established. No retry or production phase was performed after failure. Journal/key expiry remains disabled indefinitely, and production end-to-end RTO remains uncertified.
+
 ## Dedicated production-source checkpoint verification (8 October 2026)
 
 The separately authorized [isolated production-source PITR drill](production-source-pitr-verification-20261008.md) proved the requested production-origin checkpoint usable under the allowed service-evidence standard: requested lag 60 seconds; successful verify-full access, matching origin identifier, 16-table/schema/integrity checks. Exact replay-stop timestamp remains unavailable. All three targets and both transient verifiers were deleted and independently checked; Azure's possible five-day deleted-server backup residual is registered. Production data/schema/settings/credentials/traffic were untouched.

@@ -1,0 +1,41 @@
+{
+  "observedUTC": "2026-10-08T15:32:51.561013+00:00",
+  "files": [
+    {
+      "app": "dermaire-api",
+      "remotePath": "/home/site/wwwroot/output.tar.zst",
+      "lastModified": "Sat, 03 Oct 2026 19:06:44 GMT",
+      "etag": "\"eab21d778121df08\"",
+      "sha256": "9a0e604b37507dfda5be119ae931a0f09f30fc3c28ef0cf3143b55e8ec7dff4b",
+      "bytes": 145453718,
+      "archiveMode": "existing remote artifact reference; bytes hashed without local retention"
+    },
+    {
+      "app": "dermaire-api",
+      "remotePath": "/home/site/wwwroot/oryx-manifest.toml",
+      "lastModified": "Sat, 03 Oct 2026 19:06:44 GMT",
+      "etag": "\"96bc31778121df08\"",
+      "sha256": "01c9e625fde374ee55b657939517d2d45e31ed76487b0a5017c0791c6528d1b6",
+      "bytes": 261,
+      "archiveMode": "existing remote artifact reference; bytes hashed without local retention"
+    },
+    {
+      "app": "dermaire-api",
+      "remotePath": "/home/site/wwwroot/requirements.txt",
+      "lastModified": "Sat, 03 Oct 2026 19:05:47 GMT",
+      "etag": "\"42903d558121df08\"",
+      "sha256": "59f55b35111034a84ae8d71b9fae53573b2eb32e652a5e96bf498d9bd3b256c7",
+      "bytes": 479,
+      "archiveMode": "existing remote artifact reference; bytes hashed without local retention"
+    },
+    {
+      "app": "dermaire-api-staging",
+      "remotePath": "/home/dermaire-rollback-0f97dc2.zip",
+      "lastModified": "Tue, 06 Oct 2026 08:57:12 GMT",
+      "etag": "\"589aa4cf8723df08\"",
+      "sha256": "7ce9bbbd5a459fa73f2268f2e9cecd63af948d4ebf3639206402c6ea1b656ff8",
+      "bytes": 144249200,
+      "archiveMode": "existing remote artifact reference; bytes hashed without local retention"
+    }
+  ]
+}

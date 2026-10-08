@@ -1,0 +1,25 @@
+{
+  "startingCommit": "4948a91a5b9218745cc3cf22596dd05d594192cb",
+  "startingLocalAndOriginMainEqual": true,
+  "startingRepoClean": true,
+  "productionMutations": [],
+  "verdict": "ROLLOUT HALTED/ROLLED BACK",
+  "actualOutcome": "HALTED before production mutation; no rollback",
+  "phase0Policy": "PASS; indefinite journal/key expiry disablement remains",
+  "freshCheckpointGate": "NOT ESTABLISHED after terminal target credential operation failure",
+  "previousObservedCheckpointRPO": "PASS remains unchanged; not current checkpoint proof",
+  "tests": {
+    "passed": 62,
+    "warnings": 1,
+    "suites": [
+      "test_production_config",
+      "test_operational_targets",
+      "test_deletion_journal",
+      "test_operational_readiness"
+    ],
+    "initialSetupProblem": "Default pytest temporary directory access denied; resolved by workspace basetemp; no product failure claimed"
+  },
+  "restoreTargetResidualBackup": "Possible Azure deleted-server recovery copies until approximately 2026-10-13T15:35:50.992384+00:00; excluded from automatic recovery; indefinite expiry policy unchanged",
+  "productionRTOCertified": false,
+  "notes": "Async detector distinguishes terminal failure from success, but retained evidence does not distinguish Failed from Canceled. Activity-log lookup returned an empty array at observation; no root cause inferred."
+}
