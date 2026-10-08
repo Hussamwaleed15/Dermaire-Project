@@ -12,7 +12,7 @@ from app.services.deletion_journal import deletion_journal
 from app.models import Capture, Measurement, ProductIntelligence, DoctorReviewAction
 
 
-def delete_account(db, user_id):
+def delete_account(db, user_id, *, journal=None):
     user = db.query(User).filter(User.id == user_id).with_for_update().first()
     if user is None:
         return  # A valid access token can retry after the response was lost.
@@ -57,7 +57,19 @@ def delete_account(db, user_id):
     image_keys = [row.image_blob_name for model in (Capture, CheckIn)
                   for row in db.query(model).filter_by(user_id=user_id)
                   if row.image_blob_name]
-    deletion_journal.record(user_id, image_keys)
+    if journal is None:
+        deletion_journal.record(user_id, image_keys)
+    else:
+        # Replay must never mutate its independent source. Re-verify coverage
+        # before destructive work; refuse restored references absent from evidence.
+        records = journal.inventory()
+        owner = journal.token("owner", user_id)
+        covered = {image for r in records if r["owner"] == owner for image in r["images"]}
+        if not any(r["owner"] == owner for r in records):
+            raise RuntimeError("Replay owner intent missing")
+        if any(journal.token("image", key) not in covered for key in image_keys
+               if not key.startswith(f"skin_photos/{user_id}/")):
+            raise RuntimeError("Replay legacy image coverage missing")
     # Keep ownership records until ALL external deletes succeed. Partial cleanup
     # can safely retry because deleting an absent blob is a no-op.
     for capture in db.query(Capture).filter_by(user_id=user_id):

@@ -201,3 +201,21 @@ def test_historical_blob_copies_block_success():
     with pytest.raises(RuntimeError):
         service.delete_image("owned")
     service.container_client.delete_blob.assert_not_called()
+
+
+def test_replay_account_deletion_reads_source_and_checks_legacy_coverage(deletion_context, monkeypatch):
+    from app.services.account_deletion import delete_account
+    from app.services.deletion_journal import DeletionJournal
+    from test_deletion_journal import Container
+    _, db, _ = deletion_context
+    journal = DeletionJournal(Container(), "j" * 32, True)
+    journal.record("delete-patient", [])
+    delete = Mock(); monkeypatch.setattr(azure_blob_service, "delete_image", delete)
+    # Existing fixture uses a legacy reference outside the owner's namespace.
+    with pytest.raises(RuntimeError, match="legacy image coverage missing"):
+        delete_account(db, "delete-patient", journal=journal)
+    delete.assert_not_called(); assert db.query(User).count() == 2
+    journal.record("delete-patient", ["skin_photos/owned.jpg"])
+    snapshot = dict(journal.container.data)
+    delete_account(db, "delete-patient", journal=journal)
+    assert db.query(User).count() == 1 and journal.container.data == snapshot

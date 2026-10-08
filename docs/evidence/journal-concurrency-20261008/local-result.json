@@ -1,0 +1,35 @@
+{
+  "baseline": "db9beb5",
+  "two_writers": {
+    "acknowledged": 2,
+    "durable": 2
+  },
+  "sixteen_writers": {
+    "acknowledged": 16,
+    "durable": 16
+  },
+  "stress": {
+    "batches": 50,
+    "writers": 16,
+    "successful_calls": 832,
+    "acknowledged_unique": 801,
+    "durable_verifiable": 801,
+    "lost": 0
+  },
+  "relevant_tests": {
+    "passed": 36,
+    "failed": 0
+  },
+  "full_backend_tests": {
+    "passed": 671,
+    "failed": 0,
+    "warnings": 91,
+    "seconds": 82.63
+  },
+  "first_full_attempt": {
+    "passed": 660,
+    "fixture_errors": 7,
+    "cause": "Windows default pytest temporary directory permission denied; resolved with a fresh workspace basetemp"
+  },
+  "production_mutations": 0
+}

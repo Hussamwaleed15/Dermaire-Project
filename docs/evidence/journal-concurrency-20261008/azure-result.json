@@ -1,0 +1,50 @@
+{
+  "production_mutations": 0,
+  "account": "dermairerehearsal261006",
+  "resource_group": "dermaire-readiness-nonprod-20261006",
+  "2_writers": {
+    "acknowledged": 2,
+    "retained": 2
+  },
+  "16_writers": {
+    "acknowledged": 16,
+    "retained": 16
+  },
+  "stress": {
+    "batches": 10,
+    "writers": 16,
+    "acknowledged_unique": 179,
+    "durable_verifiable": 179,
+    "successful_calls": 210,
+    "lost": 0
+  },
+  "azure_create_conflict_status": 409,
+  "ambiguous_write": {
+    "failure_unacknowledged": true,
+    "retry_verified": true,
+    "acknowledged_unique": 180,
+    "durable_verifiable": 180
+  },
+  "replay": {
+    "first": {
+      "restored_accounts_removed": 1,
+      "image_cleanup_calls": 0,
+      "journal_intents": 181
+    },
+    "repeat": {
+      "restored_accounts_removed": 0,
+      "image_cleanup_calls": 0,
+      "journal_intents": 181
+    },
+    "source_unchanged": true,
+    "legacy_orphan_removed": true
+  },
+  "fail_closed": {
+    "corruption": true,
+    "unavailable_storage": true
+  },
+  "final_durable_intents": 181,
+  "final_acknowledged_unique": 181,
+  "seconds": 236.953,
+  "temporary_containers_removed": true
+}
