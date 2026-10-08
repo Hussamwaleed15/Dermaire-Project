@@ -1,5 +1,11 @@
 # Production release gate and rollback runbook
 
+## Dedicated production-source checkpoint verification (8 October 2026)
+
+The separately authorized [isolated production-source PITR drill](production-source-pitr-verification-20261008.md) proved the requested production-origin checkpoint usable under the allowed service-evidence standard: requested lag 60 seconds; successful verify-full access, matching origin identifier, 16-table/schema/integrity checks. Exact replay-stop timestamp remains unavailable. All three targets and both transient verifiers were deleted and independently checked; Azure's possible five-day deleted-server backup residual is registered. Production data/schema/settings/credentials/traffic were untouched.
+
+The recoverable-checkpoint evidence gap is cleared for this observation only. The successful final attempt took 12m29s to DB verification; the entire exercise including two earlier orchestration/access failures took 33m31s and exceeded 30 minutes. Production end-to-end RTO and privacy-safe recovery are not certified. No production independent deletion journal exists yet; historical staging replay provides procedural evidence only. Journal/key protection, completeness and signed replay remain rollout prerequisites. Phase 0 policy remains PASS with indefinite expiry disablement. Restart rollout only through its separate authorization and fresh preflight; this drill performed no rollout.
+
 Status on 8 October 2026: **READY FOR PRODUCTION ROLLOUT** (MVP infrastructure readiness; both Gmail Fired/Resolved messages human-confirmed; see [closure evidence](readiness-closure-20261008.md)). Operational targets are accepted for MVP/Imagine Cup; production rollout remains separately authorized. This runbook authorizes no production changes. Staging must never use the production database or photo container for write rehearsals.
 
 ## Accepted operational targets (8 October 2026)

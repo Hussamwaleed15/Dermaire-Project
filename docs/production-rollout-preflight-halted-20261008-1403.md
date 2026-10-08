@@ -1,5 +1,7 @@
 # Dermaire authorized production rollout: fresh preflight halted
 
+> Follow-up (8 October 2026, 15:04 UTC): the separately authorized [production-source isolated PITR verification](production-source-pitr-verification-20261008.md) now establishes a usable requested checkpoint 60 seconds before its fresh observation, under documented Azure service-evidence limits. This clears the recoverable-checkpoint evidence gap for that drill; it does not alter this historical halted rollout or certify production deletion-journal coverage/RTO. Production remained untouched. A later rollout needs fresh preflight/checkpoint evidence.
+
 **Binary verdict: ROLLOUT HALTED/ROLLED BACK. Actual outcome: HALTED before production mutation; no rollback performed.**
 
 8 October 2026, fresh observations 14:03–14:11 UTC (17:03–17:11 Africa/Cairo).
