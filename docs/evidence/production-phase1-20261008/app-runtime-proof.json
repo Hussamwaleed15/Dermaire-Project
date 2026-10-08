@@ -1,0 +1,48 @@
+{
+  "restartRequestedUTC": "2026-10-08T16:56:46.979711+00:00",
+  "observations": [
+    {
+      "utc": "2026-10-08T16:57:45.515955+00:00",
+      "legacyHealth": "TimeoutError"
+    },
+    {
+      "utc": "2026-10-08T16:58:03.088798+00:00",
+      "legacyHealth": "TimeoutError"
+    },
+    {
+      "utc": "2026-10-08T16:58:20.643217+00:00",
+      "legacyHealth": "TimeoutError"
+    },
+    {
+      "utc": "2026-10-08T16:58:36.891420+00:00",
+      "legacyHealth": 200
+    }
+  ],
+  "safeRoutes": {
+    "/": 200,
+    "/health": 200,
+    "/health/live": 404,
+    "/health/ready": 404,
+    "/api/v1/users/me": 401
+  },
+  "databaseProof": {
+    "observedUTC": "2026-10-08T16:58:44.192022+00:00",
+    "databaseClientSessions": [
+      {
+        "usename": "dermaire_runtime",
+        "application_name": "",
+        "state": "idle",
+        "backend_start": "2026-10-08 16:58:34.094389+00"
+      }
+    ],
+    "nonRunnerAdminSessions": 0,
+    "applicationRuntimeSessions": 1,
+    "trackingCommitTimes": {
+      "track_commit_timestamp": "off"
+    }
+  },
+  "deployment": "unchanged archived artifact; no deployment issued",
+  "completedUTC": "2026-10-08T16:58:43.766328+00:00",
+  "startupSeconds": 109.911709,
+  "gate": "PASS"
+}

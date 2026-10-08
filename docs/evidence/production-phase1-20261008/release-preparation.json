@@ -1,0 +1,8 @@
+{
+  "sourceCommit": "2931dd3",
+  "bundleSHA256": "459f950898912cef9c31a1609f07e32af76e99627e525556ef27d3422dfe031d",
+  "releaseRunner": "isolated staging SCM release process; staging application unchanged; no plaintext production credential file or app setting",
+  "prepared": true,
+  "credentialProtection": "RSA-3072 OAEP SHA256 encrypted envelope; private key in native /tmp mode0600 directory0700; plaintext only in process memory",
+  "privateKeyPermissions": "0o600"
+}

@@ -1,0 +1,26 @@
+{
+  "createdUTC": "2026-10-08T17:10:43.823892+00:00",
+  "files": {
+    "access-restore-inspection.json": "f962b03f33bc0e72aee4320608291519c2e8edbf429859f8bfaec4c305c14221",
+    "adoption-failure-state.json": "037f600c8ce737fa09e29468d72fa5aab875e17fa48f3d577f0ebf1ebbe91cac",
+    "app-runtime-proof.json": "dc173b0596afbe380474622a7f7f44f8bb22ffc4ceba8d33fd1050139459289b",
+    "db-catalog.json": "35d992a9bf2b176c4692ed1d4d43fd6ca6eaa71b706d83a3a9f75ecca4b08a2a",
+    "db-preflight-verification.json": "5ca3778f1e69f2299635c85dd7a31ba11ae6a13025546c4b6f46b6cc3c1c25c0",
+    "fresh-preflight.json": "4ed04425cb1e63382c03979e2f6732b4d39769b50d9d991fcce859da49240d5d",
+    "maintenance.json": "8850ed92b71b272dab64da8b4401567f0b366907e1564585eb59c2c703e00f5b",
+    "phase1-audit.json": "600d4e96fb36dc0c9afe153c082282b1583c68018bea5bd153dea6c276cf7abd",
+    "phase1-catalog.json": "90160350628657916ba82f71994a69a5d3370e7295692b39914fbfa6360f47e0",
+    "phase1-preflight.json": "1a24578829ed93846ded7e7d1352541471063a1870accf6bb75cb2ba09a3df66",
+    "phase1-result.json": "44f95bed93d538d046a0af64e8da172fbd4edc39973c42d86ac49e1908cf635e",
+    "phase1-roles.json": "380e803110ad801baddd4a9ed8dac9ecacf0b8b032e4bbd3dc4b52bda9b54163",
+    "phase1-verify.json": "cc78d4348bbd65c1853220eb5cafd4b7b19dab7a086201eb182398b11e56c4b6",
+    "pitr-policy-final.json": "ff5f4072b0e8cc3af76c3b27ff18c9c7c8ba5782a15e681767ac988009ab0ab2",
+    "release-cleanup.json": "47be61dea9f392326e9a6369a31291b149bd9174b85dd25066d6a50e1494d471",
+    "release-preparation.json": "894d2e6bda36b4e0b97b7d103c9ca31efaa422dbf735444a2566efbee3affb89",
+    "reopen.json": "d152d947431cf6ffaac61b8e32ca46980f711995dcba99558fbe31b81f966b81",
+    "rollback-artifact-metadata.json": "e6f908a8f1267eabbcd9fa03191f0c45cd1d384d841899f699cdfb0e4f6c4ebd",
+    "runtime-switch.json": "c760b3b021ee7266862ff9655aed863186e381275f3b9c4782f986e9552897d5",
+    "secure-rollback-metadata.json": "6024449dbc80090d773173119a51f316ddcc7bc3aedb6d7f10d47440a2569375",
+    "supplement-preflight.json": "ebfce5db7b932627ec359d92ed5ef1c7864b2ac5a6ab08e9f6b23ae55178f1b9"
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "createdUTC": "2026-10-08T16:41:41.577922+00:00",
+  "archiveRef": "C:\\Users\\Hossam\\Documents\\Codex\\2026-10-08\\referenced-chatgpt-conversation-this-is-an-14\\work\\secure-rollback\\phase1.dpapi",
+  "protection": "Windows DPAPI current user; directory ACL restricted to current user",
+  "archiveSHA256": "bdeebc7afce2186041f21ebe64cdfd6bc817339c3f6a7a82a5654b59530d8e35",
+  "settingsSHA256": "a7b4a33fe3b37d496e5a055f943662433851f7af06ccdf37b8957fa6ae623243",
+  "contains": "encrypted rollback settings and separate generated role credentials; no plaintext file"
+}

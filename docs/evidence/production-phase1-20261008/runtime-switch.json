@@ -1,0 +1,15 @@
+{
+  "trafficRestrictionRequestedUTC": "2026-10-08T16:56:12.864838+00:00",
+  "runtimeSettingRequestedUTC": "2026-10-08T16:56:16.891988+00:00",
+  "observedUTC": "2026-10-08T16:56:20.682688+00:00",
+  "changedSettings": [
+    "DATABASE_URL"
+  ],
+  "allOtherSettingsIdentical": true,
+  "runtimeRole": "dermaire_runtime",
+  "sslmode": "verify-full",
+  "trustedCA": "/etc/ssl/certs/ca-certificates.crt",
+  "migratorCredentialInAppSettings": false,
+  "normalTraffic": "operator-only until exit gate",
+  "rollbackArchiveSHA256": "c07b9b55548bffa5d75d89e8452bede721950cf367e5dc4d9864bab1d3386f20"
+}

@@ -1,0 +1,43 @@
+{
+  "startedUTC": "2026-10-08T17:05:58.563804+00:00",
+  "results": [
+    {
+      "app": "dermaire-api-staging",
+      "scratchCleanup": [
+        {
+          "path": "/tmp/dermaire-phase1-state-20261008",
+          "absent": true
+        },
+        {
+          "path": "/home/dermaire-phase1-release-20261008",
+          "absent": true
+        },
+        {
+          "path": "/tmp/dermaire-release-libs-20261008",
+          "absent": true
+        },
+        {
+          "path": "/tmp/dermaire-release-client-20261008",
+          "absent": true
+        }
+      ],
+      "applicationFilesUnchanged": true
+    },
+    {
+      "app": "dermaire-api",
+      "scratchCleanup": [
+        {
+          "path": "/tmp/dermaire-release-libs-20261008",
+          "absent": true
+        },
+        {
+          "path": "/tmp/dermaire-release-client-20261008",
+          "absent": true
+        }
+      ],
+      "applicationFilesUnchanged": true
+    }
+  ],
+  "finishedUTC": "2026-10-08T17:06:05.561740+00:00",
+  "gate": "PASS"
+}

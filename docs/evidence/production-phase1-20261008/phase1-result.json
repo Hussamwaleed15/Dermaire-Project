@@ -1,0 +1,36 @@
+{
+  "verdict": "PHASE 1 COMPLETE",
+  "verifiedUTC": "2026-10-08T17:06:23.086545+00:00",
+  "checks": {
+    "functions": true,
+    "triggers": true,
+    "policies": true,
+    "extensions": true,
+    "schemaNameAndOwnerUnchanged": true,
+    "businessColumnsUnchanged": true,
+    "FK_CHECK_definitionsUnchanged": true,
+    "allObjectsMigratorOwned": true,
+    "runtimeNoMembership": true,
+    "allIndexesHealthy": true,
+    "runtimeNoOwnership": true
+  },
+  "runtimeSettingRole": "dermaire_runtime",
+  "deploymentFingerprint": {
+    "id": "a1051873-4635-46aa-8fa8-7230b79a6097",
+    "status": 4,
+    "active": true
+  },
+  "localTests": {
+    "passed": 41,
+    "failures": 0,
+    "errors": 0,
+    "initialEnvironmentIssue": "Default pytest temp directory access denied; workspace temp rerun passed"
+  },
+  "pausedSecondsFromStopRequestToReopenConfirmation": 616.604711,
+  "rollbackNeeded": false,
+  "rollbackPerformed": false,
+  "secureRollbackArchiveRef": "work/secure-rollback/phase1.dpapi (Windows DPAPI, current-user ACL)",
+  "secureRollbackArchiveSHA256": "c07b9b55548bffa5d75d89e8452bede721950cf367e5dc4d9864bab1d3386f20",
+  "phase2Started": false,
+  "productionMutationTimestampLimit": "Original adoption command emitted Alembic text before JSON; original acknowledgement timestamps were lost at response parsing. Never rerun or fabricate timestamps. Index/constraint first independently confirmed 2026-10-08T16:52:29.594148+00:00; final revision/clean check confirmed 2026-10-08T16:53:50.408607+00:00. Exact per-statement commit instants unavailable (track_commit_timestamp=off)."
+}

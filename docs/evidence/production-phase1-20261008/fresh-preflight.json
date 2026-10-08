@@ -1,0 +1,294 @@
+{
+  "startedUTC": "2026-10-08T16:36:05.875737+00:00",
+  "productionMutations": [],
+  "settingsMetadata": [
+    {
+      "name": "ACCESS_TOKEN_EXPIRE_MINUTES",
+      "slotSetting": false
+    },
+    {
+      "name": "ALGORITHM",
+      "slotSetting": false
+    },
+    {
+      "name": "AZURE_BLOB_SAS_EXPIRY_MINUTES",
+      "slotSetting": false
+    },
+    {
+      "name": "AZURE_OPENAI_API_VERSION",
+      "slotSetting": false
+    },
+    {
+      "name": "AZURE_OPENAI_DEPLOYMENT_NAME",
+      "slotSetting": false
+    },
+    {
+      "name": "AZURE_STORAGE_CONTAINER",
+      "slotSetting": false
+    },
+    {
+      "name": "DATABASE_URL",
+      "slotSetting": false
+    },
+    {
+      "name": "DEBUG",
+      "slotSetting": false
+    },
+    {
+      "name": "ENVIRONMENT",
+      "slotSetting": false
+    },
+    {
+      "name": "GOOGLE_WEB_CLIENT_ID",
+      "slotSetting": false
+    },
+    {
+      "name": "REFRESH_TOKEN_EXPIRE_DAYS",
+      "slotSetting": false
+    },
+    {
+      "name": "SCM_DO_BUILD_DURING_DEPLOYMENT",
+      "slotSetting": false
+    },
+    {
+      "name": "SECRET_KEY",
+      "slotSetting": false
+    },
+    {
+      "name": "WEBSITE_HTTPLOGGING_RETENTION_DAYS",
+      "slotSetting": false
+    },
+    {
+      "name": "WEBSITES_PORT",
+      "slotSetting": false
+    },
+    {
+      "name": "EXPOSE_PASSWORD_RESET_TOKEN",
+      "slotSetting": false
+    },
+    {
+      "name": "AZURE_COMMUNICATION_CONNECTION_STRING",
+      "slotSetting": false
+    },
+    {
+      "name": "AZURE_EMAIL_SENDER",
+      "slotSetting": false
+    },
+    {
+      "name": "AZURE_STORAGE_CONNECTION_STRING",
+      "slotSetting": false
+    },
+    {
+      "name": "AZURE_OPENAI_ENDPOINT",
+      "slotSetting": false
+    },
+    {
+      "name": "AZURE_OPENAI_API_KEY",
+      "slotSetting": false
+    },
+    {
+      "name": "CONTEXTUAL_AI_ENABLED",
+      "slotSetting": false
+    }
+  ],
+  "providerState": {
+    "AZURE_VISION_ENABLED": "ABSENT",
+    "CONTEXTUAL_AI_ENABLED": "true",
+    "contentSafetyConfigured": false,
+    "contentSafetyEnableFlag": "none in target build; credential driven",
+    "visionConfigured": false,
+    "openaiConfigured": true
+  },
+  "journalSettingNames": [],
+  "updatedUTC": "2026-10-08T16:36:28.879703+00:00",
+  "app": {
+    "host": "dermaire-api.azurewebsites.net",
+    "httpsOnly": true,
+    "lastModified": "2026-10-05T16:41:23.916666",
+    "state": "Running"
+  },
+  "web": {
+    "alwaysOn": false,
+    "health": null,
+    "httpLogging": true,
+    "linux": "PYTHON|3.12",
+    "minTls": "1.2",
+    "startup": "python -m uvicorn app.main:app --host 0.0.0.0 --port 8000"
+  },
+  "db": {
+    "backup": {
+      "backupRetentionDays": 7,
+      "earliestRestoreDate": "2026-10-02T07:14:08.190528+00:00",
+      "geoRedundantBackup": "Disabled"
+    },
+    "state": "Ready",
+    "version": "18"
+  },
+  "backups": [
+    {
+      "backupType": "Full",
+      "completedTime": "2026-10-02T07:14:08.190528+00:00",
+      "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.DBforPostgreSQL/flexibleServers/dermaire-db-server/backups/backup_639265220471905287",
+      "name": "backup_639265220471905287",
+      "resourceGroup": "dermaire-rg",
+      "source": "Automatic",
+      "systemData": null,
+      "type": "Microsoft.DBforPostgreSQL/flexibleServers/backups"
+    },
+    {
+      "backupType": "Full",
+      "completedTime": "2026-10-03T07:14:56.706764+00:00",
+      "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.DBforPostgreSQL/flexibleServers/dermaire-db-server/backups/backup_639266084957067641",
+      "name": "backup_639266084957067641",
+      "resourceGroup": "dermaire-rg",
+      "source": "Automatic",
+      "systemData": null,
+      "type": "Microsoft.DBforPostgreSQL/flexibleServers/backups"
+    },
+    {
+      "backupType": "Full",
+      "completedTime": "2026-10-04T07:16:05.690807+00:00",
+      "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.DBforPostgreSQL/flexibleServers/dermaire-db-server/backups/backup_639266949646908077",
+      "name": "backup_639266949646908077",
+      "resourceGroup": "dermaire-rg",
+      "source": "Automatic",
+      "systemData": null,
+      "type": "Microsoft.DBforPostgreSQL/flexibleServers/backups"
+    },
+    {
+      "backupType": "Full",
+      "completedTime": "2026-10-05T07:17:03.465276+00:00",
+      "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.DBforPostgreSQL/flexibleServers/dermaire-db-server/backups/backup_639267814224652764",
+      "name": "backup_639267814224652764",
+      "resourceGroup": "dermaire-rg",
+      "source": "Automatic",
+      "systemData": null,
+      "type": "Microsoft.DBforPostgreSQL/flexibleServers/backups"
+    },
+    {
+      "backupType": "Full",
+      "completedTime": "2026-10-06T07:17:53.741457+00:00",
+      "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.DBforPostgreSQL/flexibleServers/dermaire-db-server/backups/backup_639268678727414574",
+      "name": "backup_639268678727414574",
+      "resourceGroup": "dermaire-rg",
+      "source": "Automatic",
+      "systemData": null,
+      "type": "Microsoft.DBforPostgreSQL/flexibleServers/backups"
+    },
+    {
+      "backupType": "Full",
+      "completedTime": "2026-10-07T07:18:33.806745+00:00",
+      "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.DBforPostgreSQL/flexibleServers/dermaire-db-server/backups/backup_639269543128067457",
+      "name": "backup_639269543128067457",
+      "resourceGroup": "dermaire-rg",
+      "source": "Automatic",
+      "systemData": null,
+      "type": "Microsoft.DBforPostgreSQL/flexibleServers/backups"
+    },
+    {
+      "backupType": "Full",
+      "completedTime": "2026-10-08T07:19:42.755562+00:00",
+      "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.DBforPostgreSQL/flexibleServers/dermaire-db-server/backups/backup_639270407817555627",
+      "name": "backup_639270407817555627",
+      "resourceGroup": "dermaire-rg",
+      "source": "Automatic",
+      "systemData": null,
+      "type": "Microsoft.DBforPostgreSQL/flexibleServers/backups"
+    }
+  ],
+  "diagnostics": [],
+  "blobPolicy": {
+    "delete_retention_policy": "{'additional_properties': {}, 'enabled': False, 'days': None, 'allow_permanent_delete': None}",
+    "container_delete_retention_policy": null,
+    "is_versioning_enabled": null,
+    "restore_policy": null
+  },
+  "blobInventory": [
+    {
+      "container": "skin-images",
+      "publicAccess": null,
+      "deleted": null,
+      "objects": 0,
+      "versions": 0,
+      "snapshots": 0,
+      "deletedObjects": 0,
+      "holds": 0,
+      "immutability": 0
+    }
+  ],
+  "health": {
+    "/health/live": 404,
+    "/health/ready": 404
+  },
+  "api/deployments/latest": {
+    "id": "a1051873-4635-46aa-8fa8-7230b79a6097",
+    "status": 4,
+    "active": true,
+    "received_time": "2026-10-03T19:04:20.3004553Z",
+    "start_time": "2026-10-03T19:04:21.6398257Z",
+    "end_time": "2026-10-03T19:06:47.1373198Z",
+    "deployer": "OneDeploy"
+  },
+  "api/vfs/site/wwwroot/": [
+    {
+      "name": ".env",
+      "size": 1718,
+      "mtime": "2026-09-20T23:00:52.1910082+00:00"
+    },
+    {
+      "name": ".env.example",
+      "size": 1621,
+      "mtime": "2026-09-20T23:00:52.2010564+00:00"
+    },
+    {
+      "name": ".gitignore",
+      "size": 581,
+      "mtime": "2026-09-20T23:00:52.2312195+00:00"
+    },
+    {
+      "name": ".ostype",
+      "size": 16,
+      "mtime": "2026-10-03T19:06:44.4553491+00:00"
+    },
+    {
+      "name": "antenv",
+      "size": 0,
+      "mtime": "2026-09-20T23:01:01.7736087+00:00"
+    },
+    {
+      "name": "docker-compose.yml",
+      "size": 937,
+      "mtime": "2026-09-20T23:00:52.1039938+00:00"
+    },
+    {
+      "name": "Dockerfile",
+      "size": 765,
+      "mtime": "2026-09-20T23:00:52.1306544+00:00"
+    },
+    {
+      "name": "hostingstart.html",
+      "size": 3269,
+      "mtime": "2026-09-20T07:08:56.3306548+00:00"
+    },
+    {
+      "name": "oryx-manifest.toml",
+      "size": 261,
+      "mtime": "2026-10-03T19:06:44.4145814+00:00"
+    },
+    {
+      "name": "output.tar.zst",
+      "size": 145453718,
+      "mtime": "2026-10-03T19:06:44.2832618+00:00"
+    },
+    {
+      "name": "README.md",
+      "size": 2690,
+      "mtime": "2026-09-20T23:00:52.1522914+00:00"
+    },
+    {
+      "name": "requirements.txt",
+      "size": 479,
+      "mtime": "2026-10-03T19:05:47.4495554+00:00"
+    }
+  ]
+}

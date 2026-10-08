@@ -1,0 +1,15 @@
+{
+  "observedUTC": "2026-10-08T17:00:54.074152+00:00",
+  "restrictionListIdentical": false,
+  "originalDefault": null,
+  "currentDefault": "Deny",
+  "temporaryRulesRemaining": 0,
+  "originalCatchAll": [
+    {
+      "action": "Allow",
+      "priority": 2147483647,
+      "name": "Allow all",
+      "isAny": true
+    }
+  ]
+}

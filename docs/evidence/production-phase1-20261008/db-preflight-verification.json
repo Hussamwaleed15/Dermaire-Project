@@ -1,0 +1,58 @@
+{
+  "observedUTC": "2026-10-08T16:39:05.137366+00:00",
+  "differenceKinds": [
+    "remove_index",
+    "add_constraint",
+    "add_index"
+  ],
+  "differences": [
+    "('remove_index', Index('uq_experiments_active_owner', Column('active_owner', VARCHAR(length=36), table=<experiments>), unique=True))",
+    "('add_constraint', UniqueConstraint(Column('active_owner', NullType(), table=<experiments>)))",
+    "('add_index', Index('ix_users_reset_token_hash', Column('reset_token_hash', String(length=255), table=<users>)))"
+  ],
+  "identity": {
+    "current_user": "dermaireadmin",
+    "current_database": "dermaire",
+    "system_identifier": "7687509194730582065"
+  },
+  "tls": {
+    "ssl": true,
+    "version": "TLSv1.3"
+  },
+  "rowCounts": {
+    "audit_logs": 393,
+    "captures": 1,
+    "checkins": 0,
+    "clinical_notes": 0,
+    "daily_contexts": 0,
+    "doctor_patient_access": 0,
+    "doctor_review_actions": 0,
+    "experiment_evaluations": 0,
+    "experiments": 0,
+    "measurements": 0,
+    "product_intelligence": 0,
+    "products": 0,
+    "reward_redemptions": 0,
+    "routine_adherence": 0,
+    "routine_entries": 0,
+    "users": 5
+  },
+  "constraintCounts": {
+    "f": 27,
+    "c": 16
+  },
+  "violations": {
+    "f": 0,
+    "c": 0
+  },
+  "allIndexesHealthy": true,
+  "wal": {
+    "archived_count": 5338,
+    "failed_count": 0,
+    "stats_reset": "2026-09-20 07:02:00.858492+00",
+    "last_archived_time": "2026-10-08 16:38:55.614889+00",
+    "age": "13.813397"
+  },
+  "sequences": [],
+  "gate": "PASS"
+}

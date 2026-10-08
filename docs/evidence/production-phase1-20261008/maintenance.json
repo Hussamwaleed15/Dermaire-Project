@@ -1,0 +1,16 @@
+{
+  "actions": [
+    {
+      "action": "stop",
+      "requestedUTC": "2026-10-08T16:51:17.946243+00:00",
+      "observedUTC": "2026-10-08T16:51:25.073863+00:00",
+      "state": "Stopped"
+    },
+    {
+      "action": "start",
+      "requestedUTC": "2026-10-08T16:56:46.979711+00:00",
+      "observedUTC": "2026-10-08T16:56:55.677992+00:00",
+      "state": "Running"
+    }
+  ]
+}

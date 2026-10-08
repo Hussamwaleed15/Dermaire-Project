@@ -1,0 +1,113 @@
+{
+  "observedUTC": "2026-10-08T16:50:23.737386+00:00",
+  "server": {
+    "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.DBforPostgreSQL/flexibleServers/dermaire-db-server",
+    "location": "Canada Central",
+    "sku": {
+      "name": "Standard_B1ms",
+      "tier": "Burstable"
+    },
+    "properties": {
+      "version": "18",
+      "minorVersion": "6",
+      "state": "Ready",
+      "backup": {
+        "backupRetentionDays": 7,
+        "geoRedundantBackup": "Disabled",
+        "earliestRestoreDate": "2026-10-02T07:14:08.1905287+00:00"
+      },
+      "storage": {
+        "type": "Premium_LRS",
+        "iops": 120,
+        "tier": "P4",
+        "storageSizeGB": 32,
+        "autoGrow": "Disabled"
+      },
+      "network": {
+        "publicNetworkAccess": "Enabled"
+      },
+      "dataEncryption": {
+        "type": "SystemManaged"
+      },
+      "authConfig": {
+        "activeDirectoryAuth": "Disabled",
+        "passwordAuth": "Enabled"
+      },
+      "highAvailability": {
+        "mode": "Disabled",
+        "state": "NotEnabled"
+      },
+      "availabilityZone": "2",
+      "fullyQualifiedDomainName": "dermaire-db-server.postgres.database.azure.com"
+    }
+  },
+  "firewall": {
+    "value": [
+      {
+        "properties": {
+          "startIpAddress": "WITHHELD",
+          "endIpAddress": "WITHHELD"
+        },
+        "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.DBforPostgreSQL/flexibleServers/dermaire-db-server/firewallRules/ClientIPAddress_2026-9-20_9-57-14",
+        "name": "ClientIPAddress_2026-9-20_9-57-14",
+        "type": "Microsoft.DBforPostgreSQL/flexibleServers/firewallRules"
+      },
+      {
+        "properties": {
+          "startIpAddress": "WITHHELD",
+          "endIpAddress": "WITHHELD"
+        },
+        "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.DBforPostgreSQL/flexibleServers/dermaire-db-server/firewallRules/AllowAllAzureServicesAndResourcesWithinAzureIps_2026-9-20_9-58-27",
+        "name": "AllowAllAzureServicesAndResourcesWithinAzureIps_2026-9-20_9-58-27",
+        "type": "Microsoft.DBforPostgreSQL/flexibleServers/firewallRules"
+      }
+    ]
+  },
+  "secureTransport": "on",
+  "settingsHash": "a7b4a33fe3b37d496e5a055f943662433851f7af06ccdf37b8957fa6ae623243",
+  "activityCount": 12,
+  "sourceOperations": [],
+  "storageAccount": {
+    "httpsOnly": true,
+    "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.Storage/storageAccounts/dermaireimg479341",
+    "immutable": null,
+    "location": "canadacentral",
+    "minTls": "TLS1_2",
+    "network": {
+      "bypass": "None",
+      "defaultAction": "Allow",
+      "ipRules": [],
+      "ipv6Rules": [],
+      "resourceAccessRules": null,
+      "virtualNetworkRules": []
+    },
+    "publicAccess": false
+  },
+  "containersArm": {
+    "value": [
+      {
+        "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.Storage/storageAccounts/dermaireimg479341/blobServices/default/containers/skin-images",
+        "name": "skin-images",
+        "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
+        "etag": "\"0x8DF217C3D87012D\"",
+        "properties": {
+          "immutableStorageWithVersioning": {
+            "enabled": false
+          },
+          "deleted": false,
+          "remainingRetentionDays": 0,
+          "defaultEncryptionScope": "$account-encryption-key",
+          "denyEncryptionScopeOverride": false,
+          "publicAccess": "None",
+          "leaseStatus": "Unlocked",
+          "leaseState": "Available",
+          "lastModifiedTime": "2026-10-03T18:29:20.0000000Z",
+          "hasImmutabilityPolicy": false,
+          "hasLegalHold": false
+        }
+      }
+    ]
+  },
+  "priorFileFound": true,
+  "firewallFingerprintSHA256": "746fe018f2be956539a0a69986cedf593379f22c4c58bfdd59736770a30aa87c"
+}

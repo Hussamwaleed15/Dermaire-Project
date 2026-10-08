@@ -1,8 +1,10 @@
 # Production release gate and rollback runbook
 
-**Latest authorized rollout: HALTED before production mutation.** [Fresh 8 October preflight and policy report](production-rollout-policy-halted-20261008-1548.md): 24-hour PITR validity adopted, full PITR skipped, backup/WAL healthy, but ORM/frozen-baseline index mismatch blocks Phase 1. Runtime remains admin; no stamp, journal, deployment or traffic changes.
+**Latest production execution: PHASE 1 COMPLETE (8 October 2026).** [Production actions, roles, runtime identity, integrity and maintenance evidence](production-phase1-20261008.md). Database is managed at `20261008_01`, runtime is `dermaire_runtime`, normal writes reopened. Do not rerun baseline adoption or role creation. Phase 2 was not started. Exact adoption commit timestamps were lost to output framing; independently observed timestamps and the limitation are retained in the report.
 
-**Latest preparation: INDEX RECONCILIATION READY FOR PRODUCTION.** [Reviewed design and synthetic PostgreSQL 18.6 rehearsal](index-reconciliation-20261008.md) closes that specific index blocker. Production remains unchanged; all other rollout gates still apply. Current head/readiness revision: `20261008_01`.
+**Earlier authorized rollout: HALTED before production mutation.** [Fresh 8 October preflight and policy report](production-rollout-policy-halted-20261008-1548.md): 24-hour PITR validity adopted, full PITR skipped, backup/WAL healthy, but ORM/frozen-baseline index mismatch blocks Phase 1. Runtime remains admin; no stamp, journal, deployment or traffic changes.
+
+**Earlier preparation: INDEX RECONCILIATION READY FOR PRODUCTION.** [Reviewed design and synthetic PostgreSQL 18.6 rehearsal](index-reconciliation-20261008.md) closes that specific index blocker. At that preparation checkpoint production remained unchanged; other rollout gates still applied. Current head/readiness revision: `20261008_01`.
 
 ## Checkpoint-validity policy — authorized 8 October 2026
 

@@ -1,0 +1,389 @@
+{
+  "startedUTC": "2026-10-08T16:54:12.957456+00:00",
+  "actions": [
+    {
+      "utc": "2026-10-08T16:54:13.984180+00:00",
+      "action": "least-privilege roles, scoped ownership/grants, PUBLIC database DDL revocation and SCRAM credentials committed"
+    }
+  ],
+  "stage": "roles",
+  "identity": {
+    "current_user": "dermaireadmin",
+    "current_database": "dermaire",
+    "system_identifier": "7687509194730582065"
+  },
+  "tls": {
+    "ssl": true,
+    "version": "TLSv1.3"
+  },
+  "roles": [
+    {
+      "rolname": "dermaire_migrator",
+      "rolsuper": false,
+      "rolinherit": true,
+      "rolcreaterole": false,
+      "rolcreatedb": false,
+      "rolreplication": false,
+      "rolbypassrls": false
+    },
+    {
+      "rolname": "dermaire_runtime",
+      "rolsuper": false,
+      "rolinherit": false,
+      "rolcreaterole": false,
+      "rolcreatedb": false,
+      "rolreplication": false,
+      "rolbypassrls": false
+    }
+  ],
+  "owners": [
+    {
+      "relname": "alembic_version",
+      "relkind": "r",
+      "owner": "dermaire_migrator"
+    },
+    {
+      "relname": "alembic_version_pkc",
+      "relkind": "i",
+      "owner": "dermaire_migrator"
+    },
+    {
+      "relname": "audit_logs",
+      "relkind": "r",
+      "owner": "dermaire_migrator"
+    },
+    {
+      "relname": "audit_logs_pkey",
+      "relkind": "i",
+      "owner": "dermaire_migrator"
+    },
+    {
+      "relname": "captures",
+      "relkind": "r",
+      "owner": "dermaire_migrator"
+    },
+    {
+      "relname": "captures_pkey",
+      "relkind": "i",
+      "owner": "dermaire_migrator"
+    },
+    {
+      "relname": "checkins",
+      "relkind": "r",
+      "owner": "dermaire_migrator"
+    },
+    {
+      "relname": "checkins_pkey",
+      "relkind": "i",
+      "owner": "dermaire_migrator"
+    },
+    {
+      "relname": "clinical_notes",
+      "relkind": "r",
+      "owner": "dermaire_migrator"
+    },
+    {
+      "relname": "clinical_notes_pkey",
+      "relkind": "i",
+      "owner": "dermaire_migrator"
+    },
+    {
+      "relname": "daily_contexts",
+      "relkind": "r",
+      "owner": "dermaire_migrator"
+    },
+    {
+      "relname": "daily_contexts_pkey",
+      "relkind": "i",
+      "owner": "dermaire_migrator"
+    },
+    {
+      "relname": "doctor_patient_access",
+      "relkind": "r",
+      "owner": "dermaire_migrator"
+    },
+    {
+      "relname": "doctor_patient_access_pkey",
+      "relkind": "i",
+      "owner": "dermaire_migrator"
+    },
+    {
+      "relname": "doctor_review_actions",
+      "relkind": "r",
+      "owner": "dermaire_migrator"
+    },
+    {
+      "relname": "doctor_review_actions_pkey",
+      "relkind": "i",
+      "owner": "dermaire_migrator"
+    },
+    {
+      "relname": "experiment_evaluations",
+      "relkind": "r",
+      "owner": "dermaire_migrator"
+    },
+    {
+      "relname": "experiment_evaluations_pkey",
+      "relkind": "i",
+      "owner": "dermaire_migrator"
+    },
+    {
+      "relname": "experiments",
+      "relkind": "r",
+      "owner": "dermaire_migrator"
+    },
+    {
+      "relname": "experiments_pkey",
+      "relkind": "i",
+      "owner": "dermaire_migrator"
+    },
+    {
+      "relname": "ix_audit_logs_actor_id",
+      "relkind": "i",
+      "owner": "dermaire_migrator"
+    },
+    {
+      "relname": "ix_captures_user_id",
+      "relkind": "i",
+      "owner": "dermaire_migrator"
+    },
+    {
+      "relname": "ix_checkins_user_id",
+      "relkind": "i",
+      "owner": "dermaire_migrator"
+    },
+    {
+      "relname": "ix_clinical_notes_doctor_id",
+      "relkind": "i",
+      "owner": "dermaire_migrator"
+    },
+    {
+      "relname": "ix_clinical_notes_patient_id",
+      "relkind": "i",
+      "owner": "dermaire_migrator"
+    },
+    {
+      "relname": "ix_daily_contexts_user_id",
+      "relkind": "i",
+      "owner": "dermaire_migrator"
+    },
+    {
+      "relname": "ix_doctor_patient_access_access_token",
+      "relkind": "i",
+      "owner": "dermaire_migrator"
+    },
+    {
+      "relname": "ix_doctor_patient_access_doctor_id",
+      "relkind": "i",
+      "owner": "dermaire_migrator"
+    },
+    {
+      "relname": "ix_doctor_patient_access_patient_id",
+      "relkind": "i",
+      "owner": "dermaire_migrator"
+    },
+    {
+      "relname": "ix_doctor_review_actions_access_id",
+      "relkind": "i",
+      "owner": "dermaire_migrator"
+    },
+    {
+      "relname": "ix_doctor_review_actions_doctor_id",
+      "relkind": "i",
+      "owner": "dermaire_migrator"
+    },
+    {
+      "relname": "ix_doctor_review_actions_patient_id",
+      "relkind": "i",
+      "owner": "dermaire_migrator"
+    },
+    {
+      "relname": "ix_experiment_evaluations_experiment_id",
+      "relkind": "i",
+      "owner": "dermaire_migrator"
+    },
+    {
+      "relname": "ix_experiment_evaluations_user_id",
+      "relkind": "i",
+      "owner": "dermaire_migrator"
+    },
+    {
+      "relname": "ix_experiments_routine_entry_id",
+      "relkind": "i",
+      "owner": "dermaire_migrator"
+    },
+    {
+      "relname": "ix_experiments_user_id",
+      "relkind": "i",
+      "owner": "dermaire_migrator"
+    },
+    {
+      "relname": "ix_measurements_capture_id",
+      "relkind": "i",
+      "owner": "dermaire_migrator"
+    },
+    {
+      "relname": "ix_measurements_user_id",
+      "relkind": "i",
+      "owner": "dermaire_migrator"
+    },
+    {
+      "relname": "ix_product_intelligence_user_id",
+      "relkind": "i",
+      "owner": "dermaire_migrator"
+    },
+    {
+      "relname": "ix_products_user_id",
+      "relkind": "i",
+      "owner": "dermaire_migrator"
+    },
+    {
+      "relname": "ix_reward_redemptions_user_id",
+      "relkind": "i",
+      "owner": "dermaire_migrator"
+    },
+    {
+      "relname": "ix_routine_adherence_routine_entry_id",
+      "relkind": "i",
+      "owner": "dermaire_migrator"
+    },
+    {
+      "relname": "ix_routine_adherence_user_id",
+      "relkind": "i",
+      "owner": "dermaire_migrator"
+    },
+    {
+      "relname": "ix_routine_entries_product_id",
+      "relkind": "i",
+      "owner": "dermaire_migrator"
+    },
+    {
+      "relname": "ix_routine_entries_user_id",
+      "relkind": "i",
+      "owner": "dermaire_migrator"
+    },
+    {
+      "relname": "ix_users_email",
+      "relkind": "i",
+      "owner": "dermaire_migrator"
+    },
+    {
+      "relname": "ix_users_reset_token_hash",
+      "relkind": "i",
+      "owner": "dermaire_migrator"
+    },
+    {
+      "relname": "measurements",
+      "relkind": "r",
+      "owner": "dermaire_migrator"
+    },
+    {
+      "relname": "measurements_pkey",
+      "relkind": "i",
+      "owner": "dermaire_migrator"
+    },
+    {
+      "relname": "product_intelligence",
+      "relkind": "r",
+      "owner": "dermaire_migrator"
+    },
+    {
+      "relname": "product_intelligence_pkey",
+      "relkind": "i",
+      "owner": "dermaire_migrator"
+    },
+    {
+      "relname": "product_intelligence_product_id_key",
+      "relkind": "i",
+      "owner": "dermaire_migrator"
+    },
+    {
+      "relname": "products",
+      "relkind": "r",
+      "owner": "dermaire_migrator"
+    },
+    {
+      "relname": "products_pkey",
+      "relkind": "i",
+      "owner": "dermaire_migrator"
+    },
+    {
+      "relname": "reward_redemptions",
+      "relkind": "r",
+      "owner": "dermaire_migrator"
+    },
+    {
+      "relname": "reward_redemptions_pkey",
+      "relkind": "i",
+      "owner": "dermaire_migrator"
+    },
+    {
+      "relname": "routine_adherence",
+      "relkind": "r",
+      "owner": "dermaire_migrator"
+    },
+    {
+      "relname": "routine_adherence_pkey",
+      "relkind": "i",
+      "owner": "dermaire_migrator"
+    },
+    {
+      "relname": "routine_entries",
+      "relkind": "r",
+      "owner": "dermaire_migrator"
+    },
+    {
+      "relname": "routine_entries_pkey",
+      "relkind": "i",
+      "owner": "dermaire_migrator"
+    },
+    {
+      "relname": "uq_adherence_entry_day_slot",
+      "relkind": "i",
+      "owner": "dermaire_migrator"
+    },
+    {
+      "relname": "uq_context_user_date",
+      "relkind": "i",
+      "owner": "dermaire_migrator"
+    },
+    {
+      "relname": "uq_doctor_review_sequence",
+      "relkind": "i",
+      "owner": "dermaire_migrator"
+    },
+    {
+      "relname": "uq_experiments_active_owner",
+      "relkind": "i",
+      "owner": "dermaire_migrator"
+    },
+    {
+      "relname": "uq_measurement_capture_version",
+      "relkind": "i",
+      "owner": "dermaire_migrator"
+    },
+    {
+      "relname": "uq_routine_active_am",
+      "relkind": "i",
+      "owner": "dermaire_migrator"
+    },
+    {
+      "relname": "uq_routine_active_pm",
+      "relkind": "i",
+      "owner": "dermaire_migrator"
+    },
+    {
+      "relname": "users",
+      "relkind": "r",
+      "owner": "dermaire_migrator"
+    },
+    {
+      "relname": "users_pkey",
+      "relkind": "i",
+      "owner": "dermaire_migrator"
+    }
+  ],
+  "runtimeMemberships": [],
+  "gate": "PASS",
+  "finishedUTC": "2026-10-08T16:54:13.995425+00:00"
+}

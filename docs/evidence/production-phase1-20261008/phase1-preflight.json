@@ -1,0 +1,502 @@
+{
+  "startedUTC": "2026-10-08T16:48:00.073553+00:00",
+  "actions": [],
+  "stage": "preflight",
+  "identity": {
+    "current_user": "dermaireadmin",
+    "current_database": "dermaire",
+    "system_identifier": "7687509194730582065"
+  },
+  "tls": {
+    "ssl": true,
+    "version": "TLSv1.3"
+  },
+  "differences": [
+    "('remove_index', Index('uq_experiments_active_owner', Column('active_owner', VARCHAR(length=36), table=<experiments>), unique=True))",
+    "('add_constraint', UniqueConstraint(Column('active_owner', NullType(), table=<experiments>)))",
+    "('add_index', Index('ix_users_reset_token_hash', Column('reset_token_hash', String(length=255), table=<users>)))"
+  ],
+  "rowCounts": {
+    "audit_logs": 393,
+    "captures": 1,
+    "checkins": 0,
+    "clinical_notes": 0,
+    "daily_contexts": 0,
+    "doctor_patient_access": 0,
+    "doctor_review_actions": 0,
+    "experiment_evaluations": 0,
+    "experiments": 0,
+    "measurements": 0,
+    "product_intelligence": 0,
+    "products": 0,
+    "reward_redemptions": 0,
+    "routine_adherence": 0,
+    "routine_entries": 0,
+    "users": 5
+  },
+  "invariants": {
+    "constraintCounts": {
+      "f": 27,
+      "c": 16
+    },
+    "violations": {
+      "f": 0,
+      "c": 0
+    },
+    "indexes": [
+      {
+        "relname": "audit_logs_pkey",
+        "indisvalid": true,
+        "indisready": true,
+        "indislive": true,
+        "indisunique": true,
+        "indnullsnotdistinct": false,
+        "definition": "CREATE UNIQUE INDEX audit_logs_pkey ON public.audit_logs USING btree (id)"
+      },
+      {
+        "relname": "captures_pkey",
+        "indisvalid": true,
+        "indisready": true,
+        "indislive": true,
+        "indisunique": true,
+        "indnullsnotdistinct": false,
+        "definition": "CREATE UNIQUE INDEX captures_pkey ON public.captures USING btree (id)"
+      },
+      {
+        "relname": "checkins_pkey",
+        "indisvalid": true,
+        "indisready": true,
+        "indislive": true,
+        "indisunique": true,
+        "indnullsnotdistinct": false,
+        "definition": "CREATE UNIQUE INDEX checkins_pkey ON public.checkins USING btree (id)"
+      },
+      {
+        "relname": "clinical_notes_pkey",
+        "indisvalid": true,
+        "indisready": true,
+        "indislive": true,
+        "indisunique": true,
+        "indnullsnotdistinct": false,
+        "definition": "CREATE UNIQUE INDEX clinical_notes_pkey ON public.clinical_notes USING btree (id)"
+      },
+      {
+        "relname": "daily_contexts_pkey",
+        "indisvalid": true,
+        "indisready": true,
+        "indislive": true,
+        "indisunique": true,
+        "indnullsnotdistinct": false,
+        "definition": "CREATE UNIQUE INDEX daily_contexts_pkey ON public.daily_contexts USING btree (id)"
+      },
+      {
+        "relname": "doctor_patient_access_pkey",
+        "indisvalid": true,
+        "indisready": true,
+        "indislive": true,
+        "indisunique": true,
+        "indnullsnotdistinct": false,
+        "definition": "CREATE UNIQUE INDEX doctor_patient_access_pkey ON public.doctor_patient_access USING btree (id)"
+      },
+      {
+        "relname": "doctor_review_actions_pkey",
+        "indisvalid": true,
+        "indisready": true,
+        "indislive": true,
+        "indisunique": true,
+        "indnullsnotdistinct": false,
+        "definition": "CREATE UNIQUE INDEX doctor_review_actions_pkey ON public.doctor_review_actions USING btree (id)"
+      },
+      {
+        "relname": "experiment_evaluations_pkey",
+        "indisvalid": true,
+        "indisready": true,
+        "indislive": true,
+        "indisunique": true,
+        "indnullsnotdistinct": false,
+        "definition": "CREATE UNIQUE INDEX experiment_evaluations_pkey ON public.experiment_evaluations USING btree (id)"
+      },
+      {
+        "relname": "experiments_pkey",
+        "indisvalid": true,
+        "indisready": true,
+        "indislive": true,
+        "indisunique": true,
+        "indnullsnotdistinct": false,
+        "definition": "CREATE UNIQUE INDEX experiments_pkey ON public.experiments USING btree (id)"
+      },
+      {
+        "relname": "ix_audit_logs_actor_id",
+        "indisvalid": true,
+        "indisready": true,
+        "indislive": true,
+        "indisunique": false,
+        "indnullsnotdistinct": false,
+        "definition": "CREATE INDEX ix_audit_logs_actor_id ON public.audit_logs USING btree (actor_id)"
+      },
+      {
+        "relname": "ix_captures_user_id",
+        "indisvalid": true,
+        "indisready": true,
+        "indislive": true,
+        "indisunique": false,
+        "indnullsnotdistinct": false,
+        "definition": "CREATE INDEX ix_captures_user_id ON public.captures USING btree (user_id)"
+      },
+      {
+        "relname": "ix_checkins_user_id",
+        "indisvalid": true,
+        "indisready": true,
+        "indislive": true,
+        "indisunique": false,
+        "indnullsnotdistinct": false,
+        "definition": "CREATE INDEX ix_checkins_user_id ON public.checkins USING btree (user_id)"
+      },
+      {
+        "relname": "ix_clinical_notes_doctor_id",
+        "indisvalid": true,
+        "indisready": true,
+        "indislive": true,
+        "indisunique": false,
+        "indnullsnotdistinct": false,
+        "definition": "CREATE INDEX ix_clinical_notes_doctor_id ON public.clinical_notes USING btree (doctor_id)"
+      },
+      {
+        "relname": "ix_clinical_notes_patient_id",
+        "indisvalid": true,
+        "indisready": true,
+        "indislive": true,
+        "indisunique": false,
+        "indnullsnotdistinct": false,
+        "definition": "CREATE INDEX ix_clinical_notes_patient_id ON public.clinical_notes USING btree (patient_id)"
+      },
+      {
+        "relname": "ix_daily_contexts_user_id",
+        "indisvalid": true,
+        "indisready": true,
+        "indislive": true,
+        "indisunique": false,
+        "indnullsnotdistinct": false,
+        "definition": "CREATE INDEX ix_daily_contexts_user_id ON public.daily_contexts USING btree (user_id)"
+      },
+      {
+        "relname": "ix_doctor_patient_access_access_token",
+        "indisvalid": true,
+        "indisready": true,
+        "indislive": true,
+        "indisunique": true,
+        "indnullsnotdistinct": false,
+        "definition": "CREATE UNIQUE INDEX ix_doctor_patient_access_access_token ON public.doctor_patient_access USING btree (access_token)"
+      },
+      {
+        "relname": "ix_doctor_patient_access_doctor_id",
+        "indisvalid": true,
+        "indisready": true,
+        "indislive": true,
+        "indisunique": false,
+        "indnullsnotdistinct": false,
+        "definition": "CREATE INDEX ix_doctor_patient_access_doctor_id ON public.doctor_patient_access USING btree (doctor_id)"
+      },
+      {
+        "relname": "ix_doctor_patient_access_patient_id",
+        "indisvalid": true,
+        "indisready": true,
+        "indislive": true,
+        "indisunique": false,
+        "indnullsnotdistinct": false,
+        "definition": "CREATE INDEX ix_doctor_patient_access_patient_id ON public.doctor_patient_access USING btree (patient_id)"
+      },
+      {
+        "relname": "ix_doctor_review_actions_access_id",
+        "indisvalid": true,
+        "indisready": true,
+        "indislive": true,
+        "indisunique": false,
+        "indnullsnotdistinct": false,
+        "definition": "CREATE INDEX ix_doctor_review_actions_access_id ON public.doctor_review_actions USING btree (access_id)"
+      },
+      {
+        "relname": "ix_doctor_review_actions_doctor_id",
+        "indisvalid": true,
+        "indisready": true,
+        "indislive": true,
+        "indisunique": false,
+        "indnullsnotdistinct": false,
+        "definition": "CREATE INDEX ix_doctor_review_actions_doctor_id ON public.doctor_review_actions USING btree (doctor_id)"
+      },
+      {
+        "relname": "ix_doctor_review_actions_patient_id",
+        "indisvalid": true,
+        "indisready": true,
+        "indislive": true,
+        "indisunique": false,
+        "indnullsnotdistinct": false,
+        "definition": "CREATE INDEX ix_doctor_review_actions_patient_id ON public.doctor_review_actions USING btree (patient_id)"
+      },
+      {
+        "relname": "ix_experiment_evaluations_experiment_id",
+        "indisvalid": true,
+        "indisready": true,
+        "indislive": true,
+        "indisunique": false,
+        "indnullsnotdistinct": false,
+        "definition": "CREATE INDEX ix_experiment_evaluations_experiment_id ON public.experiment_evaluations USING btree (experiment_id)"
+      },
+      {
+        "relname": "ix_experiment_evaluations_user_id",
+        "indisvalid": true,
+        "indisready": true,
+        "indislive": true,
+        "indisunique": false,
+        "indnullsnotdistinct": false,
+        "definition": "CREATE INDEX ix_experiment_evaluations_user_id ON public.experiment_evaluations USING btree (user_id)"
+      },
+      {
+        "relname": "ix_experiments_routine_entry_id",
+        "indisvalid": true,
+        "indisready": true,
+        "indislive": true,
+        "indisunique": false,
+        "indnullsnotdistinct": false,
+        "definition": "CREATE INDEX ix_experiments_routine_entry_id ON public.experiments USING btree (routine_entry_id)"
+      },
+      {
+        "relname": "ix_experiments_user_id",
+        "indisvalid": true,
+        "indisready": true,
+        "indislive": true,
+        "indisunique": false,
+        "indnullsnotdistinct": false,
+        "definition": "CREATE INDEX ix_experiments_user_id ON public.experiments USING btree (user_id)"
+      },
+      {
+        "relname": "ix_measurements_capture_id",
+        "indisvalid": true,
+        "indisready": true,
+        "indislive": true,
+        "indisunique": false,
+        "indnullsnotdistinct": false,
+        "definition": "CREATE INDEX ix_measurements_capture_id ON public.measurements USING btree (capture_id)"
+      },
+      {
+        "relname": "ix_measurements_user_id",
+        "indisvalid": true,
+        "indisready": true,
+        "indislive": true,
+        "indisunique": false,
+        "indnullsnotdistinct": false,
+        "definition": "CREATE INDEX ix_measurements_user_id ON public.measurements USING btree (user_id)"
+      },
+      {
+        "relname": "ix_product_intelligence_user_id",
+        "indisvalid": true,
+        "indisready": true,
+        "indislive": true,
+        "indisunique": false,
+        "indnullsnotdistinct": false,
+        "definition": "CREATE INDEX ix_product_intelligence_user_id ON public.product_intelligence USING btree (user_id)"
+      },
+      {
+        "relname": "ix_products_user_id",
+        "indisvalid": true,
+        "indisready": true,
+        "indislive": true,
+        "indisunique": false,
+        "indnullsnotdistinct": false,
+        "definition": "CREATE INDEX ix_products_user_id ON public.products USING btree (user_id)"
+      },
+      {
+        "relname": "ix_reward_redemptions_user_id",
+        "indisvalid": true,
+        "indisready": true,
+        "indislive": true,
+        "indisunique": false,
+        "indnullsnotdistinct": false,
+        "definition": "CREATE INDEX ix_reward_redemptions_user_id ON public.reward_redemptions USING btree (user_id)"
+      },
+      {
+        "relname": "ix_routine_adherence_routine_entry_id",
+        "indisvalid": true,
+        "indisready": true,
+        "indislive": true,
+        "indisunique": false,
+        "indnullsnotdistinct": false,
+        "definition": "CREATE INDEX ix_routine_adherence_routine_entry_id ON public.routine_adherence USING btree (routine_entry_id)"
+      },
+      {
+        "relname": "ix_routine_adherence_user_id",
+        "indisvalid": true,
+        "indisready": true,
+        "indislive": true,
+        "indisunique": false,
+        "indnullsnotdistinct": false,
+        "definition": "CREATE INDEX ix_routine_adherence_user_id ON public.routine_adherence USING btree (user_id)"
+      },
+      {
+        "relname": "ix_routine_entries_product_id",
+        "indisvalid": true,
+        "indisready": true,
+        "indislive": true,
+        "indisunique": false,
+        "indnullsnotdistinct": false,
+        "definition": "CREATE INDEX ix_routine_entries_product_id ON public.routine_entries USING btree (product_id)"
+      },
+      {
+        "relname": "ix_routine_entries_user_id",
+        "indisvalid": true,
+        "indisready": true,
+        "indislive": true,
+        "indisunique": false,
+        "indnullsnotdistinct": false,
+        "definition": "CREATE INDEX ix_routine_entries_user_id ON public.routine_entries USING btree (user_id)"
+      },
+      {
+        "relname": "ix_users_email",
+        "indisvalid": true,
+        "indisready": true,
+        "indislive": true,
+        "indisunique": true,
+        "indnullsnotdistinct": false,
+        "definition": "CREATE UNIQUE INDEX ix_users_email ON public.users USING btree (email)"
+      },
+      {
+        "relname": "measurements_pkey",
+        "indisvalid": true,
+        "indisready": true,
+        "indislive": true,
+        "indisunique": true,
+        "indnullsnotdistinct": false,
+        "definition": "CREATE UNIQUE INDEX measurements_pkey ON public.measurements USING btree (id)"
+      },
+      {
+        "relname": "product_intelligence_pkey",
+        "indisvalid": true,
+        "indisready": true,
+        "indislive": true,
+        "indisunique": true,
+        "indnullsnotdistinct": false,
+        "definition": "CREATE UNIQUE INDEX product_intelligence_pkey ON public.product_intelligence USING btree (id)"
+      },
+      {
+        "relname": "product_intelligence_product_id_key",
+        "indisvalid": true,
+        "indisready": true,
+        "indislive": true,
+        "indisunique": true,
+        "indnullsnotdistinct": false,
+        "definition": "CREATE UNIQUE INDEX product_intelligence_product_id_key ON public.product_intelligence USING btree (product_id)"
+      },
+      {
+        "relname": "products_pkey",
+        "indisvalid": true,
+        "indisready": true,
+        "indislive": true,
+        "indisunique": true,
+        "indnullsnotdistinct": false,
+        "definition": "CREATE UNIQUE INDEX products_pkey ON public.products USING btree (id)"
+      },
+      {
+        "relname": "reward_redemptions_pkey",
+        "indisvalid": true,
+        "indisready": true,
+        "indislive": true,
+        "indisunique": true,
+        "indnullsnotdistinct": false,
+        "definition": "CREATE UNIQUE INDEX reward_redemptions_pkey ON public.reward_redemptions USING btree (id)"
+      },
+      {
+        "relname": "routine_adherence_pkey",
+        "indisvalid": true,
+        "indisready": true,
+        "indislive": true,
+        "indisunique": true,
+        "indnullsnotdistinct": false,
+        "definition": "CREATE UNIQUE INDEX routine_adherence_pkey ON public.routine_adherence USING btree (id)"
+      },
+      {
+        "relname": "routine_entries_pkey",
+        "indisvalid": true,
+        "indisready": true,
+        "indislive": true,
+        "indisunique": true,
+        "indnullsnotdistinct": false,
+        "definition": "CREATE UNIQUE INDEX routine_entries_pkey ON public.routine_entries USING btree (id)"
+      },
+      {
+        "relname": "uq_adherence_entry_day_slot",
+        "indisvalid": true,
+        "indisready": true,
+        "indislive": true,
+        "indisunique": true,
+        "indnullsnotdistinct": false,
+        "definition": "CREATE UNIQUE INDEX uq_adherence_entry_day_slot ON public.routine_adherence USING btree (routine_entry_id, date, slot)"
+      },
+      {
+        "relname": "uq_context_user_date",
+        "indisvalid": true,
+        "indisready": true,
+        "indislive": true,
+        "indisunique": true,
+        "indnullsnotdistinct": false,
+        "definition": "CREATE UNIQUE INDEX uq_context_user_date ON public.daily_contexts USING btree (user_id, date)"
+      },
+      {
+        "relname": "uq_doctor_review_sequence",
+        "indisvalid": true,
+        "indisready": true,
+        "indislive": true,
+        "indisunique": true,
+        "indnullsnotdistinct": false,
+        "definition": "CREATE UNIQUE INDEX uq_doctor_review_sequence ON public.doctor_review_actions USING btree (patient_id, sequence)"
+      },
+      {
+        "relname": "uq_experiments_active_owner",
+        "indisvalid": true,
+        "indisready": true,
+        "indislive": true,
+        "indisunique": true,
+        "indnullsnotdistinct": false,
+        "definition": "CREATE UNIQUE INDEX uq_experiments_active_owner ON public.experiments USING btree (active_owner)"
+      },
+      {
+        "relname": "uq_measurement_capture_version",
+        "indisvalid": true,
+        "indisready": true,
+        "indislive": true,
+        "indisunique": true,
+        "indnullsnotdistinct": false,
+        "definition": "CREATE UNIQUE INDEX uq_measurement_capture_version ON public.measurements USING btree (capture_id, algorithm_version)"
+      },
+      {
+        "relname": "uq_routine_active_am",
+        "indisvalid": true,
+        "indisready": true,
+        "indislive": true,
+        "indisunique": true,
+        "indnullsnotdistinct": false,
+        "definition": "CREATE UNIQUE INDEX uq_routine_active_am ON public.routine_entries USING btree (active_am_product)"
+      },
+      {
+        "relname": "uq_routine_active_pm",
+        "indisvalid": true,
+        "indisready": true,
+        "indislive": true,
+        "indisunique": true,
+        "indnullsnotdistinct": false,
+        "definition": "CREATE UNIQUE INDEX uq_routine_active_pm ON public.routine_entries USING btree (active_pm_product)"
+      },
+      {
+        "relname": "users_pkey",
+        "indisvalid": true,
+        "indisready": true,
+        "indislive": true,
+        "indisunique": true,
+        "indnullsnotdistinct": false,
+        "definition": "CREATE UNIQUE INDEX users_pkey ON public.users USING btree (id)"
+      }
+    ]
+  },
+  "psqlVersion": "psql (PostgreSQL) 15.19 (Debian 15.19-0+deb12u1)",
+  "gate": "PASS",
+  "finishedUTC": "2026-10-08T16:48:01.090846+00:00"
+}

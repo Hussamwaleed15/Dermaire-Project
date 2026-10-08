@@ -1,0 +1,11 @@
+{
+  "requestedUTC": "2026-10-08T17:01:29.659442+00:00",
+  "observedUTC": "2026-10-08T17:01:34.550954+00:00",
+  "originalAccessPolicyRestored": true,
+  "accessDefaultNormalization": "original implicit/null Allow restored as explicit Allow because PATCH null is ignored",
+  "temporaryRestrictionsRemoved": true,
+  "appState": "Running",
+  "legacyHealth": 200,
+  "writes": "normal writes reopened after all Phase 1 gates PASS",
+  "gate": "PASS"
+}

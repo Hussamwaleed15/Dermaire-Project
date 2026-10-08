@@ -1,0 +1,43 @@
+{
+  "observedUTC": "2026-10-08T16:52:29.594148+00:00",
+  "readonly": {
+    "transaction_read_only": "on"
+  },
+  "revisionTable": {
+    "name": "alembic_version"
+  },
+  "indexes": [
+    {
+      "relname": "ix_experiments_routine_entry_id",
+      "indisvalid": true,
+      "indisready": true,
+      "indislive": true,
+      "definition": "CREATE INDEX ix_experiments_routine_entry_id ON public.experiments USING btree (routine_entry_id)"
+    },
+    {
+      "relname": "ix_users_reset_token_hash",
+      "indisvalid": true,
+      "indisready": true,
+      "indislive": true,
+      "definition": "CREATE INDEX ix_users_reset_token_hash ON public.users USING btree (reset_token_hash)"
+    },
+    {
+      "relname": "uq_experiments_active_owner",
+      "indisvalid": true,
+      "indisready": true,
+      "indislive": true,
+      "definition": "CREATE UNIQUE INDEX uq_experiments_active_owner ON public.experiments USING btree (active_owner)"
+    }
+  ],
+  "constraint": [
+    {
+      "conname": "uq_experiments_active_owner",
+      "definition": "UNIQUE (active_owner)"
+    }
+  ],
+  "roles": [],
+  "sessions": {
+    "n": 0
+  },
+  "countsFileExists": true
+}
