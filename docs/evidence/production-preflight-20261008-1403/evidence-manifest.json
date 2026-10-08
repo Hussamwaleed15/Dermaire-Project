@@ -1,0 +1,26 @@
+[
+  {
+    "file": "fresh-preflight.json",
+    "sha256": "e6b9b4c2f3d0a5922d1757fb222f4a770ad8268bba36f2e5eb5ffab5df354a3c"
+  },
+  {
+    "file": "db-catalog.json",
+    "sha256": "70b8406aa9063d833d05650b0cc16580034720eda6167051ca15bff07801db24"
+  },
+  {
+    "file": "deployed-dotenv-metadata.json",
+    "sha256": "7fda1394035f6eb099c632e07a46139b9c6b4ae859349f7201c2b502d1c58334"
+  },
+  {
+    "file": "schema-comparison.json",
+    "sha256": "2ac11a4b062ea3b0c97bb30df859745c1527e2e0931eff23adb7e7db230001c9"
+  },
+  {
+    "file": "rollback-artifact-metadata.json",
+    "sha256": "cdb4ef12f5ed2e5edbe416c2458616da53e04f0a90d75a49cfafa34cdd0265a6"
+  },
+  {
+    "file": "monitoring-preflight.json",
+    "sha256": "021eec5d3e301d026483ea6ce8fa3f4a4d7428edb268c18f4a2da7be06027322"
+  }
+]

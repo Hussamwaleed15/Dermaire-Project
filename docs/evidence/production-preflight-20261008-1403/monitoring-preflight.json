@@ -1,0 +1,66 @@
+{
+  "observedUTC": "2026-10-08T14:11:08.849170+00:00",
+  "productionDiagnostics": [],
+  "resources": [
+    {
+      "group": "dermaire-readiness-nonprod-20261006",
+      "name": "dermaire-readiness-owners",
+      "type": "Microsoft.Insights/actiongroups"
+    },
+    {
+      "group": "dermaire-readiness-nonprod-20261006",
+      "name": "dermaire-staging-http5xx",
+      "type": "Microsoft.Insights/metricalerts"
+    },
+    {
+      "group": "dermaire-readiness-nonprod-20261006",
+      "name": "dermaire-staging-latency",
+      "type": "Microsoft.Insights/metricalerts"
+    },
+    {
+      "group": "dermaire-readiness-nonprod-20261006",
+      "name": "dermaire-staging-memory",
+      "type": "Microsoft.Insights/metricalerts"
+    },
+    {
+      "group": "dermaire-readiness-nonprod-20261006",
+      "name": "dermaire-staging-database",
+      "type": "Microsoft.Insights/scheduledqueryrules"
+    },
+    {
+      "group": "dermaire-readiness-nonprod-20261006",
+      "name": "dermaire-staging-blob",
+      "type": "Microsoft.Insights/scheduledqueryrules"
+    },
+    {
+      "group": "dermaire-readiness-nonprod-20261006",
+      "name": "dermaire-staging-provider",
+      "type": "Microsoft.Insights/scheduledqueryrules"
+    },
+    {
+      "group": "dermaire-readiness-nonprod-20261006",
+      "name": "dermaire-staging-startup",
+      "type": "Microsoft.Insights/scheduledqueryrules"
+    },
+    {
+      "group": "dermaire-readiness-nonprod-20261006",
+      "name": "dermaire-staging-ready",
+      "type": "Microsoft.Insights/scheduledqueryrules"
+    }
+  ],
+  "stagingActionGroup": {
+    "enabled": true,
+    "emailReceivers": [
+      {
+        "name": "readiness-owner",
+        "emailAddress": "2022170636@cis.asu.edu.eg",
+        "useCommonAlertSchema": true
+      },
+      {
+        "name": "readiness-gmail",
+        "emailAddress": "hussamwaleed15@gmail.com",
+        "useCommonAlertSchema": true
+      }
+    ]
+  }
+}
