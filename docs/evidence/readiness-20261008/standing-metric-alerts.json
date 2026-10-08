@@ -1,0 +1,104 @@
+[
+  {
+    "actions": [
+      {
+        "actionGroupId": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-readiness-nonprod-20261006/providers/Microsoft.Insights/actionGroups/dermaire-readiness-owners"
+      }
+    ],
+    "criteria": {
+      "allOf": [
+        {
+          "criterionType": "StaticThresholdCriterion",
+          "metricName": "Http5xx",
+          "metricNamespace": "Microsoft.Web/sites",
+          "name": "http5xx",
+          "operator": "GreaterThan",
+          "threshold": 5.0,
+          "timeAggregation": "Total"
+        }
+      ],
+      "odata.type": "Microsoft.Azure.Monitor.SingleResourceMultipleMetricCriteria"
+    },
+    "description": "Nonproduction Dermaire http5xx",
+    "enabled": true,
+    "evaluationFrequency": "PT1M",
+    "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-readiness-nonprod-20261006/providers/Microsoft.Insights/metricAlerts/dermaire-staging-http5xx",
+    "location": "global",
+    "name": "dermaire-staging-http5xx",
+    "resourceGroup": "dermaire-readiness-nonprod-20261006",
+    "scopes": [
+      "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.Web/sites/dermaire-api-staging"
+    ],
+    "severity": 2,
+    "type": "Microsoft.Insights/metricAlerts",
+    "windowSize": "PT5M"
+  },
+  {
+    "actions": [
+      {
+        "actionGroupId": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-readiness-nonprod-20261006/providers/Microsoft.Insights/actionGroups/dermaire-readiness-owners"
+      }
+    ],
+    "criteria": {
+      "allOf": [
+        {
+          "criterionType": "StaticThresholdCriterion",
+          "metricName": "AverageResponseTime",
+          "metricNamespace": "Microsoft.Web/sites",
+          "name": "latency",
+          "operator": "GreaterThan",
+          "threshold": 2.0,
+          "timeAggregation": "Average"
+        }
+      ],
+      "odata.type": "Microsoft.Azure.Monitor.SingleResourceMultipleMetricCriteria"
+    },
+    "description": "Nonproduction Dermaire latency",
+    "enabled": true,
+    "evaluationFrequency": "PT1M",
+    "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-readiness-nonprod-20261006/providers/Microsoft.Insights/metricAlerts/dermaire-staging-latency",
+    "location": "global",
+    "name": "dermaire-staging-latency",
+    "resourceGroup": "dermaire-readiness-nonprod-20261006",
+    "scopes": [
+      "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.Web/sites/dermaire-api-staging"
+    ],
+    "severity": 2,
+    "type": "Microsoft.Insights/metricAlerts",
+    "windowSize": "PT5M"
+  },
+  {
+    "actions": [
+      {
+        "actionGroupId": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-readiness-nonprod-20261006/providers/Microsoft.Insights/actionGroups/dermaire-readiness-owners"
+      }
+    ],
+    "criteria": {
+      "allOf": [
+        {
+          "criterionType": "StaticThresholdCriterion",
+          "metricName": "MemoryWorkingSet",
+          "metricNamespace": "Microsoft.Web/sites",
+          "name": "memory",
+          "operator": "GreaterThan",
+          "threshold": 800000000.0,
+          "timeAggregation": "Average"
+        }
+      ],
+      "odata.type": "Microsoft.Azure.Monitor.SingleResourceMultipleMetricCriteria"
+    },
+    "description": "Nonproduction Dermaire memory",
+    "enabled": true,
+    "evaluationFrequency": "PT1M",
+    "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-readiness-nonprod-20261006/providers/Microsoft.Insights/metricAlerts/dermaire-staging-memory",
+    "location": "global",
+    "name": "dermaire-staging-memory",
+    "resourceGroup": "dermaire-readiness-nonprod-20261006",
+    "scopes": [
+      "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.Web/sites/dermaire-api-staging"
+    ],
+    "severity": 2,
+    "type": "Microsoft.Insights/metricAlerts",
+    "windowSize": "PT5M"
+  }
+]

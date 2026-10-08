@@ -1,0 +1,15 @@
+{
+  "confirmationDateLocal": "2026-10-08",
+  "timezone": "Africa/Cairo",
+  "recipient": "hussamwaleed15@gmail.com",
+  "rule": "dermaire-staging-gmail-delivery-20261008",
+  "firedReceived": true,
+  "resolvedReceived": true,
+  "evidenceType": "explicit human mailbox-receipt attestation",
+  "userQuote": "وصلوا الاتنين",
+  "sourceConversationId": "6abbbb19-04c4-83ea-b29a-68229b6a122d",
+  "currentTaskExplicitlyReconfirmsBoth": true,
+  "independentMailboxInspection": false,
+  "exactReceiptTimesKnown": false,
+  "azureActionsTriggeredIsMailboxReceiptProof": false
+}

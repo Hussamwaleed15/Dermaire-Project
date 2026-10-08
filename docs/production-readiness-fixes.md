@@ -33,3 +33,5 @@ backup retention/deletion semantics before promising permanent deletion.
 ## Accepted readiness continuation (8 October 2026)
 
 See [production-release-runbook.md](production-release-runbook.md) for accepted startup 180s, DB RPO <=5min, recovery RTO <=30min and journal 42d conditional on all recoverable backups/exports <=35d and quarantine <=7d, plus the review-only least-privilege/TLS/adoption/photo/protected-journal checklist. No production change is authorized. Current alert diagnosis and test evidence: [readiness-closure-20261008.md](readiness-closure-20261008.md).
+
+Current binary MVP infrastructure verdict: **READY FOR PRODUCTION ROLLOUT** after human-confirmed Gmail Fired/Resolved receipt and verified staging drill cleanup. See the closure report for gate decisions, evidence and mandatory separately authorized production preflight. Production rollout itself is not authorized.

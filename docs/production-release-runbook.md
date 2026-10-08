@@ -1,6 +1,6 @@
 # Production release gate and rollback runbook
 
-Status on 8 October 2026: **NOT READY pending confirmed alert receipt**. Operational targets are accepted for MVP/Imagine Cup; production rollout remains separately authorized. This runbook authorizes no production changes. Staging must never use the production database or photo container for write rehearsals.
+Status on 8 October 2026: **READY FOR PRODUCTION ROLLOUT** (MVP infrastructure readiness; both Gmail Fired/Resolved messages human-confirmed; see [closure evidence](readiness-closure-20261008.md)). Operational targets are accepted for MVP/Imagine Cup; production rollout remains separately authorized. This runbook authorizes no production changes. Staging must never use the production database or photo container for write rehearsals.
 
 ## Accepted operational targets (8 October 2026)
 
@@ -66,7 +66,7 @@ Restoring backups can resurrect deleted personal data. Maintain an access-contro
 
 ## Monitoring gates
 
-Production logging is unchanged. Isolated nonproduction now has a capped workspace, an Action Group and eight staging-only metric/log alert rules. Actual Fired/Resolved recipient receipt remains a gate; inspect inherited/out-of-group suppression and access too.
+Production logging is unchanged. Isolated nonproduction now has a capped workspace, an Action Group and eight staging-only metric/log alert rules. Actual Fired/Resolved Gmail recipient receipt was human-confirmed on 8 October for the staging delivery drill; the working Gmail receiver and school receiver remain. See [closure evidence](readiness-closure-20261008.md). Inspect inherited/out-of-group suppression and access during release preflight; production installation and traffic opening still need separate authorization.
 
 Use Azure Monitor App Service platform metrics for Http5xx/requests, response time, CPU/memory and health; an availability probe for `/health/ready`; Application Insights or diagnostic collection of structured operational JSON; and an owned Action Group. Code emits route-template request status/duration/request ID, startup completion, readiness DB/Blob states, and invoked provider state events without bodies, query strings, user IDs or exception text. Staging console/platform export connects these hooks to Azure-native monitoring; production installation remains separately authorized.
 

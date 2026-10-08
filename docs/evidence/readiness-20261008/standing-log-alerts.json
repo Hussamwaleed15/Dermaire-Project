@@ -1,0 +1,244 @@
+{
+  "value": [
+    {
+      "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-readiness-nonprod-20261006/providers/microsoft.insights/scheduledqueryrules/dermaire-staging-database",
+      "kind": "LogAlert",
+      "location": "canadacentral",
+      "name": "dermaire-staging-database",
+      "properties": {
+        "actions": {
+          "actionGroups": [
+            "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-readiness-nonprod-20261006/providers/Microsoft.Insights/actionGroups/dermaire-readiness-owners"
+          ]
+        },
+        "autoMitigate": true,
+        "createdWithApiVersion": "2023-12-01",
+        "criteria": {
+          "allOf": [
+            {
+              "failingPeriods": {
+                "minFailingPeriodsToAlert": 1,
+                "numberOfEvaluationPeriods": 1
+              },
+              "metricMeasureColumn": "count_",
+              "operator": "GreaterThan",
+              "query": "AppServiceConsoleLogs | where _ResourceId =~ \"/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.Web/sites/dermaire-api-staging\" | extend p=parse_json(ResultDescription) | where p.component == \"database\" and p.state != \"available\" | summarize count()",
+              "threshold": 0.0,
+              "timeAggregation": "Maximum"
+            }
+          ]
+        },
+        "displayName": "Dermaire staging database",
+        "enabled": true,
+        "evaluationFrequency": "PT1M",
+        "scopes": [
+          "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-readiness-nonprod-20261006/providers/Microsoft.OperationalInsights/workspaces/dermaire-readiness-logs"
+        ],
+        "severity": 2,
+        "skipQueryValidation": true,
+        "windowSize": "PT5M"
+      },
+      "systemData": {
+        "createdAt": "2026-10-06T07:13:22.4480574Z",
+        "createdBy": "2022170636@cis.asu.edu.eg",
+        "createdByType": "User",
+        "lastModifiedAt": "2026-10-06T07:13:22.4480574Z",
+        "lastModifiedBy": "2022170636@cis.asu.edu.eg",
+        "lastModifiedByType": "User"
+      },
+      "type": "Microsoft.Insights/scheduledQueryRules"
+    },
+    {
+      "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-readiness-nonprod-20261006/providers/microsoft.insights/scheduledqueryrules/dermaire-staging-blob",
+      "kind": "LogAlert",
+      "location": "canadacentral",
+      "name": "dermaire-staging-blob",
+      "properties": {
+        "actions": {
+          "actionGroups": [
+            "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-readiness-nonprod-20261006/providers/Microsoft.Insights/actionGroups/dermaire-readiness-owners"
+          ]
+        },
+        "autoMitigate": true,
+        "createdWithApiVersion": "2023-12-01",
+        "criteria": {
+          "allOf": [
+            {
+              "failingPeriods": {
+                "minFailingPeriodsToAlert": 1,
+                "numberOfEvaluationPeriods": 1
+              },
+              "metricMeasureColumn": "count_",
+              "operator": "GreaterThan",
+              "query": "AppServiceConsoleLogs | where _ResourceId =~ \"/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.Web/sites/dermaire-api-staging\" | extend p=parse_json(ResultDescription) | where p.component startswith \"blob\" and p.state != \"available\" | summarize count()",
+              "threshold": 0.0,
+              "timeAggregation": "Maximum"
+            }
+          ]
+        },
+        "displayName": "Dermaire staging blob",
+        "enabled": true,
+        "evaluationFrequency": "PT1M",
+        "scopes": [
+          "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-readiness-nonprod-20261006/providers/Microsoft.OperationalInsights/workspaces/dermaire-readiness-logs"
+        ],
+        "severity": 2,
+        "skipQueryValidation": true,
+        "windowSize": "PT5M"
+      },
+      "systemData": {
+        "createdAt": "2026-10-06T07:13:28.485191Z",
+        "createdBy": "2022170636@cis.asu.edu.eg",
+        "createdByType": "User",
+        "lastModifiedAt": "2026-10-06T07:13:28.485191Z",
+        "lastModifiedBy": "2022170636@cis.asu.edu.eg",
+        "lastModifiedByType": "User"
+      },
+      "type": "Microsoft.Insights/scheduledQueryRules"
+    },
+    {
+      "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-readiness-nonprod-20261006/providers/microsoft.insights/scheduledqueryrules/dermaire-staging-provider",
+      "kind": "LogAlert",
+      "location": "canadacentral",
+      "name": "dermaire-staging-provider",
+      "properties": {
+        "actions": {
+          "actionGroups": [
+            "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-readiness-nonprod-20261006/providers/Microsoft.Insights/actionGroups/dermaire-readiness-owners"
+          ]
+        },
+        "autoMitigate": true,
+        "createdWithApiVersion": "2023-12-01",
+        "criteria": {
+          "allOf": [
+            {
+              "failingPeriods": {
+                "minFailingPeriodsToAlert": 1,
+                "numberOfEvaluationPeriods": 1
+              },
+              "metricMeasureColumn": "count_",
+              "operator": "GreaterThan",
+              "query": "AppServiceConsoleLogs | where _ResourceId =~ \"/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.Web/sites/dermaire-api-staging\" | extend p=parse_json(ResultDescription) | where p.component !startswith \"blob\" and p.component != \"database\" and p.state == \"degraded\" | summarize count()",
+              "threshold": 0.0,
+              "timeAggregation": "Maximum"
+            }
+          ]
+        },
+        "displayName": "Dermaire staging provider",
+        "enabled": true,
+        "evaluationFrequency": "PT1M",
+        "scopes": [
+          "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-readiness-nonprod-20261006/providers/Microsoft.OperationalInsights/workspaces/dermaire-readiness-logs"
+        ],
+        "severity": 2,
+        "skipQueryValidation": true,
+        "windowSize": "PT5M"
+      },
+      "systemData": {
+        "createdAt": "2026-10-06T07:13:32.6042948Z",
+        "createdBy": "2022170636@cis.asu.edu.eg",
+        "createdByType": "User",
+        "lastModifiedAt": "2026-10-06T07:13:32.6042948Z",
+        "lastModifiedBy": "2022170636@cis.asu.edu.eg",
+        "lastModifiedByType": "User"
+      },
+      "type": "Microsoft.Insights/scheduledQueryRules"
+    },
+    {
+      "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-readiness-nonprod-20261006/providers/microsoft.insights/scheduledqueryrules/dermaire-staging-startup",
+      "kind": "LogAlert",
+      "location": "canadacentral",
+      "name": "dermaire-staging-startup",
+      "properties": {
+        "actions": {
+          "actionGroups": [
+            "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-readiness-nonprod-20261006/providers/Microsoft.Insights/actionGroups/dermaire-readiness-owners"
+          ]
+        },
+        "autoMitigate": true,
+        "createdWithApiVersion": "2023-12-01",
+        "criteria": {
+          "allOf": [
+            {
+              "failingPeriods": {
+                "minFailingPeriodsToAlert": 1,
+                "numberOfEvaluationPeriods": 1
+              },
+              "metricMeasureColumn": "count_",
+              "operator": "GreaterThan",
+              "query": "AppServicePlatformLogs | where _ResourceId =~ \"/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.Web/sites/dermaire-api-staging\" | where Level == \"Error\" | summarize count()",
+              "threshold": 0.0,
+              "timeAggregation": "Maximum"
+            }
+          ]
+        },
+        "displayName": "Dermaire staging startup",
+        "enabled": true,
+        "evaluationFrequency": "PT1M",
+        "scopes": [
+          "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-readiness-nonprod-20261006/providers/Microsoft.OperationalInsights/workspaces/dermaire-readiness-logs"
+        ],
+        "severity": 2,
+        "skipQueryValidation": true,
+        "windowSize": "PT5M"
+      },
+      "systemData": {
+        "createdAt": "2026-10-06T07:28:46.6481268Z",
+        "createdBy": "2022170636@cis.asu.edu.eg",
+        "createdByType": "User",
+        "lastModifiedAt": "2026-10-06T07:28:46.6481268Z",
+        "lastModifiedBy": "2022170636@cis.asu.edu.eg",
+        "lastModifiedByType": "User"
+      },
+      "type": "Microsoft.Insights/scheduledQueryRules"
+    },
+    {
+      "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-readiness-nonprod-20261006/providers/microsoft.insights/scheduledqueryrules/dermaire-staging-ready",
+      "kind": "LogAlert",
+      "location": "canadacentral",
+      "name": "dermaire-staging-ready",
+      "properties": {
+        "actions": {
+          "actionGroups": [
+            "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-readiness-nonprod-20261006/providers/Microsoft.Insights/actionGroups/dermaire-readiness-owners"
+          ]
+        },
+        "autoMitigate": true,
+        "createdWithApiVersion": "2023-12-01",
+        "criteria": {
+          "allOf": [
+            {
+              "failingPeriods": {
+                "minFailingPeriodsToAlert": 1,
+                "numberOfEvaluationPeriods": 1
+              },
+              "metricMeasureColumn": "count_",
+              "operator": "GreaterThan",
+              "query": "AppServiceConsoleLogs | where _ResourceId =~ \"/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.Web/sites/dermaire-api-staging\" | extend p=parse_json(ResultDescription) | where p.event == \"http_request\" and p.route == \"/health/ready\" and p.status >= 500 | summarize count()",
+              "threshold": 0.0,
+              "timeAggregation": "Maximum"
+            }
+          ]
+        },
+        "displayName": "Dermaire staging ready",
+        "enabled": true,
+        "evaluationFrequency": "PT1M",
+        "scopes": [
+          "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-readiness-nonprod-20261006/providers/Microsoft.OperationalInsights/workspaces/dermaire-readiness-logs"
+        ],
+        "severity": 2,
+        "skipQueryValidation": true,
+        "windowSize": "PT5M"
+      },
+      "systemData": {
+        "createdAt": "2026-10-06T07:28:50.9331242Z",
+        "createdBy": "2022170636@cis.asu.edu.eg",
+        "createdByType": "User",
+        "lastModifiedAt": "2026-10-06T07:28:50.9331242Z",
+        "lastModifiedBy": "2022170636@cis.asu.edu.eg",
+        "lastModifiedByType": "User"
+      },
+      "type": "Microsoft.Insights/scheduledQueryRules"
+    }
+  ]
+}

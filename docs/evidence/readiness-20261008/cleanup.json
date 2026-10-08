@@ -1,0 +1,10 @@
+{
+  "checkedAtUtc": "2026-10-08T10:57:56.5687236Z",
+  "resourceGroup": "dermaire-readiness-nonprod-20261006",
+  "rule": "dermaire-staging-gmail-delivery-20261008",
+  "deleteSucceeded": true,
+  "getAfterDelete": "ResourceNotFound",
+  "standingMetricRules": 3,
+  "standingLogRules": 5,
+  "productionMutations": 0
+}

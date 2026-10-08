@@ -1,0 +1,6 @@
+{
+  "status": "ready",
+  "database": "available",
+  "storage": "available",
+  "deletion_journal": "available"
+}

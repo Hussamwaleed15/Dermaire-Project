@@ -1,0 +1,18 @@
+{
+  "emailReceivers": [
+    {
+      "emailAddress": "2022170636@cis.asu.edu.eg",
+      "name": "readiness-owner",
+      "status": "Enabled",
+      "useCommonAlertSchema": true
+    },
+    {
+      "emailAddress": "hussamwaleed15@gmail.com",
+      "name": "readiness-gmail",
+      "status": "Enabled",
+      "useCommonAlertSchema": true
+    }
+  ],
+  "enabled": true,
+  "id": "/subscriptions/384C0376-D023-4A61-9DCE-69FF8CBDCD0C/resourceGroups/dermaire-readiness-nonprod-20261006/providers/microsoft.insights/actionGroups/dermaire-readiness-owners"
+}

@@ -1,0 +1,46 @@
+{
+  "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/microsoft.web/sites/dermaire-api-staging/providers/Microsoft.AlertsManagement/alerts/772f9536-d08f-42a2-aaf9-ee96d875f000/history/default",
+  "name": "dermaire-staging-gmail-delivery-20261008",
+  "properties": {
+    "alertId": "772f9536-d08f-42a2-aaf9-ee96d875f000",
+    "modifications": [
+      {
+        "comments": "",
+        "description": "Action group dermaire-readiness-owners executed (Configured on alert rule)",
+        "modificationEvent": "ActionsTriggered",
+        "modifiedAt": "2026-10-08T10:51:14.55226Z",
+        "modifiedBy": "System",
+        "newValue": "",
+        "oldValue": ""
+      },
+      {
+        "comments": "",
+        "description": "Monitor Condition changed from 'Fired' to 'Resolved'",
+        "modificationEvent": "MonitorConditionChange",
+        "modifiedAt": "2026-10-08T10:51:14.4868993Z",
+        "modifiedBy": "System",
+        "newValue": "Resolved",
+        "oldValue": "Fired"
+      },
+      {
+        "comments": "",
+        "description": "Action group dermaire-readiness-owners executed (Configured on alert rule)",
+        "modificationEvent": "ActionsTriggered",
+        "modifiedAt": "2026-10-08T10:46:12.8500711Z",
+        "modifiedBy": "System",
+        "newValue": "",
+        "oldValue": ""
+      },
+      {
+        "comments": "",
+        "description": "Alert fired",
+        "modificationEvent": "AlertCreated",
+        "modifiedAt": "2026-10-08T10:46:12.2333641Z",
+        "modifiedBy": "System",
+        "newValue": "",
+        "oldValue": ""
+      }
+    ]
+  },
+  "type": "Microsoft.AlertsManagement/alerts"
+}
