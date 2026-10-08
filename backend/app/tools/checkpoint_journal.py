@@ -32,7 +32,7 @@ def create_checkpoint(source, backup, evidence, journal, *, boundary):
     for blob in source.list_blobs():
         payload = source.get_blob_client(blob.name).download_blob().readall()
         record = journal.validate(json.loads(payload))
-        expected = journal.record_name(record) if record["schema"] == 2 else record["owner"] + ".json"
+        expected = journal.record_name(record) if record["schema"] >= 2 else record["owner"] + ".json"
         if expected != blob.name:
             raise RuntimeError("Source path binding failed")
         target = backup.get_blob_client(blob.name)

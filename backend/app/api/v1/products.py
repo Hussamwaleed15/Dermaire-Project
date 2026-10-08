@@ -4,7 +4,8 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.exceptions import EntityNotFoundException, DermaireException
 from app.api.deps import get_current_user, record_audit
-from app.models import User, Product, RoutineEntry, Experiment
+from app.models import User, Product, RoutineEntry, Experiment, ProductIntelligence
+from app.services.deletion_journal import deletion_journal
 from app.services.experiments import guard_routine_write
 from app.services.routine import lock_owner, deactivate
 from app.schemas import (
@@ -160,6 +161,19 @@ def delete_product(
     if db.query(RoutineEntry).filter_by(product_id=product.id).first():
         raise DermaireException(message="Archive this product to preserve routine history.", error_code="PRODUCT_HAS_ROUTINE_HISTORY", status_code=409)
 
+    if db.query(ProductIntelligence.id).filter(
+            ProductIntelligence.product_id == product.id,
+            ProductIntelligence.user_id != current_user.id).first():
+        raise DermaireException(message="Product links require repair before deletion.",
+                               error_code="PRODUCT_INVALID_OWNERSHIP", status_code=409)
+    try:
+        deletion_journal.record_product(current_user.id, product.id)
+    except Exception:
+        db.rollback()
+        raise DermaireException(message="Product deletion is temporarily unavailable.",
+                               error_code="DELETION_UNAVAILABLE", status_code=503) from None
+    db.query(ProductIntelligence).filter_by(product_id=product.id,
+        user_id=current_user.id).delete(synchronize_session=False)
     db.delete(product)
     db.commit()
     record_audit(db, current_user.id, "PRODUCT_DELETED", "products", {"product_id": product_id})

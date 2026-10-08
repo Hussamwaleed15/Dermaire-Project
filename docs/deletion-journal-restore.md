@@ -113,3 +113,14 @@ Frozen checkpoint procedure (manual, owner-operated; no automatic scheduler was 
 Before using a backup copy in recovery, verify its complete inventory against the protected signed manifest and authoritative journal under a writer freeze; use `intents-copy` as the journal container, never `protected-evidence`. Replay all signatures, including synthetic markers; metadata cannot bypass validation. The reserved `phase2-synthetic-*` identifiers represent test fixtures only and must never be assigned to business records. The Phase 2 snapshot contains 17 synthetic intents; no continuously updated copy or later completeness claim is implied. Repeat protected checkpoints operationally after live writers are enabled and before each recovery snapshot. Remain offline whenever later-intent completeness is uncertain. The primary WORM source remains authoritative.
 
 Production photos are private, public Blob access false, HTTPS/TLS1_2, explicit versioning/Blob soft delete/container soft delete/restore false, no photo hold/immutability. ARM is the explicit policy-state authority; the SDK may omit disabled fields. A disposable production upload/read/delete/retry/history drill left zero copies. The complete primary and independent-copy replay used only synthetic SQLite/nonproduction photos. Legacy unknown-source review, indefinite retention, <=5m DB RPO and uncertified <=30m end-to-end RTO remain unchanged.
+# Typed product erasure extension (9 October 2026)
+
+Phase 3's broader permanent-user-data audit adds schema 3 product-only intents:
+exact fields `schema`, `owner`, `products`, with domain-separated HMAC owner/product
+tokens and immutable `v3/<content hash>.json` paths. Account/photo intents remain
+schema 2. Use the current mixed-inventory verifier, replay and checkpoint tools.
+An old reader rejects schema 3; never substitute an older restore reader or reopen
+writes on an artifact that omits product/photo cleanup protection. Replay verifies
+owner + product identity and refuses restored history/foreign links before mutation;
+repair conflicts offline. Product intents never authorize account or photo deletion.
+

@@ -3,6 +3,7 @@ import hashlib
 import hmac
 import json
 from app.core.config import settings
+from app.core.observability import observed_dependency
 
 
 class DeletionJournal:
@@ -62,13 +63,15 @@ class DeletionJournal:
     def validate(self, envelope):
         try:
             record = envelope["record"]
-            if (set(record) != {"schema", "owner", "images"}
-                    or type(record["schema"]) is not int or record["schema"] not in {1, 2}
-                    or not isinstance(record["images"], list)
+            field = "products" if record.get("schema") == 3 else "images"
+            if (set(record) != {"schema", "owner", field}
+                    or type(record["schema"]) is not int or record["schema"] not in {1, 2, 3}
+                    or not isinstance(record[field], list)
                     or any(not isinstance(x, str) or len(x) != 64
                            or any(c not in "0123456789abcdef" for c in x)
-                           for x in [record["owner"], *record["images"]])
-                    or (record["schema"] == 2 and record["images"] != sorted(set(record["images"])))
+                           for x in [record["owner"], *record[field]])
+                    or (record["schema"] in {2, 3} and record[field] != sorted(set(record[field])))
+                    or (record["schema"] == 3 and not record[field])
                     or not hmac.compare_digest(self.signature(record), envelope["signature"])):
                 raise ValueError()
             return record
@@ -76,7 +79,7 @@ class DeletionJournal:
             raise RuntimeError("Invalid deletion journal; recovery must remain offline") from None
 
     def record_name(self, record):
-        return "v2/" + hashlib.sha256(self.canonical(record).encode()).hexdigest() + ".json"
+        return f"v{record['schema']}/" + hashlib.sha256(self.canonical(record).encode()).hexdigest() + ".json"
 
     def inventory(self):
         """Verify every record and its binding before returning any replay input."""
@@ -89,7 +92,7 @@ class DeletionJournal:
         for blob in self.container.list_blobs():
             record = self.validate(json.loads(self.container.get_blob_client(blob.name)
                                              .download_blob().readall()))
-            expected = self.record_name(record) if record["schema"] == 2 else record["owner"] + ".json"
+            expected = self.record_name(record) if record["schema"] >= 2 else record["owner"] + ".json"
             if blob.name != expected:
                 raise RuntimeError("Journal record path mismatch")
             records.append(record)
@@ -109,6 +112,22 @@ class DeletionJournal:
         return self._record("photo-only-owner", owner_id, image_keys)
 
     def _record(self, owner_domain, owner_id, image_keys):
+        if self.container is None and not self.required:
+            return
+        record = {"schema": 2, "owner": self.token(owner_domain, owner_id),
+                  "images": sorted({self.token("image", name) for name in image_keys})}
+        return self._persist(record)
+
+    def record_product(self, owner_id, product_id):
+        # A typed extension makes old readers reject recovery, rather than
+        # silently ignore product erasure. Account/photo intents remain v2.
+        if self.container is None and not self.required:
+            return
+        return self._persist({"schema": 3, "owner": self.token("product-owner", owner_id),
+                              "products": [self.token("product", product_id)]})
+
+    @observed_dependency("deletion_journal_write")
+    def _persist(self, record):
         if self.container is None:
             if self.required:
                 raise RuntimeError("Deletion journal unavailable")
@@ -116,8 +135,6 @@ class DeletionJournal:
         if self.container.get_container_properties().get("public_access"):
             raise RuntimeError("Journal must be private")
         from azure.core.exceptions import ResourceExistsError
-        record = {"schema": 2, "owner": self.token(owner_domain, owner_id),
-                  "images": sorted({self.token("image", name) for name in image_keys})}
         blob = self.container.get_blob_client(self.record_name(record))
         payload = json.dumps({"record": record, "signature": self.signature(record)}).encode()
         # Azure block-blob create with overwrite=False is atomic create-if-absent.
@@ -140,10 +157,34 @@ class DeletionJournal:
         if not storage.is_live:
             raise RuntimeError("Restore requires configured Azure photo storage")
         records = self.inventory()
-        owners = {r["owner"] for r in records}
-        images = {i for r in records for i in r["images"]}
-        from app.models import User
+        owners = {r["owner"] for r in records if r["schema"] != 3}
+        images = {i for r in records for i in r.get("images", [])}
+        from app.models import User, Product, ProductIntelligence, Experiment, RoutineEntry
         user_ids = [u.id for u in db.query(User) if self.token("owner", u.id) in owners]
+        product_records = [r for r in records if r["schema"] == 3]
+        product_targets = []
+        if product_records:
+            for product in db.query(Product):
+                if product.user_id in user_ids:
+                    continue  # The account intent covers its dependencies.
+                if not any(r["owner"] == self.token("product-owner", product.user_id)
+                           and self.token("product", product.id) in r["products"]
+                           for r in product_records):
+                    continue
+                if (db.query(Experiment.id).filter_by(product_id=product.id).first()
+                        or db.query(RoutineEntry.id).filter_by(product_id=product.id).first()
+                        or db.query(ProductIntelligence.id).filter(
+                            ProductIntelligence.product_id == product.id,
+                            ProductIntelligence.user_id != product.user_id).first()):
+                    raise RuntimeError("Restored product dependencies require offline repair")
+                product_targets.append(product)
+        # All signed inputs and restored product links verified before mutation.
+        for product in product_targets:
+            db.query(ProductIntelligence).filter_by(product_id=product.id,
+                user_id=product.user_id).delete(synchronize_session=False)
+            db.delete(product)
+        if product_targets:
+            db.commit()
         for owner_id in user_ids:
             delete_account(db, owner_id, journal=self)
         deleted = 0
@@ -155,7 +196,7 @@ class DeletionJournal:
                 storage.delete_image(blob.name)
                 deleted += 1
         return {"restored_accounts_removed": len(user_ids), "image_cleanup_calls": deleted,
-                "journal_intents": len(records)}
+                "journal_intents": len(records), "restored_products_removed": len(product_targets)}
 
 
 deletion_journal = DeletionJournal()

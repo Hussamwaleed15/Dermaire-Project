@@ -69,6 +69,16 @@ def test_checkpoint_preserves_signed_bytes_markers_and_duplicate_backup():
     assert hmac.compare_digest(expected, envelope["signature"])
 
 
+def test_checkpoint_mixed_product_photo_account_inventory():
+    source, backup, evidence, journal = fixture()
+    journal.record_photos("synthetic-owner", ["orphan"])
+    journal.record_product("synthetic-owner", "synthetic-product")
+    result = create_checkpoint(source, backup, evidence, journal, boundary="synthetic mixed only")
+    assert result["source_verified"] == result["independent_backup_verified"] == 3
+    assert source.data == backup.data
+    assert {r["schema"] for r in DeletionJournal(backup, journal.key, True).inventory()} == {2, 3}
+
+
 def test_corrupt_source_blocks_every_backup_and_manifest_write():
     source, backup, evidence, journal = fixture()
     source.data["corrupt.json"] = b"{}"
