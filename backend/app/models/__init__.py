@@ -144,7 +144,8 @@ class Experiment(Base):
 
     # Nullable version distinguishes quarantined legacy experiments.
     engine_version = Column(Integer, nullable=True)
-    routine_entry_id = Column(String(36), ForeignKey("routine_entries.id"), nullable=True)
+    # Retain the index introduced by experiment-engine-v2-postgresql.sql.
+    routine_entry_id = Column(String(36), ForeignKey("routine_entries.id"), nullable=True, index=True)
     intervention = Column(JSON, nullable=True)
     goal = Column(Text, nullable=True)
     notes = Column(Text, nullable=True)

@@ -1,0 +1,22 @@
+{
+  "productionMutations": [],
+  "allCatalogChecksUnchanged": {
+    "server": true,
+    "objects": true,
+    "constraints": true,
+    "indexes": true,
+    "indexValidity": true,
+    "columns": true,
+    "roles": true,
+    "memberships": true,
+    "functions": true,
+    "grants": true,
+    "schema": true,
+    "triggers": true,
+    "policies": true,
+    "databaseAcl": true,
+    "defaultPrivileges": true,
+    "extensions": true
+  },
+  "readonly": "on"
+}

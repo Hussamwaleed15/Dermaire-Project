@@ -1,0 +1,1233 @@
+{
+  "production_mutations": false,
+  "synthetic_only": true,
+  "host": "127.0.0.1",
+  "server_version": "18.6",
+  "collation": "C",
+  "exact_production_index_catalog_match": true,
+  "frozen_orm_difference_kinds": [
+    "remove_index",
+    "remove_index",
+    "add_constraint",
+    "add_index"
+  ],
+  "corrected_orm_pre_adoption_differences": [
+    "('remove_index', Index('uq_experiments_active_owner', Column('active_owner', VARCHAR(length=36), table=<experiments>), unique=True))",
+    "('add_constraint', UniqueConstraint(Column('active_owner', NullType(), table=<experiments>)))",
+    "('add_index', Index('ix_users_reset_token_hash', Column('reset_token_hash', String(length=255), table=<users>)))"
+  ],
+  "pre_constraint_catalog": [
+    {
+      "table_name": "audit_logs",
+      "conname": "audit_logs_action_not_null",
+      "contype": "n",
+      "definition": "NOT NULL action"
+    },
+    {
+      "table_name": "audit_logs",
+      "conname": "audit_logs_actor_id_not_null",
+      "contype": "n",
+      "definition": "NOT NULL actor_id"
+    },
+    {
+      "table_name": "audit_logs",
+      "conname": "audit_logs_id_not_null",
+      "contype": "n",
+      "definition": "NOT NULL id"
+    },
+    {
+      "table_name": "audit_logs",
+      "conname": "audit_logs_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "audit_logs",
+      "conname": "audit_logs_target_resource_not_null",
+      "contype": "n",
+      "definition": "NOT NULL target_resource"
+    },
+    {
+      "table_name": "captures",
+      "conname": "captures_id_not_null",
+      "contype": "n",
+      "definition": "NOT NULL id"
+    },
+    {
+      "table_name": "captures",
+      "conname": "captures_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "captures",
+      "conname": "captures_quality_not_null",
+      "contype": "n",
+      "definition": "NOT NULL quality"
+    },
+    {
+      "table_name": "captures",
+      "conname": "captures_received_at_not_null",
+      "contype": "n",
+      "definition": "NOT NULL received_at"
+    },
+    {
+      "table_name": "captures",
+      "conname": "captures_server_version_not_null",
+      "contype": "n",
+      "definition": "NOT NULL server_version"
+    },
+    {
+      "table_name": "captures",
+      "conname": "captures_source_not_null",
+      "contype": "n",
+      "definition": "NOT NULL source"
+    },
+    {
+      "table_name": "captures",
+      "conname": "captures_state_not_null",
+      "contype": "n",
+      "definition": "NOT NULL state"
+    },
+    {
+      "table_name": "captures",
+      "conname": "captures_storage_not_null",
+      "contype": "n",
+      "definition": "NOT NULL storage"
+    },
+    {
+      "table_name": "captures",
+      "conname": "captures_user_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (user_id) REFERENCES users(id)"
+    },
+    {
+      "table_name": "captures",
+      "conname": "captures_user_id_not_null",
+      "contype": "n",
+      "definition": "NOT NULL user_id"
+    },
+    {
+      "table_name": "captures",
+      "conname": "captures_view_not_null",
+      "contype": "n",
+      "definition": "NOT NULL view"
+    },
+    {
+      "table_name": "captures",
+      "conname": "ck_capture_origin",
+      "contype": "c",
+      "definition": "CHECK ((((source)::text = ANY ((ARRAY['camera'::character varying, 'upload'::character varying])::text[])) AND ((view)::text = 'front'::text)))"
+    },
+    {
+      "table_name": "captures",
+      "conname": "ck_capture_state",
+      "contype": "c",
+      "definition": "CHECK (((state)::text = ANY ((ARRAY['accepted'::character varying, 'rejected'::character varying])::text[])))"
+    },
+    {
+      "table_name": "captures",
+      "conname": "ck_capture_storage",
+      "contype": "c",
+      "definition": "CHECK (((((storage)::text = 'not_persisted'::text) AND (image_blob_name IS NULL)) OR (((storage)::text = 'azure_blob'::text) AND (image_blob_name IS NOT NULL) AND ((state)::text = 'accepted'::text))))"
+    },
+    {
+      "table_name": "checkins",
+      "conname": "checkins_date_str_not_null",
+      "contype": "n",
+      "definition": "NOT NULL date_str"
+    },
+    {
+      "table_name": "checkins",
+      "conname": "checkins_experiment_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (experiment_id) REFERENCES experiments(id)"
+    },
+    {
+      "table_name": "checkins",
+      "conname": "checkins_id_not_null",
+      "contype": "n",
+      "definition": "NOT NULL id"
+    },
+    {
+      "table_name": "checkins",
+      "conname": "checkins_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "checkins",
+      "conname": "checkins_user_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (user_id) REFERENCES users(id)"
+    },
+    {
+      "table_name": "checkins",
+      "conname": "checkins_user_id_not_null",
+      "contype": "n",
+      "definition": "NOT NULL user_id"
+    },
+    {
+      "table_name": "clinical_notes",
+      "conname": "clinical_notes_content_not_null",
+      "contype": "n",
+      "definition": "NOT NULL content"
+    },
+    {
+      "table_name": "clinical_notes",
+      "conname": "clinical_notes_doctor_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (doctor_id) REFERENCES users(id)"
+    },
+    {
+      "table_name": "clinical_notes",
+      "conname": "clinical_notes_doctor_id_not_null",
+      "contype": "n",
+      "definition": "NOT NULL doctor_id"
+    },
+    {
+      "table_name": "clinical_notes",
+      "conname": "clinical_notes_id_not_null",
+      "contype": "n",
+      "definition": "NOT NULL id"
+    },
+    {
+      "table_name": "clinical_notes",
+      "conname": "clinical_notes_patient_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (patient_id) REFERENCES users(id)"
+    },
+    {
+      "table_name": "clinical_notes",
+      "conname": "clinical_notes_patient_id_not_null",
+      "contype": "n",
+      "definition": "NOT NULL patient_id"
+    },
+    {
+      "table_name": "clinical_notes",
+      "conname": "clinical_notes_patient_visible_not_null",
+      "contype": "n",
+      "definition": "NOT NULL patient_visible"
+    },
+    {
+      "table_name": "clinical_notes",
+      "conname": "clinical_notes_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "clinical_notes",
+      "conname": "clinical_notes_review_action_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (review_action_id) REFERENCES doctor_review_actions(id)"
+    },
+    {
+      "table_name": "clinical_notes",
+      "conname": "clinical_notes_updated_at_not_null",
+      "contype": "n",
+      "definition": "NOT NULL updated_at"
+    },
+    {
+      "table_name": "daily_contexts",
+      "conname": "daily_contexts_date_not_null",
+      "contype": "n",
+      "definition": "NOT NULL date"
+    },
+    {
+      "table_name": "daily_contexts",
+      "conname": "daily_contexts_id_not_null",
+      "contype": "n",
+      "definition": "NOT NULL id"
+    },
+    {
+      "table_name": "daily_contexts",
+      "conname": "daily_contexts_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "daily_contexts",
+      "conname": "daily_contexts_user_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (user_id) REFERENCES users(id)"
+    },
+    {
+      "table_name": "daily_contexts",
+      "conname": "daily_contexts_user_id_not_null",
+      "contype": "n",
+      "definition": "NOT NULL user_id"
+    },
+    {
+      "table_name": "daily_contexts",
+      "conname": "uq_context_user_date",
+      "contype": "u",
+      "definition": "UNIQUE (user_id, date)"
+    },
+    {
+      "table_name": "doctor_patient_access",
+      "conname": "doctor_patient_access_access_token_not_null",
+      "contype": "n",
+      "definition": "NOT NULL access_token"
+    },
+    {
+      "table_name": "doctor_patient_access",
+      "conname": "doctor_patient_access_doctor_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (doctor_id) REFERENCES users(id)"
+    },
+    {
+      "table_name": "doctor_patient_access",
+      "conname": "doctor_patient_access_expires_at_not_null",
+      "contype": "n",
+      "definition": "NOT NULL expires_at"
+    },
+    {
+      "table_name": "doctor_patient_access",
+      "conname": "doctor_patient_access_id_not_null",
+      "contype": "n",
+      "definition": "NOT NULL id"
+    },
+    {
+      "table_name": "doctor_patient_access",
+      "conname": "doctor_patient_access_patient_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (patient_id) REFERENCES users(id)"
+    },
+    {
+      "table_name": "doctor_patient_access",
+      "conname": "doctor_patient_access_patient_id_not_null",
+      "contype": "n",
+      "definition": "NOT NULL patient_id"
+    },
+    {
+      "table_name": "doctor_patient_access",
+      "conname": "doctor_patient_access_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "doctor_review_actions",
+      "conname": "ck_doctor_recommendation",
+      "contype": "c",
+      "definition": "CHECK (((recommendation IS NULL) OR ((recommendation)::text = ANY ((ARRAY['track'::character varying, 'low_risk_self_care'::character varying, 'doctor_review'::character varying, 'urgent'::character varying])::text[]))))"
+    },
+    {
+      "table_name": "doctor_review_actions",
+      "conname": "ck_doctor_review_state",
+      "contype": "c",
+      "definition": "CHECK (((state)::text = ANY ((ARRAY['pending'::character varying, 'in_review'::character varying, 'reviewed'::character varying, 'follow_up_needed'::character varying])::text[])))"
+    },
+    {
+      "table_name": "doctor_review_actions",
+      "conname": "doctor_review_actions_access_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (access_id) REFERENCES doctor_patient_access(id)"
+    },
+    {
+      "table_name": "doctor_review_actions",
+      "conname": "doctor_review_actions_access_id_not_null",
+      "contype": "n",
+      "definition": "NOT NULL access_id"
+    },
+    {
+      "table_name": "doctor_review_actions",
+      "conname": "doctor_review_actions_created_at_not_null",
+      "contype": "n",
+      "definition": "NOT NULL created_at"
+    },
+    {
+      "table_name": "doctor_review_actions",
+      "conname": "doctor_review_actions_doctor_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (doctor_id) REFERENCES users(id)"
+    },
+    {
+      "table_name": "doctor_review_actions",
+      "conname": "doctor_review_actions_doctor_id_not_null",
+      "contype": "n",
+      "definition": "NOT NULL doctor_id"
+    },
+    {
+      "table_name": "doctor_review_actions",
+      "conname": "doctor_review_actions_id_not_null",
+      "contype": "n",
+      "definition": "NOT NULL id"
+    },
+    {
+      "table_name": "doctor_review_actions",
+      "conname": "doctor_review_actions_patient_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (patient_id) REFERENCES users(id)"
+    },
+    {
+      "table_name": "doctor_review_actions",
+      "conname": "doctor_review_actions_patient_id_not_null",
+      "contype": "n",
+      "definition": "NOT NULL patient_id"
+    },
+    {
+      "table_name": "doctor_review_actions",
+      "conname": "doctor_review_actions_patient_visible_not_null",
+      "contype": "n",
+      "definition": "NOT NULL patient_visible"
+    },
+    {
+      "table_name": "doctor_review_actions",
+      "conname": "doctor_review_actions_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "doctor_review_actions",
+      "conname": "doctor_review_actions_safety_snapshot_not_null",
+      "contype": "n",
+      "definition": "NOT NULL safety_snapshot"
+    },
+    {
+      "table_name": "doctor_review_actions",
+      "conname": "doctor_review_actions_sequence_not_null",
+      "contype": "n",
+      "definition": "NOT NULL sequence"
+    },
+    {
+      "table_name": "doctor_review_actions",
+      "conname": "doctor_review_actions_state_not_null",
+      "contype": "n",
+      "definition": "NOT NULL state"
+    },
+    {
+      "table_name": "doctor_review_actions",
+      "conname": "uq_doctor_review_sequence",
+      "contype": "u",
+      "definition": "UNIQUE (patient_id, sequence)"
+    },
+    {
+      "table_name": "experiment_evaluations",
+      "conname": "experiment_evaluations_created_at_not_null",
+      "contype": "n",
+      "definition": "NOT NULL created_at"
+    },
+    {
+      "table_name": "experiment_evaluations",
+      "conname": "experiment_evaluations_experiment_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (experiment_id) REFERENCES experiments(id)"
+    },
+    {
+      "table_name": "experiment_evaluations",
+      "conname": "experiment_evaluations_experiment_id_not_null",
+      "contype": "n",
+      "definition": "NOT NULL experiment_id"
+    },
+    {
+      "table_name": "experiment_evaluations",
+      "conname": "experiment_evaluations_id_not_null",
+      "contype": "n",
+      "definition": "NOT NULL id"
+    },
+    {
+      "table_name": "experiment_evaluations",
+      "conname": "experiment_evaluations_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "experiment_evaluations",
+      "conname": "experiment_evaluations_result_not_null",
+      "contype": "n",
+      "definition": "NOT NULL result"
+    },
+    {
+      "table_name": "experiment_evaluations",
+      "conname": "experiment_evaluations_user_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (user_id) REFERENCES users(id)"
+    },
+    {
+      "table_name": "experiment_evaluations",
+      "conname": "experiment_evaluations_user_id_not_null",
+      "contype": "n",
+      "definition": "NOT NULL user_id"
+    },
+    {
+      "table_name": "experiments",
+      "conname": "ck_experiment_v2_definition",
+      "contype": "c",
+      "definition": "CHECK (((engine_version IS NULL) OR ((engine_version = 2) AND (intervention IS NOT NULL) AND (routine_entry_id IS NOT NULL) AND (product_id IS NOT NULL) AND (source IS NOT NULL) AND ((source)::text = 'user_configured'::text) AND (status IS NOT NULL) AND (target_days IS NOT NULL) AND ((status)::text = ANY ((ARRAY['draft'::character varying, 'active'::character varying, 'completed'::character varying, 'stopped'::character varying, 'cancelled'::character varying])::text[])) AND ((target_days >= 7) AND (target_days <= 90)))))"
+    },
+    {
+      "table_name": "experiments",
+      "conname": "ck_experiment_v2_owner",
+      "contype": "c",
+      "definition": "CHECK (((engine_version IS NULL) OR ((((status)::text = 'active'::text) AND (active_owner IS NOT NULL) AND ((active_owner)::text = (user_id)::text) AND (activated_at IS NOT NULL) AND (definition_snapshot IS NOT NULL)) OR (((status)::text <> 'active'::text) AND (active_owner IS NULL)))))"
+    },
+    {
+      "table_name": "experiments",
+      "conname": "experiments_id_not_null",
+      "contype": "n",
+      "definition": "NOT NULL id"
+    },
+    {
+      "table_name": "experiments",
+      "conname": "experiments_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "experiments",
+      "conname": "experiments_product_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (product_id) REFERENCES products(id)"
+    },
+    {
+      "table_name": "experiments",
+      "conname": "experiments_routine_entry_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (routine_entry_id) REFERENCES routine_entries(id)"
+    },
+    {
+      "table_name": "experiments",
+      "conname": "experiments_user_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (user_id) REFERENCES users(id)"
+    },
+    {
+      "table_name": "experiments",
+      "conname": "experiments_user_id_not_null",
+      "contype": "n",
+      "definition": "NOT NULL user_id"
+    },
+    {
+      "table_name": "measurements",
+      "conname": "ck_measurement_status",
+      "contype": "c",
+      "definition": "CHECK (((status)::text = ANY ((ARRAY['measured'::character varying, 'insufficient_quality'::character varying, 'unavailable'::character varying, 'failed'::character varying])::text[])))"
+    },
+    {
+      "table_name": "measurements",
+      "conname": "measurements_algorithm_version_not_null",
+      "contype": "n",
+      "definition": "NOT NULL algorithm_version"
+    },
+    {
+      "table_name": "measurements",
+      "conname": "measurements_capture_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (capture_id) REFERENCES captures(id)"
+    },
+    {
+      "table_name": "measurements",
+      "conname": "measurements_capture_id_not_null",
+      "contype": "n",
+      "definition": "NOT NULL capture_id"
+    },
+    {
+      "table_name": "measurements",
+      "conname": "measurements_comparison_not_null",
+      "contype": "n",
+      "definition": "NOT NULL comparison"
+    },
+    {
+      "table_name": "measurements",
+      "conname": "measurements_id_not_null",
+      "contype": "n",
+      "definition": "NOT NULL id"
+    },
+    {
+      "table_name": "measurements",
+      "conname": "measurements_measured_at_not_null",
+      "contype": "n",
+      "definition": "NOT NULL measured_at"
+    },
+    {
+      "table_name": "measurements",
+      "conname": "measurements_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "measurements",
+      "conname": "measurements_quality_reference_not_null",
+      "contype": "n",
+      "definition": "NOT NULL quality_reference"
+    },
+    {
+      "table_name": "measurements",
+      "conname": "measurements_results_not_null",
+      "contype": "n",
+      "definition": "NOT NULL results"
+    },
+    {
+      "table_name": "measurements",
+      "conname": "measurements_status_not_null",
+      "contype": "n",
+      "definition": "NOT NULL status"
+    },
+    {
+      "table_name": "measurements",
+      "conname": "measurements_user_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (user_id) REFERENCES users(id)"
+    },
+    {
+      "table_name": "measurements",
+      "conname": "measurements_user_id_not_null",
+      "contype": "n",
+      "definition": "NOT NULL user_id"
+    },
+    {
+      "table_name": "measurements",
+      "conname": "uq_measurement_capture_version",
+      "contype": "u",
+      "definition": "UNIQUE (capture_id, algorithm_version)"
+    },
+    {
+      "table_name": "product_intelligence",
+      "conname": "product_intelligence_document_not_null",
+      "contype": "n",
+      "definition": "NOT NULL document"
+    },
+    {
+      "table_name": "product_intelligence",
+      "conname": "product_intelligence_id_not_null",
+      "contype": "n",
+      "definition": "NOT NULL id"
+    },
+    {
+      "table_name": "product_intelligence",
+      "conname": "product_intelligence_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "product_intelligence",
+      "conname": "product_intelligence_product_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE"
+    },
+    {
+      "table_name": "product_intelligence",
+      "conname": "product_intelligence_product_id_key",
+      "contype": "u",
+      "definition": "UNIQUE (product_id)"
+    },
+    {
+      "table_name": "product_intelligence",
+      "conname": "product_intelligence_product_id_not_null",
+      "contype": "n",
+      "definition": "NOT NULL product_id"
+    },
+    {
+      "table_name": "product_intelligence",
+      "conname": "product_intelligence_updated_at_not_null",
+      "contype": "n",
+      "definition": "NOT NULL updated_at"
+    },
+    {
+      "table_name": "product_intelligence",
+      "conname": "product_intelligence_user_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (user_id) REFERENCES users(id)"
+    },
+    {
+      "table_name": "product_intelligence",
+      "conname": "product_intelligence_user_id_not_null",
+      "contype": "n",
+      "definition": "NOT NULL user_id"
+    },
+    {
+      "table_name": "products",
+      "conname": "products_category_not_null",
+      "contype": "n",
+      "definition": "NOT NULL category"
+    },
+    {
+      "table_name": "products",
+      "conname": "products_id_not_null",
+      "contype": "n",
+      "definition": "NOT NULL id"
+    },
+    {
+      "table_name": "products",
+      "conname": "products_name_not_null",
+      "contype": "n",
+      "definition": "NOT NULL name"
+    },
+    {
+      "table_name": "products",
+      "conname": "products_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "products",
+      "conname": "products_user_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (user_id) REFERENCES users(id)"
+    },
+    {
+      "table_name": "products",
+      "conname": "products_user_id_not_null",
+      "contype": "n",
+      "definition": "NOT NULL user_id"
+    },
+    {
+      "table_name": "reward_redemptions",
+      "conname": "reward_redemptions_id_not_null",
+      "contype": "n",
+      "definition": "NOT NULL id"
+    },
+    {
+      "table_name": "reward_redemptions",
+      "conname": "reward_redemptions_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "reward_redemptions",
+      "conname": "reward_redemptions_reward_title_not_null",
+      "contype": "n",
+      "definition": "NOT NULL reward_title"
+    },
+    {
+      "table_name": "reward_redemptions",
+      "conname": "reward_redemptions_user_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (user_id) REFERENCES users(id)"
+    },
+    {
+      "table_name": "reward_redemptions",
+      "conname": "reward_redemptions_user_id_not_null",
+      "contype": "n",
+      "definition": "NOT NULL user_id"
+    },
+    {
+      "table_name": "routine_adherence",
+      "conname": "ck_adherence_slot",
+      "contype": "c",
+      "definition": "CHECK (((slot)::text = ANY ((ARRAY['AM'::character varying, 'PM'::character varying])::text[])))"
+    },
+    {
+      "table_name": "routine_adherence",
+      "conname": "ck_adherence_source",
+      "contype": "c",
+      "definition": "CHECK (((source)::text = 'user_reported'::text))"
+    },
+    {
+      "table_name": "routine_adherence",
+      "conname": "ck_adherence_status",
+      "contype": "c",
+      "definition": "CHECK (((status)::text = ANY ((ARRAY['completed'::character varying, 'skipped'::character varying])::text[])))"
+    },
+    {
+      "table_name": "routine_adherence",
+      "conname": "routine_adherence_configuration_snapshot_not_null",
+      "contype": "n",
+      "definition": "NOT NULL configuration_snapshot"
+    },
+    {
+      "table_name": "routine_adherence",
+      "conname": "routine_adherence_created_at_not_null",
+      "contype": "n",
+      "definition": "NOT NULL created_at"
+    },
+    {
+      "table_name": "routine_adherence",
+      "conname": "routine_adherence_date_not_null",
+      "contype": "n",
+      "definition": "NOT NULL date"
+    },
+    {
+      "table_name": "routine_adherence",
+      "conname": "routine_adherence_id_not_null",
+      "contype": "n",
+      "definition": "NOT NULL id"
+    },
+    {
+      "table_name": "routine_adherence",
+      "conname": "routine_adherence_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "routine_adherence",
+      "conname": "routine_adherence_routine_entry_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (routine_entry_id) REFERENCES routine_entries(id)"
+    },
+    {
+      "table_name": "routine_adherence",
+      "conname": "routine_adherence_routine_entry_id_not_null",
+      "contype": "n",
+      "definition": "NOT NULL routine_entry_id"
+    },
+    {
+      "table_name": "routine_adherence",
+      "conname": "routine_adherence_slot_not_null",
+      "contype": "n",
+      "definition": "NOT NULL slot"
+    },
+    {
+      "table_name": "routine_adherence",
+      "conname": "routine_adherence_source_not_null",
+      "contype": "n",
+      "definition": "NOT NULL source"
+    },
+    {
+      "table_name": "routine_adherence",
+      "conname": "routine_adherence_status_not_null",
+      "contype": "n",
+      "definition": "NOT NULL status"
+    },
+    {
+      "table_name": "routine_adherence",
+      "conname": "routine_adherence_user_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (user_id) REFERENCES users(id)"
+    },
+    {
+      "table_name": "routine_adherence",
+      "conname": "routine_adherence_user_id_not_null",
+      "contype": "n",
+      "definition": "NOT NULL user_id"
+    },
+    {
+      "table_name": "routine_adherence",
+      "conname": "uq_adherence_entry_day_slot",
+      "contype": "u",
+      "definition": "UNIQUE (routine_entry_id, date, slot)"
+    },
+    {
+      "table_name": "routine_entries",
+      "conname": "ck_routine_end",
+      "contype": "c",
+      "definition": "CHECK (((active AND (end_date IS NULL)) OR ((NOT active) AND (end_date IS NOT NULL) AND (end_date >= start_date))))"
+    },
+    {
+      "table_name": "routine_entries",
+      "conname": "ck_routine_frequency",
+      "contype": "c",
+      "definition": "CHECK (((frequency)::text = 'daily'::text))"
+    },
+    {
+      "table_name": "routine_entries",
+      "conname": "ck_routine_order",
+      "contype": "c",
+      "definition": "CHECK ((((am_order >= 0) AND (am_order <= 100)) AND ((pm_order >= 0) AND (pm_order <= 100))))"
+    },
+    {
+      "table_name": "routine_entries",
+      "conname": "ck_routine_schedule",
+      "contype": "c",
+      "definition": "CHECK (((schedule)::text = ANY ((ARRAY['AM'::character varying, 'PM'::character varying, 'BOTH'::character varying])::text[])))"
+    },
+    {
+      "table_name": "routine_entries",
+      "conname": "ck_routine_source",
+      "contype": "c",
+      "definition": "CHECK (((source)::text = 'user_configured'::text))"
+    },
+    {
+      "table_name": "routine_entries",
+      "conname": "routine_entries_active_not_null",
+      "contype": "n",
+      "definition": "NOT NULL active"
+    },
+    {
+      "table_name": "routine_entries",
+      "conname": "routine_entries_am_order_not_null",
+      "contype": "n",
+      "definition": "NOT NULL am_order"
+    },
+    {
+      "table_name": "routine_entries",
+      "conname": "routine_entries_created_at_not_null",
+      "contype": "n",
+      "definition": "NOT NULL created_at"
+    },
+    {
+      "table_name": "routine_entries",
+      "conname": "routine_entries_frequency_not_null",
+      "contype": "n",
+      "definition": "NOT NULL frequency"
+    },
+    {
+      "table_name": "routine_entries",
+      "conname": "routine_entries_id_not_null",
+      "contype": "n",
+      "definition": "NOT NULL id"
+    },
+    {
+      "table_name": "routine_entries",
+      "conname": "routine_entries_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "routine_entries",
+      "conname": "routine_entries_pm_order_not_null",
+      "contype": "n",
+      "definition": "NOT NULL pm_order"
+    },
+    {
+      "table_name": "routine_entries",
+      "conname": "routine_entries_product_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (product_id) REFERENCES products(id)"
+    },
+    {
+      "table_name": "routine_entries",
+      "conname": "routine_entries_product_id_not_null",
+      "contype": "n",
+      "definition": "NOT NULL product_id"
+    },
+    {
+      "table_name": "routine_entries",
+      "conname": "routine_entries_schedule_not_null",
+      "contype": "n",
+      "definition": "NOT NULL schedule"
+    },
+    {
+      "table_name": "routine_entries",
+      "conname": "routine_entries_source_not_null",
+      "contype": "n",
+      "definition": "NOT NULL source"
+    },
+    {
+      "table_name": "routine_entries",
+      "conname": "routine_entries_start_date_not_null",
+      "contype": "n",
+      "definition": "NOT NULL start_date"
+    },
+    {
+      "table_name": "routine_entries",
+      "conname": "routine_entries_updated_at_not_null",
+      "contype": "n",
+      "definition": "NOT NULL updated_at"
+    },
+    {
+      "table_name": "routine_entries",
+      "conname": "routine_entries_user_id_fkey",
+      "contype": "f",
+      "definition": "FOREIGN KEY (user_id) REFERENCES users(id)"
+    },
+    {
+      "table_name": "routine_entries",
+      "conname": "routine_entries_user_id_not_null",
+      "contype": "n",
+      "definition": "NOT NULL user_id"
+    },
+    {
+      "table_name": "routine_entries",
+      "conname": "uq_routine_active_am",
+      "contype": "u",
+      "definition": "UNIQUE (active_am_product)"
+    },
+    {
+      "table_name": "routine_entries",
+      "conname": "uq_routine_active_pm",
+      "contype": "u",
+      "definition": "UNIQUE (active_pm_product)"
+    },
+    {
+      "table_name": "users",
+      "conname": "users_email_not_null",
+      "contype": "n",
+      "definition": "NOT NULL email"
+    },
+    {
+      "table_name": "users",
+      "conname": "users_full_name_not_null",
+      "contype": "n",
+      "definition": "NOT NULL full_name"
+    },
+    {
+      "table_name": "users",
+      "conname": "users_hashed_password_not_null",
+      "contype": "n",
+      "definition": "NOT NULL hashed_password"
+    },
+    {
+      "table_name": "users",
+      "conname": "users_id_not_null",
+      "contype": "n",
+      "definition": "NOT NULL id"
+    },
+    {
+      "table_name": "users",
+      "conname": "users_pkey",
+      "contype": "p",
+      "definition": "PRIMARY KEY (id)"
+    },
+    {
+      "table_name": "users",
+      "conname": "users_reset_token_attempts_not_null",
+      "contype": "n",
+      "definition": "NOT NULL reset_token_attempts"
+    },
+    {
+      "table_name": "users",
+      "conname": "users_role_not_null",
+      "contype": "n",
+      "definition": "NOT NULL role"
+    }
+  ],
+  "exact_production_fk_check_match": true,
+  "exact_production_columns_match": true,
+  "original_index_oids": {
+    "ix_experiments_routine_entry_id": 19243,
+    "uq_experiments_active_owner": 19242
+  },
+  "attachment_operation_seconds": 0.001001,
+  "attachment_lock_modes": [
+    "AccessExclusiveLock"
+  ],
+  "attachment_blocked_reader_seconds": 0.266,
+  "concurrently_in_transaction_rejected": "25001",
+  "failed_concurrent_build_invalid_state": {
+    "indisvalid": false,
+    "indisready": false
+  },
+  "failed_concurrent_build_cleanup": "PASS: standalone DROP INDEX CONCURRENTLY after inspecting probe index",
+  "concurrent_build_observed_phase": "waiting for writers before build",
+  "concurrent_build_lock_modes": [
+    "ShareUpdateExclusiveLock"
+  ],
+  "writer_during_concurrent_build_seconds": 0.002,
+  "exact_sql_script_exit_code": 0,
+  "adoption_total_seconds": 0.088,
+  "post_adoption_differences": [],
+  "retained_original_index_oids": true,
+  "final_index_state": [
+    {
+      "name": "ix_experiments_routine_entry_id",
+      "indisvalid": true,
+      "indisready": true,
+      "indislive": true,
+      "indisunique": false,
+      "indnullsnotdistinct": false,
+      "predicate": null,
+      "definition": "CREATE INDEX ix_experiments_routine_entry_id ON public.experiments USING btree (routine_entry_id)"
+    },
+    {
+      "name": "ix_users_reset_token_hash",
+      "indisvalid": true,
+      "indisready": true,
+      "indislive": true,
+      "indisunique": false,
+      "indnullsnotdistinct": false,
+      "predicate": null,
+      "definition": "CREATE INDEX ix_users_reset_token_hash ON public.users USING btree (reset_token_hash)"
+    },
+    {
+      "name": "uq_experiments_active_owner",
+      "indisvalid": true,
+      "indisready": true,
+      "indislive": true,
+      "indisunique": true,
+      "indnullsnotdistinct": false,
+      "predicate": null,
+      "definition": "CREATE UNIQUE INDEX uq_experiments_active_owner ON public.experiments USING btree (active_owner)"
+    }
+  ],
+  "attached_constraint": {
+    "conname": "uq_experiments_active_owner",
+    "convalidated": true,
+    "condeferrable": false,
+    "definition": "UNIQUE (active_owner)"
+  },
+  "constraint_violations": {
+    "fk:captures:user_id": 0,
+    "check:ck_capture_origin": 0,
+    "check:ck_capture_state": 0,
+    "check:ck_capture_storage": 0,
+    "fk:measurements:capture_id": 0,
+    "fk:measurements:user_id": 0,
+    "check:ck_measurement_status": 0,
+    "fk:products:user_id": 0,
+    "fk:product_intelligence:product_id": 0,
+    "fk:product_intelligence:user_id": 0,
+    "fk:experiments:routine_entry_id": 0,
+    "fk:experiments:user_id": 0,
+    "fk:experiments:product_id": 0,
+    "check:ck_experiment_v2_definition": 0,
+    "check:ck_experiment_v2_owner": 0,
+    "fk:experiment_evaluations:experiment_id": 0,
+    "fk:experiment_evaluations:user_id": 0,
+    "fk:checkins:experiment_id": 0,
+    "fk:checkins:user_id": 0,
+    "fk:doctor_patient_access:patient_id": 0,
+    "fk:doctor_patient_access:doctor_id": 0,
+    "fk:doctor_review_actions:doctor_id": 0,
+    "fk:doctor_review_actions:patient_id": 0,
+    "fk:doctor_review_actions:access_id": 0,
+    "check:ck_doctor_recommendation": 0,
+    "check:ck_doctor_review_state": 0,
+    "fk:clinical_notes:patient_id": 0,
+    "fk:clinical_notes:review_action_id": 0,
+    "fk:clinical_notes:doctor_id": 0,
+    "fk:reward_redemptions:user_id": 0,
+    "fk:daily_contexts:user_id": 0,
+    "fk:routine_entries:user_id": 0,
+    "fk:routine_entries:product_id": 0,
+    "check:ck_routine_frequency": 0,
+    "check:ck_routine_schedule": 0,
+    "check:ck_routine_source": 0,
+    "check:ck_routine_end": 0,
+    "check:ck_routine_order": 0,
+    "fk:routine_adherence:routine_entry_id": 0,
+    "fk:routine_adherence:user_id": 0,
+    "check:ck_adherence_slot": 0,
+    "check:ck_adherence_source": 0,
+    "check:ck_adherence_status": 0
+  },
+  "default_zero_preserved": true,
+  "enforcement_probes": {
+    "duplicate_active_owner": "23505",
+    "missing_fk": "23503",
+    "invalid_v2_definition": "23514",
+    "invalid_v2_owner": "23514"
+  },
+  "multiple_null_owners_and_duplicate_reset_hashes_allowed": true,
+  "alembic_check": "PASS: No new upgrade operations detected",
+  "revision": "20261008_01",
+  "row_invariants": {
+    "before": {
+      "audit_logs": {
+        "count": 30,
+        "hash": "2ce597ebc558a8ddb46caf40e6d1f9d8671b456be8300659c9b3758d9699e5fd"
+      },
+      "captures": {
+        "count": 30,
+        "hash": "093f0c1336cf08ea4a578918ff2e96d1de2b3deed80297b3314d78a12ba946d7"
+      },
+      "checkins": {
+        "count": 60,
+        "hash": "e1a32b4bd5494160f118806cdfff4a225b6c6bcb4ff202821ce63a509180363c"
+      },
+      "clinical_notes": {
+        "count": 30,
+        "hash": "6f459561d64396724eedb1cb27e5a44422afe459085a6f42628d5bdeb1b219f2"
+      },
+      "daily_contexts": {
+        "count": 30,
+        "hash": "7d1c85967b3788b26343a27504e5782ec3620da185e9c563f7e7e274ffb0dbb4"
+      },
+      "doctor_patient_access": {
+        "count": 30,
+        "hash": "d0102316ee5890e6ce30e137870c8656d5a22100590759575729afa25ff9b98b"
+      },
+      "doctor_review_actions": {
+        "count": 30,
+        "hash": "dbf242b01ae46234103fd8396e2ad57b4338c0e76f1bf66dbda01ae78aab38f9"
+      },
+      "experiment_evaluations": {
+        "count": 30,
+        "hash": "8238abe11f632d5e84db58216fc1048475d35b95f7369b3c8e51dee2ce30ec78"
+      },
+      "experiments": {
+        "count": 90,
+        "hash": "d5637415175bb998dbd09a4a8d38eca65dea4f5e7bcef5d3525fe00f6eddf4d4"
+      },
+      "measurements": {
+        "count": 30,
+        "hash": "21ad13318e4e9e02c6d5f759819dda913ed0b91543129d4f67a7d5071c5ba773"
+      },
+      "product_intelligence": {
+        "count": 30,
+        "hash": "12f211bd27a7fe50a61dceb9bb9696f8768c8a7880b11c408e567934c12fd221"
+      },
+      "products": {
+        "count": 30,
+        "hash": "0fcf23d36243bc2d9286e7cd2b76aed0bd17107b780ebbb7f374a05d5096eeb3"
+      },
+      "reward_redemptions": {
+        "count": 30,
+        "hash": "1383dd9ec68f3063509aaa5fd14da634ffd11f0338127bab335ab8cd8e4484e8"
+      },
+      "routine_adherence": {
+        "count": 30,
+        "hash": "2e1ec3fec991c683d4dbd7b9ceeb604daedcff5c66996063aa1b8e5fff4d65a4"
+      },
+      "routine_entries": {
+        "count": 30,
+        "hash": "f81cf4b27ce8be068964aa96606cc844e964d920ffd66aa93bc5357cd516c3ae"
+      },
+      "users": {
+        "count": 31,
+        "hash": "069103e8d4ab6c2eca8ec6c1820984cb942a12a6a06931662c203407dea07ce5"
+      }
+    },
+    "after": {
+      "audit_logs": {
+        "count": 30,
+        "hash": "2ce597ebc558a8ddb46caf40e6d1f9d8671b456be8300659c9b3758d9699e5fd"
+      },
+      "captures": {
+        "count": 30,
+        "hash": "093f0c1336cf08ea4a578918ff2e96d1de2b3deed80297b3314d78a12ba946d7"
+      },
+      "checkins": {
+        "count": 60,
+        "hash": "e1a32b4bd5494160f118806cdfff4a225b6c6bcb4ff202821ce63a509180363c"
+      },
+      "clinical_notes": {
+        "count": 30,
+        "hash": "6f459561d64396724eedb1cb27e5a44422afe459085a6f42628d5bdeb1b219f2"
+      },
+      "daily_contexts": {
+        "count": 30,
+        "hash": "7d1c85967b3788b26343a27504e5782ec3620da185e9c563f7e7e274ffb0dbb4"
+      },
+      "doctor_patient_access": {
+        "count": 30,
+        "hash": "d0102316ee5890e6ce30e137870c8656d5a22100590759575729afa25ff9b98b"
+      },
+      "doctor_review_actions": {
+        "count": 30,
+        "hash": "dbf242b01ae46234103fd8396e2ad57b4338c0e76f1bf66dbda01ae78aab38f9"
+      },
+      "experiment_evaluations": {
+        "count": 30,
+        "hash": "8238abe11f632d5e84db58216fc1048475d35b95f7369b3c8e51dee2ce30ec78"
+      },
+      "experiments": {
+        "count": 90,
+        "hash": "d5637415175bb998dbd09a4a8d38eca65dea4f5e7bcef5d3525fe00f6eddf4d4"
+      },
+      "measurements": {
+        "count": 30,
+        "hash": "21ad13318e4e9e02c6d5f759819dda913ed0b91543129d4f67a7d5071c5ba773"
+      },
+      "product_intelligence": {
+        "count": 30,
+        "hash": "12f211bd27a7fe50a61dceb9bb9696f8768c8a7880b11c408e567934c12fd221"
+      },
+      "products": {
+        "count": 30,
+        "hash": "0fcf23d36243bc2d9286e7cd2b76aed0bd17107b780ebbb7f374a05d5096eeb3"
+      },
+      "reward_redemptions": {
+        "count": 30,
+        "hash": "1383dd9ec68f3063509aaa5fd14da634ffd11f0338127bab335ab8cd8e4484e8"
+      },
+      "routine_adherence": {
+        "count": 30,
+        "hash": "2e1ec3fec991c683d4dbd7b9ceeb604daedcff5c66996063aa1b8e5fff4d65a4"
+      },
+      "routine_entries": {
+        "count": 30,
+        "hash": "f81cf4b27ce8be068964aa96606cc844e964d920ffd66aa93bc5357cd516c3ae"
+      },
+      "users": {
+        "count": 31,
+        "hash": "069103e8d4ab6c2eca8ec6c1820984cb942a12a6a06931662c203407dea07ce5"
+      }
+    },
+    "identical_counts_and_full_row_hashes": true,
+    "total_rows": 571
+  },
+  "wrong_same_name_index_rejected": true,
+  "fresh_database_upgrade_and_check": "PASS",
+  "limits": "PostgreSQL 18.6 Windows C collation, loopback plaintext, synthetic rows; exact production index/FK/CHECK definitions. No Azure performance, production collation/ACL or RTO certification."
+}

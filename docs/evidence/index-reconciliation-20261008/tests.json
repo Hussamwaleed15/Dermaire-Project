@@ -1,0 +1,13 @@
+{
+  "passed": 654,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0,
+  "seconds": 88.105,
+  "warnings": 90,
+  "scope": "full backend suite; external services mocked by existing fixtures",
+  "finalReadinessRecheck": {
+    "passed": 11,
+    "seconds": 0.58
+  }
+}

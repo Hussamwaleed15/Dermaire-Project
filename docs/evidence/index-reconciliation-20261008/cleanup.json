@@ -1,0 +1,9 @@
+{
+  "localDatabasesDropped": [
+    "reconciliation",
+    "fresh"
+  ],
+  "localServerStopped": true,
+  "productionCleanupRequired": false,
+  "productionMutations": []
+}
