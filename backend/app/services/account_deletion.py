@@ -1,6 +1,6 @@
 import hashlib
 import hmac
-import json
+import re
 
 from sqlalchemy import or_
 
@@ -17,7 +17,9 @@ def delete_account(db, user_id, *, journal=None):
     if user is None:
         return  # A valid access token can retry after the response was lost.
     owned_models = (ProductIntelligence, Measurement, Capture, ExperimentEvaluation, RoutineAdherence, DailyContext, CheckIn, Experiment, RoutineEntry, Product, RewardRedemption)
-    identifiers = {user_id, user.email, user.full_name}
+    # Names are neither unique nor stable references. Never match serialized
+    # JSON keys: e.g. a name "id" otherwise scrubs every unrelated *_id field.
+    identifiers = {user_id}
     for model in owned_models:
         identifiers.update(row.id for row in db.query(model).filter(model.user_id == user_id))
     related = or_(DoctorPatientAccess.patient_id == user_id, DoctorPatientAccess.doctor_id == user_id)
@@ -80,9 +82,22 @@ def delete_account(db, user_id, *, journal=None):
             azure_blob_service.delete_image(checkin.image_blob_name)
     azure_blob_service.delete_owned_images(user_id)
     pseudonym = hmac.new(settings.SECRET_KEY.encode(), user_id.encode(), hashlib.sha256).hexdigest()[:32]
+    identifier_pattern = re.compile(r"(?<![A-Za-z0-9_-])(?:" +
+                                    "|".join(re.escape(value) for value in identifiers if value) +
+                                    r")(?![A-Za-z0-9_-])")
+    email_pattern = re.compile(r"(?<![A-Za-z0-9_.%+@-])" + re.escape(user.email) +
+                               r"(?![A-Za-z0-9_%+@-]|\.[A-Za-z0-9])") if user.email else None
+
+    def references_subject(value):
+        if isinstance(value, dict):
+            return any(references_subject(item) for item in value.values())
+        if isinstance(value, (list, tuple)):
+            return any(references_subject(item) for item in value)
+        return isinstance(value, str) and bool(identifier_pattern.search(value) or
+                                              (email_pattern and email_pattern.search(value)))
+
     for audit in db.query(AuditLog):
-        serialized = json.dumps(audit.details or {})
-        if audit.actor_id == user_id or any(value and value in serialized for value in identifiers):
+        if audit.actor_id == user_id or references_subject(audit.details or {}):
             if audit.actor_id == user_id:
                 audit.actor_id = pseudonym
             audit.details = {}

@@ -15,6 +15,34 @@ from app.models import (User, Product, Experiment, CheckIn, ClinicalNote,
 from app.services.azure_blob import azure_blob_service, AzureBlobService
 
 
+def test_delete_preserves_unrelated_audit_when_name_matches_json_keys(deletion_context, monkeypatch):
+    client, db, headers = deletion_context
+    db.get(User, "delete-patient").full_name = "id"
+    other = AuditLog(actor_id="delete-doctor", action="PRODUCT_UPDATED",
+                     target_resource="products", details={"product_id": "unrelated-product", "notes": "keep"})
+    db.add(other); db.commit(); identifier = other.id
+    monkeypatch.setattr(azure_blob_service, "delete_image", Mock())
+    monkeypatch.setattr(azure_blob_service, "delete_owned_images", Mock())
+    assert client.delete("/api/v1/users/me", headers=headers).status_code == 204
+    db.expire_all()
+    assert db.get(AuditLog, identifier).details == {"product_id": "unrelated-product", "notes": "keep"}
+
+
+def test_delete_audit_matches_whole_identifier_values_not_keys_or_prefixes(deletion_context, monkeypatch):
+    client, db, headers = deletion_context
+    other = AuditLog(actor_id="delete-doctor", action="OTHER", target_resource="users",
+                     details={"delete-patient": "unrelated", "reference": "delete-patient-other"})
+    related = AuditLog(actor_id="delete-doctor", action="RELATED", target_resource="users",
+                       details={"nested": ["review for delete-patient."]})
+    db.add_all([other, related]); db.commit(); keep_id, scrub_id = other.id, related.id
+    monkeypatch.setattr(azure_blob_service, "delete_image", Mock())
+    monkeypatch.setattr(azure_blob_service, "delete_owned_images", Mock())
+    assert client.delete("/api/v1/users/me", headers=headers).status_code == 204
+    db.expire_all()
+    assert db.get(AuditLog, keep_id).details == {"delete-patient": "unrelated", "reference": "delete-patient-other"}
+    assert db.get(AuditLog, scrub_id).details == {}
+
+
 @pytest.fixture
 def deletion_context():
     engine = create_engine("sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool)
