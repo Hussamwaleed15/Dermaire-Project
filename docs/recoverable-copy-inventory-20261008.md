@@ -125,3 +125,25 @@ Read failures are retained with safe management error diagnostics, explicitly su
 **Journal retention 42d is eligible only if ALL recoverable application-data copies have maximum lifetime <=35d AND quarantine <=7d. Never expire intents or keys while ANY recoverable copy remains; keys must also outlive retained signed intents.** Holds, unknown provenance/expiry/control, restored-target clocks and external copies invalidate fixed expiry. Restoring cannot reset/extend the source's allowed lifetime silently. Keep expiration disabled. Live datasets and future backups remain covered by continuous journal capture; a snapshot/export left surviving at day 42 blocks expiry.
 
 Close technical and human gaps, then rerun Phase 0 fresh. Production privacy configuration, journal provisioning/protection, deployment and traffic decisions require the separately authorized rollout. This inventory task authorizes none of those mutations.
+
+## Local personal OneDrive inspection (8 October 2026; baseline 244ee20)
+
+**Phase 0 remains BLOCKED; OneDrive production-data resurrection exclusion is not cleared.** Production was not contacted or changed; no project/OneDrive files were deleted or edited. SQLite was opened read-only. Only documentation in the main checkout changed.
+
+Exact located project paths, all covered by the registry-configured Personal UserFolder `C:\Users\Hossam\OneDrive`:
+
+- `C:\Users\Hossam\OneDrive\Desktop\DERAIRE_BAKEND`
+- `C:\Users\Hossam\OneDrive\Desktop\dermaire_flutter_app`
+- Related folder also inspected: `C:\Users\Hossam\OneDrive\Desktop\dermaire_flutter_apppppppp`
+
+Each of the first two folders contains `backend/dermaire_dev.db` and one adjacent upload: both sets are **unresolved**, not proven synthetic-only or production-derived. Each DB has 3 users, 10 audit rows, 1 product, 1 experiment and 2 check-ins across 8 legacy tables. Two accounts have example/test email indicators; one uses a public email provider. All three IDs have UUID shape; account dates are 18 September 2026. No account email matches known backend test source. One check-in references the adjacent image and an existing account. Prior fixture/asset comparison found no matching image. Neither schema age, filename nor test-like accounts establish exclusive synthetic provenance; the public-provider account could be a developer test or a real tester.
+
+The populated DBs are directly byte-equal, SHA256 `d8aa33ae1325049085e590afc821c9ce4909f689f5edab6efbf3255460b5ff76`, 122880 bytes each, identical last-write time 18 September 2026 09:32:35 UTC. The uploads have matching SHA256 `d3125a8007ab452e61a295a05aea78c1cdf905a8f4cfbb48bf6dc3957427f3f0`, 14785139 bytes each. This supports duplicate copies of the same old development snapshot/working data, not proof of the original environment or synthetic lineage. Both `test_dermaire.db` files are also hash-identical and have no current tables; classify their historical provenance unresolved, with no current logical account/image rows. No deleted-page forensic recovery was attempted.
+
+Recursive filename inspection of all three project trees, including dependency/build directories but excluding `.git` object storage (prior Git history audit retained), found these four application DBs and two application uploads, plus two Chromium developer-profile databases containing browser metadata (no Dermaire account/check-in/image schema); no archives and no additional application dumps/backups/exports. Export/snapshot name matches were Flutter support/build/dependency files. No new data-bearing set was discovered in the third folder. Root/Desktop/Documents immediate folder-name discovery found no other directly named Dermaire project roots; unrelated personal content was not swept. Arbitrarily renamed copies, cloud-only/history/recycle items and other devices remain outside proof.
+
+DBs/uploads are locally readable and have Archive attribute only, without Offline/Recall flags. Personal account mapping is confirmed; cloud sync health, complete remote version history, recycle-bin maximum and preservation/holds are not established by those flags or client registry. Prior cloud-access limitations remain applicable; no cloud retention default was assumed.
+
+Remaining closure requirements: resolve these account/image origins and applicable cloud historical copies; establish authoritative recoverability <=35d and quarantine <=7d without unknown holds/history; attest/register off-platform and other-device copies; nominate release/recovery/privacy/on-call owners and alert contact; before separately authorized rollout provision/protect the independent production deletion journal/key and verify replay, then rerun fresh Phase 0. Keep intent/key expiry disabled while any recoverable copy remains.
+
+Evidence: [current local counts, paths, hashes, linkage and metadata](evidence/onedrive-local-inspection-20261008/inspection.json), together with prior [fixture and provenance indicators](evidence/onedrive-closure-20261008/onedrive-privacy-evidence.json). No raw emails, names, IDs, passwords, tokens, image contents or image filenames are included.

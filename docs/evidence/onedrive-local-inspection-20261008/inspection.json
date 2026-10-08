@@ -1,0 +1,464 @@
+{
+  "date": "2026-10-08",
+  "scope": [
+    "C:\\Users\\Hossam\\OneDrive\\Desktop\\DERAIRE_BAKEND",
+    "C:\\Users\\Hossam\\OneDrive\\Desktop\\dermaire_flutter_app",
+    "C:\\Users\\Hossam\\OneDrive\\Desktop\\dermaire_flutter_apppppppp"
+  ],
+  "excludedDirectories": [
+    ".git"
+  ],
+  "databases": [
+    {
+      "path": "C:\\Users\\Hossam\\OneDrive\\Desktop\\DERAIRE_BAKEND\\backend\\dermaire_dev.db",
+      "sha256": "d8aa33ae1325049085e590afc821c9ce4909f689f5edab6efbf3255460b5ff76",
+      "bytes": 122880,
+      "attributes": 32,
+      "modifiedUTC": "2026-09-18T09:32:35.150433+00:00",
+      "counts": {
+        "users": 3,
+        "audit_logs": 10,
+        "products": 1,
+        "doctor_patient_access": 0,
+        "clinical_notes": 0,
+        "reward_redemptions": 0,
+        "experiments": 1,
+        "checkins": 2
+      },
+      "schema": {
+        "users": [
+          "id",
+          "email",
+          "hashed_password",
+          "full_name",
+          "role",
+          "safety_accepted",
+          "safety_accepted_at",
+          "safety_policy_version",
+          "skin_type",
+          "selected_goal",
+          "skin_concerns",
+          "tokens_balance",
+          "baseline_checkins_count",
+          "created_at",
+          "updated_at"
+        ],
+        "audit_logs": [
+          "id",
+          "actor_id",
+          "action",
+          "target_resource",
+          "details",
+          "ip_address",
+          "created_at"
+        ],
+        "products": [
+          "id",
+          "user_id",
+          "name",
+          "brand",
+          "category",
+          "product_type",
+          "active_ingredients",
+          "skin_concerns",
+          "usage_instructions",
+          "frequency_per_week",
+          "time_of_use",
+          "status",
+          "start_date",
+          "end_date",
+          "notes",
+          "image_url",
+          "tags",
+          "rating",
+          "in_routine",
+          "in_experiment",
+          "created_at",
+          "updated_at"
+        ],
+        "doctor_patient_access": [
+          "id",
+          "doctor_id",
+          "patient_id",
+          "access_token",
+          "status",
+          "export_consent",
+          "expires_at",
+          "created_at"
+        ],
+        "clinical_notes": [
+          "id",
+          "doctor_id",
+          "patient_id",
+          "content",
+          "priority",
+          "follow_up",
+          "created_at"
+        ],
+        "reward_redemptions": [
+          "id",
+          "user_id",
+          "reward_title",
+          "tokens_spent",
+          "created_at"
+        ],
+        "experiments": [
+          "id",
+          "user_id",
+          "product_id",
+          "target_days",
+          "current_day",
+          "status",
+          "primary_concern",
+          "redness_delta_percent",
+          "texture_delta_percent",
+          "hydration_delta_percent",
+          "start_date",
+          "end_date",
+          "created_at"
+        ],
+        "checkins": [
+          "id",
+          "user_id",
+          "experiment_id",
+          "date_str",
+          "time_of_day",
+          "hydration_score",
+          "texture_score",
+          "redness_score",
+          "notes",
+          "image_blob_name",
+          "ai_vision_analysis",
+          "created_at"
+        ]
+      },
+      "emailClassification": {
+        "exampleOrTestDomains": 2,
+        "publicProviderDomains": 1,
+        "testLocalPartMarkers": 2
+      },
+      "userCreatedRange": [
+        "2026-09-18",
+        "2026-09-18"
+      ],
+      "classification": "unresolved"
+    },
+    {
+      "path": "C:\\Users\\Hossam\\OneDrive\\Desktop\\DERAIRE_BAKEND\\backend\\test_dermaire.db",
+      "sha256": "b9cf7718db1bbbd5c123744ed6f7fb20566b552f894ecf13b58c1983830c5dfe",
+      "bytes": 122880,
+      "attributes": 32,
+      "modifiedUTC": "2026-09-15T09:08:20.880039+00:00",
+      "counts": {},
+      "schema": {},
+      "classification": "no current application accounts; historical provenance unresolved"
+    },
+    {
+      "path": "C:\\Users\\Hossam\\OneDrive\\Desktop\\DERAIRE_BAKEND\\Dermaire-app-main\\.dart_tool\\chrome-device\\Default\\declarative_performance_observer.db",
+      "sha256": "eda4c9567974174f08a1dbcd8badf4d6199a7e9a8b78b8826548f49e20e7badf",
+      "bytes": 32768,
+      "attributes": 32,
+      "modifiedUTC": "2026-09-14T20:00:57.745840+00:00",
+      "counts": {
+        "meta": 3,
+        "declarative_performance_observer_policies": 0,
+        "declarative_performance_observer_reports": 0,
+        "sqlite_sequence": 0
+      },
+      "schema": {
+        "meta": [
+          "key",
+          "value"
+        ],
+        "declarative_performance_observer_policies": [
+          "origin",
+          "capture_early_failures",
+          "created_at"
+        ],
+        "declarative_performance_observer_reports": [
+          "id",
+          "origin",
+          "payload",
+          "created_at"
+        ],
+        "sqlite_sequence": [
+          "name",
+          "seq"
+        ]
+      },
+      "classification": "no current application accounts; historical provenance unresolved"
+    },
+    {
+      "path": "C:\\Users\\Hossam\\OneDrive\\Desktop\\DERAIRE_BAKEND\\Dermaire-app-main\\.dart_tool\\chrome-device\\Default\\heavy_ad_intervention_opt_out.db",
+      "sha256": "2adb7920679589545e8f37e3918b42d962ca404ddbd569930383478f6525b6ee",
+      "bytes": 16384,
+      "attributes": 32,
+      "modifiedUTC": "2026-09-14T20:00:57.857111+00:00",
+      "counts": {
+        "previews_v1": 0,
+        "enabled_previews_v1": 1
+      },
+      "schema": {
+        "previews_v1": [
+          "host_name",
+          "time",
+          "opt_out",
+          "type"
+        ],
+        "enabled_previews_v1": [
+          "type",
+          "version"
+        ]
+      },
+      "classification": "no current application accounts; historical provenance unresolved"
+    },
+    {
+      "path": "C:\\Users\\Hossam\\OneDrive\\Desktop\\dermaire_flutter_app\\backend\\dermaire_dev.db",
+      "sha256": "d8aa33ae1325049085e590afc821c9ce4909f689f5edab6efbf3255460b5ff76",
+      "bytes": 122880,
+      "attributes": 32,
+      "modifiedUTC": "2026-09-18T09:32:35.150433+00:00",
+      "counts": {
+        "users": 3,
+        "audit_logs": 10,
+        "products": 1,
+        "doctor_patient_access": 0,
+        "clinical_notes": 0,
+        "reward_redemptions": 0,
+        "experiments": 1,
+        "checkins": 2
+      },
+      "schema": {
+        "users": [
+          "id",
+          "email",
+          "hashed_password",
+          "full_name",
+          "role",
+          "safety_accepted",
+          "safety_accepted_at",
+          "safety_policy_version",
+          "skin_type",
+          "selected_goal",
+          "skin_concerns",
+          "tokens_balance",
+          "baseline_checkins_count",
+          "created_at",
+          "updated_at"
+        ],
+        "audit_logs": [
+          "id",
+          "actor_id",
+          "action",
+          "target_resource",
+          "details",
+          "ip_address",
+          "created_at"
+        ],
+        "products": [
+          "id",
+          "user_id",
+          "name",
+          "brand",
+          "category",
+          "product_type",
+          "active_ingredients",
+          "skin_concerns",
+          "usage_instructions",
+          "frequency_per_week",
+          "time_of_use",
+          "status",
+          "start_date",
+          "end_date",
+          "notes",
+          "image_url",
+          "tags",
+          "rating",
+          "in_routine",
+          "in_experiment",
+          "created_at",
+          "updated_at"
+        ],
+        "doctor_patient_access": [
+          "id",
+          "doctor_id",
+          "patient_id",
+          "access_token",
+          "status",
+          "export_consent",
+          "expires_at",
+          "created_at"
+        ],
+        "clinical_notes": [
+          "id",
+          "doctor_id",
+          "patient_id",
+          "content",
+          "priority",
+          "follow_up",
+          "created_at"
+        ],
+        "reward_redemptions": [
+          "id",
+          "user_id",
+          "reward_title",
+          "tokens_spent",
+          "created_at"
+        ],
+        "experiments": [
+          "id",
+          "user_id",
+          "product_id",
+          "target_days",
+          "current_day",
+          "status",
+          "primary_concern",
+          "redness_delta_percent",
+          "texture_delta_percent",
+          "hydration_delta_percent",
+          "start_date",
+          "end_date",
+          "created_at"
+        ],
+        "checkins": [
+          "id",
+          "user_id",
+          "experiment_id",
+          "date_str",
+          "time_of_day",
+          "hydration_score",
+          "texture_score",
+          "redness_score",
+          "notes",
+          "image_blob_name",
+          "ai_vision_analysis",
+          "created_at"
+        ]
+      },
+      "emailClassification": {
+        "exampleOrTestDomains": 2,
+        "publicProviderDomains": 1,
+        "testLocalPartMarkers": 2
+      },
+      "userCreatedRange": [
+        "2026-09-18",
+        "2026-09-18"
+      ],
+      "classification": "unresolved"
+    },
+    {
+      "path": "C:\\Users\\Hossam\\OneDrive\\Desktop\\dermaire_flutter_app\\backend\\test_dermaire.db",
+      "sha256": "b9cf7718db1bbbd5c123744ed6f7fb20566b552f894ecf13b58c1983830c5dfe",
+      "bytes": 122880,
+      "attributes": 32,
+      "modifiedUTC": "2026-09-15T09:08:20.880039+00:00",
+      "counts": {},
+      "schema": {},
+      "classification": "no current application accounts; historical provenance unresolved"
+    }
+  ],
+  "uploads": [
+    {
+      "project": "C:\\Users\\Hossam\\OneDrive\\Desktop\\DERAIRE_BAKEND",
+      "directory": "C:\\Users\\Hossam\\OneDrive\\Desktop\\DERAIRE_BAKEND\\backend\\uploads",
+      "sha256": "d3125a8007ab452e61a295a05aea78c1cdf905a8f4cfbb48bf6dc3957427f3f0",
+      "bytes": 14785139,
+      "attributes": 32,
+      "classification": "unresolved"
+    },
+    {
+      "project": "C:\\Users\\Hossam\\OneDrive\\Desktop\\dermaire_flutter_app",
+      "directory": "C:\\Users\\Hossam\\OneDrive\\Desktop\\dermaire_flutter_app\\backend\\uploads",
+      "sha256": "d3125a8007ab452e61a295a05aea78c1cdf905a8f4cfbb48bf6dc3957427f3f0",
+      "bytes": 14785139,
+      "attributes": 32,
+      "classification": "unresolved"
+    }
+  ],
+  "archives": [],
+  "otherCandidates": [
+    {
+      "path": "C:\\Users\\Hossam\\OneDrive\\Desktop\\DERAIRE_BAKEND\\backend\\.venv\\Lib\\site-packages\\pip\\_vendor\\rich\\_export_format.py",
+      "bytes": 2128
+    },
+    {
+      "path": "C:\\Users\\Hossam\\OneDrive\\Desktop\\DERAIRE_BAKEND\\backend\\.venv\\Lib\\site-packages\\pip\\_vendor\\rich\\__pycache__\\_export_format.cpython-312.pyc",
+      "bytes": 2367
+    },
+    {
+      "path": "C:\\Users\\Hossam\\OneDrive\\Desktop\\DERAIRE_BAKEND\\Dermaire-app-main\\.dart_tool\\flutter_build\\d53999c9f562e2fcbb3cd1fcf041848e\\kernel_snapshot_program.d",
+      "bytes": 97282
+    },
+    {
+      "path": "C:\\Users\\Hossam\\OneDrive\\Desktop\\DERAIRE_BAKEND\\Dermaire-app-main\\.dart_tool\\flutter_build\\d53999c9f562e2fcbb3cd1fcf041848e\\kernel_snapshot_program.stamp",
+      "bytes": 99959
+    },
+    {
+      "path": "C:\\Users\\Hossam\\OneDrive\\Desktop\\DERAIRE_BAKEND\\Dermaire-app-main\\ios\\Flutter\\flutter_export_environment.sh",
+      "bytes": 744
+    },
+    {
+      "path": "C:\\Users\\Hossam\\OneDrive\\Desktop\\DERAIRE_BAKEND\\Dermaire-app-main\\macos\\Flutter\\ephemeral\\flutter_export_environment.sh",
+      "bytes": 708
+    },
+    {
+      "path": "C:\\Users\\Hossam\\OneDrive\\Desktop\\dermaire_flutter_app\\backend\\.venv\\Lib\\site-packages\\pip\\_vendor\\rich\\_export_format.py",
+      "bytes": 2128
+    },
+    {
+      "path": "C:\\Users\\Hossam\\OneDrive\\Desktop\\dermaire_flutter_app\\backend\\.venv\\Lib\\site-packages\\pip\\_vendor\\rich\\__pycache__\\_export_format.cpython-312.pyc",
+      "bytes": 2367
+    },
+    {
+      "path": "C:\\Users\\Hossam\\OneDrive\\Desktop\\dermaire_flutter_app\\dermaire_app\\.dart_tool\\flutter_build\\7c1c073bfa744ddb31d4a630f85e53a8\\kernel_snapshot_program.d",
+      "bytes": 185400
+    },
+    {
+      "path": "C:\\Users\\Hossam\\OneDrive\\Desktop\\dermaire_flutter_app\\dermaire_app\\.dart_tool\\flutter_build\\7c1c073bfa744ddb31d4a630f85e53a8\\kernel_snapshot_program.stamp",
+      "bytes": 189600
+    },
+    {
+      "path": "C:\\Users\\Hossam\\OneDrive\\Desktop\\dermaire_flutter_app\\dermaire_app\\ios\\Flutter\\flutter_export_environment.sh",
+      "bytes": 746
+    },
+    {
+      "path": "C:\\Users\\Hossam\\OneDrive\\Desktop\\dermaire_flutter_app\\dermaire_app\\macos\\Flutter\\ephemeral\\flutter_export_environment.sh",
+      "bytes": 710
+    },
+    {
+      "path": "C:\\Users\\Hossam\\OneDrive\\Desktop\\dermaire_flutter_app\\dermaire_app\\windows\\flutter\\ephemeral\\flutter_export.h",
+      "bytes": 838
+    },
+    {
+      "path": "C:\\Users\\Hossam\\OneDrive\\Desktop\\dermaire_flutter_apppppppp\\dermaire_app\\ios\\Flutter\\flutter_export_environment.sh",
+      "bytes": 758
+    },
+    {
+      "path": "C:\\Users\\Hossam\\OneDrive\\Desktop\\dermaire_flutter_apppppppp\\dermaire_app\\macos\\Flutter\\ephemeral\\flutter_export_environment.sh",
+      "bytes": 722
+    }
+  ],
+  "personalUserFolder": "C:\\Users\\Hossam\\OneDrive",
+  "allProjectsInPersonalRoot": true,
+  "populatedDatabasesByteEqual": true,
+  "uploadHashesEqual": true,
+  "linkage": [
+    {
+      "database": "C:\\Users\\Hossam\\OneDrive\\Desktop\\DERAIRE_BAKEND\\backend\\dermaire_dev.db",
+      "checkinsWithAdjacentImage": 1,
+      "imageCheckinsWhoseUserExists": 1,
+      "exactAccountEmailMatchesInKnownTests": 0,
+      "uuidShapedUserIDs": 3
+    },
+    {
+      "database": "C:\\Users\\Hossam\\OneDrive\\Desktop\\dermaire_flutter_app\\backend\\dermaire_dev.db",
+      "checkinsWithAdjacentImage": 1,
+      "imageCheckinsWhoseUserExists": 1,
+      "exactAccountEmailMatchesInKnownTests": 0,
+      "uuidShapedUserIDs": 3
+    }
+  ],
+  "otherCandidatesConclusion": "Only Flutter build/export support files and dependency code matched names; no application dump/export/backup discovered.",
+  "historicalEvidence": "Fixture/image comparison and legacy-schema context retained in ../onedrive-closure-20261008/onedrive-privacy-evidence.json; no exact known fixture matches.",
+  "syncConclusion": "Configured Personal root confirmed. Inspected DB/upload attributes=32 (Archive), fully readable locally; no Offline/Recall flags. This does not prove successful cloud synchronization or cloud version/history/recycle/hold lifetime."
+}

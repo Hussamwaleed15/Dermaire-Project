@@ -11,6 +11,7 @@ Current decision (8 October 2026, continuation from `239f6480aca35d8845c5deeb7ea
 - [x] Perform privacy-preserving OneDrive schema/content/fixture/date/ID/image comparison; both DBs and images remain unresolved / possibly production-derived.
 - [x] Inspect local account/policy metadata and attempt browser/Graph access; authoritative cloud retention is unavailable, not assumed.
 - [x] Refresh scoped project copy discovery, ten known Codex DBs and Azure resource/native backup metadata; no additional populated local DB found. See current continuation evidence in the inventory.
+- [x] Reinspect exact Personal OneDrive project paths and third related Flutter folder; confirm direct DB byte equality, image hash equality and account/image linkage; no extra data-bearing set discovered. See [local inspection](recoverable-copy-inventory-20261008.md#local-personal-onedrive-inspection-8-october-2026-baseline-244ee20). Both populated sets remain unresolved.
 - [ ] Resolve production lineage and maximum lifetime of both populated OneDrive DBs and their two upload photos, including remote versions/recycle bin; unknown is fail-closed.
 - [x] Revalidate staging rollback ZIP/hash and nested zstd tar: code/dependencies only, no application DB/photos. Deleted rehearsal targets evidenced synthetic; preserve staging replay protection until all recoverability is gone. Excluded/out-of-band surfaces remain attestation scope.
 - [ ] Attest every off-platform/manual/other-device copy absent or register custodian, location, restore ability, max lifetime, holds and deletion impact.
