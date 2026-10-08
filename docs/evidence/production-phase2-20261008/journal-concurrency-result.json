@@ -1,0 +1,11 @@
+{
+  "timestampUTC": "2026-10-08T17:15:15.530316+00:00",
+  "scope": "isolated in-memory execution of exact source class; no Azure or DB access",
+  "writers": 2,
+  "writerErrors": [],
+  "expectedImageTokens": 2,
+  "retainedImageTokens": 1,
+  "signatureValid": true,
+  "durabilityGate": "FAIL",
+  "productionMutations": []
+}
