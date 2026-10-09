@@ -1,0 +1,481 @@
+{
+  "runId": "3e2d0a3f-a31e-4296-b081-3941d19593b1",
+  "startedUTC": "2026-10-09T06:14:38.422575+00:00",
+  "gate": "SMOKE_CLEANUP_PASS_AWAITING_TELEMETRY_MONITORING",
+  "requests": [
+    {
+      "method": "POST",
+      "route": "/api/v1/auth/register",
+      "status": 201,
+      "requestId": "970f9285-3003-47c7-a99a-65898b334bcf",
+      "startedUTC": "2026-10-09T06:14:39.595942+00:00",
+      "endedUTC": "2026-10-09T06:14:46.394466+00:00"
+    },
+    {
+      "method": "POST",
+      "route": "/api/v1/auth/login",
+      "status": 200,
+      "requestId": "0839b96f-6bce-476d-918d-bc27c9b00a73",
+      "startedUTC": "2026-10-09T06:14:46.401512+00:00",
+      "endedUTC": "2026-10-09T06:14:48.268283+00:00"
+    },
+    {
+      "method": "GET",
+      "route": "/api/v1/users/me",
+      "status": 200,
+      "requestId": "a6bde822-c2b5-455b-b1e1-e8faa3311e80",
+      "startedUTC": "2026-10-09T06:14:48.269318+00:00",
+      "endedUTC": "2026-10-09T06:14:48.598415+00:00"
+    },
+    {
+      "method": "POST",
+      "route": "/api/v1/auth/register",
+      "status": 201,
+      "requestId": "2e868d6e-426a-43cf-b0fb-9989d71b7628",
+      "startedUTC": "2026-10-09T06:14:48.606512+00:00",
+      "endedUTC": "2026-10-09T06:14:50.081483+00:00"
+    },
+    {
+      "method": "POST",
+      "route": "/api/v1/auth/login",
+      "status": 200,
+      "requestId": "693ff769-cfa5-4f96-9dbd-6be75dd123ad",
+      "startedUTC": "2026-10-09T06:14:50.082871+00:00",
+      "endedUTC": "2026-10-09T06:14:51.399267+00:00"
+    },
+    {
+      "method": "GET",
+      "route": "/api/v1/users/me",
+      "status": 200,
+      "requestId": "355eb394-7830-427c-9b52-6a7a00ca637f",
+      "startedUTC": "2026-10-09T06:14:51.407572+00:00",
+      "endedUTC": "2026-10-09T06:14:51.659010+00:00"
+    },
+    {
+      "method": "PATCH",
+      "route": "/api/v1/users/skin-profile",
+      "status": 200,
+      "requestId": "e54f36d2-fb0d-4881-bb16-18837fdb5662",
+      "startedUTC": "2026-10-09T06:14:51.660578+00:00",
+      "endedUTC": "2026-10-09T06:14:51.920194+00:00"
+    },
+    {
+      "method": "GET",
+      "route": "/api/v1/users/me",
+      "status": 200,
+      "requestId": "73d03f0c-4e68-460b-bee6-1933827152ed",
+      "startedUTC": "2026-10-09T06:14:51.921536+00:00",
+      "endedUTC": "2026-10-09T06:14:52.152490+00:00"
+    },
+    {
+      "method": "GET",
+      "route": "/api/v1/home",
+      "status": 200,
+      "requestId": "7ca92968-08bb-4858-9435-b33c3affe6f7",
+      "startedUTC": "2026-10-09T06:14:52.160785+00:00",
+      "endedUTC": "2026-10-09T06:14:52.529236+00:00"
+    },
+    {
+      "method": "POST",
+      "route": "/api/v1/assistance",
+      "status": 200,
+      "requestId": "39a4d4da-881d-4dde-96d6-2e2e00fa827a",
+      "startedUTC": "2026-10-09T06:14:52.530548+00:00",
+      "endedUTC": "2026-10-09T06:14:58.140887+00:00"
+    },
+    {
+      "method": "POST",
+      "route": "/api/v1/checkins",
+      "status": 201,
+      "requestId": "86eb8e64-5d05-4193-9ae2-bc122b0ea592",
+      "startedUTC": "2026-10-09T06:14:58.142328+00:00",
+      "endedUTC": "2026-10-09T06:14:58.362306+00:00"
+    },
+    {
+      "method": "GET",
+      "route": "/api/v1/checkins",
+      "status": 200,
+      "requestId": "ec739ef8-3274-4471-8549-2fcf6a37fc71",
+      "startedUTC": "2026-10-09T06:14:58.363454+00:00",
+      "endedUTC": "2026-10-09T06:14:58.553316+00:00"
+    },
+    {
+      "method": "GET",
+      "route": "/api/v1/safety",
+      "status": 200,
+      "requestId": "66ac7690-15c5-4a79-b8d9-e8f5e97f4923",
+      "startedUTC": "2026-10-09T06:14:58.560558+00:00",
+      "endedUTC": "2026-10-09T06:14:58.770927+00:00"
+    },
+    {
+      "method": "POST",
+      "route": "/api/v1/assistance",
+      "status": 200,
+      "requestId": "0299ace6-9588-45bc-82d8-74baa513118c",
+      "startedUTC": "2026-10-09T06:14:58.772173+00:00",
+      "endedUTC": "2026-10-09T06:14:58.964093+00:00"
+    },
+    {
+      "method": "POST",
+      "route": "/api/v1/captures",
+      "status": 201,
+      "requestId": "b5efd468-d96b-4ba9-9c50-1dcf7d324f73",
+      "startedUTC": "2026-10-09T06:14:59.063358+00:00",
+      "endedUTC": "2026-10-09T06:14:59.650973+00:00"
+    },
+    {
+      "method": "GET",
+      "route": "/api/v1/captures/{capture_id}",
+      "status": 404,
+      "requestId": "0cc3c961-1e81-4113-bbff-c5d008b5d5cf",
+      "startedUTC": "2026-10-09T06:14:59.652207+00:00",
+      "endedUTC": "2026-10-09T06:14:59.842414+00:00"
+    },
+    {
+      "method": "GET",
+      "route": "/api/v1/captures/{capture_id}/image",
+      "status": 401,
+      "requestId": "f2fdad98-f769-4534-adab-e8c4935e8258",
+      "startedUTC": "2026-10-09T06:14:59.850581+00:00",
+      "endedUTC": "2026-10-09T06:15:00.002832+00:00"
+    },
+    {
+      "method": "GET",
+      "route": "/api/v1/captures/{capture_id}/image",
+      "status": 404,
+      "requestId": "cd97908f-66ba-4bd6-ab67-ea20150e5346",
+      "startedUTC": "2026-10-09T06:15:00.003981+00:00",
+      "endedUTC": "2026-10-09T06:15:00.223258+00:00"
+    },
+    {
+      "method": "DELETE",
+      "route": "/api/v1/users/me",
+      "status": 204,
+      "requestId": "a1270b8c-d426-40b3-a96c-8edfbf14fb15",
+      "startedUTC": "2026-10-09T06:15:00.892277+00:00",
+      "endedUTC": "2026-10-09T06:15:03.303458+00:00"
+    },
+    {
+      "method": "DELETE",
+      "route": "/api/v1/users/me",
+      "status": 204,
+      "requestId": "b0cbfd2e-27e9-427b-9fab-0d4738f35d36",
+      "startedUTC": "2026-10-09T06:15:03.701066+00:00",
+      "endedUTC": "2026-10-09T06:15:03.879718+00:00"
+    },
+    {
+      "method": "GET",
+      "route": "/api/v1/users/me",
+      "status": 401,
+      "requestId": "44074fec-ca76-428d-91e3-022a0b922677",
+      "startedUTC": "2026-10-09T06:15:03.887972+00:00",
+      "endedUTC": "2026-10-09T06:15:04.069669+00:00"
+    },
+    {
+      "method": "GET",
+      "route": "/api/v1/home",
+      "status": 401,
+      "requestId": "dcd09565-9a67-4e02-931b-5d73a39c2b95",
+      "startedUTC": "2026-10-09T06:15:04.077765+00:00",
+      "endedUTC": "2026-10-09T06:15:04.340162+00:00"
+    },
+    {
+      "method": "GET",
+      "route": "/api/v1/users/me",
+      "status": 200,
+      "requestId": "05c5435a-71c5-471e-b3cd-2cfa830abfee",
+      "startedUTC": "2026-10-09T06:15:04.631147+00:00",
+      "endedUTC": "2026-10-09T06:15:04.803233+00:00"
+    },
+    {
+      "method": "DELETE",
+      "route": "/api/v1/users/me",
+      "status": 204,
+      "requestId": "9cfa365e-5ad1-4d74-97e9-9c7eeafa9d6f",
+      "startedUTC": "2026-10-09T06:15:05.256216+00:00",
+      "endedUTC": "2026-10-09T06:15:05.649774+00:00"
+    },
+    {
+      "method": "DELETE",
+      "route": "/api/v1/users/me",
+      "status": 204,
+      "requestId": "c7f3850a-4868-48af-8373-4589dcf82a49",
+      "startedUTC": "2026-10-09T06:15:05.949876+00:00",
+      "endedUTC": "2026-10-09T06:15:06.113984+00:00"
+    },
+    {
+      "method": "GET",
+      "route": "/api/v1/users/me",
+      "status": 401,
+      "requestId": "50aba2c9-ecd9-4486-9f8f-924bf14e9a00",
+      "startedUTC": "2026-10-09T06:15:06.122092+00:00",
+      "endedUTC": "2026-10-09T06:15:06.311975+00:00"
+    },
+    {
+      "method": "GET",
+      "route": "/api/v1/home",
+      "status": 401,
+      "requestId": "330a9dc3-683c-4826-89b6-a2dee15c69aa",
+      "startedUTC": "2026-10-09T06:15:06.313158+00:00",
+      "endedUTC": "2026-10-09T06:15:06.503172+00:00"
+    },
+    {
+      "method": "GET",
+      "route": "/health/live",
+      "status": 200,
+      "requestId": "b5ad58c1-a491-403d-90f1-957911e630cd",
+      "startedUTC": "2026-10-09T06:15:07.362453+00:00",
+      "endedUTC": "2026-10-09T06:15:07.560428+00:00"
+    },
+    {
+      "method": "GET",
+      "route": "/health/ready",
+      "status": 200,
+      "requestId": "4fb30ae8-7116-423a-a813-27f5f44b4540",
+      "startedUTC": "2026-10-09T06:15:07.561707+00:00",
+      "endedUTC": "2026-10-09T06:15:07.820866+00:00"
+    }
+  ],
+  "accounts": [
+    {
+      "label": "a",
+      "ownerHash": "fd8ca6c3eb0e3d203a716deacede2ce62010e024490677880ed39488f450c1d0",
+      "registered": true,
+      "deleted": true,
+      "loginAndOwnerProfile": true,
+      "deleteStatus": 204,
+      "retryStatus": 204,
+      "postDeleteProfile": 401,
+      "postDeleteHome": 401,
+      "cleanup": {
+        "captures": 0,
+        "measurements": 0,
+        "users": 0,
+        "products": 0,
+        "product_intelligence": 0,
+        "experiments": 0,
+        "experiment_evaluations": 0,
+        "checkins": 0,
+        "doctor_patient_access": 0,
+        "doctor_review_actions": 0,
+        "clinical_notes": 0,
+        "reward_redemptions": 0,
+        "daily_contexts": 0,
+        "routine_entries": 0,
+        "routine_adherence": 0,
+        "rawActorAuditRows": 0,
+        "scrubbedAuditRows": 5,
+        "blobCopies": 0
+      },
+      "journal": {
+        "schema": 2,
+        "intentHash": "1a39d27431d5a1ba0fe876b2b9df0270b47e25c9ac498abbd4736c28eb00dc2d",
+        "lastModifiedUTC": "2026-10-09T06:15:02+00:00",
+        "signatureVerified": true,
+        "durableBeforeResponse": true,
+        "sourceOrderVerifiedByManifest": true
+      }
+    },
+    {
+      "label": "b",
+      "ownerHash": "c464ebc1d12fd02d9e4328130fdbee088412f76b9538b4b593b4e59584a1854a",
+      "registered": true,
+      "deleted": true,
+      "loginAndOwnerProfile": true,
+      "deleteStatus": 204,
+      "retryStatus": 204,
+      "postDeleteProfile": 401,
+      "postDeleteHome": 401,
+      "cleanup": {
+        "captures": 0,
+        "measurements": 0,
+        "users": 0,
+        "products": 0,
+        "product_intelligence": 0,
+        "experiments": 0,
+        "experiment_evaluations": 0,
+        "checkins": 0,
+        "doctor_patient_access": 0,
+        "doctor_review_actions": 0,
+        "clinical_notes": 0,
+        "reward_redemptions": 0,
+        "daily_contexts": 0,
+        "routine_entries": 0,
+        "routine_adherence": 0,
+        "rawActorAuditRows": 0,
+        "scrubbedAuditRows": 3,
+        "blobCopies": 0
+      },
+      "journal": {
+        "schema": 2,
+        "intentHash": "3fed7c802a2690b580b10a606ea4280d42e366a51c2c7c056bb96fe6f95e2da4",
+        "lastModifiedUTC": "2026-10-09T06:15:05+00:00",
+        "signatureVerified": true,
+        "durableBeforeResponse": true,
+        "sourceOrderVerifiedByManifest": true
+      }
+    }
+  ],
+  "phase5Started": false,
+  "journalBefore": 23,
+  "assistance": {
+    "configured": true,
+    "invoked": true,
+    "availability": "available",
+    "mode": "grounded_ai",
+    "reason": null,
+    "safetyMatches": true
+  },
+  "syntheticCheckinCreated": true,
+  "safetyGuard": {
+    "status": "urgent",
+    "providerNotInvoked": true,
+    "reason": "safety_precedence"
+  },
+  "image": {
+    "syntheticGeometricFixture": "rejected_as_expected",
+    "stored": false,
+    "crossOwnerRecord": 404,
+    "anonymousImage": 401,
+    "crossOwnerImage": 404,
+    "acceptedImageBlobEndToEnd": "NOT_EXERCISED_no_face_fixture_no_quality_bypass"
+  },
+  "unrelatedBeforeDeletion": {
+    "captures": {
+      "count": 1,
+      "aggregateHash": "0514db79023dfdca9419704c4e2f5dcd"
+    },
+    "measurements": {
+      "count": 0,
+      "aggregateHash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "users": {
+      "count": 5,
+      "aggregateHash": "cd13d085cdac5e1768b9047b5566d664"
+    },
+    "products": {
+      "count": 0,
+      "aggregateHash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "product_intelligence": {
+      "count": 0,
+      "aggregateHash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "experiments": {
+      "count": 0,
+      "aggregateHash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "experiment_evaluations": {
+      "count": 0,
+      "aggregateHash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "checkins": {
+      "count": 0,
+      "aggregateHash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "doctor_patient_access": {
+      "count": 0,
+      "aggregateHash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "doctor_review_actions": {
+      "count": 0,
+      "aggregateHash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "clinical_notes": {
+      "count": 0,
+      "aggregateHash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "audit_logs": {
+      "count": 393,
+      "aggregateHash": "e61d72399aa67c6f83c5348373a19800"
+    },
+    "reward_redemptions": {
+      "count": 0,
+      "aggregateHash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "daily_contexts": {
+      "count": 0,
+      "aggregateHash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "routine_entries": {
+      "count": 0,
+      "aggregateHash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "routine_adherence": {
+      "count": 0,
+      "aggregateHash": "d41d8cd98f00b204e9800998ecf8427e"
+    }
+  },
+  "secondAccountPreservedUntilItsDeletion": true,
+  "unrelatedAfterDeletion": {
+    "captures": {
+      "count": 1,
+      "aggregateHash": "0514db79023dfdca9419704c4e2f5dcd"
+    },
+    "measurements": {
+      "count": 0,
+      "aggregateHash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "users": {
+      "count": 5,
+      "aggregateHash": "cd13d085cdac5e1768b9047b5566d664"
+    },
+    "products": {
+      "count": 0,
+      "aggregateHash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "product_intelligence": {
+      "count": 0,
+      "aggregateHash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "experiments": {
+      "count": 0,
+      "aggregateHash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "experiment_evaluations": {
+      "count": 0,
+      "aggregateHash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "checkins": {
+      "count": 0,
+      "aggregateHash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "doctor_patient_access": {
+      "count": 0,
+      "aggregateHash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "doctor_review_actions": {
+      "count": 0,
+      "aggregateHash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "clinical_notes": {
+      "count": 0,
+      "aggregateHash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "audit_logs": {
+      "count": 393,
+      "aggregateHash": "e61d72399aa67c6f83c5348373a19800"
+    },
+    "reward_redemptions": {
+      "count": 0,
+      "aggregateHash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "daily_contexts": {
+      "count": 0,
+      "aggregateHash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "routine_entries": {
+      "count": 0,
+      "aggregateHash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "routine_adherence": {
+      "count": 0,
+      "aggregateHash": "d41d8cd98f00b204e9800998ecf8427e"
+    }
+  },
+  "unrelatedAggregatesUnchanged": true,
+  "journalAfter": 25,
+  "retainedSyntheticAccountIntents": 2,
+  "liveSyntheticAccountsRecordsBlobs": 0,
+  "endedUTC": "2026-10-09T06:15:07.821976+00:00"
+}

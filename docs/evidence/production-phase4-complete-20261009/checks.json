@@ -1,0 +1,37 @@
+{
+  "result": "PASS",
+  "passed": 148,
+  "warnings": 9,
+  "seconds": 9.01,
+  "scope": [
+    "account_deletion",
+    "deletion_journal",
+    "contextual_ai",
+    "safety_engine",
+    "logging_safety",
+    "error_privacy"
+  ],
+  "database": "isolated local SQLite only",
+  "initialAttempt": {
+    "passed": 146,
+    "fixtureErrors": 2,
+    "cause": "Windows temporary-directory permissions",
+    "resolved": "rerun all selected tests with workspace temporary directory"
+  },
+  "applicationSourceChanged": false,
+  "additionalSuites": [
+    {
+      "scope": "doctor_loop",
+      "passed": 54,
+      "warnings": 19,
+      "seconds": 27.49
+    },
+    {
+      "scope": "clinician_assistance",
+      "passed": 9,
+      "warnings": 1,
+      "seconds": 0.84
+    }
+  ],
+  "totalPassed": 211
+}

@@ -1,0 +1,45 @@
+{
+  "observedUTC": "2026-10-09T06:18:51.793089+00:00",
+  "expectedRequestEvents": 29,
+  "phase5Started": false,
+  "firedProductionRules": [],
+  "enabledRules": 11,
+  "temporaryAlertRules": [],
+  "telemetryCounts": {
+    "events": 35,
+    "requestEvents": 29,
+    "distinctRequests": 29,
+    "unexpectedKeys": 0,
+    "rawEmail": 0,
+    "tokenOrBodyOrException": 0,
+    "serverErrors": 0,
+    "journalWriteAvailable": 2,
+    "openaiAvailable": 1,
+    "openaiDegraded": 0
+  },
+  "allRequestEventsObserved": true,
+  "noRawRowsExported": true,
+  "health": {
+    "/health/live": {
+      "status": 200,
+      "body": {
+        "status": "alive",
+        "boot_id": "b8d0f702-15e9-4f1c-9499-c400282b7c90",
+        "uptime_seconds": 17778.11
+      },
+      "observedUTC": "2026-10-09T06:19:18.158173+00:00"
+    },
+    "/health/ready": {
+      "status": 200,
+      "body": {
+        "status": "ready",
+        "database": "available",
+        "storage": "available",
+        "deletion_journal": "available"
+      },
+      "observedUTC": "2026-10-09T06:19:18.767228+00:00"
+    }
+  },
+  "providerStatesUnchanged": true,
+  "gate": "PASS"
+}

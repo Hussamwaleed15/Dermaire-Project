@@ -1,5 +1,17 @@
 # Production release gate and rollback runbook
 
+**Latest production execution: PHASE 4 COMPLETE — 9 October 2026 Cairo.**
+[Disposable production smoke and sanitized evidence](production-phase4-complete-20261009.md).
+Source `5b5c7b6` remains deployed, revision `20261008_01`, runtime `dermaire_runtime`.
+Two synthetic accounts were registered, exercised and deleted through the real API;
+delete/retry 204, post-delete profile/Home 401, zero live synthetic business rows/Blob copies.
+Two immutable synthetic account intents and eight scrubbed synthetic audit rows remain by design.
+Geometric image rejection/access denial was verified; accepted-photo Blob round trip was not
+required/exercised in this minimal scope. All 29 request events passed structured privacy checks;
+11 rules enabled, no Fired alerts, final health 200/200. No rollback/provider changes.
+**Phase 5 did NOT start.** Existing RTO limitation remains.
+
+
 **Latest production execution: PHASE 3 COMPLETE — 9 October 2026 Cairo.**
 [Fresh completed rollout and evidence](production-phase3-complete-20261009.md).
 Source 5b5c7b6 is deployed; new-worker readiness 179.672s, liveness/readiness PASS,
