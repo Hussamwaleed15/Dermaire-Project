@@ -1,0 +1,14 @@
+{
+  "filesAtRoot": [
+    ".ostype",
+    "oryx-manifest.toml",
+    "output.tar.zst",
+    "requirements.txt"
+  ],
+  "builtSha256": "6d49029ba2849beb775c3423f95e14f3d08c1caaf11504fe12dffb34cb2adf03",
+  "builtBytes": 143158979,
+  "secretOrDatabaseFiles": 0,
+  "packageMembers": 13567,
+  "sourceCommit": "5b5c7b694a4e6e55ff338a72c88e53848e778cc5",
+  "gate": "PASS"
+}

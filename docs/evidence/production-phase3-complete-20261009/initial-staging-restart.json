@@ -1,0 +1,129 @@
+{
+  "app": "dermaire-api-staging",
+  "oldBoot": "062058e3-de34-480c-bd00-5c63f4518a6b",
+  "restartRequestedUTC": "2026-10-08T21:48:29.748765+00:00",
+  "budgetSeconds": 180,
+  "samples": [
+    {
+      "elapsedSeconds": 2.563,
+      "observedUTC": "2026-10-08T21:48:32.308602+00:00",
+      "errorType": "HTTPError",
+      "httpStatus": 403
+    },
+    {
+      "elapsedSeconds": 6.282,
+      "observedUTC": "2026-10-08T21:48:36.024195+00:00",
+      "errorType": "HTTPError",
+      "httpStatus": 503
+    },
+    {
+      "elapsedSeconds": 10.797,
+      "observedUTC": "2026-10-08T21:48:40.546505+00:00",
+      "errorType": "TimeoutError",
+      "httpStatus": null
+    },
+    {
+      "elapsedSeconds": 20.25,
+      "observedUTC": "2026-10-08T21:48:49.991790+00:00",
+      "errorType": "TimeoutError",
+      "httpStatus": null
+    },
+    {
+      "elapsedSeconds": 29.797,
+      "observedUTC": "2026-10-08T21:48:59.550786+00:00",
+      "errorType": "TimeoutError",
+      "httpStatus": null
+    },
+    {
+      "elapsedSeconds": 39.36,
+      "observedUTC": "2026-10-08T21:49:09.103317+00:00",
+      "errorType": "TimeoutError",
+      "httpStatus": null
+    },
+    {
+      "elapsedSeconds": 48.891,
+      "observedUTC": "2026-10-08T21:49:18.644216+00:00",
+      "errorType": "TimeoutError",
+      "httpStatus": null
+    },
+    {
+      "elapsedSeconds": 58.344,
+      "observedUTC": "2026-10-08T21:49:28.086461+00:00",
+      "errorType": "TimeoutError",
+      "httpStatus": null
+    },
+    {
+      "elapsedSeconds": 67.86,
+      "observedUTC": "2026-10-08T21:49:37.601052+00:00",
+      "errorType": "TimeoutError",
+      "httpStatus": null
+    },
+    {
+      "elapsedSeconds": 77.391,
+      "observedUTC": "2026-10-08T21:49:47.141099+00:00",
+      "errorType": "TimeoutError",
+      "httpStatus": null
+    },
+    {
+      "elapsedSeconds": 87.11,
+      "observedUTC": "2026-10-08T21:49:56.850096+00:00",
+      "errorType": "TimeoutError",
+      "httpStatus": null
+    },
+    {
+      "elapsedSeconds": 96.594,
+      "observedUTC": "2026-10-08T21:50:06.345674+00:00",
+      "errorType": "TimeoutError",
+      "httpStatus": null
+    },
+    {
+      "elapsedSeconds": 106.032,
+      "observedUTC": "2026-10-08T21:50:15.784016+00:00",
+      "errorType": "TimeoutError",
+      "httpStatus": null
+    },
+    {
+      "elapsedSeconds": 115.532,
+      "observedUTC": "2026-10-08T21:50:25.280891+00:00",
+      "errorType": "TimeoutError",
+      "httpStatus": null
+    },
+    {
+      "elapsedSeconds": 125.032,
+      "observedUTC": "2026-10-08T21:50:34.785181+00:00",
+      "errorType": "TimeoutError",
+      "httpStatus": null
+    },
+    {
+      "elapsedSeconds": 134.547,
+      "observedUTC": "2026-10-08T21:50:44.297390+00:00",
+      "errorType": "TimeoutError",
+      "httpStatus": null
+    },
+    {
+      "elapsedSeconds": 144.0,
+      "observedUTC": "2026-10-08T21:50:53.746155+00:00",
+      "liveStatus": 200,
+      "boot": "91e8f182-0efc-4398-933c-d07e42146cc2",
+      "uptimeSeconds": 7.38,
+      "readyStatus": 200,
+      "ready": {
+        "status": "ready",
+        "database": "available",
+        "storage": "available",
+        "deletion_journal": "available"
+      }
+    }
+  ],
+  "restartAcknowledgedUTC": "2026-10-08T21:48:32.307610+00:00",
+  "gate": "PASS",
+  "newBoot": "91e8f182-0efc-4398-933c-d07e42146cc2",
+  "newWorkerReadySeconds": 152.422,
+  "readyUTC": "2026-10-08T21:51:02.170776+00:00",
+  "ready": {
+    "status": "ready",
+    "database": "available",
+    "storage": "available",
+    "deletion_journal": "available"
+  }
+}

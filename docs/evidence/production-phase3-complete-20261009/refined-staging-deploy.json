@@ -1,0 +1,14 @@
+{
+  "sourceCommit": "5b5c7b694a4e6e55ff338a72c88e53848e778cc5",
+  "startedUTC": "2026-10-08T22:43:55.633067+00:00",
+  "method": "OneDeploy exact refined built ZIP; no dependency rebuild",
+  "deployment": {
+    "id": "a16c3e3c-0e3a-462d-8475-fcc5d677b183",
+    "status": 4,
+    "complete": true,
+    "active": true,
+    "start_time": "2026-10-08T22:47:45.6681873Z",
+    "end_time": "2026-10-08T22:48:30.9954589Z"
+  },
+  "finishedUTC": "2026-10-08T22:48:33.460584+00:00"
+}

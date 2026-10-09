@@ -1,0 +1,18 @@
+{
+  "sourceCommit": "6a9c13fe84ac21df323a58a61d2037de34f7a455",
+  "artifactSha256": "8a56321eb609603415b61572fdc73f8184dd623d5dd9df289f9bc3a70c5f80ff",
+  "artifactBytes": 143163016,
+  "builtSha256": "4fbdb2e898dbe2bc4a7bf595bff77ebfc0d7e5d832a6a47abdef189facf5fe67",
+  "startUTC": "2026-10-08T21:56:01.983544+00:00",
+  "dependencyRebuild": false,
+  "method": "App Service OneDeploy; cold controlled start",
+  "deployment": {
+    "id": "2f2de0da-7bcb-4353-9d06-02523536bb98",
+    "status": 4,
+    "complete": true,
+    "active": true,
+    "start_time": "2026-10-08T21:59:27.4048232Z",
+    "end_time": "2026-10-08T22:01:00.4147952Z"
+  },
+  "acceptedUTC": "2026-10-08T22:01:01.818312+00:00"
+}

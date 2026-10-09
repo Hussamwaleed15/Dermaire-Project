@@ -1,0 +1,10 @@
+{
+  "sourceCommit": "6a9c13fe84ac21df323a58a61d2037de34f7a455",
+  "sha256": "5b9943a2c3b2e861bac0f09fef2534858ba20a591d965b17d3864fd2017278a4",
+  "bytes": 3070855,
+  "files": 119,
+  "createdUTC": "2026-10-08T21:07:27.098729+00:00",
+  "stagingDeploymentAcceptedUTC": "2026-10-08T21:07:32.979555+00:00",
+  "statusUrl": "https://dermaire-api-staging.scm.azurewebsites.net:443/api/deployments/latest?deployer=Push-Deployer&time=2026-10-08_21-07-33Z",
+  "acceptedStatus": 202
+}

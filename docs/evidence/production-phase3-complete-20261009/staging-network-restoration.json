@@ -1,0 +1,9 @@
+{
+  "requestedUTC": "2026-10-08T21:37:35.131483+00:00",
+  "resourceId": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-readiness-nonprod-20261006/providers/Microsoft.Storage/storageAccounts/dermairerehearsal261006",
+  "addedExactStagingOutboundIpRules": 13,
+  "privateBlobPreserved": true,
+  "defaultDenyPreserved": true,
+  "sharedKeyPolicyUnchanged": true,
+  "productionMutated": false
+}

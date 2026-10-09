@@ -1,0 +1,137 @@
+{
+  "app": "dermaire-api",
+  "oldBoot": null,
+  "restartRequestedUTC": "2026-10-08T22:03:56.441528+00:00",
+  "budgetSeconds": 180,
+  "samples": [
+    {
+      "elapsedSeconds": 2.828,
+      "observedUTC": "2026-10-08T22:03:59.270101+00:00",
+      "errorType": "HTTPError",
+      "httpStatus": 403
+    },
+    {
+      "elapsedSeconds": 6.656,
+      "observedUTC": "2026-10-08T22:04:03.093793+00:00",
+      "errorType": "TimeoutError",
+      "httpStatus": null
+    },
+    {
+      "elapsedSeconds": 16.172,
+      "observedUTC": "2026-10-08T22:04:12.601778+00:00",
+      "errorType": "TimeoutError",
+      "httpStatus": null
+    },
+    {
+      "elapsedSeconds": 25.64,
+      "observedUTC": "2026-10-08T22:04:22.079778+00:00",
+      "errorType": "TimeoutError",
+      "httpStatus": null
+    },
+    {
+      "elapsedSeconds": 35.172,
+      "observedUTC": "2026-10-08T22:04:31.598796+00:00",
+      "errorType": "TimeoutError",
+      "httpStatus": null
+    },
+    {
+      "elapsedSeconds": 44.594,
+      "observedUTC": "2026-10-08T22:04:41.028696+00:00",
+      "errorType": "TimeoutError",
+      "httpStatus": null
+    },
+    {
+      "elapsedSeconds": 54.062,
+      "observedUTC": "2026-10-08T22:04:50.502765+00:00",
+      "errorType": "TimeoutError",
+      "httpStatus": null
+    },
+    {
+      "elapsedSeconds": 63.562,
+      "observedUTC": "2026-10-08T22:05:00.001822+00:00",
+      "errorType": "TimeoutError",
+      "httpStatus": null
+    },
+    {
+      "elapsedSeconds": 73.047,
+      "observedUTC": "2026-10-08T22:05:09.484023+00:00",
+      "errorType": "TimeoutError",
+      "httpStatus": null
+    },
+    {
+      "elapsedSeconds": 82.484,
+      "observedUTC": "2026-10-08T22:05:18.917533+00:00",
+      "errorType": "TimeoutError",
+      "httpStatus": null
+    },
+    {
+      "elapsedSeconds": 91.984,
+      "observedUTC": "2026-10-08T22:05:28.411697+00:00",
+      "errorType": "TimeoutError",
+      "httpStatus": null
+    },
+    {
+      "elapsedSeconds": 101.5,
+      "observedUTC": "2026-10-08T22:05:37.934325+00:00",
+      "errorType": "TimeoutError",
+      "httpStatus": null
+    },
+    {
+      "elapsedSeconds": 111.047,
+      "observedUTC": "2026-10-08T22:05:47.478290+00:00",
+      "errorType": "TimeoutError",
+      "httpStatus": null
+    },
+    {
+      "elapsedSeconds": 120.5,
+      "observedUTC": "2026-10-08T22:05:56.931427+00:00",
+      "errorType": "TimeoutError",
+      "httpStatus": null
+    },
+    {
+      "elapsedSeconds": 130.062,
+      "observedUTC": "2026-10-08T22:06:06.489593+00:00",
+      "errorType": "TimeoutError",
+      "httpStatus": null
+    },
+    {
+      "elapsedSeconds": 139.562,
+      "observedUTC": "2026-10-08T22:06:15.999323+00:00",
+      "errorType": "TimeoutError",
+      "httpStatus": null
+    },
+    {
+      "elapsedSeconds": 149.219,
+      "observedUTC": "2026-10-08T22:06:25.659227+00:00",
+      "errorType": "TimeoutError",
+      "httpStatus": null
+    },
+    {
+      "elapsedSeconds": 158.656,
+      "observedUTC": "2026-10-08T22:06:35.087885+00:00",
+      "liveStatus": 200,
+      "boot": "da85778d-213f-4fd9-a726-d094e20773b4",
+      "uptimeSeconds": 9.3,
+      "readyStatus": 200,
+      "ready": {
+        "status": "ready",
+        "database": "available",
+        "storage": "available",
+        "deletion_journal": "available"
+      }
+    }
+  ],
+  "oldBuildHadNoLivenessEndpoint": true,
+  "oldArtifactSha256": "9a0e604b37507dfda5be119ae931a0f09f30fc3c28ef0cf3143b55e8ec7dff4b",
+  "restartAcknowledgedUTC": "2026-10-08T22:03:59.270101+00:00",
+  "gate": "PASS",
+  "newBoot": "da85778d-213f-4fd9-a726-d094e20773b4",
+  "newWorkerReadySeconds": 165.437,
+  "readyUTC": "2026-10-08T22:06:41.877090+00:00",
+  "ready": {
+    "status": "ready",
+    "database": "available",
+    "storage": "available",
+    "deletion_journal": "available"
+  }
+}

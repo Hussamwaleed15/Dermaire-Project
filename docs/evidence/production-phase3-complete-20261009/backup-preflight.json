@@ -1,0 +1,8 @@
+{
+  "observedUTC": "2026-10-08T21:30:07.717429+00:00",
+  "automaticFullBackupCount": 7,
+  "latestCompletedUTC": "2026-10-08T07:19:42.755562+00:00",
+  "ageSeconds": 51024.961867,
+  "within24h": true,
+  "gate": "PASS"
+}

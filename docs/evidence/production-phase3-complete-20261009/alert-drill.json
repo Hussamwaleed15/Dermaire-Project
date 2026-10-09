@@ -1,0 +1,13 @@
+{
+  "rule": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.Insights/metricAlerts/dermaire-production-phase3-drill-20261009",
+  "createdUTC": "2026-10-08T22:09:26.959949+00:00",
+  "requestsAreHealthOnly": true,
+  "state": "DELETED",
+  "firedObserved": true,
+  "firedStartUTC": "2026-10-08T22:10:32.9761265Z",
+  "resolveRequestedUTC": "2026-10-08T22:11:54.193144+00:00",
+  "resolvedObserved": true,
+  "resolvedUTC": "2026-10-08T22:16:12.4854458Z",
+  "deletedUTC": "2026-10-08T22:18:37.317028+00:00",
+  "deletionVerified404": true
+}

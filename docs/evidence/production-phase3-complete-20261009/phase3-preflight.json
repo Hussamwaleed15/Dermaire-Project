@@ -1,0 +1,191 @@
+{
+  "startedUTC": "2026-10-08T21:00:37.855693+00:00",
+  "productionMutations": [],
+  "config": {
+    "alwaysOn": false,
+    "ftpsState": "FtpsOnly",
+    "healthCheckPath": null,
+    "httpLoggingEnabled": true,
+    "ipSecurityRestrictions": [
+      {
+        "action": "Allow",
+        "description": "Allow all access",
+        "headers": null,
+        "ipAddress": "Any",
+        "name": "Allow all",
+        "priority": 2147483647,
+        "subnetMask": null,
+        "subnetTrafficTag": null,
+        "tag": null,
+        "vnetSubnetResourceId": null,
+        "vnetTrafficTag": null
+      }
+    ],
+    "logsDirectorySizeLimit": 100,
+    "minTlsVersion": "1.2",
+    "scmMinTlsVersion": "1.2",
+    "startup": "python -m uvicorn app.main:app --host 0.0.0.0 --port 8000"
+  },
+  "app": {
+    "httpsOnly": true,
+    "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.Web/sites/dermaire-api",
+    "identity": {
+      "principalId": "c519ee0d-f1d3-4c2d-ba24-d204eb1fd976",
+      "tenantId": "6845d6ca-1ec5-4c0e-9e9d-34130ce0a0b8",
+      "type": "SystemAssigned",
+      "userAssignedIdentities": null
+    },
+    "routeAll": true,
+    "state": "Running",
+    "subnet": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-journal-prod/providers/Microsoft.Network/virtualNetworks/dermaire-journal-prod-vnet/subnets/app-integration"
+  },
+  "settingNames": [
+    "ACCESS_TOKEN_EXPIRE_MINUTES",
+    "ALGORITHM",
+    "AZURE_BLOB_SAS_EXPIRY_MINUTES",
+    "AZURE_COMMUNICATION_CONNECTION_STRING",
+    "AZURE_EMAIL_SENDER",
+    "AZURE_OPENAI_API_KEY",
+    "AZURE_OPENAI_API_VERSION",
+    "AZURE_OPENAI_DEPLOYMENT_NAME",
+    "AZURE_OPENAI_ENDPOINT",
+    "AZURE_STORAGE_CONNECTION_STRING",
+    "AZURE_STORAGE_CONTAINER",
+    "CONTEXTUAL_AI_ENABLED",
+    "DATABASE_URL",
+    "DEBUG",
+    "DELETION_JOURNAL_ACCOUNT_URL",
+    "DELETION_JOURNAL_CONTAINER",
+    "DELETION_JOURNAL_HMAC_KEY",
+    "DELETION_JOURNAL_REQUIRED",
+    "ENVIRONMENT",
+    "EXPOSE_PASSWORD_RESET_TOKEN",
+    "GOOGLE_WEB_CLIENT_ID",
+    "REFRESH_TOKEN_EXPIRE_DAYS",
+    "SCM_DO_BUILD_DURING_DEPLOYMENT",
+    "SECRET_KEY",
+    "WEBSITES_PORT",
+    "WEBSITE_HTTPLOGGING_RETENTION_DAYS"
+  ],
+  "providerSettings": {
+    "CONTEXTUAL_AI_ENABLED": "true",
+    "AZURE_VISION_ENABLED": "ABSENT"
+  },
+  "providerConfigPresence": {
+    "AZURE_CONTENT_SAFETY_ENDPOINT": false,
+    "AZURE_CONTENT_SAFETY_KEY": false,
+    "AZURE_OPENAI_ENDPOINT": true,
+    "AZURE_OPENAI_API_KEY": true,
+    "AZURE_OPENAI_DEPLOYMENT_NAME": true,
+    "AZURE_OPENAI_API_VERSION": true,
+    "AZURE_VISION_ENDPOINT": false,
+    "AZURE_VISION_KEY": false
+  },
+  "operationalSettings": {
+    "ENVIRONMENT": "production",
+    "DEBUG": "False",
+    "DELETION_JOURNAL_REQUIRED": "true",
+    "AI_PROVIDER_TIMEOUT_SECONDS": "ABSENT",
+    "WEBSITES_CONTAINER_START_TIME_LIMIT": "ABSENT",
+    "SCM_DO_BUILD_DURING_DEPLOYMENT": "true"
+  },
+  "journalConfig": {
+    "accountUrlMatches": true,
+    "containerMatches": true,
+    "hmacKeyVaultReference": true,
+    "connectionStringAbsent": true
+  },
+  "resources": [
+    {
+      "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-readiness-nonprod-20261006/providers/Microsoft.OperationalInsights/workspaces/dermaire-readiness-logs",
+      "name": "dermaire-readiness-logs",
+      "resourceGroup": "dermaire-readiness-nonprod-20261006",
+      "type": "Microsoft.OperationalInsights/workspaces"
+    },
+    {
+      "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-readiness-nonprod-20261006/providers/Microsoft.Insights/actiongroups/dermaire-readiness-owners",
+      "name": "dermaire-readiness-owners",
+      "resourceGroup": "dermaire-readiness-nonprod-20261006",
+      "type": "Microsoft.Insights/actiongroups"
+    },
+    {
+      "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-readiness-nonprod-20261006/providers/Microsoft.Insights/metricalerts/dermaire-staging-http5xx",
+      "name": "dermaire-staging-http5xx",
+      "resourceGroup": "dermaire-readiness-nonprod-20261006",
+      "type": "Microsoft.Insights/metricalerts"
+    },
+    {
+      "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-readiness-nonprod-20261006/providers/Microsoft.Insights/metricalerts/dermaire-staging-latency",
+      "name": "dermaire-staging-latency",
+      "resourceGroup": "dermaire-readiness-nonprod-20261006",
+      "type": "Microsoft.Insights/metricalerts"
+    },
+    {
+      "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-readiness-nonprod-20261006/providers/Microsoft.Insights/metricalerts/dermaire-staging-memory",
+      "name": "dermaire-staging-memory",
+      "resourceGroup": "dermaire-readiness-nonprod-20261006",
+      "type": "Microsoft.Insights/metricalerts"
+    },
+    {
+      "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-readiness-nonprod-20261006/providers/Microsoft.Insights/scheduledqueryrules/dermaire-staging-database",
+      "name": "dermaire-staging-database",
+      "resourceGroup": "dermaire-readiness-nonprod-20261006",
+      "type": "Microsoft.Insights/scheduledqueryrules"
+    },
+    {
+      "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-readiness-nonprod-20261006/providers/Microsoft.Insights/scheduledqueryrules/dermaire-staging-blob",
+      "name": "dermaire-staging-blob",
+      "resourceGroup": "dermaire-readiness-nonprod-20261006",
+      "type": "Microsoft.Insights/scheduledqueryrules"
+    },
+    {
+      "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-readiness-nonprod-20261006/providers/Microsoft.Insights/scheduledqueryrules/dermaire-staging-provider",
+      "name": "dermaire-staging-provider",
+      "resourceGroup": "dermaire-readiness-nonprod-20261006",
+      "type": "Microsoft.Insights/scheduledqueryrules"
+    },
+    {
+      "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-readiness-nonprod-20261006/providers/Microsoft.Insights/scheduledqueryrules/dermaire-staging-startup",
+      "name": "dermaire-staging-startup",
+      "resourceGroup": "dermaire-readiness-nonprod-20261006",
+      "type": "Microsoft.Insights/scheduledqueryrules"
+    },
+    {
+      "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-readiness-nonprod-20261006/providers/Microsoft.Insights/scheduledqueryrules/dermaire-staging-ready",
+      "name": "dermaire-staging-ready",
+      "resourceGroup": "dermaire-readiness-nonprod-20261006",
+      "type": "Microsoft.Insights/scheduledqueryrules"
+    }
+  ],
+  "roleAssignments": [
+    {
+      "principalId": "c519ee0d-f1d3-4c2d-ba24-d204eb1fd976",
+      "roleDefinitionId": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/providers/Microsoft.Authorization/roleDefinitions/8f578748-85e6-44da-98b6-4acb83cf89a5",
+      "roleDefinitionName": "Dermaire Journal Read Write No Delete Prod",
+      "scope": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-journal-prod/providers/Microsoft.Storage/storageAccounts/dermairejrnlprod261008/blobServices/default/containers/intents"
+    },
+    {
+      "principalId": "c519ee0d-f1d3-4c2d-ba24-d204eb1fd976",
+      "roleDefinitionId": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/providers/Microsoft.Authorization/roleDefinitions/4633458b-17de-408a-b874-0445c86b69e6",
+      "roleDefinitionName": "Key Vault Secrets User",
+      "scope": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-journal-prod/providers/Microsoft.KeyVault/vaults/dermaire-journal-prod-kv/secrets/deletion-journal-hmac-v1"
+    }
+  ],
+  "health": {
+    "/health": {
+      "status": 200
+    },
+    "/health/live": {
+      "status": 404
+    },
+    "/health/ready": {
+      "status": 404
+    }
+  },
+  "artifact": {
+    "sha256": "9a0e604b37507dfda5be119ae931a0f09f30fc3c28ef0cf3143b55e8ec7dff4b",
+    "bytes": 145453718,
+    "modifiedUTC": "2026-10-03T19:06:44.283262+00:00"
+  },
+  "finishedUTC": "2026-10-08T21:00:53.905342+00:00"
+}

@@ -1,0 +1,436 @@
+{
+  "workspace": {
+    "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.OperationalInsights/workspaces/dermaire-production-logs",
+    "location": "canadacentral",
+    "properties": {
+      "sku": {
+        "name": "PerGB2018"
+      },
+      "retentionInDays": 30,
+      "features": {
+        "enableLogAccessUsingOnlyResourcePermissions": true
+      },
+      "workspaceCapping": {
+        "dailyQuotaGb": 0.1
+      }
+    }
+  },
+  "actionGroup": {
+    "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.Insights/actionGroups/dermaire-production-owners",
+    "location": "global",
+    "properties": {
+      "groupShortName": "DermaireProd",
+      "enabled": true,
+      "emailReceivers": [
+        {
+          "name": "ProvenGmail",
+          "emailAddress": "hussamwaleed15@gmail.com",
+          "useCommonAlertSchema": true
+        }
+      ]
+    }
+  },
+  "rules": [
+    {
+      "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.Insights/scheduledQueryRules/dermaire-production-ready",
+      "location": "canadacentral",
+      "properties": {
+        "displayName": "Dermaire production ready",
+        "description": "Production-scoped privacy-safe operational signal",
+        "enabled": true,
+        "severity": 2,
+        "evaluationFrequency": "PT1M",
+        "windowSize": "PT5M",
+        "scopes": [
+          "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.OperationalInsights/workspaces/dermaire-production-logs"
+        ],
+        "criteria": {
+          "allOf": [
+            {
+              "query": "AppServiceConsoleLogs | where _ResourceId =~ \"/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.Web/sites/dermaire-api\" | extend p=parse_json(ResultDescription) | where p.event == \"http_request\" and p.route == \"/health/ready\" and toint(p.status)>=500 | summarize value=count()",
+              "timeAggregation": "Maximum",
+              "metricMeasureColumn": "value",
+              "operator": "GreaterThan",
+              "threshold": 0,
+              "failingPeriods": {
+                "numberOfEvaluationPeriods": 1,
+                "minFailingPeriodsToAlert": 1
+              }
+            }
+          ]
+        },
+        "autoMitigate": true,
+        "actions": {
+          "actionGroups": [
+            "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.Insights/actionGroups/dermaire-production-owners"
+          ]
+        },
+        "skipQueryValidation": true
+      }
+    },
+    {
+      "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.Insights/scheduledQueryRules/dermaire-production-availability",
+      "location": "canadacentral",
+      "properties": {
+        "displayName": "Dermaire production availability",
+        "description": "Production-scoped privacy-safe operational signal",
+        "enabled": true,
+        "severity": 1,
+        "evaluationFrequency": "PT1M",
+        "windowSize": "PT5M",
+        "scopes": [
+          "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.OperationalInsights/workspaces/dermaire-production-logs"
+        ],
+        "criteria": {
+          "allOf": [
+            {
+              "query": "AppServiceConsoleLogs | where _ResourceId =~ \"/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.Web/sites/dermaire-api\" | extend p=parse_json(ResultDescription) | where TimeGenerated >= ago(3m) | where p.event == \"http_request\" and p.route == \"/health/ready\" and toint(p.status)==200 | summarize value=iff(count()==0,1,0)",
+              "timeAggregation": "Maximum",
+              "metricMeasureColumn": "value",
+              "operator": "GreaterThan",
+              "threshold": 0,
+              "failingPeriods": {
+                "numberOfEvaluationPeriods": 1,
+                "minFailingPeriodsToAlert": 1
+              }
+            }
+          ]
+        },
+        "autoMitigate": true,
+        "actions": {
+          "actionGroups": [
+            "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.Insights/actionGroups/dermaire-production-owners"
+          ]
+        },
+        "skipQueryValidation": true
+      }
+    },
+    {
+      "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.Insights/scheduledQueryRules/dermaire-production-database",
+      "location": "canadacentral",
+      "properties": {
+        "displayName": "Dermaire production database",
+        "description": "Production-scoped privacy-safe operational signal",
+        "enabled": true,
+        "severity": 2,
+        "evaluationFrequency": "PT1M",
+        "windowSize": "PT5M",
+        "scopes": [
+          "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.OperationalInsights/workspaces/dermaire-production-logs"
+        ],
+        "criteria": {
+          "allOf": [
+            {
+              "query": "AppServiceConsoleLogs | where _ResourceId =~ \"/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.Web/sites/dermaire-api\" | extend p=parse_json(ResultDescription) | where p.event == \"dependency_state\" and p.component == \"database\" and p.state != \"available\" | summarize value=count()",
+              "timeAggregation": "Maximum",
+              "metricMeasureColumn": "value",
+              "operator": "GreaterThan",
+              "threshold": 2,
+              "failingPeriods": {
+                "numberOfEvaluationPeriods": 1,
+                "minFailingPeriodsToAlert": 1
+              }
+            }
+          ]
+        },
+        "autoMitigate": true,
+        "actions": {
+          "actionGroups": [
+            "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.Insights/actionGroups/dermaire-production-owners"
+          ]
+        },
+        "skipQueryValidation": true
+      }
+    },
+    {
+      "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.Insights/scheduledQueryRules/dermaire-production-blob",
+      "location": "canadacentral",
+      "properties": {
+        "displayName": "Dermaire production blob",
+        "description": "Production-scoped privacy-safe operational signal",
+        "enabled": true,
+        "severity": 2,
+        "evaluationFrequency": "PT1M",
+        "windowSize": "PT5M",
+        "scopes": [
+          "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.OperationalInsights/workspaces/dermaire-production-logs"
+        ],
+        "criteria": {
+          "allOf": [
+            {
+              "query": "AppServiceConsoleLogs | where _ResourceId =~ \"/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.Web/sites/dermaire-api\" | extend p=parse_json(ResultDescription) | where p.event == \"dependency_state\" and p.component startswith \"blob\" and p.state != \"available\" | summarize value=count()",
+              "timeAggregation": "Maximum",
+              "metricMeasureColumn": "value",
+              "operator": "GreaterThan",
+              "threshold": 2,
+              "failingPeriods": {
+                "numberOfEvaluationPeriods": 1,
+                "minFailingPeriodsToAlert": 1
+              }
+            }
+          ]
+        },
+        "autoMitigate": true,
+        "actions": {
+          "actionGroups": [
+            "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.Insights/actionGroups/dermaire-production-owners"
+          ]
+        },
+        "skipQueryValidation": true
+      }
+    },
+    {
+      "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.Insights/scheduledQueryRules/dermaire-production-journal",
+      "location": "canadacentral",
+      "properties": {
+        "displayName": "Dermaire production journal",
+        "description": "Production-scoped privacy-safe operational signal",
+        "enabled": true,
+        "severity": 1,
+        "evaluationFrequency": "PT1M",
+        "windowSize": "PT5M",
+        "scopes": [
+          "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.OperationalInsights/workspaces/dermaire-production-logs"
+        ],
+        "criteria": {
+          "allOf": [
+            {
+              "query": "AppServiceConsoleLogs | where _ResourceId =~ \"/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.Web/sites/dermaire-api\" | extend p=parse_json(ResultDescription) | where p.event == \"dependency_state\" and p.component startswith \"deletion_journal\" and p.state != \"available\" | summarize value=count()",
+              "timeAggregation": "Maximum",
+              "metricMeasureColumn": "value",
+              "operator": "GreaterThan",
+              "threshold": 0,
+              "failingPeriods": {
+                "numberOfEvaluationPeriods": 1,
+                "minFailingPeriodsToAlert": 1
+              }
+            }
+          ]
+        },
+        "autoMitigate": true,
+        "actions": {
+          "actionGroups": [
+            "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.Insights/actionGroups/dermaire-production-owners"
+          ]
+        },
+        "skipQueryValidation": true
+      }
+    },
+    {
+      "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.Insights/scheduledQueryRules/dermaire-production-provider",
+      "location": "canadacentral",
+      "properties": {
+        "displayName": "Dermaire production provider",
+        "description": "Production-scoped privacy-safe operational signal",
+        "enabled": true,
+        "severity": 2,
+        "evaluationFrequency": "PT1M",
+        "windowSize": "PT10M",
+        "scopes": [
+          "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.OperationalInsights/workspaces/dermaire-production-logs"
+        ],
+        "criteria": {
+          "allOf": [
+            {
+              "query": "AppServiceConsoleLogs | where _ResourceId =~ \"/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.Web/sites/dermaire-api\" | extend p=parse_json(ResultDescription) | where p.event == \"dependency_state\" and p.component in (\"openai\",\"vision\",\"content_safety\") | summarize calls=count(),bad=countif(p.state==\"degraded\") | project value=iff(calls>0,100.0*bad/calls,0.0)",
+              "timeAggregation": "Maximum",
+              "metricMeasureColumn": "value",
+              "operator": "GreaterThan",
+              "threshold": 10,
+              "failingPeriods": {
+                "numberOfEvaluationPeriods": 1,
+                "minFailingPeriodsToAlert": 1
+              }
+            }
+          ]
+        },
+        "autoMitigate": true,
+        "actions": {
+          "actionGroups": [
+            "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.Insights/actionGroups/dermaire-production-owners"
+          ]
+        },
+        "skipQueryValidation": true
+      }
+    },
+    {
+      "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.Insights/scheduledQueryRules/dermaire-production-startup",
+      "location": "canadacentral",
+      "properties": {
+        "displayName": "Dermaire production startup",
+        "description": "Production-scoped privacy-safe operational signal",
+        "enabled": true,
+        "severity": 1,
+        "evaluationFrequency": "PT1M",
+        "windowSize": "PT5M",
+        "scopes": [
+          "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.OperationalInsights/workspaces/dermaire-production-logs"
+        ],
+        "criteria": {
+          "allOf": [
+            {
+              "query": "AppServiceConsoleLogs | where _ResourceId =~ \"/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.Web/sites/dermaire-api\" | extend p=parse_json(ResultDescription) | where p.event == \"server_log\" and p.level in (\"ERROR\",\"CRITICAL\") | summarize value=count()",
+              "timeAggregation": "Maximum",
+              "metricMeasureColumn": "value",
+              "operator": "GreaterThan",
+              "threshold": 0,
+              "failingPeriods": {
+                "numberOfEvaluationPeriods": 1,
+                "minFailingPeriodsToAlert": 1
+              }
+            }
+          ]
+        },
+        "autoMitigate": true,
+        "actions": {
+          "actionGroups": [
+            "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.Insights/actionGroups/dermaire-production-owners"
+          ]
+        },
+        "skipQueryValidation": true
+      }
+    },
+    {
+      "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.Insights/scheduledQueryRules/dermaire-production-latency-p95",
+      "location": "canadacentral",
+      "properties": {
+        "displayName": "Dermaire production latency-p95",
+        "description": "Production-scoped privacy-safe operational signal",
+        "enabled": true,
+        "severity": 2,
+        "evaluationFrequency": "PT1M",
+        "windowSize": "PT10M",
+        "scopes": [
+          "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.OperationalInsights/workspaces/dermaire-production-logs"
+        ],
+        "criteria": {
+          "allOf": [
+            {
+              "query": "AppServiceConsoleLogs | where _ResourceId =~ \"/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.Web/sites/dermaire-api\" | extend p=parse_json(ResultDescription) | where p.event == \"http_request\" | summarize value=percentile(todouble(p.duration_ms),95)",
+              "timeAggregation": "Maximum",
+              "metricMeasureColumn": "value",
+              "operator": "GreaterThan",
+              "threshold": 10000,
+              "failingPeriods": {
+                "numberOfEvaluationPeriods": 1,
+                "minFailingPeriodsToAlert": 1
+              }
+            }
+          ]
+        },
+        "autoMitigate": true,
+        "actions": {
+          "actionGroups": [
+            "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.Insights/actionGroups/dermaire-production-owners"
+          ]
+        },
+        "skipQueryValidation": true
+      }
+    },
+    {
+      "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.Insights/scheduledQueryRules/dermaire-production-http-error-rate",
+      "location": "canadacentral",
+      "properties": {
+        "displayName": "Dermaire production http-error-rate",
+        "description": "Production-scoped privacy-safe operational signal",
+        "enabled": true,
+        "severity": 2,
+        "evaluationFrequency": "PT1M",
+        "windowSize": "PT5M",
+        "scopes": [
+          "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.OperationalInsights/workspaces/dermaire-production-logs"
+        ],
+        "criteria": {
+          "allOf": [
+            {
+              "query": "AppServiceConsoleLogs | where _ResourceId =~ \"/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.Web/sites/dermaire-api\" | extend p=parse_json(ResultDescription) | where p.event == \"http_request\" | summarize total=count(),bad=countif(toint(p.status)>=500) | project value=iff(total>=20,100.0*bad/total,0.0)",
+              "timeAggregation": "Maximum",
+              "metricMeasureColumn": "value",
+              "operator": "GreaterThan",
+              "threshold": 1,
+              "failingPeriods": {
+                "numberOfEvaluationPeriods": 1,
+                "minFailingPeriodsToAlert": 1
+              }
+            }
+          ]
+        },
+        "autoMitigate": true,
+        "actions": {
+          "actionGroups": [
+            "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.Insights/actionGroups/dermaire-production-owners"
+          ]
+        },
+        "skipQueryValidation": true
+      }
+    },
+    {
+      "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.Insights/metricAlerts/dermaire-production-http5xx",
+      "location": "global",
+      "properties": {
+        "description": "Dermaire production http5xx",
+        "severity": 2,
+        "enabled": true,
+        "scopes": [
+          "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.Web/sites/dermaire-api"
+        ],
+        "evaluationFrequency": "PT1M",
+        "windowSize": "PT5M",
+        "criteria": {
+          "odata.type": "Microsoft.Azure.Monitor.SingleResourceMultipleMetricCriteria",
+          "allOf": [
+            {
+              "name": "http5xx",
+              "metricNamespace": "Microsoft.Web/sites",
+              "metricName": "Http5xx",
+              "operator": "GreaterThanOrEqual",
+              "threshold": 5,
+              "timeAggregation": "Total",
+              "criterionType": "StaticThresholdCriterion"
+            }
+          ]
+        },
+        "autoMitigate": true,
+        "actions": [
+          {
+            "actionGroupId": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.Insights/actionGroups/dermaire-production-owners"
+          }
+        ]
+      }
+    },
+    {
+      "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.Insights/metricAlerts/dermaire-production-health",
+      "location": "global",
+      "properties": {
+        "description": "Dermaire production health",
+        "severity": 1,
+        "enabled": true,
+        "scopes": [
+          "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.Web/sites/dermaire-api"
+        ],
+        "evaluationFrequency": "PT1M",
+        "windowSize": "PT5M",
+        "criteria": {
+          "odata.type": "Microsoft.Azure.Monitor.SingleResourceMultipleMetricCriteria",
+          "allOf": [
+            {
+              "name": "health",
+              "metricNamespace": "Microsoft.Web/sites",
+              "metricName": "HealthCheckStatus",
+              "operator": "LessThan",
+              "threshold": 1,
+              "timeAggregation": "Average",
+              "criterionType": "StaticThresholdCriterion"
+            }
+          ]
+        },
+        "autoMitigate": true,
+        "actions": [
+          {
+            "actionGroupId": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.Insights/actionGroups/dermaire-production-owners"
+          }
+        ]
+      }
+    }
+  ]
+}

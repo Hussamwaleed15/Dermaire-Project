@@ -1,0 +1,20 @@
+{
+  "startedUTC": "2026-10-08T21:39:58.719865+00:00",
+  "resourceId": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-readiness-nonprod-20261006/providers/Microsoft.DBforPostgreSQL/flexibleServers/dermaire-rehearsal-20261006",
+  "productionMutated": false,
+  "operation": "reissue isolated staging admin credential in memory; run reviewed additive revision under migrator role",
+  "migration": {
+    "before": [
+      "20261006_01"
+    ],
+    "after": [
+      "20261008_01"
+    ],
+    "effectiveRole": "dermaire_migrator",
+    "alembicCheck": "PASS",
+    "runtimeRevisionWriteRevoked": true,
+    "businessRecordsModified": false
+  },
+  "finishedUTC": "2026-10-08T21:40:36.530497+00:00",
+  "gate": "PASS"
+}

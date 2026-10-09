@@ -1,0 +1,21 @@
+{
+  "observedUTC": "2026-10-08T21:56:01.515661+00:00",
+  "flags": {
+    "CONTEXTUAL_AI_ENABLED": "true",
+    "AZURE_VISION_ENABLED": "ABSENT"
+  },
+  "presence": {
+    "AZURE_OPENAI_ENDPOINT": true,
+    "AZURE_OPENAI_API_KEY": true,
+    "AZURE_OPENAI_DEPLOYMENT_NAME": true,
+    "AZURE_OPENAI_API_VERSION": true,
+    "AZURE_VISION_ENDPOINT": false,
+    "AZURE_VISION_KEY": false,
+    "AZURE_CONTENT_SAFETY_ENDPOINT": false,
+    "AZURE_CONTENT_SAFETY_KEY": false
+  },
+  "timeoutSeconds": "20",
+  "sourceSafetyGuardEvidence": "695 full tests + 271 Linux critical tests; deterministic/clinician precedence, fail-soft, canonical output validation",
+  "changed": false,
+  "gate": "PASS"
+}

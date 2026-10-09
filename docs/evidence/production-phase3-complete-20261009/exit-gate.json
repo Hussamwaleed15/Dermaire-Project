@@ -1,0 +1,47 @@
+{
+  "exitGateUTC": "2026-10-09T01:26:44.484979+00:00",
+  "checks": {
+    "sourcePrivacyGate": true,
+    "targetArtifactByteIdentical": true,
+    "newWorkerReadiness180s": true,
+    "runtimeAndHooks": true,
+    "journalBlobKeyPrivacy": true,
+    "operationalConfigHealth": true,
+    "monitoringEnabledScoped": true,
+    "telemetryReceived": true,
+    "providersIntentional": true,
+    "rollbackPrivacyCompatible": true,
+    "noRealUserDataModified": true,
+    "tempDrillDeleted": true,
+    "alertFiredResolvedActions": true
+  },
+  "gate": "PASS",
+  "phase4Started": false,
+  "rollbackPerformed": false,
+  "trafficOpenedUTC": "2026-10-09T01:26:50.096919+00:00",
+  "finalHealth": {
+    "/health/live": {
+      "status": 200,
+      "body": {
+        "status": "alive",
+        "boot_id": "b8d0f702-15e9-4f1c-9499-c400282b7c90",
+        "uptime_seconds": 230.64
+      }
+    },
+    "/health/ready": {
+      "status": 200,
+      "body": {
+        "status": "ready",
+        "database": "available",
+        "storage": "available",
+        "deletion_journal": "available"
+      }
+    }
+  },
+  "trafficFinal": {
+    "restoredOriginalRestrictions": true,
+    "defaultAction": "Allow",
+    "alwaysOn": true,
+    "healthCheckPath": "/health/ready"
+  }
+}

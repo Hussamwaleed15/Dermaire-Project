@@ -1,0 +1,33 @@
+{
+  "observedUTC": "2026-10-08T22:17:18.940945+00:00",
+  "alerts": [
+    {
+      "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourcegroups/dermaire-rg/providers/microsoft.web/sites/dermaire-api/providers/Microsoft.AlertsManagement/alerts/e7e3ba4d-12b5-4ff9-81e9-2d18abcdf000",
+      "monitorCondition": "Resolved",
+      "startUTC": "2026-10-08T22:10:32.9761265Z",
+      "lastModifiedUTC": "2026-10-08T22:16:12.4854458Z",
+      "history": [
+        {
+          "modificationEvent": "ActionsTriggered",
+          "at": "2026-10-08T22:16:12.8842856Z"
+        },
+        {
+          "modificationEvent": "MonitorConditionChange",
+          "at": "2026-10-08T22:16:12.7483785Z",
+          "newValue": "Resolved"
+        },
+        {
+          "modificationEvent": "ActionsTriggered",
+          "at": "2026-10-08T22:10:33.5002718Z"
+        },
+        {
+          "modificationEvent": "AlertCreated",
+          "at": "2026-10-08T22:10:32.9761265Z"
+        }
+      ],
+      "firedSeen": true,
+      "resolvedSeen": true,
+      "actionsTriggeredCount": 2
+    }
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "observationStartedUTC": "2026-10-08T21:10:55.229296+00:00",
+  "observationFinishedUTC": "2026-10-08T21:11:28.752754+00:00",
+  "provenance": "recovered summary of this run printed successful preflight tool result; original work file was overwritten by final read-only audit",
+  "gate": "PASS",
+  "databaseIdentity": "dermaire_runtime",
+  "revision": [
+    "20261008_01"
+  ],
+  "tlsVersion": "TLSv1.3",
+  "verifyFull": true,
+  "journalObjects": 17,
+  "hmacResolvedAndMatchedVault": true,
+  "hmacExpiry": null,
+  "hmacEnabled": true,
+  "photoPrivate": true,
+  "photoInventoryCounts": {
+    "active": 0,
+    "versions": 0,
+    "snapshots": 0,
+    "deleted": 0
+  },
+  "journalAndBackupLifecycle": "ABSENT",
+  "indefiniteContainerHoldsVerified": true,
+  "catalogComparisons": "PASS after normalizing observing-login grant/membership visibility",
+  "productionMutationsDuringPreflight": []
+}

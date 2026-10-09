@@ -1,0 +1,8 @@
+{
+  "observedUTC": "2026-10-08T22:28:39.912222+00:00",
+  "path": "delete_account -> audit details scrub",
+  "finding": "fullname and serialized JSON substring matches can erase unrelated audit details; requires stable identifiers and value-level bounded matching",
+  "trafficReclosed": true,
+  "businessDeletionNotInvoked": true,
+  "phase4Started": false
+}

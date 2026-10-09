@@ -1,0 +1,12 @@
+{
+  "startedUTC": "2026-10-08T21:41:21.507051+00:00",
+  "productionMutated": false,
+  "actions": [
+    "create/reuse isolated staging VNet",
+    "create delegated staging storage-service-endpoint subnet",
+    "authorize exact staging subnet; remove ineffective app outbound IP rules; preserve default deny/private storage",
+    "integrate staging app into independent staging subnet"
+  ],
+  "finishedUTC": "2026-10-08T21:42:12.728396+00:00",
+  "subnet": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-readiness-nonprod-20261006/providers/Microsoft.Network/virtualNetworks/dermaire-phase3-staging-vnet/subnets/app-integration"
+}

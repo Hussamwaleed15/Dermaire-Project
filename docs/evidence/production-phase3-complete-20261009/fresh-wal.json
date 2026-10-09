@@ -1,0 +1,23 @@
+{
+  "wal": [
+    {
+      "archived_count": "5400",
+      "last_archived_time": "2026-10-08 21:49:17.012872+00",
+      "failed_count": "0",
+      "stats_reset": "2026-09-20 07:02:00.858492+00",
+      "observed_at": "2026-10-08 21:50:20.887786+00"
+    }
+  ],
+  "identity": [
+    {
+      "current_user": "dermaire_runtime"
+    }
+  ],
+  "revision": [
+    {
+      "version_num": "20261008_01"
+    }
+  ],
+  "walAgeSeconds": 63.874914,
+  "gate": "PASS"
+}

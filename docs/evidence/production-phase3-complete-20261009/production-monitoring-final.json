@@ -1,0 +1,90 @@
+{
+  "observedUTC": "2026-10-09T01:25:19.685776+00:00",
+  "rules": [
+    {
+      "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.Insights/scheduledQueryRules/dermaire-production-ready",
+      "enabled": true,
+      "productionScoped": true,
+      "matchesReviewedPlan": true
+    },
+    {
+      "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.Insights/scheduledQueryRules/dermaire-production-availability",
+      "enabled": true,
+      "productionScoped": true,
+      "matchesReviewedPlan": true
+    },
+    {
+      "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.Insights/scheduledQueryRules/dermaire-production-database",
+      "enabled": true,
+      "productionScoped": true,
+      "matchesReviewedPlan": true
+    },
+    {
+      "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.Insights/scheduledQueryRules/dermaire-production-blob",
+      "enabled": true,
+      "productionScoped": true,
+      "matchesReviewedPlan": true
+    },
+    {
+      "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.Insights/scheduledQueryRules/dermaire-production-journal",
+      "enabled": true,
+      "productionScoped": true,
+      "matchesReviewedPlan": true
+    },
+    {
+      "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.Insights/scheduledQueryRules/dermaire-production-provider",
+      "enabled": true,
+      "productionScoped": true,
+      "matchesReviewedPlan": true
+    },
+    {
+      "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.Insights/scheduledQueryRules/dermaire-production-startup",
+      "enabled": true,
+      "productionScoped": true,
+      "matchesReviewedPlan": true
+    },
+    {
+      "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.Insights/scheduledQueryRules/dermaire-production-latency-p95",
+      "enabled": true,
+      "productionScoped": true,
+      "matchesReviewedPlan": true
+    },
+    {
+      "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.Insights/scheduledQueryRules/dermaire-production-http-error-rate",
+      "enabled": true,
+      "productionScoped": true,
+      "matchesReviewedPlan": true
+    },
+    {
+      "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.Insights/metricAlerts/dermaire-production-http5xx",
+      "enabled": true,
+      "productionScoped": true,
+      "matchesReviewedPlan": true
+    },
+    {
+      "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.Insights/metricAlerts/dermaire-production-health",
+      "enabled": true,
+      "productionScoped": true,
+      "matchesReviewedPlan": true
+    }
+  ],
+  "workspace": {
+    "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.OperationalInsights/workspaces/dermaire-production-logs",
+    "retentionDays": 30,
+    "quotaGbPerDay": 0.1,
+    "resourceRbacRequired": true,
+    "provisioningState": "Succeeded",
+    "customerId": "38a6d589-cb04-4b12-8a2c-5df740e48e31"
+  },
+  "actionGroup": {
+    "id": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.Insights/actionGroups/dermaire-production-owners",
+    "enabled": true,
+    "gmailReceiver": "hussamwaleed15@gmail.com",
+    "receiverCount": 1,
+    "schoolReceiverAbsentInProduction": true,
+    "nativeEmailRouteUnchanged": true,
+    "deliveryProofReused": true
+  },
+  "suppressionRules": [],
+  "gate": "PASS"
+}

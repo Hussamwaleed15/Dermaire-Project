@@ -1,0 +1,224 @@
+[
+  {
+    "action": "close unrestricted production traffic/writes to release operator and Azure Monitor",
+    "requestedUTC": "2026-10-08T21:51:42.548102+00:00",
+    "status": "SUCCESS",
+    "completedUTC": "2026-10-08T21:51:46.535951+00:00"
+  },
+  {
+    "action": "set startup budget 180s, provider timeout 20s, exact built deployment mode, bounded log retention",
+    "requestedUTC": "2026-10-08T21:51:47.975472+00:00",
+    "status": "SUCCESS",
+    "completedUTC": "2026-10-08T21:51:50.297632+00:00"
+  },
+  {
+    "action": "enable Always On, /health/ready, privacy-safe startup, preserve TLS/HTTPS and disable request-bearing native HTTP logs",
+    "requestedUTC": "2026-10-08T21:51:50.305649+00:00",
+    "status": "SUCCESS",
+    "completedUTC": "2026-10-08T21:51:54.701578+00:00"
+  },
+  {
+    "action": "disable raw HTTP/detailed-error/failed-request logging and enable bounded filesystem application logs",
+    "requestedUTC": "2026-10-08T21:51:54.710614+00:00",
+    "status": "SUCCESS",
+    "completedUTC": "2026-10-08T21:51:57.109861+00:00"
+  },
+  {
+    "action": "stop pre-journal production worker during controlled deployment; no old writers remain",
+    "requestedUTC": "2026-10-08T21:52:39.726968+00:00",
+    "status": "SUCCESS",
+    "completedUTC": "2026-10-08T21:52:41.928035+00:00"
+  },
+  {
+    "action": "create bounded production workspace",
+    "resourceId": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.OperationalInsights/workspaces/dermaire-production-logs",
+    "requestedUTC": "2026-10-08T21:52:42.928722+00:00",
+    "status": "SUCCESS",
+    "completedUTC": "2026-10-08T21:52:43.761795+00:00"
+  },
+  {
+    "action": "create production action group with proven Gmail receiver",
+    "resourceId": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.Insights/actionGroups/dermaire-production-owners",
+    "requestedUTC": "2026-10-08T21:52:43.762776+00:00",
+    "status": "SUCCESS",
+    "completedUTC": "2026-10-08T21:52:45.204307+00:00"
+  },
+  {
+    "action": "install dermaire-production-ready",
+    "resourceId": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.Insights/scheduledQueryRules/dermaire-production-ready",
+    "requestedUTC": "2026-10-08T21:52:45.204307+00:00",
+    "status": "SUCCESS",
+    "completedUTC": "2026-10-08T21:52:53.345773+00:00"
+  },
+  {
+    "action": "install dermaire-production-availability",
+    "resourceId": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.Insights/scheduledQueryRules/dermaire-production-availability",
+    "requestedUTC": "2026-10-08T21:52:53.345773+00:00",
+    "status": "FAILED",
+    "failureType": "HTTPError",
+    "httpStatus": 400,
+    "completedUTC": "2026-10-08T21:52:54.474943+00:00"
+  },
+  {
+    "action": "install dermaire-production-availability",
+    "resourceId": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.Insights/scheduledQueryRules/dermaire-production-availability",
+    "requestedUTC": "2026-10-08T21:54:25.723087+00:00",
+    "status": "SUCCESS",
+    "completedUTC": "2026-10-08T21:54:30.838741+00:00"
+  },
+  {
+    "action": "install dermaire-production-database",
+    "resourceId": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.Insights/scheduledQueryRules/dermaire-production-database",
+    "requestedUTC": "2026-10-08T21:54:30.839739+00:00",
+    "status": "SUCCESS",
+    "completedUTC": "2026-10-08T21:54:35.195194+00:00"
+  },
+  {
+    "action": "install dermaire-production-blob",
+    "resourceId": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.Insights/scheduledQueryRules/dermaire-production-blob",
+    "requestedUTC": "2026-10-08T21:54:35.196144+00:00",
+    "status": "SUCCESS",
+    "completedUTC": "2026-10-08T21:54:38.676009+00:00"
+  },
+  {
+    "action": "install dermaire-production-journal",
+    "resourceId": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.Insights/scheduledQueryRules/dermaire-production-journal",
+    "requestedUTC": "2026-10-08T21:54:38.676915+00:00",
+    "status": "SUCCESS",
+    "completedUTC": "2026-10-08T21:54:44.062116+00:00"
+  },
+  {
+    "action": "install dermaire-production-provider",
+    "resourceId": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.Insights/scheduledQueryRules/dermaire-production-provider",
+    "requestedUTC": "2026-10-08T21:54:44.064110+00:00",
+    "status": "SUCCESS",
+    "completedUTC": "2026-10-08T21:54:48.152109+00:00"
+  },
+  {
+    "action": "install dermaire-production-startup",
+    "resourceId": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.Insights/scheduledQueryRules/dermaire-production-startup",
+    "requestedUTC": "2026-10-08T21:54:48.154106+00:00",
+    "status": "SUCCESS",
+    "completedUTC": "2026-10-08T21:54:51.244957+00:00"
+  },
+  {
+    "action": "install dermaire-production-latency-p95",
+    "resourceId": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.Insights/scheduledQueryRules/dermaire-production-latency-p95",
+    "requestedUTC": "2026-10-08T21:54:51.245919+00:00",
+    "status": "SUCCESS",
+    "completedUTC": "2026-10-08T21:54:55.359980+00:00"
+  },
+  {
+    "action": "install dermaire-production-http-error-rate",
+    "resourceId": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.Insights/scheduledQueryRules/dermaire-production-http-error-rate",
+    "requestedUTC": "2026-10-08T21:54:55.360979+00:00",
+    "status": "SUCCESS",
+    "completedUTC": "2026-10-08T21:55:00.615705+00:00"
+  },
+  {
+    "action": "install dermaire-production-http5xx",
+    "resourceId": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.Insights/metricAlerts/dermaire-production-http5xx",
+    "requestedUTC": "2026-10-08T21:55:00.616667+00:00",
+    "status": "SUCCESS",
+    "completedUTC": "2026-10-08T21:55:05.239097+00:00"
+  },
+  {
+    "action": "install dermaire-production-health",
+    "resourceId": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.Insights/metricAlerts/dermaire-production-health",
+    "requestedUTC": "2026-10-08T21:55:05.240073+00:00",
+    "status": "SUCCESS",
+    "completedUTC": "2026-10-08T21:55:09.110749+00:00"
+  },
+  {
+    "action": "deploy exact tested privacy-compatible built artifact to production",
+    "requestedUTC": "2026-10-08T21:56:01.992631+00:00",
+    "status": "SUCCESS",
+    "completedUTC": "2026-10-08T22:01:01.818312+00:00"
+  },
+  {
+    "action": "export target privacy-safe structured console events and metrics to production workspace",
+    "requestedUTC": "2026-10-08T22:01:54.654803+00:00",
+    "status": "SUCCESS",
+    "completedUTC": "2026-10-08T22:02:15.093330+00:00"
+  },
+  {
+    "action": "start target production worker for measured readiness gate",
+    "requestedUTC": "2026-10-08T22:03:56.453551+00:00",
+    "status": "SUCCESS",
+    "completedUTC": "2026-10-08T22:03:59.269105+00:00"
+  },
+  {
+    "action": "prove deployed hooks using three synthetic durable journal intents; no business/photo mutation",
+    "requestedUTC": "2026-10-08T22:07:57.185850+00:00",
+    "status": "SUCCESS",
+    "completedUTC": "2026-10-08T22:08:26.114579+00:00"
+  },
+  {
+    "action": "create temporary production-scoped non-destructive alert drill",
+    "requestedUTC": "2026-10-08T22:09:19.654322+00:00",
+    "status": "SUCCESS",
+    "completedUTC": "2026-10-08T22:09:24.230930+00:00"
+  },
+  {
+    "action": "raise temporary drill threshold to resolve without application/data changes",
+    "requestedUTC": "2026-10-08T22:11:50.513569+00:00",
+    "status": "SUCCESS",
+    "completedUTC": "2026-10-08T22:11:54.182206+00:00"
+  },
+  {
+    "action": "delete temporary alert drill rule after Fired/Resolved action proof",
+    "requestedUTC": "2026-10-08T22:18:09.758396+00:00",
+    "status": "FAILED",
+    "completedUTC": "2026-10-08T22:18:12.497719+00:00",
+    "failureType": "JSONDecodeError",
+    "httpStatus": null
+  },
+  {
+    "action": "delete temporary alert drill rule after Fired/Resolved action proof",
+    "requestedUTC": "2026-10-08T22:18:34.310990+00:00",
+    "status": "SUCCESS",
+    "completedUTC": "2026-10-08T22:18:36.020801+00:00"
+  },
+  {
+    "action": "restore normal production traffic only after all Phase 3 exit checks pass on privacy-compatible target",
+    "requestedUTC": "2026-10-08T22:18:37.609403+00:00",
+    "status": "SUCCESS",
+    "completedUTC": "2026-10-08T22:18:45.354520+00:00"
+  },
+  {
+    "action": "reclose normal traffic after final source audit found audit-detail false-positive erasure; retain tested target until fix",
+    "requestedUTC": "2026-10-08T22:28:35.424103+00:00",
+    "status": "SUCCESS",
+    "completedUTC": "2026-10-08T22:28:39.911248+00:00"
+  },
+  {
+    "action": "stop interim journal-enabled production worker before corrected privacy roll-forward; no writers remain",
+    "requestedUTC": "2026-10-08T22:52:31.603250+00:00",
+    "status": "SUCCESS",
+    "completedUTC": "2026-10-08T22:52:34.206367+00:00"
+  },
+  {
+    "action": "deploy exact tested privacy-compatible built artifact to production",
+    "requestedUTC": "2026-10-08T22:52:37.010043+00:00",
+    "status": "SUCCESS",
+    "completedUTC": "2026-10-08T22:57:09.179434+00:00"
+  },
+  {
+    "action": "start target production worker for measured readiness gate",
+    "requestedUTC": "2026-10-09T01:20:19.232004+00:00",
+    "status": "SUCCESS",
+    "completedUTC": "2026-10-09T01:20:24.020626+00:00"
+  },
+  {
+    "action": "prove deployed hooks using three synthetic durable journal intents; no business/photo mutation",
+    "requestedUTC": "2026-10-09T01:23:44.900936+00:00",
+    "status": "SUCCESS",
+    "completedUTC": "2026-10-09T01:24:20.456126+00:00"
+  },
+  {
+    "action": "restore normal production traffic only after all Phase 3 exit checks pass on privacy-compatible target",
+    "requestedUTC": "2026-10-09T01:26:44.498997+00:00",
+    "status": "SUCCESS",
+    "completedUTC": "2026-10-09T01:26:50.095897+00:00"
+  }
+]

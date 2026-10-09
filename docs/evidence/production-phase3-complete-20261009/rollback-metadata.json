@@ -1,0 +1,100 @@
+{
+  "archivedUTC": "2026-10-08T21:51:42.111722+00:00",
+  "previousArtifact": {
+    "sha256": "9a0e604b37507dfda5be119ae931a0f09f30fc3c28ef0cf3143b55e8ec7dff4b",
+    "bytes": 145453718,
+    "modifiedUTC": "2026-10-03T19:06:44.283262+00:00"
+  },
+  "previousDeployment": {
+    "id": "a1051873-4635-46aa-8fa8-7230b79a6097",
+    "status": 4,
+    "complete": true,
+    "active": true,
+    "received_time": "2026-10-03T19:04:20.3004553Z",
+    "start_time": "2026-10-03T19:04:21.6398257Z",
+    "end_time": "2026-10-03T19:06:47.1373198Z",
+    "observedUTC": "2026-10-08T21:19:53.359192+00:00"
+  },
+  "settingNames": [
+    "ACCESS_TOKEN_EXPIRE_MINUTES",
+    "ALGORITHM",
+    "AZURE_BLOB_SAS_EXPIRY_MINUTES",
+    "AZURE_COMMUNICATION_CONNECTION_STRING",
+    "AZURE_EMAIL_SENDER",
+    "AZURE_OPENAI_API_KEY",
+    "AZURE_OPENAI_API_VERSION",
+    "AZURE_OPENAI_DEPLOYMENT_NAME",
+    "AZURE_OPENAI_ENDPOINT",
+    "AZURE_STORAGE_CONNECTION_STRING",
+    "AZURE_STORAGE_CONTAINER",
+    "CONTEXTUAL_AI_ENABLED",
+    "DATABASE_URL",
+    "DEBUG",
+    "DELETION_JOURNAL_ACCOUNT_URL",
+    "DELETION_JOURNAL_CONTAINER",
+    "DELETION_JOURNAL_HMAC_KEY",
+    "DELETION_JOURNAL_REQUIRED",
+    "ENVIRONMENT",
+    "EXPOSE_PASSWORD_RESET_TOKEN",
+    "GOOGLE_WEB_CLIENT_ID",
+    "REFRESH_TOKEN_EXPIRE_DAYS",
+    "SCM_DO_BUILD_DURING_DEPLOYMENT",
+    "SECRET_KEY",
+    "WEBSITES_PORT",
+    "WEBSITE_HTTPLOGGING_RETENTION_DAYS"
+  ],
+  "nonsecretOperationalSettings": {
+    "ENVIRONMENT": "production",
+    "DEBUG": "False",
+    "DELETION_JOURNAL_REQUIRED": "true",
+    "AI_PROVIDER_TIMEOUT_SECONDS": "ABSENT",
+    "WEBSITES_CONTAINER_START_TIME_LIMIT": "ABSENT",
+    "SCM_DO_BUILD_DURING_DEPLOYMENT": "true"
+  },
+  "providerFlags": {
+    "CONTEXTUAL_AI_ENABLED": "true",
+    "AZURE_VISION_ENABLED": "ABSENT"
+  },
+  "providerConfigPresence": {
+    "AZURE_CONTENT_SAFETY_ENDPOINT": false,
+    "AZURE_CONTENT_SAFETY_KEY": false,
+    "AZURE_OPENAI_ENDPOINT": true,
+    "AZURE_OPENAI_API_KEY": true,
+    "AZURE_OPENAI_DEPLOYMENT_NAME": true,
+    "AZURE_OPENAI_API_VERSION": true,
+    "AZURE_VISION_ENDPOINT": false,
+    "AZURE_VISION_KEY": false
+  },
+  "appConfig": {
+    "alwaysOn": false,
+    "appCommandLine": "python -m uvicorn app.main:app --host 0.0.0.0 --port 8000",
+    "healthCheckPath": null,
+    "minTlsVersion": "1.2",
+    "scmMinTlsVersion": "1.2",
+    "ftpsState": "FtpsOnly",
+    "httpLoggingEnabled": true,
+    "logsDirectorySizeLimit": 100,
+    "ipSecurityRestrictions": [
+      {
+        "ipAddress": "Any",
+        "action": "Allow",
+        "priority": 2147483647,
+        "name": "Allow all",
+        "description": "Allow all access"
+      }
+    ],
+    "ipSecurityRestrictionsDefaultAction": "Allow",
+    "scmIpSecurityRestrictionsUseMain": false,
+    "scmIpSecurityRestrictionsDefaultAction": null
+  },
+  "rollbackBuild": {
+    "archivePath": "/home/dermaire-rollback-6a9c13f-built.zip",
+    "sha256": "8a56321eb609603415b61572fdc73f8184dd623d5dd9df289f9bc3a70c5f80ff",
+    "bytes": 143163016,
+    "builtSha256": "4fbdb2e898dbe2bc4a7bf595bff77ebfc0d7e5d832a6a47abdef189facf5fe67",
+    "secretSettingsIncluded": false,
+    "databaseIncluded": false,
+    "localCopyVerified": true
+  },
+  "oldPreJournalArtifactPermittedForWrites": false
+}

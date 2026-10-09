@@ -1,0 +1,6 @@
+{
+  "consoleOnly": true,
+  "httpLogsExported": false,
+  "platformRawLogsExported": false,
+  "workspace": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-rg/providers/Microsoft.OperationalInsights/workspaces/dermaire-production-logs"
+}

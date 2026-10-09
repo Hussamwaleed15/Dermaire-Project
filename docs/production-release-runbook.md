@@ -1,5 +1,17 @@
 # Production release gate and rollback runbook
 
+**Latest production execution: PHASE 3 COMPLETE — 9 October 2026 Cairo.**
+[Fresh completed rollout and evidence](production-phase3-complete-20261009.md).
+Source 5b5c7b6 is deployed; new-worker readiness 179.672s, liveness/readiness PASS,
+runtime identity and all destructive hooks verified. Production monitoring is active;
+normal traffic restored only after the exit gate. Provider states preserved, no real
+user records modified, no rollback. Phase 4 did NOT start. The older halt reports
+below are historical. Initial 6a9c13f rollout was superseded after final audit-isolation
+review and corrected roll-forward. Only the verified current built archive is a compliant rollback
+reader for account/photo v2 plus product v3 intents; never reopen writes on the old
+pre-journal build. RTO <=30m remains uncertified.
+
+
 **Latest Phase 3 retry: HALTED before production mutation (8 October 2026).**
 [Fresh source audit, retry identity correction, validation and unchanged production](production-phase3-retry-20261008.md).
 Do not deploy eed61b8: cleanup intents can cover later successful uploads because

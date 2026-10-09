@@ -1,0 +1,16 @@
+{
+  "observedUTC": "2026-10-09T01:25:49.073646+00:00",
+  "counts": {
+    "total": 64,
+    "structuredOperations": 15,
+    "ready200": 2,
+    "databaseAvailable": 2,
+    "blobAvailable": 2,
+    "journalAvailable": 2,
+    "journalWritesAvailable": 0,
+    "startupComplete": 1
+  },
+  "noRawRowsExported": true,
+  "queryScopeProductionOnly": true,
+  "gate": "PASS"
+}

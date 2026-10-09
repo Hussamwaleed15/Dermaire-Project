@@ -1,0 +1,143 @@
+{
+  "app": "dermaire-api",
+  "oldBoot": "da85778d-213f-4fd9-a726-d094e20773b4",
+  "restartRequestedUTC": "2026-10-09T01:20:19.210999+00:00",
+  "budgetSeconds": 180,
+  "samples": [
+    {
+      "elapsedSeconds": 4.813,
+      "observedUTC": "2026-10-09T01:20:24.021632+00:00",
+      "errorType": "HTTPError",
+      "httpStatus": 503
+    },
+    {
+      "elapsedSeconds": 9.813,
+      "observedUTC": "2026-10-09T01:20:29.031706+00:00",
+      "errorType": "TimeoutError",
+      "httpStatus": null
+    },
+    {
+      "elapsedSeconds": 19.266,
+      "observedUTC": "2026-10-09T01:20:38.482844+00:00",
+      "errorType": "TimeoutError",
+      "httpStatus": null
+    },
+    {
+      "elapsedSeconds": 28.75,
+      "observedUTC": "2026-10-09T01:20:47.972954+00:00",
+      "errorType": "TimeoutError",
+      "httpStatus": null
+    },
+    {
+      "elapsedSeconds": 38.266,
+      "observedUTC": "2026-10-09T01:20:57.483019+00:00",
+      "errorType": "TimeoutError",
+      "httpStatus": null
+    },
+    {
+      "elapsedSeconds": 47.688,
+      "observedUTC": "2026-10-09T01:21:06.903223+00:00",
+      "errorType": "TimeoutError",
+      "httpStatus": null
+    },
+    {
+      "elapsedSeconds": 57.297,
+      "observedUTC": "2026-10-09T01:21:16.518607+00:00",
+      "errorType": "TimeoutError",
+      "httpStatus": null
+    },
+    {
+      "elapsedSeconds": 66.969,
+      "observedUTC": "2026-10-09T01:21:26.184562+00:00",
+      "errorType": "TimeoutError",
+      "httpStatus": null
+    },
+    {
+      "elapsedSeconds": 77.297,
+      "observedUTC": "2026-10-09T01:21:36.517105+00:00",
+      "errorType": "TimeoutError",
+      "httpStatus": null
+    },
+    {
+      "elapsedSeconds": 86.906,
+      "observedUTC": "2026-10-09T01:21:46.123974+00:00",
+      "errorType": "TimeoutError",
+      "httpStatus": null
+    },
+    {
+      "elapsedSeconds": 96.422,
+      "observedUTC": "2026-10-09T01:21:55.641287+00:00",
+      "errorType": "TimeoutError",
+      "httpStatus": null
+    },
+    {
+      "elapsedSeconds": 105.969,
+      "observedUTC": "2026-10-09T01:22:05.183024+00:00",
+      "errorType": "TimeoutError",
+      "httpStatus": null
+    },
+    {
+      "elapsedSeconds": 115.484,
+      "observedUTC": "2026-10-09T01:22:14.704972+00:00",
+      "errorType": "TimeoutError",
+      "httpStatus": null
+    },
+    {
+      "elapsedSeconds": 124.906,
+      "observedUTC": "2026-10-09T01:22:24.128922+00:00",
+      "errorType": "TimeoutError",
+      "httpStatus": null
+    },
+    {
+      "elapsedSeconds": 134.391,
+      "observedUTC": "2026-10-09T01:22:33.611391+00:00",
+      "errorType": "TimeoutError",
+      "httpStatus": null
+    },
+    {
+      "elapsedSeconds": 144.078,
+      "observedUTC": "2026-10-09T01:22:43.297851+00:00",
+      "errorType": "TimeoutError",
+      "httpStatus": null
+    },
+    {
+      "elapsedSeconds": 153.703,
+      "observedUTC": "2026-10-09T01:22:52.916911+00:00",
+      "errorType": "TimeoutError",
+      "httpStatus": null
+    },
+    {
+      "elapsedSeconds": 163.234,
+      "observedUTC": "2026-10-09T01:23:02.447734+00:00",
+      "errorType": "TimeoutError",
+      "httpStatus": null
+    },
+    {
+      "elapsedSeconds": 172.719,
+      "observedUTC": "2026-10-09T01:23:11.941871+00:00",
+      "liveStatus": 200,
+      "boot": "b8d0f702-15e9-4f1c-9499-c400282b7c90",
+      "uptimeSeconds": 12.43,
+      "readyStatus": 200,
+      "ready": {
+        "status": "ready",
+        "database": "available",
+        "storage": "available",
+        "deletion_journal": "available"
+      }
+    }
+  ],
+  "oldBuildHadNoLivenessEndpoint": false,
+  "oldArtifactSha256": "4fbdb2e898dbe2bc4a7bf595bff77ebfc0d7e5d832a6a47abdef189facf5fe67",
+  "restartAcknowledgedUTC": "2026-10-09T01:20:24.020626+00:00",
+  "gate": "PASS",
+  "newBoot": "b8d0f702-15e9-4f1c-9499-c400282b7c90",
+  "newWorkerReadySeconds": 179.672,
+  "readyUTC": "2026-10-09T01:23:18.883475+00:00",
+  "ready": {
+    "status": "ready",
+    "database": "available",
+    "storage": "available",
+    "deletion_journal": "available"
+  }
+}

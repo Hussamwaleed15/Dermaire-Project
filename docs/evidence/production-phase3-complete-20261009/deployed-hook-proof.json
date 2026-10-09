@@ -1,0 +1,43 @@
+{
+  "observedUTC": "2026-10-09T01:24:19.214822+00:00",
+  "sourceCommit": "5b5c7b694a4e6e55ff338a72c88e53848e778cc5",
+  "allManifestFilesMatch": true,
+  "manifestFiles": 119,
+  "runtimeIdentity": "dermaire_runtime",
+  "revision": [
+    "20261008_01"
+  ],
+  "verifyFull": true,
+  "journalRequired": true,
+  "managedIdentityMode": true,
+  "journalAvailable": true,
+  "hmacResolvedAndExistingInventoryVerifiedBeforeWrite": true,
+  "priorInventoryRecords": 20,
+  "privateBlobAvailable": true,
+  "syntheticDurableIntentTypes": [
+    "account-v2",
+    "image-v2",
+    "product-v3"
+  ],
+  "noRealAccountOrPhotoOrProductDeleted": true,
+  "syntheticIntentsRetainedIndefinitely": 3,
+  "inventoryRecordsVerified": 23,
+  "providers": {
+    "CONTEXTUAL_AI_ENABLED": true,
+    "AZURE_VISION_ENABLED": false,
+    "visionConfigured": false,
+    "contentSafetyConfigured": false
+  },
+  "hooks": {
+    "account": "source hash + durable v2 writer + synthetic regression PASS",
+    "orphan": "source hash + image v2 writer + Linux synthetic regression PASS",
+    "failedCapture": "source hash + image v2 writer + Linux synthetic regression PASS",
+    "failedCheckIn": "source hash + image v2 writer + Linux synthetic regression PASS",
+    "retry": "UUID4/create-only source hash + Linux replay regression PASS",
+    "background": "reconcile_images audited service, no other remover",
+    "product": "source hash + durable typed writer + synthetic regression PASS"
+  },
+  "sessionIdentity": "dermaire_runtime",
+  "runtimeCredentialUsernameConfirmed": true,
+  "tlsVersion": "TLSv1.3"
+}

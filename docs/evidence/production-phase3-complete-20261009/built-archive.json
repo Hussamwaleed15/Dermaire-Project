@@ -1,0 +1,12 @@
+{
+  "sourceCommit": "5b5c7b694a4e6e55ff338a72c88e53848e778cc5",
+  "sha256": "789749b6b26db786d636098388601bb68d713b93d5026496cb121e0fc6efa813",
+  "bytes": 143160195,
+  "builtSha256": "6d49029ba2849beb775c3423f95e14f3d08c1caaf11504fe12dffb34cb2adf03",
+  "archivePath": "/home/dermaire-rollback-5b5c7b6-built.zip",
+  "allManifestFilesMatch": true,
+  "noDependencyRebuild": true,
+  "localCopyVerified": true,
+  "secretSettingsIncluded": false,
+  "databaseIncluded": false
+}
