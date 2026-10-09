@@ -3,6 +3,16 @@
 This is an isolated functional test harness, not the final Flutter product UI.
 Entry point: `lib/main_tester.dart`. Normal `lib/main.dart` is unchanged.
 
+## Download the tester APK
+
+Release: [tester-production-v1](https://github.com/Hussamwaleed15/Dermaire-Project/releases/tag/tester-production-v1).
+
+Download [dermaire-tester-production-debug.apk](https://github.com/Hussamwaleed15/Dermaire-Project/releases/download/tester-production-v1/dermaire-tester-production-debug.apk) from the release assets and install it on an Android device.
+
+This is the **TESTER • PRODUCTION** harness, not the final app. Use disposable Google accounts and non-sensitive images only; authenticated writes reach production. Installation may replace an existing debug Dermaire app. Live Google sign-in and authenticated production flows still require real-device verification.
+
+The APK is distributed as a GitHub Release asset and remains excluded from Git history.
+
 ## Launch / install
 
 From `app/`:
