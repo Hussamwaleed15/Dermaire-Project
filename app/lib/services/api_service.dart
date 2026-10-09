@@ -307,6 +307,21 @@ class ApiService extends ChangeNotifier {
     );
   }
 
+  Future<Map<String, dynamic>> requestAssistance(String message) async {
+    final response = await _client.post(Uri.parse('$baseUrl/assistance'),
+        headers: _headers(), body: jsonEncode({'message': message}))
+        .timeout(const Duration(seconds: 60));
+    if (response.statusCode != 200) {
+      throw ApiException('Assistance unavailable (status ${response.statusCode})');
+    }
+    final data = jsonDecode(response.body) as Map<String, dynamic>;
+    if (data['schema_version'] != 'contextual-ai-1.0' ||
+        data['message'] is! String || data['metadata'] is! Map) {
+      throw ApiException('Invalid assistance response');
+    }
+    return data;
+  }
+
   Future<Map<String, dynamic>> sendChatMessage(String message) async {
     final res = await _client.post(
       Uri.parse('$baseUrl/chat'),
@@ -670,8 +685,8 @@ class _SessionClient extends http.BaseClient {
     final client = http.Client();
     http.StreamedResponse response;
     try {
-      final streamed = await client.send(request);
-      final bytes = await streamed.stream.toBytes();
+      final streamed = await client.send(request).timeout(const Duration(seconds: 60));
+      final bytes = await streamed.stream.toBytes().timeout(const Duration(seconds: 60));
       response = http.StreamedResponse(Stream.value(bytes), streamed.statusCode,
           headers: streamed.headers, request: request, reasonPhrase: streamed.reasonPhrase);
     } finally {
