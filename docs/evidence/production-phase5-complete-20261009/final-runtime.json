@@ -1,0 +1,54 @@
+{
+  "startedUTC": "2026-10-09T06:54:19.990930+00:00",
+  "gate": "PASS",
+  "syntheticFixturesCreated": 0,
+  "health": {
+    "/health/live": {
+      "status": 200,
+      "body": {
+        "status": "alive",
+        "boot_id": "b8d0f702-15e9-4f1c-9499-c400282b7c90",
+        "uptime_seconds": 19880.87
+      }
+    },
+    "/health/ready": {
+      "status": 200,
+      "body": {
+        "status": "ready",
+        "database": "available",
+        "storage": "available",
+        "deletion_journal": "available"
+      }
+    }
+  },
+  "deployment": {
+    "id": "36572db2-b7b5-4557-a82c-65caff6201a1",
+    "status": 4,
+    "complete": true,
+    "active": true
+  },
+  "monitoring": {
+    "enabledRules": 11,
+    "unresolvedProductionAlerts": 0,
+    "firedRuleNames": []
+  },
+  "runtime": {
+    "sourceCommit": "5b5c7b694a4e6e55ff338a72c88e53848e778cc5",
+    "manifestFilesVerified": 119,
+    "identities": [
+      "dermaire_runtime",
+      "dermaire_runtime"
+    ],
+    "revision": [
+      "20261008_01"
+    ],
+    "journalHealthy": true,
+    "blobHealthy": true,
+    "verifiedJournalRecords": 27,
+    "providers": {
+      "contextualAI": true,
+      "vision": false
+    }
+  },
+  "endedUTC": "2026-10-09T06:55:03.542100+00:00"
+}

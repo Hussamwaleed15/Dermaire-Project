@@ -1,0 +1,143 @@
+{
+  "observedUTC": "2026-10-09T06:49:27.943815+00:00",
+  "app": {
+    "state": "Running",
+    "httpsOnly": true,
+    "subnet": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-journal-prod/providers/Microsoft.Network/virtualNetworks/dermaire-journal-prod-vnet/subnets/app-integration"
+  },
+  "config": {
+    "alwaysOn": true,
+    "appCommandLine": "python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --no-access-log --log-config logging-production.json",
+    "healthCheckPath": "/health/ready",
+    "minTlsVersion": "1.2",
+    "scmMinTlsVersion": "1.2",
+    "ftpsState": "FtpsOnly",
+    "httpLoggingEnabled": false,
+    "logsDirectorySizeLimit": 100,
+    "vnetRouteAllEnabled": true,
+    "ipSecurityRestrictionsDefaultAction": "Allow",
+    "scmIpSecurityRestrictionsUseMain": false
+  },
+  "settingNames": [
+    "ACCESS_TOKEN_EXPIRE_MINUTES",
+    "AI_PROVIDER_TIMEOUT_SECONDS",
+    "ALGORITHM",
+    "AZURE_BLOB_SAS_EXPIRY_MINUTES",
+    "AZURE_COMMUNICATION_CONNECTION_STRING",
+    "AZURE_EMAIL_SENDER",
+    "AZURE_OPENAI_API_KEY",
+    "AZURE_OPENAI_API_VERSION",
+    "AZURE_OPENAI_DEPLOYMENT_NAME",
+    "AZURE_OPENAI_ENDPOINT",
+    "AZURE_STORAGE_CONNECTION_STRING",
+    "AZURE_STORAGE_CONTAINER",
+    "CONTEXTUAL_AI_ENABLED",
+    "DATABASE_URL",
+    "DEBUG",
+    "DELETION_JOURNAL_ACCOUNT_URL",
+    "DELETION_JOURNAL_CONTAINER",
+    "DELETION_JOURNAL_HMAC_KEY",
+    "DELETION_JOURNAL_REQUIRED",
+    "ENVIRONMENT",
+    "EXPOSE_PASSWORD_RESET_TOKEN",
+    "GOOGLE_WEB_CLIENT_ID",
+    "REFRESH_TOKEN_EXPIRE_DAYS",
+    "SCM_DO_BUILD_DURING_DEPLOYMENT",
+    "SECRET_KEY",
+    "WEBSITES_CONTAINER_START_TIME_LIMIT",
+    "WEBSITES_PORT",
+    "WEBSITE_HTTPLOGGING_RETENTION_DAYS"
+  ],
+  "operationalSettings": {
+    "ENVIRONMENT": "production",
+    "DEBUG": "False",
+    "DELETION_JOURNAL_REQUIRED": "true",
+    "WEBSITES_CONTAINER_START_TIME_LIMIT": "180",
+    "AI_PROVIDER_TIMEOUT_SECONDS": "20",
+    "SCM_DO_BUILD_DURING_DEPLOYMENT": "false",
+    "WEBSITE_HTTPLOGGING_RETENTION_DAYS": "3",
+    "CONTEXTUAL_AI_ENABLED": "true",
+    "AZURE_VISION_ENABLED": "ABSENT"
+  },
+  "providerPresence": {
+    "AZURE_OPENAI_ENDPOINT": true,
+    "AZURE_OPENAI_API_KEY": true,
+    "AZURE_OPENAI_DEPLOYMENT_NAME": true,
+    "AZURE_OPENAI_API_VERSION": true,
+    "AZURE_VISION_ENDPOINT": false,
+    "AZURE_VISION_KEY": false,
+    "AZURE_CONTENT_SAFETY_ENDPOINT": false,
+    "AZURE_CONTENT_SAFETY_KEY": false
+  },
+  "journalSettings": {
+    "accountMatches": true,
+    "containerMatches": true,
+    "keyVaultReference": true,
+    "connectionStringAbsent": true
+  },
+  "roles": [
+    {
+      "role": "Dermaire Journal Read Write No Delete Prod",
+      "scope": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-journal-prod/providers/Microsoft.Storage/storageAccounts/dermairejrnlprod261008/blobServices/default/containers/intents"
+    },
+    {
+      "role": "Key Vault Secrets User",
+      "scope": "/subscriptions/384c0376-d023-4a61-9dce-69ff8cbdcd0c/resourceGroups/dermaire-journal-prod/providers/Microsoft.KeyVault/vaults/dermaire-journal-prod-kv/secrets/deletion-journal-hmac-v1"
+    }
+  ],
+  "logs": {
+    "applicationFilesystem": {
+      "level": "Information"
+    },
+    "httpFilesystem": {
+      "retentionInMb": 100,
+      "retentionInDays": 3,
+      "enabled": false
+    },
+    "httpAzureBlobEnabled": false,
+    "applicationAzureBlobLevel": "Off",
+    "detailedErrorsEnabled": false,
+    "failedRequestsTracingEnabled": false
+  },
+  "health": {
+    "/health/live": {
+      "httpStatus": 200,
+      "body": {
+        "status": "alive",
+        "boot_id": "b8d0f702-15e9-4f1c-9499-c400282b7c90",
+        "uptime_seconds": 19602.96
+      }
+    },
+    "/health/ready": {
+      "httpStatus": 200,
+      "body": {
+        "status": "ready",
+        "database": "available",
+        "storage": "available",
+        "deletion_journal": "available"
+      }
+    },
+    "/health": {
+      "httpStatus": 200,
+      "body": {
+        "status": "healthy",
+        "project": "Dermaire Skin Lab API",
+        "edition": "Microsoft Imagine Cup 2027",
+        "azure_services": {
+          "blob_storage": {
+            "provider": "azure_blob",
+            "state": "available",
+            "durable_images": true,
+            "probe": "private_container_metadata",
+            "end_to_end_verified": false,
+            "versioning_policy": "requires_infrastructure_verification"
+          },
+          "ai_vision": "Disabled; local image proxies",
+          "openai_gpt4o": "Configured; reachability unverified",
+          "content_safety": "Local Rules"
+        }
+      }
+    }
+  },
+  "gate": "PASS"
+}

@@ -1,0 +1,93 @@
+{
+  "startedUTC": "2026-10-09T06:48:56.818299+00:00",
+  "productionMutations": [],
+  "photoPolicy": {
+    "blobRetention": false,
+    "containerRetention": false,
+    "restore": false,
+    "versioning": false
+  },
+  "roleDefinition": [
+    {
+      "actions": [
+        "Microsoft.Storage/storageAccounts/blobServices/containers/read"
+      ],
+      "condition": null,
+      "conditionVersion": null,
+      "dataActions": [
+        "Microsoft.Storage/storageAccounts/blobServices/containers/blobs/read",
+        "Microsoft.Storage/storageAccounts/blobServices/containers/blobs/write"
+      ],
+      "notActions": [],
+      "notDataActions": []
+    }
+  ],
+  "journalAccounts": {
+    "dermairejrnlprod261008": {
+      "allowSharedKeyAccess": false,
+      "allowBlobPublicAccess": false,
+      "supportsHttpsTrafficOnly": true,
+      "minimumTlsVersion": "TLS1_2",
+      "network": {
+        "defaultAction": "Deny",
+        "bypass": "None"
+      },
+      "lifecycle": "ABSENT",
+      "containers": {
+        "intents": {
+          "private": true,
+          "indefiniteLegalHold": true,
+          "protectedAppendWrites": false
+        }
+      }
+    },
+    "dermairejrnlbkprod261008": {
+      "allowSharedKeyAccess": false,
+      "allowBlobPublicAccess": false,
+      "supportsHttpsTrafficOnly": true,
+      "minimumTlsVersion": "TLS1_2",
+      "network": {
+        "defaultAction": "Deny",
+        "bypass": "None"
+      },
+      "lifecycle": "ABSENT",
+      "containers": {
+        "intents-copy": {
+          "private": true,
+          "indefiniteLegalHold": true,
+          "protectedAppendWrites": false
+        },
+        "protected-evidence": {
+          "private": true,
+          "indefiniteLegalHold": true,
+          "protectedAppendWrites": false
+        }
+      }
+    }
+  },
+  "runtimeDataPlane": {
+    "databaseIdentity": "dermaire_runtime",
+    "revision": [
+      "20261008_01"
+    ],
+    "ssl": true,
+    "tlsVersion": "TLSv1.3",
+    "verifyFull": true,
+    "photoPrivate": true,
+    "photoInventoryCounts": {
+      "active": 0,
+      "versions": 0,
+      "snapshots": 0,
+      "deleted": 0
+    },
+    "journalReadable": true,
+    "journalObjects": 25,
+    "hmacResolved": true,
+    "hmacMatchesVault": true,
+    "keyExpiry": null,
+    "keyEnabled": true,
+    "managedIdentity": true
+  },
+  "gate": "PASS",
+  "finishedUTC": "2026-10-09T06:49:25.405790+00:00"
+}

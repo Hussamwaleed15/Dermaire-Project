@@ -1,0 +1,129 @@
+{
+  "sha256": "64ae129386e4773a8d857f2ceb2d9932b5127122e2688ed804ab79342c825bdf",
+  "bytes": 1929449,
+  "quality": {
+    "version": "capture-quality-1.0",
+    "decision": "accepted",
+    "checks": {
+      "resolution": {
+        "status": "pass",
+        "metrics": {
+          "width": 1024,
+          "height": 1536
+        },
+        "confidence": "measured",
+        "reason": null
+      },
+      "orientation": {
+        "status": "pass",
+        "metrics": {
+          "exif_orientation": 1
+        },
+        "confidence": "measured",
+        "reason": null
+      },
+      "face": {
+        "status": "pass",
+        "metrics": {
+          "detected_count": 1
+        },
+        "confidence": "heuristic",
+        "reason": null
+      },
+      "framing": {
+        "status": "pass",
+        "metrics": {
+          "center_offset_x": 0.0037523452157598447,
+          "center_offset_y": 0.04562500000000003,
+          "margin": 0.20825515947467166
+        },
+        "confidence": "heuristic",
+        "reason": null
+      },
+      "scale": {
+        "status": "pass",
+        "metrics": {
+          "face_width_fraction": 0.575984990619137
+        },
+        "confidence": "heuristic",
+        "reason": null
+      },
+      "roll": {
+        "status": "pass",
+        "metrics": {
+          "degrees": -1.0708244547869634,
+          "eye_pair_detected": true
+        },
+        "confidence": "heuristic",
+        "reason": null
+      },
+      "coarse_front_view": {
+        "status": "pass",
+        "metrics": {},
+        "confidence": "heuristic",
+        "reason": null
+      },
+      "yaw": {
+        "status": "unknown",
+        "metrics": {},
+        "confidence": "unavailable",
+        "reason": "Not reliably measured by v1."
+      },
+      "pitch": {
+        "status": "unknown",
+        "metrics": {},
+        "confidence": "unavailable",
+        "reason": "Not reliably measured by v1."
+      },
+      "occlusion": {
+        "status": "unknown",
+        "metrics": {},
+        "confidence": "unavailable",
+        "reason": "Not reliably measured by v1."
+      },
+      "uneven_lighting": {
+        "status": "unknown",
+        "metrics": {},
+        "confidence": "unavailable",
+        "reason": "Not reliably measured by v1."
+      },
+      "sharpness": {
+        "status": "pass",
+        "metrics": {
+          "laplacian_variance": 82.37420653458685
+        },
+        "confidence": "heuristic",
+        "reason": null
+      },
+      "exposure": {
+        "status": "pass",
+        "metrics": {
+          "dark_clipped_fraction": 0.0005092892232278326,
+          "bright_clipped_fraction": 0.0
+        },
+        "confidence": "measured",
+        "reason": null
+      }
+    },
+    "reasons": [],
+    "thresholds": {
+      "max_bytes": 8388608,
+      "max_pixels": 16000000,
+      "min_dimension": 640,
+      "analysis_size": 800,
+      "face_width_min": 0.3,
+      "face_width_max": 0.7,
+      "center_offset_max": 0.15,
+      "border_margin": 0.03,
+      "sharpness_min": 20,
+      "dark_fraction_max": 0.35,
+      "bright_fraction_max": 0.2,
+      "roll_max": 10
+    },
+    "limitations": [
+      "Acceptance is a heuristic quality screen, not proof of longitudinal comparability.",
+      "Yaw, pitch, obstruction and uneven lighting remain unknown.",
+      "No diagnosis, identity recognition, or skin measurement is performed."
+    ]
+  }
+}

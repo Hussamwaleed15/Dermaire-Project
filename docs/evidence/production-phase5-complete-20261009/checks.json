@@ -1,0 +1,16 @@
+{
+  "testsPassed": 130,
+  "warnings": 3,
+  "seconds": 20.04,
+  "scope": [
+    "capture quality",
+    "account deletion",
+    "deletion journal",
+    "image infrastructure",
+    "error privacy"
+  ],
+  "applicationSourceChanged": false,
+  "fixtureGeneration": "AI-rendered silicone mannequin, no real person or identifying data",
+  "productionBypassUsed": false,
+  "verdict": "DERMAIRE PRODUCTION ROLLOUT COMPLETE"
+}

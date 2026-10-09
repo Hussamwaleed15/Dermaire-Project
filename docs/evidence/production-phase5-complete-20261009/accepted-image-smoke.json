@@ -1,0 +1,756 @@
+{
+  "runId": "fe1e5e7b-f569-4793-bfee-768dd1021698",
+  "startedUTC": "2026-10-09T06:52:20.172825+00:00",
+  "gate": "ACCEPTED_IMAGE_ACCOUNT_CLEANUP_PASS",
+  "requests": [
+    {
+      "method": "POST",
+      "route": "/api/v1/auth/register",
+      "status": 201,
+      "requestId": "a9875b66-fb54-4dae-8a73-4df5597360d5",
+      "startedUTC": "2026-10-09T06:52:30.171157+00:00",
+      "endedUTC": "2026-10-09T06:52:34.441358+00:00"
+    },
+    {
+      "method": "POST",
+      "route": "/api/v1/auth/register",
+      "status": 201,
+      "requestId": "96b2422e-6c92-42d1-a875-d8856eda5122",
+      "startedUTC": "2026-10-09T06:52:34.451758+00:00",
+      "endedUTC": "2026-10-09T06:52:36.236747+00:00"
+    },
+    {
+      "method": "POST",
+      "route": "/api/v1/checkins",
+      "status": 201,
+      "requestId": "3ecb3777-065e-412f-bc59-47692259fe3a",
+      "startedUTC": "2026-10-09T06:52:36.468030+00:00",
+      "endedUTC": "2026-10-09T06:52:36.780005+00:00"
+    },
+    {
+      "method": "POST",
+      "route": "/api/v1/captures",
+      "status": 201,
+      "requestId": "1565e9bc-3474-4508-97aa-ba804da3ea61",
+      "startedUTC": "2026-10-09T06:52:36.788049+00:00",
+      "endedUTC": "2026-10-09T06:52:41.601873+00:00"
+    },
+    {
+      "method": "GET",
+      "route": "/api/v1/captures/synthetic-capture/image",
+      "status": 200,
+      "requestId": "156f0acf-7caa-490e-b7ee-5792b380ef25",
+      "startedUTC": "2026-10-09T06:52:42.140181+00:00",
+      "endedUTC": "2026-10-09T06:52:42.475858+00:00"
+    },
+    {
+      "method": "GET",
+      "route": "/api/v1/captures/synthetic-capture/image",
+      "status": 401,
+      "requestId": "9dd22dc7-9a2f-4b5b-a104-99ba8d5cde08",
+      "startedUTC": "2026-10-09T06:52:42.487082+00:00",
+      "endedUTC": "2026-10-09T06:52:42.678071+00:00"
+    },
+    {
+      "method": "GET",
+      "route": "/api/v1/captures/synthetic-capture/image",
+      "status": 404,
+      "requestId": "736d666c-cb30-4264-af15-ba2e498a34d4",
+      "startedUTC": "2026-10-09T06:52:42.678956+00:00",
+      "endedUTC": "2026-10-09T06:52:42.857650+00:00"
+    },
+    {
+      "method": "GET",
+      "route": "/api/v1/captures/synthetic-capture",
+      "status": 404,
+      "requestId": "6e4b3510-88c2-4934-b387-41ba04cad0b1",
+      "startedUTC": "2026-10-09T06:52:42.858862+00:00",
+      "endedUTC": "2026-10-09T06:52:43.079059+00:00"
+    },
+    {
+      "method": "GET",
+      "route": "/api/v1/users/me",
+      "status": 200,
+      "requestId": "bb9c05c8-e27d-46c9-a0eb-b9e5244aa3b8",
+      "startedUTC": "2026-10-09T06:52:43.081224+00:00",
+      "endedUTC": "2026-10-09T06:52:43.262260+00:00"
+    },
+    {
+      "method": "DELETE",
+      "route": "/api/v1/users/me",
+      "status": 204,
+      "requestId": "c84745ba-5194-4ed5-a3e5-e9da64a1db8b",
+      "startedUTC": "2026-10-09T06:52:43.773501+00:00",
+      "endedUTC": "2026-10-09T06:52:44.350931+00:00"
+    },
+    {
+      "method": "DELETE",
+      "route": "/api/v1/users/me",
+      "status": 204,
+      "requestId": "33d5fd60-3be3-403b-8cda-68dd6b062b80",
+      "startedUTC": "2026-10-09T06:52:44.724923+00:00",
+      "endedUTC": "2026-10-09T06:52:44.886965+00:00"
+    },
+    {
+      "method": "GET",
+      "route": "/api/v1/users/me",
+      "status": 401,
+      "requestId": "df5bbff0-ff93-4843-92b7-4936ca958d7f",
+      "startedUTC": "2026-10-09T06:52:44.888662+00:00",
+      "endedUTC": "2026-10-09T06:52:45.077517+00:00"
+    },
+    {
+      "method": "GET",
+      "route": "/api/v1/home",
+      "status": 401,
+      "requestId": "6f12f8cc-0724-4810-bc5f-2cf4cd7cd188",
+      "startedUTC": "2026-10-09T06:52:45.079198+00:00",
+      "endedUTC": "2026-10-09T06:52:45.257816+00:00"
+    },
+    {
+      "method": "GET",
+      "route": "/api/v1/captures/synthetic-capture/image",
+      "status": 401,
+      "requestId": "24eca021-cfba-45e4-9e7d-27370bbc74ae",
+      "startedUTC": "2026-10-09T06:52:45.259183+00:00",
+      "endedUTC": "2026-10-09T06:52:45.439486+00:00"
+    },
+    {
+      "method": "GET",
+      "route": "/api/v1/users/me",
+      "status": 200,
+      "requestId": "15d76f4b-9519-488b-923e-4c4619ad11c4",
+      "startedUTC": "2026-10-09T06:52:45.803010+00:00",
+      "endedUTC": "2026-10-09T06:52:46.044235+00:00"
+    },
+    {
+      "method": "DELETE",
+      "route": "/api/v1/users/me",
+      "status": 204,
+      "requestId": "eb60e5ca-47cf-4c4d-b020-4ef6e7ec4080",
+      "startedUTC": "2026-10-09T06:52:46.435348+00:00",
+      "endedUTC": "2026-10-09T06:52:46.793355+00:00"
+    },
+    {
+      "method": "DELETE",
+      "route": "/api/v1/users/me",
+      "status": 204,
+      "requestId": "fc4564a3-86e4-4391-82db-0171e2405a83",
+      "startedUTC": "2026-10-09T06:52:47.108602+00:00",
+      "endedUTC": "2026-10-09T06:52:47.276236+00:00"
+    },
+    {
+      "method": "GET",
+      "route": "/api/v1/users/me",
+      "status": 401,
+      "requestId": "4e8551a5-a7ec-4783-a601-9520c36aced6",
+      "startedUTC": "2026-10-09T06:52:47.285410+00:00",
+      "endedUTC": "2026-10-09T06:52:47.453754+00:00"
+    },
+    {
+      "method": "GET",
+      "route": "/api/v1/home",
+      "status": 401,
+      "requestId": "93527dec-0891-46ec-90b2-bbdc7a7e4f44",
+      "startedUTC": "2026-10-09T06:52:47.454943+00:00",
+      "endedUTC": "2026-10-09T06:52:47.633137+00:00"
+    },
+    {
+      "method": "GET",
+      "route": "/health/live",
+      "status": 200,
+      "requestId": "0d8f6448-c037-41cd-8c69-11259791ce5c",
+      "startedUTC": "2026-10-09T06:52:48.350630+00:00",
+      "endedUTC": "2026-10-09T06:52:48.496778+00:00"
+    },
+    {
+      "method": "GET",
+      "route": "/health/ready",
+      "status": 200,
+      "requestId": "55d6d2b6-0264-41f4-b21c-1d5f68e34b67",
+      "startedUTC": "2026-10-09T06:52:48.498052+00:00",
+      "endedUTC": "2026-10-09T06:52:48.921029+00:00"
+    }
+  ],
+  "accounts": [
+    {
+      "label": "a",
+      "ownerHash": "00401c8d8a1788f4abf06d97268cb86c2792a7cb4cfe9eb015bf11060fc9d247",
+      "registered": true,
+      "deleted": true,
+      "deleteStatus": 204,
+      "retryStatus": 204,
+      "postDeleteProfile": 401,
+      "postDeleteHome": 401,
+      "cleanup": {
+        "captures": 0,
+        "measurements": 0,
+        "users": 0,
+        "products": 0,
+        "product_intelligence": 0,
+        "experiments": 0,
+        "experiment_evaluations": 0,
+        "checkins": 0,
+        "doctor_patient_access": 0,
+        "doctor_review_actions": 0,
+        "clinical_notes": 0,
+        "reward_redemptions": 0,
+        "daily_contexts": 0,
+        "routine_entries": 0,
+        "routine_adherence": 0,
+        "rawActorAuditRows": 0,
+        "scrubbedAuditRows": 3,
+        "blobCopies": 0
+      },
+      "finalBlobInventory": {
+        "live": 0,
+        "deleted": 0,
+        "versions": 0,
+        "snapshots": 0
+      },
+      "journal": {
+        "schema": 2,
+        "intentHash": "30c656b9e09b1b79a4db1e8b13ac89c04a69da0a955773bee729f12c647ae826",
+        "lastModifiedUTC": "2026-10-09T06:52:44+00:00",
+        "responseCompletedUTC": "2026-10-09T06:52:44.350931+00:00",
+        "signatureVerified": true,
+        "durableBeforeResponse": true,
+        "imageTokensCovered": 1,
+        "sourceOrderVerifiedByManifest": true
+      }
+    },
+    {
+      "label": "b",
+      "ownerHash": "931b23a0b1d72577e7f9711eb87f5f0bbd1b8c5d1d1b3d9b48e693bb1bbdac0d",
+      "registered": true,
+      "deleted": true,
+      "deleteStatus": 204,
+      "retryStatus": 204,
+      "postDeleteProfile": 401,
+      "postDeleteHome": 401,
+      "cleanup": {
+        "captures": 0,
+        "measurements": 0,
+        "users": 0,
+        "products": 0,
+        "product_intelligence": 0,
+        "experiments": 0,
+        "experiment_evaluations": 0,
+        "checkins": 0,
+        "doctor_patient_access": 0,
+        "doctor_review_actions": 0,
+        "clinical_notes": 0,
+        "reward_redemptions": 0,
+        "daily_contexts": 0,
+        "routine_entries": 0,
+        "routine_adherence": 0,
+        "rawActorAuditRows": 0,
+        "scrubbedAuditRows": 2,
+        "blobCopies": 0
+      },
+      "finalBlobInventory": {
+        "live": 0,
+        "deleted": 0,
+        "versions": 0,
+        "snapshots": 0
+      },
+      "journal": {
+        "schema": 2,
+        "intentHash": "a2059d80200b40a90edc1729a58f31c0ba89dc364107af91be6b97ecbcbc927d",
+        "lastModifiedUTC": "2026-10-09T06:52:46+00:00",
+        "responseCompletedUTC": "2026-10-09T06:52:46.793355+00:00",
+        "signatureVerified": true,
+        "durableBeforeResponse": true,
+        "imageTokensCovered": 0,
+        "sourceOrderVerifiedByManifest": true
+      }
+    }
+  ],
+  "phase5Started": true,
+  "fixtureSHA256": "64ae129386e4773a8d857f2ceb2d9932b5127122e2688ed804ab79342c825bdf",
+  "runtimeQualityPrecheck": {
+    "version": "capture-quality-1.0",
+    "decision": "accepted",
+    "checks": {
+      "resolution": {
+        "status": "pass",
+        "metrics": {
+          "width": 1024,
+          "height": 1536
+        },
+        "confidence": "measured",
+        "reason": null
+      },
+      "orientation": {
+        "status": "pass",
+        "metrics": {
+          "exif_orientation": 1
+        },
+        "confidence": "measured",
+        "reason": null
+      },
+      "face": {
+        "status": "pass",
+        "metrics": {
+          "detected_count": 1
+        },
+        "confidence": "heuristic",
+        "reason": null
+      },
+      "framing": {
+        "status": "pass",
+        "metrics": {
+          "center_offset_x": 0.0037523452157598447,
+          "center_offset_y": 0.04562500000000003,
+          "margin": 0.20825515947467166
+        },
+        "confidence": "heuristic",
+        "reason": null
+      },
+      "scale": {
+        "status": "pass",
+        "metrics": {
+          "face_width_fraction": 0.575984990619137
+        },
+        "confidence": "heuristic",
+        "reason": null
+      },
+      "roll": {
+        "status": "pass",
+        "metrics": {
+          "degrees": -1.0708244547869634,
+          "eye_pair_detected": true
+        },
+        "confidence": "heuristic",
+        "reason": null
+      },
+      "coarse_front_view": {
+        "status": "pass",
+        "metrics": {},
+        "confidence": "heuristic",
+        "reason": null
+      },
+      "yaw": {
+        "status": "unknown",
+        "metrics": {},
+        "confidence": "unavailable",
+        "reason": "Not reliably measured by v1."
+      },
+      "pitch": {
+        "status": "unknown",
+        "metrics": {},
+        "confidence": "unavailable",
+        "reason": "Not reliably measured by v1."
+      },
+      "occlusion": {
+        "status": "unknown",
+        "metrics": {},
+        "confidence": "unavailable",
+        "reason": "Not reliably measured by v1."
+      },
+      "uneven_lighting": {
+        "status": "unknown",
+        "metrics": {},
+        "confidence": "unavailable",
+        "reason": "Not reliably measured by v1."
+      },
+      "sharpness": {
+        "status": "pass",
+        "metrics": {
+          "laplacian_variance": 82.37420653458685
+        },
+        "confidence": "heuristic",
+        "reason": null
+      },
+      "exposure": {
+        "status": "pass",
+        "metrics": {
+          "dark_clipped_fraction": 0.0005092892232278326,
+          "bright_clipped_fraction": 0.0
+        },
+        "confidence": "measured",
+        "reason": null
+      }
+    },
+    "reasons": [],
+    "thresholds": {
+      "max_bytes": 8388608,
+      "max_pixels": 16000000,
+      "min_dimension": 640,
+      "analysis_size": 800,
+      "face_width_min": 0.3,
+      "face_width_max": 0.7,
+      "center_offset_max": 0.15,
+      "border_margin": 0.03,
+      "sharpness_min": 20,
+      "dark_fraction_max": 0.35,
+      "bright_fraction_max": 0.2,
+      "roll_max": 10
+    },
+    "limitations": [
+      "Acceptance is a heuristic quality screen, not proof of longitudinal comparability.",
+      "Yaw, pitch, obstruction and uneven lighting remain unknown.",
+      "No diagnosis, identity recognition, or skin measurement is performed."
+    ]
+  },
+  "journalBefore": 25,
+  "unrelatedBeforeUpload": {
+    "captures": {
+      "count": 1,
+      "aggregateHash": "0514db79023dfdca9419704c4e2f5dcd"
+    },
+    "measurements": {
+      "count": 0,
+      "aggregateHash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "users": {
+      "count": 5,
+      "aggregateHash": "cd13d085cdac5e1768b9047b5566d664"
+    },
+    "products": {
+      "count": 0,
+      "aggregateHash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "product_intelligence": {
+      "count": 0,
+      "aggregateHash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "experiments": {
+      "count": 0,
+      "aggregateHash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "experiment_evaluations": {
+      "count": 0,
+      "aggregateHash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "checkins": {
+      "count": 0,
+      "aggregateHash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "doctor_patient_access": {
+      "count": 0,
+      "aggregateHash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "doctor_review_actions": {
+      "count": 0,
+      "aggregateHash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "clinical_notes": {
+      "count": 0,
+      "aggregateHash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "audit_logs": {
+      "count": 401,
+      "aggregateHash": "6e5e34dcecf7e88c5980be883c934074"
+    },
+    "reward_redemptions": {
+      "count": 0,
+      "aggregateHash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "daily_contexts": {
+      "count": 0,
+      "aggregateHash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "routine_entries": {
+      "count": 0,
+      "aggregateHash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "routine_adherence": {
+      "count": 0,
+      "aggregateHash": "d41d8cd98f00b204e9800998ecf8427e"
+    }
+  },
+  "image": {
+    "state": "accepted",
+    "storage": "azure_blob",
+    "blobKeySHA256": "06d3ce15518b0e299ecaf27f4dd284f9f60fa520603505bfc8e954b2d6e444c3",
+    "bytesStored": 1708444,
+    "storedLastModifiedUTC": "2026-10-09T06:52:41+00:00",
+    "private": true,
+    "inventoryAfterUpload": {
+      "live": 1,
+      "deleted": 0,
+      "versions": 0,
+      "snapshots": 0
+    },
+    "quality": {
+      "version": "capture-quality-1.0",
+      "decision": "accepted",
+      "checks": {
+        "resolution": {
+          "status": "pass",
+          "metrics": {
+            "width": 1024,
+            "height": 1536
+          },
+          "confidence": "measured",
+          "reason": null
+        },
+        "orientation": {
+          "status": "pass",
+          "metrics": {
+            "exif_orientation": 1
+          },
+          "confidence": "measured",
+          "reason": null
+        },
+        "face": {
+          "status": "pass",
+          "metrics": {
+            "detected_count": 1
+          },
+          "confidence": "heuristic",
+          "reason": null
+        },
+        "framing": {
+          "status": "pass",
+          "metrics": {
+            "center_offset_x": 0.0037523452157598447,
+            "center_offset_y": 0.04562500000000003,
+            "margin": 0.20825515947467166
+          },
+          "confidence": "heuristic",
+          "reason": null
+        },
+        "scale": {
+          "status": "pass",
+          "metrics": {
+            "face_width_fraction": 0.575984990619137
+          },
+          "confidence": "heuristic",
+          "reason": null
+        },
+        "roll": {
+          "status": "pass",
+          "metrics": {
+            "degrees": -1.0708244547869634,
+            "eye_pair_detected": true
+          },
+          "confidence": "heuristic",
+          "reason": null
+        },
+        "coarse_front_view": {
+          "status": "pass",
+          "metrics": {},
+          "confidence": "heuristic",
+          "reason": null
+        },
+        "yaw": {
+          "status": "unknown",
+          "metrics": {},
+          "confidence": "unavailable",
+          "reason": "Not reliably measured by v1."
+        },
+        "pitch": {
+          "status": "unknown",
+          "metrics": {},
+          "confidence": "unavailable",
+          "reason": "Not reliably measured by v1."
+        },
+        "occlusion": {
+          "status": "unknown",
+          "metrics": {},
+          "confidence": "unavailable",
+          "reason": "Not reliably measured by v1."
+        },
+        "uneven_lighting": {
+          "status": "unknown",
+          "metrics": {},
+          "confidence": "unavailable",
+          "reason": "Not reliably measured by v1."
+        },
+        "sharpness": {
+          "status": "pass",
+          "metrics": {
+            "laplacian_variance": 82.37420653458685
+          },
+          "confidence": "heuristic",
+          "reason": null
+        },
+        "exposure": {
+          "status": "pass",
+          "metrics": {
+            "dark_clipped_fraction": 0.0005092892232278326,
+            "bright_clipped_fraction": 0.0
+          },
+          "confidence": "measured",
+          "reason": null
+        }
+      },
+      "reasons": [],
+      "thresholds": {
+        "max_bytes": 8388608,
+        "max_pixels": 16000000,
+        "min_dimension": 640,
+        "analysis_size": 800,
+        "face_width_min": 0.3,
+        "face_width_max": 0.7,
+        "center_offset_max": 0.15,
+        "border_margin": 0.03,
+        "sharpness_min": 20,
+        "dark_fraction_max": 0.35,
+        "bright_fraction_max": 0.2,
+        "roll_max": 10
+      },
+      "limitations": [
+        "Acceptance is a heuristic quality screen, not proof of longitudinal comparability.",
+        "Yaw, pitch, obstruction and uneven lighting remain unknown.",
+        "No diagnosis, identity recognition, or skin measurement is performed."
+      ],
+      "request_fingerprint": "5f5e3818c033d1008fd382226b33f0b95d932b60850337a64373c94825d40c81"
+    },
+    "deletionContract": "No standalone image DELETE endpoint; real DELETE /users/me persists signed account-v2 intent covering stored image, then removes image and account.",
+    "ownerReadSHA256": "bb9a51ba8a1ee246b422a6c99e876485a537c3a7ace2248de7d938e973553c34",
+    "ownerRead": 200,
+    "anonymousRead": 401,
+    "crossOwnerRead": 404,
+    "accountAndCheckinIntactUntilAccountDeletion": true,
+    "deleteStatus": 204,
+    "retryStatus": 204,
+    "finalBlobInventory": {
+      "live": 0,
+      "deleted": 0,
+      "versions": 0,
+      "snapshots": 0
+    },
+    "imageCoveredBySignedAccountV2": true
+  },
+  "unrelatedBeforeDeletion": {
+    "captures": {
+      "count": 1,
+      "aggregateHash": "0514db79023dfdca9419704c4e2f5dcd"
+    },
+    "measurements": {
+      "count": 0,
+      "aggregateHash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "users": {
+      "count": 5,
+      "aggregateHash": "cd13d085cdac5e1768b9047b5566d664"
+    },
+    "products": {
+      "count": 0,
+      "aggregateHash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "product_intelligence": {
+      "count": 0,
+      "aggregateHash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "experiments": {
+      "count": 0,
+      "aggregateHash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "experiment_evaluations": {
+      "count": 0,
+      "aggregateHash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "checkins": {
+      "count": 0,
+      "aggregateHash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "doctor_patient_access": {
+      "count": 0,
+      "aggregateHash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "doctor_review_actions": {
+      "count": 0,
+      "aggregateHash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "clinical_notes": {
+      "count": 0,
+      "aggregateHash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "audit_logs": {
+      "count": 401,
+      "aggregateHash": "6e5e34dcecf7e88c5980be883c934074"
+    },
+    "reward_redemptions": {
+      "count": 0,
+      "aggregateHash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "daily_contexts": {
+      "count": 0,
+      "aggregateHash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "routine_entries": {
+      "count": 0,
+      "aggregateHash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "routine_adherence": {
+      "count": 0,
+      "aggregateHash": "d41d8cd98f00b204e9800998ecf8427e"
+    }
+  },
+  "secondAccountPreservedUntilItsDeletion": true,
+  "unrelatedAfterDeletion": {
+    "captures": {
+      "count": 1,
+      "aggregateHash": "0514db79023dfdca9419704c4e2f5dcd"
+    },
+    "measurements": {
+      "count": 0,
+      "aggregateHash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "users": {
+      "count": 5,
+      "aggregateHash": "cd13d085cdac5e1768b9047b5566d664"
+    },
+    "products": {
+      "count": 0,
+      "aggregateHash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "product_intelligence": {
+      "count": 0,
+      "aggregateHash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "experiments": {
+      "count": 0,
+      "aggregateHash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "experiment_evaluations": {
+      "count": 0,
+      "aggregateHash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "checkins": {
+      "count": 0,
+      "aggregateHash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "doctor_patient_access": {
+      "count": 0,
+      "aggregateHash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "doctor_review_actions": {
+      "count": 0,
+      "aggregateHash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "clinical_notes": {
+      "count": 0,
+      "aggregateHash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "audit_logs": {
+      "count": 401,
+      "aggregateHash": "6e5e34dcecf7e88c5980be883c934074"
+    },
+    "reward_redemptions": {
+      "count": 0,
+      "aggregateHash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "daily_contexts": {
+      "count": 0,
+      "aggregateHash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "routine_entries": {
+      "count": 0,
+      "aggregateHash": "d41d8cd98f00b204e9800998ecf8427e"
+    },
+    "routine_adherence": {
+      "count": 0,
+      "aggregateHash": "d41d8cd98f00b204e9800998ecf8427e"
+    }
+  },
+  "unrelatedAggregatesUnchanged": true,
+  "journalAfter": 27,
+  "liveSyntheticAccountsRecordsBlobs": 0,
+  "endedUTC": "2026-10-09T06:52:48.940315+00:00",
+  "syntheticEvidence": true
+}
