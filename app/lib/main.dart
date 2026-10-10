@@ -22,9 +22,17 @@ class _DermaireAppState extends State<DermaireApp> {
 
   void _sessionEnded() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted || ApiService.instance.isAuthenticated) return;
+      if (!mounted) return;
+      // A fast account switch can authenticate before this frame. Discard all
+      // routes from the old session and verify the current one from the server.
       navigatorKey.currentState?.pushAndRemoveUntil(
-        MaterialPageRoute<void>(builder: (_) => WelcomeScreen(state: state)),
+        PageRouteBuilder<void>(
+          transitionDuration: Duration.zero,
+          reverseTransitionDuration: Duration.zero,
+          pageBuilder: (_, _, _) => ApiService.instance.isAuthenticated
+              ? PatientEntryGate(state: state)
+              : WelcomeScreen(state: state),
+        ),
         (_) => false,
       );
     });

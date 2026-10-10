@@ -93,6 +93,12 @@ void main() {
         },
         () => MockClient((req) async {
           if (req.url.path.endsWith('/auth/login')) return auth();
+          if (req.url.path.endsWith('/users/me')) {
+            return http.Response(
+              '{"id":"patient-1","safety_accepted":true}',
+              200,
+            );
+          }
           return http.Response(
             fail ? 'unavailable' : jsonEncode([row('Backend serum')]),
             fail ? 503 : 200,

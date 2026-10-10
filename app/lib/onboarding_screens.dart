@@ -8,6 +8,7 @@ import 'dermaire_state.dart';
 import 'dermaire_theme.dart';
 import 'dermaire_widgets.dart';
 import 'doctor_portal.dart';
+import 'entry/safety_consent_controller.dart';
 import 'services/api_service.dart';
 import 'services/google_auth_helper.dart';
 
@@ -18,17 +19,121 @@ String? _validateEmail(String? value) =>
     ? null
     : 'Enter a valid email address';
 
-void _openApp(BuildContext context, DermaireState state) {
-  if (ApiService.instance.isAuthenticated) {
-    unawaited(state.productController.load());
-    unawaited(state.baseline.refresh());
-    unawaited(state.dailyContext.refresh());
-    unawaited(state.home.refresh());
-  }
+void _openApp(
+  BuildContext context,
+  DermaireState state, {
+  bool onboarding = false,
+}) {
   Navigator.of(context).pushAndRemoveUntil(
-    MaterialPageRoute(builder: (_) => AppShell(state: state)),
+    MaterialPageRoute(
+      builder: (_) => PatientEntryGate(state: state, onboarding: onboarding),
+    ),
     (_) => false,
   );
+}
+
+class PatientEntryGate extends StatefulWidget {
+  const PatientEntryGate({
+    super.key,
+    required this.state,
+    this.onboarding = false,
+  });
+  final DermaireState state;
+  final bool onboarding;
+
+  @override
+  State<PatientEntryGate> createState() => _PatientEntryGateState();
+}
+
+class _PatientEntryGateState extends State<PatientEntryGate> {
+  late final SafetyConsentController consent;
+  bool _loadedShell = false;
+
+  @override
+  void initState() {
+    super.initState();
+    consent = SafetyConsentController(ApiService.instance)
+      ..addListener(_changed);
+    unawaited(consent.refresh());
+  }
+
+  void _changed() {
+    if (!mounted) return;
+    if (consent.confirmed && !widget.onboarding && !_loadedShell) {
+      _loadedShell = true;
+      // Load only after the receipt, outside build/ancestor notifications.
+      unawaited(widget.state.productController.load());
+      unawaited(widget.state.baseline.refresh());
+      unawaited(widget.state.dailyContext.refresh());
+      unawaited(widget.state.home.refresh());
+    }
+    setState(() {});
+  }
+
+  @override
+  void dispose() {
+    consent
+      ..removeListener(_changed)
+      ..dispose();
+    super.dispose();
+  }
+
+  Future<void> _signOut() async {
+    // Invalidate immediately; server revocation is bounded and best effort.
+    final logout = ApiService.instance.logout();
+    if (mounted) {
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => WelcomeScreen(state: widget.state)),
+        (_) => false,
+      );
+    }
+    await logout;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (consent.confirmed) {
+      if (widget.onboarding) return AccountCreatedScreen(state: widget.state);
+      return AppShell(state: widget.state);
+    }
+    if (consent.current &&
+        (consent.phase == ConsentPhase.required ||
+            consent.phase == ConsentPhase.accepting)) {
+      return SafetyResponsibilityScreen(
+        state: widget.state,
+        onAccept: consent.accept,
+        onSignOut: _signOut,
+        acceptanceError: consent.error,
+      );
+    }
+    final checking = consent.current && consent.phase == ConsentPhase.checking;
+    return DermairePage(
+      showBack: false,
+      title: 'Confirm safety acceptance',
+      children: [
+        if (checking) ...[
+          const CircularProgressIndicator(),
+          const Text('Checking your safety acceptance with the server…'),
+        ] else ...[
+          Text(
+            consent.error ??
+                'Your session changed or expired. Please sign in again.',
+          ),
+          if (consent.current)
+            FilledButton(
+              key: const Key('retrySafetyRead'),
+              onPressed: consent.refresh,
+              child: const Text('Retry'),
+            ),
+        ],
+        TextButton(
+          key: const Key('consentSignOut'),
+          onPressed: _signOut,
+          child: const Text('Sign out / use another account'),
+        ),
+      ],
+    );
+  }
 }
 
 class WelcomeScreen extends StatelessWidget {
@@ -141,8 +246,9 @@ class WelcomeScreen extends StatelessWidget {
 }
 
 class SignInScreen extends StatefulWidget {
-  const SignInScreen({super.key, required this.state});
+  const SignInScreen({super.key, required this.state, this.googleSignIn});
   final DermaireState state;
+  final Future<String?> Function()? googleSignIn;
 
   @override
   State<SignInScreen> createState() => _SignInScreenState();
@@ -167,12 +273,22 @@ class _SignInScreenState extends State<SignInScreen> {
     if (loading) return;
     setState(() => loading = true);
     try {
-      final idToken = await GoogleAuthHelper.signInAndGetIdToken();
+      final pickerGeneration = ApiService.instance.sessionGeneration;
+      final idToken =
+          await (widget.googleSignIn ?? GoogleAuthHelper.signInAndGetIdToken)();
+      if (!mounted ||
+          pickerGeneration != ApiService.instance.sessionGeneration) {
+        return;
+      }
       if (idToken == null) {
         // User cancelled the Google account picker — not an error.
         return;
       }
-      await ApiService.instance.loginWithGoogle(idToken: idToken);
+      final login = ApiService.instance.loginWithGoogle(idToken: idToken);
+      final generation = ApiService.instance.sessionGeneration;
+      await login;
+      if (!mounted || !ApiService.instance.isCurrentSession(generation)) return;
+      _openApp(context, widget.state);
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -185,18 +301,20 @@ class _SignInScreenState extends State<SignInScreen> {
     } finally {
       if (mounted) setState(() => loading = false);
     }
-    if (!mounted) return;
-    _openApp(context, widget.state);
   }
 
   Future<void> submit() async {
     if (!formKey.currentState!.validate() || loading) return;
     setState(() => loading = true);
     try {
-      await ApiService.instance.login(
+      final login = ApiService.instance.login(
         email: email.text.trim(),
         password: password.text.trim(),
       );
+      final generation = ApiService.instance.sessionGeneration;
+      await login;
+      if (!mounted || !ApiService.instance.isCurrentSession(generation)) return;
+      _openApp(context, widget.state);
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -209,8 +327,6 @@ class _SignInScreenState extends State<SignInScreen> {
     } finally {
       if (mounted) setState(() => loading = false);
     }
-    if (!mounted) return;
-    _openApp(context, widget.state);
   }
 
   @override
@@ -309,8 +425,13 @@ class _SignInScreenState extends State<SignInScreen> {
 }
 
 class CreateAccountScreen extends StatefulWidget {
-  const CreateAccountScreen({super.key, required this.state});
+  const CreateAccountScreen({
+    super.key,
+    required this.state,
+    this.googleSignIn,
+  });
   final DermaireState state;
+  final Future<String?> Function()? googleSignIn;
 
   @override
   State<CreateAccountScreen> createState() => _CreateAccountScreenState();
@@ -346,24 +467,34 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
   }
 
   void createAccount() {
-    if (!formKey.currentState!.validate()) return;
-    final next = widget.state.safetyAccepted
-        ? AccountCreatedScreen(state: widget.state)
-        : SafetyResponsibilityScreen(
-            state: widget.state,
-            email: email.text.trim(),
-            password: password.text.trim(),
-          );
-    openPage(context, next);
+    if (!formKey.currentState!.validate() || loading) return;
+    openPage(
+      context,
+      SafetyResponsibilityScreen(
+        state: widget.state,
+        email: email.text.trim(),
+        password: password.text.trim(),
+      ),
+    );
   }
 
   Future<void> _signUpWithGoogle() async {
     if (loading) return;
     setState(() => loading = true);
     try {
-      final idToken = await GoogleAuthHelper.signInAndGetIdToken();
+      final pickerGeneration = ApiService.instance.sessionGeneration;
+      final idToken =
+          await (widget.googleSignIn ?? GoogleAuthHelper.signInAndGetIdToken)();
+      if (!mounted ||
+          pickerGeneration != ApiService.instance.sessionGeneration) {
+        return;
+      }
       if (idToken == null) return; // user cancelled the account picker
-      await ApiService.instance.loginWithGoogle(idToken: idToken);
+      final login = ApiService.instance.loginWithGoogle(idToken: idToken);
+      final generation = ApiService.instance.sessionGeneration;
+      await login;
+      if (!mounted || !ApiService.instance.isCurrentSession(generation)) return;
+      _openApp(context, widget.state, onboarding: true);
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -376,14 +507,6 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
     } finally {
       if (mounted) setState(() => loading = false);
     }
-    if (!mounted) return;
-    // The account already exists on the backend at this point — only the
-    // local safety-acceptance step (if not already done on this device) is
-    // left before opening the app.
-    final next = widget.state.safetyAccepted
-        ? AccountCreatedScreen(state: widget.state)
-        : SafetyResponsibilityScreen(state: widget.state);
-    openPage(context, next);
   }
 
   @override
@@ -764,10 +887,16 @@ class SafetyResponsibilityScreen extends StatefulWidget {
     required this.state,
     this.email,
     this.password,
+    this.onAccept,
+    this.onSignOut,
+    this.acceptanceError,
   });
   final DermaireState state;
   final String? email;
   final String? password;
+  final Future<void> Function()? onAccept;
+  final VoidCallback? onSignOut;
+  final String? acceptanceError;
 
   @override
   State<SafetyResponsibilityScreen> createState() =>
@@ -779,38 +908,50 @@ class _SafetyResponsibilityScreenState
   final controller = ScrollController();
   bool reachedEnd = false;
   bool loading = false;
+  String? error;
 
   Future<void> _acceptSafety() async {
     if (!reachedEnd || loading) return;
-    setState(() => loading = true);
+    setState(() {
+      loading = true;
+      error = null;
+    });
     try {
-      if (widget.email != null && widget.password != null) {
-        try {
-          await ApiService.instance.register(
-            email: widget.email!,
-            password: widget.password!,
-            fullName: 'Dermaire Member',
-            acceptSafety: true,
-          );
-        } catch (e) {
-          if (!mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Registration failed. Please try again: $e'),
-              backgroundColor: Theme.of(context).colorScheme.error,
-            ),
-          );
-          return;
-        }
+      if (widget.onAccept != null) {
+        await widget.onAccept!();
+        return;
       }
-      // Persist local acceptance only after registration succeeds, or when
-      // this is the safety-only flow for an already authenticated account.
-      await widget.state.acceptSafety();
+      final api = ApiService.instance;
+      if (widget.email != null && widget.password != null) {
+        final registration = api.register(
+          email: widget.email!,
+          password: widget.password!,
+          fullName: 'Dermaire Member',
+          acceptSafety: true,
+        );
+        final generation = api.sessionGeneration;
+        await registration;
+        if (!mounted || !api.isCurrentSession(generation)) return;
+        // Readback/retries now belong to the gate, never a second register POST.
+        _openApp(context, widget.state, onboarding: true);
+      } else {
+        final generation = api.sessionGeneration;
+        await api.acceptSafetyTerms();
+        final accepted = await api.readSafetyAcceptance();
+        if (!mounted || !api.isCurrentSession(generation)) return;
+        if (!accepted) {
+          throw ApiException(
+            'The server has not confirmed your acceptance. Please retry.',
+          );
+        }
+        _openApp(context, widget.state);
+      }
+    } catch (failure) {
       if (!mounted) return;
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
-          builder: (_) => AccountCreatedScreen(state: widget.state),
-        ),
+      setState(
+        () => error = failure is ApiException
+            ? failure.message
+            : 'Safety acceptance could not be confirmed. Please retry.',
       );
     } finally {
       if (mounted) setState(() => loading = false);
@@ -951,6 +1092,11 @@ class _SafetyResponsibilityScreenState
                       ),
                     ),
                   ),
+                if (error != null || widget.acceptanceError != null)
+                  Text(
+                    error ?? widget.acceptanceError!,
+                    key: const Key('safetyError'),
+                  ),
                 FilledButton(
                   key: const Key('acceptSafetyButton'),
                   onPressed: reachedEnd && !loading ? _acceptSafety : null,
@@ -958,6 +1104,12 @@ class _SafetyResponsibilityScreenState
                     loading ? 'Please wait...' : 'I understand — continue',
                   ),
                 ),
+                if (widget.onSignOut != null)
+                  TextButton(
+                    key: const Key('consentSignOut'),
+                    onPressed: widget.onSignOut,
+                    child: const Text('Sign out / use another account'),
+                  ),
               ],
             ),
           ),

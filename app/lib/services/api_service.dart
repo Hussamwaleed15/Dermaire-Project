@@ -40,6 +40,29 @@ class ApiService extends ChangeNotifier {
   DateTime? _expiresAt;
   String? _authToken;
   Map<String, dynamic>? _currentUser;
+  int _sessionGeneration = 0;
+  String? _sessionUserId;
+  int? _consentGeneration;
+  bool? _confirmedSafetyAcceptance;
+
+  int get sessionGeneration => _sessionGeneration;
+  bool isCurrentSession(int generation) =>
+      generation == _sessionGeneration && isAuthenticated;
+  bool get hasConfirmedSafetyAcceptance =>
+      isCurrentSession(_consentGeneration ?? -1) &&
+      _confirmedSafetyAcceptance == true;
+
+  // Invalidate earlier auth attempts before sending another request. Logout
+  // increments the same generation even when no token has arrived yet.
+  Future<int> _beginAuthentication() async {
+    final cleanup = _clearSession();
+    final generation = _sessionGeneration;
+    await cleanup;
+    if (generation != _sessionGeneration) {
+      throw ApiException('Session changed. Please sign in again');
+    }
+    return generation;
+  }
 
   String? get authToken => _authToken;
   Map<String, dynamic>? get currentUser => _currentUser;
@@ -70,6 +93,7 @@ class ApiService extends ChangeNotifier {
     required String fullName,
     bool acceptSafety = true,
   }) async {
+    final generation = await _beginAuthentication();
     final res = await _client.post(
       Uri.parse('$baseUrl/auth/register'),
       headers: {'Content-Type': 'application/json'},
@@ -79,7 +103,7 @@ class ApiService extends ChangeNotifier {
         'full_name': fullName,
         'accept_safety': acceptSafety,
       }),
-    );
+    ).timeout(const Duration(seconds: 20));
     if (res.body.isEmpty) {
       throw ApiException(
         'Empty response from server (status ${res.statusCode})',
@@ -87,7 +111,7 @@ class ApiService extends ChangeNotifier {
     }
     final data = jsonDecode(res.body) as Map<String, dynamic>;
     if (res.statusCode >= 200 && res.statusCode < 300) {
-      await _persistAuth(data);
+      await _persistAuth(data, generation);
       return data;
     }
     throw ApiException(
@@ -101,11 +125,12 @@ class ApiService extends ChangeNotifier {
     required String password,
     String? requiredRole,
   }) async {
+    final generation = await _beginAuthentication();
     final res = await _client.post(
       Uri.parse('$baseUrl/auth/login'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({'email': email, 'password': password}),
-    );
+    ).timeout(const Duration(seconds: 20));
     if (res.body.isEmpty) {
       throw ApiException(
         'Empty response from server (status ${res.statusCode})',
@@ -121,7 +146,7 @@ class ApiService extends ChangeNotifier {
               (data['expires_in'] as int) <= 0)) {
         throw ApiException('This account is not authorized for the clinician workspace');
       }
-      await _persistAuth(data);
+      await _persistAuth(data, generation);
       return data;
     }
     throw ApiException(data['message']?.toString() ?? 'Login failed', data);
@@ -132,11 +157,12 @@ class ApiService extends ChangeNotifier {
   Future<Map<String, dynamic>> loginWithGoogle({
     required String idToken,
   }) async {
+    final generation = await _beginAuthentication();
     final res = await _client.post(
       Uri.parse('$baseUrl/auth/google'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({'id_token': idToken}),
-    );
+    ).timeout(const Duration(seconds: 20));
     if (res.body.isEmpty) {
       throw ApiException(
         'Empty response from server (status ${res.statusCode})',
@@ -144,7 +170,7 @@ class ApiService extends ChangeNotifier {
     }
     final data = jsonDecode(res.body) as Map<String, dynamic>;
     if (res.statusCode >= 200 && res.statusCode < 300) {
-      await _persistAuth(data);
+      await _persistAuth(data, generation);
       return data;
     }
     throw ApiException(
@@ -204,14 +230,17 @@ class ApiService extends ChangeNotifier {
     );
   }
 
-  Future<void> _persistAuth(Map<String, dynamic> data) async {
+  Future<void> _persistAuth(Map<String, dynamic> data, int generation) async {
     final token = data['access_token'];
     final ttl = data['expires_in'];
     if (token is! String || token.trim().isEmpty || ttl is! int || ttl <= 0) {
       throw ApiException('Invalid authentication response from server');
     }
-    await _clearSession();
+    if (generation != _sessionGeneration) {
+      throw ApiException('Session changed. Please sign in again');
+    }
     _authToken = token;
+    _sessionUserId = data['user_id'] is String ? data['user_id'] as String : null;
     _currentUser = Map.of(data)..remove('access_token');
     _expiresAt = DateTime.now().add(Duration(seconds: ttl));
     _expiryTimer = Timer(Duration(seconds: ttl), () => unawaited(_clearSession()));
@@ -219,6 +248,10 @@ class ApiService extends ChangeNotifier {
 
   Future<void> _clearSession() async {
     final hadSession = _authToken != null;
+    _sessionGeneration++;
+    _sessionUserId = null;
+    _consentGeneration = null;
+    _confirmedSafetyAcceptance = null;
     _expiryTimer?.cancel();
     _expiryTimer = null;
     _expiresAt = null;
@@ -261,6 +294,75 @@ class ApiService extends ChangeNotifier {
     } catch (_) {
       return false;
     }
+  }
+
+  /// Patient entry receipt. Only an owner-matched GET establishes acceptance.
+  Future<bool> readSafetyAcceptance() async {
+    final generation = _sessionGeneration;
+    final owner = _sessionUserId;
+    _consentGeneration = null;
+    _confirmedSafetyAcceptance = null;
+    if (!isCurrentSession(generation) || owner == null || owner.isEmpty) {
+      throw ApiException('Please sign in again to confirm safety acceptance.');
+    }
+    final res = await _client
+        .get(Uri.parse('$baseUrl/users/me'), headers: _headers(false))
+        .timeout(const Duration(seconds: 20));
+    _checkConsentResponse(res);
+    final Object? decoded;
+    try {
+      decoded = jsonDecode(res.body);
+    } catch (_) {
+      throw ApiException(
+        'Safety acceptance could not be verified. Please retry.',
+      );
+    }
+    if (!isCurrentSession(generation)) {
+      throw ApiException('Session changed. Please sign in again');
+    }
+    if (decoded is! Map<String, dynamic> ||
+        decoded['id'] != owner ||
+        decoded['safety_accepted'] is! bool) {
+      throw ApiException(
+        'Safety acceptance could not be verified. Please retry.',
+      );
+    }
+    _currentUser = decoded;
+    _consentGeneration = generation;
+    _confirmedSafetyAcceptance = decoded['safety_accepted'] as bool;
+    return _confirmedSafetyAcceptance!;
+  }
+
+  /// Acknowledges the write only. Call readSafetyAcceptance before entry.
+  Future<void> acceptSafetyTerms() async {
+    final generation = _sessionGeneration;
+    _consentGeneration = null;
+    _confirmedSafetyAcceptance = null;
+    if (!isCurrentSession(generation)) {
+      throw ApiException('Please sign in again to accept safety terms.');
+    }
+    final res = await _client
+        .post(
+          Uri.parse('$baseUrl/auth/accept-safety'),
+          headers: _headers(),
+          // Use the existing server default; policy currency is not exposed.
+          body: jsonEncode({'accepted': true}),
+        )
+        .timeout(const Duration(seconds: 20));
+    if (!isCurrentSession(generation)) {
+      throw ApiException('Session changed. Please sign in again');
+    }
+    _checkConsentResponse(res);
+  }
+
+  void _checkConsentResponse(http.Response response) {
+    if (response.statusCode == 200) return;
+    if (response.statusCode == 403) {
+      throw ApiException(
+        'Safety acceptance access was denied. Retry or sign in again.',
+      );
+    }
+    throw ApiException('Safety acceptance is unavailable. Please retry.');
   }
 
   Future<Map<String, dynamic>?> getCurrentUser() async {
@@ -682,6 +784,7 @@ class _SessionClient extends http.BaseClient {
   @override
   Future<http.StreamedResponse> send(http.BaseRequest request) async {
     final sentToken = request.headers['Authorization'];
+    final generation = ApiService.instance.sessionGeneration;
     final client = http.Client();
     http.StreamedResponse response;
     try {
@@ -693,7 +796,8 @@ class _SessionClient extends http.BaseClient {
       client.close();
     }
     final api = ApiService.instance;
-    if (sentToken != null && sentToken != 'Bearer ${api.authToken}' &&
+    if (sentToken != null &&
+        (!api.isCurrentSession(generation) || sentToken != 'Bearer ${api.authToken}') &&
         !request.url.path.endsWith('/auth/logout')) {
       throw ApiException('Session changed. Please try again');
     }

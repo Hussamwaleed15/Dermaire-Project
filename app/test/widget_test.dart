@@ -17,7 +17,7 @@ void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
 
   for (final body in [
-    '{"access_token":"login-token","expires_in":3600}',
+    '{"access_token":"login-token","expires_in":3600,"user_id":"patient-1"}',
     '{"message":"Invalid credentials"}',
     '',
     '{',
@@ -78,10 +78,7 @@ void main() {
           );
           expect(ApiService.instance.isAuthenticated, success);
           final prefs = await SharedPreferences.getInstance();
-          expect(
-            prefs.getString('dermaire_jwt_token'),
-            isNull,
-          );
+          expect(prefs.getString('dermaire_jwt_token'), isNull);
           await ApiService.instance.init();
           if (!success) {
             expect(find.byType(SignInScreen), findsOneWidget);
@@ -98,6 +95,14 @@ void main() {
           if (request.url.path.endsWith('/auth/login')) {
             requests++;
             return pending.future;
+          }
+          if (request.url.path.endsWith('/users/me')) {
+            return Future.value(
+              http.Response(
+                '{"id":"patient-1","safety_accepted":true,"skin_concerns":[]}',
+                200,
+              ),
+            );
           }
           return Future.value(http.Response('{}', 200));
         }),
@@ -191,13 +196,19 @@ void main() {
       },
       () => MockClient((request) async {
         if (request.url.path.endsWith('/users/me')) {
-          return http.Response('{"skin_concerns":[],"profile_context":null}', 200);
+          return http.Response(
+            '{"id":"patient-1","safety_accepted":true,"skin_concerns":[],"profile_context":null}',
+            200,
+          );
         }
         if (request.url.path.endsWith('/auth/register')) {
           final body = jsonDecode(request.body) as Map<String, dynamic>;
           expect(body['email'], 'salma@example.com');
           expect(body['accept_safety'], isTrue);
-          return http.Response('{"access_token":"test-token","expires_in":3600}', 201);
+          return http.Response(
+            '{"access_token":"test-token","expires_in":3600,"user_id":"patient-1"}',
+            201,
+          );
         }
         return http.Response('{}', 200);
       }),
@@ -303,7 +314,9 @@ void main() {
     );
   });
 
-  testWidgets('safety-only flow proceeds without registration', (tester) async {
+  testWidgets('unauthenticated safety-only flow cannot accept or enter', (
+    tester,
+  ) async {
     final state = DermaireState();
     await http.runWithClient(
       () async {
@@ -318,11 +331,13 @@ void main() {
         await tester.pumpAndSettle();
         await tester.tap(find.byKey(const Key('acceptSafetyButton')));
         await tester.pumpAndSettle();
-        expect(find.byType(AccountCreatedScreen), findsOneWidget);
-        expect(state.safetyAccepted, isTrue);
+        expect(find.byType(AccountCreatedScreen), findsNothing);
+        expect(find.byType(AppShell), findsNothing);
+        expect(find.byKey(const Key('safetyError')), findsOneWidget);
+        expect(state.safetyAccepted, isFalse);
       },
       () => MockClient((request) async {
-        fail('The safety-only flow must not make an HTTP request');
+        fail('Unauthenticated consent must not make an HTTP request');
       }),
     );
   });

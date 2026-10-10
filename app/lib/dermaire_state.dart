@@ -47,10 +47,9 @@ class DermaireState extends ChangeNotifier {
   late final HomeController home;
   late final ExperimentController experiments;
   static const _darkModeKey = 'dermaire_dark_mode';
-  static const _safetyAcceptedKey = 'dermaire_safety_accepted';
 
   ThemeMode themeMode = ThemeMode.light;
-  bool safetyAccepted = false;
+  bool get safetyAccepted => ApiService.instance.hasConfirmedSafetyAcceptance;
   int selectedTab = 0;
   int? get baselineCheckIns => baseline.completedDays;
   int experimentDay = 1;
@@ -76,7 +75,6 @@ class DermaireState extends ChangeNotifier {
       await baseline.refresh();
       await dailyContext.refresh();
       await home.refresh();
-      safetyAccepted = preferences.getBool(_safetyAcceptedKey) ?? false;
 
       // Fetch live user profile from Azure
       final userProfile = await ApiService.instance.getCurrentUser();
@@ -105,7 +103,6 @@ class DermaireState extends ChangeNotifier {
   }
 
   void clearAccountData() {
-    safetyAccepted = false;
     selectedTab = 0;
     baseline.clear();
     dailyContext.clear();
@@ -129,15 +126,6 @@ class DermaireState extends ChangeNotifier {
     try {
       final preferences = await SharedPreferences.getInstance();
       await preferences.setBool(_darkModeKey, themeMode == ThemeMode.dark);
-    } catch (_) {}
-  }
-
-  Future<void> acceptSafety() async {
-    safetyAccepted = true;
-    notifyListeners();
-    try {
-      final preferences = await SharedPreferences.getInstance();
-      await preferences.setBool(_safetyAcceptedKey, true);
     } catch (_) {}
   }
 
