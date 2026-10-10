@@ -3,6 +3,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import 'capture_controller.dart';
+import 'photo_disclosure.dart';
 
 class CapturePanel extends StatefulWidget {
   const CapturePanel({super.key, this.controller});
@@ -165,8 +166,9 @@ class _CapturePanelState extends State<CapturePanel> {
       }),
       for (final reason in controller.reasons) Text(reason),
       const Text(
-        'This checks photo quality only and does not diagnose skin or create measurements. Photos leave your device for checking; rejected images are not retained.',
+        'Photo checks and any image estimates are not a diagnosis. Rejected images are not retained.',
       ),
+      const Text(photoUploadDisclosure),
       FilledButton(
         onPressed: picking || controller.phase == CapturePhase.checking
             ? null

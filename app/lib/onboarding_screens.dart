@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import 'app_shell.dart';
+import 'capture/photo_disclosure.dart';
 import 'dermaire_state.dart';
 import 'dermaire_theme.dart';
 import 'dermaire_widgets.dart';
@@ -40,81 +41,98 @@ class WelcomeScreen extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 26),
-          child: Column(
-            children: [
-              Align(
-                alignment: Alignment.centerRight,
-                child: IconButton.filledTonal(
-                  key: const Key('themeToggle'),
-                  tooltip: isDark ? 'Light mode' : 'Dark mode',
-                  onPressed: state.toggleTheme,
-                  icon: Icon(isDark ? Icons.light_mode : Icons.dark_mode),
-                ),
-              ),
-              const Eyebrow('Personal Skin Lab'),
-              Text(
-                'Dermaire',
-                style: Theme.of(
-                  context,
-                ).textTheme.headlineLarge?.copyWith(fontSize: 30),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Understand what actually works for your skin — measure, experiment, learn.',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: colors.onSurface.withValues(alpha: .72),
-                  height: 1.45,
-                ),
-              ),
-              const SizedBox(height: 18),
-              Expanded(
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: isDark
-                        ? DermaireColors.darkPaper
-                        : DermaireColors.paper,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: DermaireColors.caramel,
-                      width: 1.5,
-                    ),
+        child: LayoutBuilder(
+          builder: (context, constraints) => SingleChildScrollView(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: constraints.maxHeight),
+              child: IntrinsicHeight(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 26),
+                  child: Column(
+                    children: [
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: IconButton.filledTonal(
+                          key: const Key('themeToggle'),
+                          tooltip: isDark ? 'Light mode' : 'Dark mode',
+                          onPressed: state.toggleTheme,
+                          icon: Icon(
+                            isDark ? Icons.light_mode : Icons.dark_mode,
+                          ),
+                        ),
+                      ),
+                      const Eyebrow('Personal Skin Lab'),
+                      Text(
+                        'Dermaire',
+                        style: Theme.of(
+                          context,
+                        ).textTheme.headlineLarge?.copyWith(fontSize: 30),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Understand what actually works for your skin — measure, experiment, learn.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: colors.onSurface.withValues(alpha: .72),
+                          height: 1.45,
+                        ),
+                      ),
+                      const SizedBox(height: 18),
+                      Expanded(
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: isDark
+                                ? DermaireColors.darkPaper
+                                : DermaireColors.paper,
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: DermaireColors.caramel,
+                              width: 1.5,
+                            ),
+                          ),
+                          clipBehavior: Clip.antiAlias,
+                          child: SizedBox(
+                            height: 160,
+                            child: Image.asset(
+                              'assets/images/dermaire-logo.webp',
+                              fit: BoxFit.contain,
+                              semanticLabel: 'Dermaire logo',
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      FilledButton(
+                        key: const Key('startExperimentButton'),
+                        onPressed: () => openPage(
+                          context,
+                          CreateAccountScreen(state: state),
+                        ),
+                        child: const Text('Start my skin experiment'),
+                      ),
+                      const SizedBox(height: 8),
+                      OutlinedButton(
+                        key: const Key('existingAccountButton'),
+                        onPressed: () =>
+                            openPage(context, SignInScreen(state: state)),
+                        child: const Text('I already have an account'),
+                      ),
+                      const SizedBox(height: 14),
+                      Text(
+                        photoUploadDisclosure,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 11.5,
+                          color: colors.onSurface.withValues(alpha: .58),
+                        ),
+                      ),
+                    ],
                   ),
-                  clipBehavior: Clip.antiAlias,
-                  child: Image.asset(
-                    'assets/images/dermaire-logo.webp',
-                    fit: BoxFit.contain,
-                    semanticLabel: 'Dermaire logo',
-                  ),
                 ),
               ),
-              const SizedBox(height: 14),
-              FilledButton(
-                key: const Key('startExperimentButton'),
-                onPressed: () =>
-                    openPage(context, CreateAccountScreen(state: state)),
-                child: const Text('Start my skin experiment'),
-              ),
-              const SizedBox(height: 8),
-              OutlinedButton(
-                key: const Key('existingAccountButton'),
-                onPressed: () => openPage(context, SignInScreen(state: state)),
-                child: const Text('I already have an account'),
-              ),
-              const SizedBox(height: 14),
-              Text(
-                'Your facial photo stays on your device — only skin measurements are ever sent.',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 11.5,
-                  color: colors.onSurface.withValues(alpha: .58),
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ),
