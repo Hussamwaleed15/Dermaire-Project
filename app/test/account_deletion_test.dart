@@ -13,11 +13,36 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 Future<void> signIn() async {
   await http.runWithClient(
-    () => ApiService.instance.login(email: 'private@example.com', password: 'test'),
-    () => MockClient((_) async => http.Response(jsonEncode({
-      'access_token': 'original-token', 'expires_in': 3600,
-      'user_id': 'original-user', 'role': 'patient',
-    }), 200)),
+    () async {
+      await ApiService.instance.login(
+        email: 'private@example.com',
+        password: 'test',
+      );
+      await ApiService.instance.readSafetyAcceptance();
+    },
+    () => MockClient((request) async {
+      if (request.url.path.endsWith('/users/me')) {
+        return http.Response(
+          jsonEncode({
+            'id': 'original-user',
+            'role': 'patient',
+            'full_name': 'Synthetic account',
+            'email': 'private@example.com',
+            'safety_accepted': true,
+          }),
+          200,
+        );
+      }
+      return http.Response(
+        jsonEncode({
+          'access_token': 'original-token',
+          'expires_in': 3600,
+          'user_id': 'original-user',
+          'role': 'patient',
+        }),
+        200,
+      );
+    }),
   );
 }
 
@@ -31,11 +56,17 @@ void main() {
       });
       await ApiService.instance.init();
       await signIn();
-      final state = DermaireState(productRepository: MemoryProductRepository([]));
-      state.userEmail = 'private@example.com';
+      final state = DermaireState(
+        productRepository: MemoryProductRepository([]),
+      );
+      await state.account.hydrate();
       final pending = Completer<http.Response>();
       await http.runWithClient(() async {
-        await tester.pumpWidget(MaterialApp(home: Scaffold(body: ProfileTab(state: state))));
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(body: ProfileTab(state: state)),
+          ),
+        );
         await tester.scrollUntilVisible(find.text('Delete account'), 300);
         await tester.tap(find.text('Delete account'));
         await tester.pumpAndSettle();
@@ -44,9 +75,18 @@ void main() {
         expect(ApiService.instance.isAuthenticated, isTrue);
         pending.complete(http.Response('', status));
         await tester.pumpAndSettle();
-        expect(find.byType(WelcomeScreen), status == 204 ? findsOneWidget : findsNothing);
-        expect(ApiService.instance.isAuthenticated, status != 204 && status != 401);
-        expect(state.userEmail, status == 204 ? isEmpty : 'private@example.com');
+        expect(
+          find.byType(WelcomeScreen),
+          status == 204 ? findsOneWidget : findsNothing,
+        );
+        expect(
+          ApiService.instance.isAuthenticated,
+          status != 204 && status != 401,
+        );
+        expect(
+          state.userEmail,
+          status == 204 ? isEmpty : 'private@example.com',
+        );
       }, () => MockClient((_) => pending.future));
       await tester.pumpWidget(const SizedBox());
       await ApiService.instance.init();
@@ -78,17 +118,27 @@ void main() {
         }),
       );
       expect(deleted, status == 204);
-      expect(ApiService.instance.isAuthenticated, status != 204 && status != 401);
+      expect(
+        ApiService.instance.isAuthenticated,
+        status != 204 && status != 401,
+      );
       final prefs = await SharedPreferences.getInstance();
       expect(prefs.containsKey('dermaire_jwt_token'), isFalse);
-      expect(prefs.containsKey('dermaire_products_v2'), status != 204 && status != 401);
-      expect(prefs.containsKey('dermaire_safety_accepted'), status != 204 && status != 401);
+      expect(
+        prefs.containsKey('dermaire_products_v2'),
+        status != 204 && status != 401,
+      );
+      expect(
+        prefs.containsKey('dermaire_safety_accepted'),
+        status != 204 && status != 401,
+      );
     });
   }
   test('Clears account data held in memory', () async {
     final state = DermaireState(productRepository: MemoryProductRepository());
     await state.productController.load();
-    state.userEmail = 'private@example.com';
+    await signIn();
+    await state.account.hydrate();
     state.journal.add(const JournalEntry('today', 'morning', 'Private'));
     state.clearAccountData();
     expect(state.userEmail, isEmpty);

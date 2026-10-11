@@ -60,6 +60,12 @@ void main() {
     final state = DermaireState();
     await http.runWithClient(
       () async {
+        await ApiService.instance.login(
+          email: 'synthetic@example.invalid',
+          password: 'Synthetic123!',
+        );
+        await ApiService.instance.readSafetyAcceptance();
+        await state.account.hydrate();
         await tester.pumpWidget(
           MaterialApp(home: SkinProfileScreen(state: state)),
         );
@@ -69,7 +75,6 @@ void main() {
           200,
           scrollable: find.byType(Scrollable).first,
         );
-        await tester.ensureVisible(find.byKey(const Key('saveProfile')));
         await tester.tap(find.byKey(const Key('saveProfile')));
         await tester.pumpAndSettle();
         await tester.scrollUntilVisible(
@@ -85,12 +90,24 @@ void main() {
         );
         expect(find.byType(SkinProfileScreen), findsOneWidget);
         expect(state.skinConcerns, isEmpty);
+        await ApiService.instance.init();
+        await tester.pumpWidget(const SizedBox());
       },
-      () => MockClient(
-        (req) async => req.method == 'GET'
-            ? http.Response('{"skin_concerns":[],"profile_context":null}', 200)
-            : http.Response('unavailable', 503),
-      ),
+      () => MockClient((req) async {
+        if (req.url.path.endsWith('/auth/login')) {
+          return http.Response(
+            '{"access_token":"synthetic","expires_in":3600,"user_id":"patient-1","role":"patient"}',
+            200,
+          );
+        }
+        if (req.method == 'GET') {
+          return http.Response(
+            '{"id":"patient-1","role":"patient","full_name":"Synthetic","email":"synthetic@example.invalid","safety_accepted":true,"skin_concerns":[],"profile_context":null}',
+            200,
+          );
+        }
+        return http.Response('unavailable', 503);
+      }),
     );
     state.dispose();
   });
@@ -98,14 +115,39 @@ void main() {
     tester,
   ) async {
     final state = DermaireState();
-    await http.runWithClient(() async {
-      await tester.pumpWidget(
-        MaterialApp(home: SkinProfileScreen(state: state)),
-      );
-      await tester.pumpAndSettle();
-      expect(find.text('Retry'), findsOneWidget);
-      expect(find.byKey(const Key('saveProfile')), findsNothing);
-    }, () => MockClient((req) async => http.Response('{}', 500)));
+    var reads = 0;
+    await http.runWithClient(
+      () async {
+        await ApiService.instance.login(
+          email: 'synthetic@example.invalid',
+          password: 'Synthetic123!',
+        );
+        await ApiService.instance.readSafetyAcceptance();
+        await tester.pumpWidget(
+          MaterialApp(home: SkinProfileScreen(state: state)),
+        );
+        await tester.pumpAndSettle();
+        expect(find.text('Retry'), findsOneWidget);
+        expect(find.byKey(const Key('saveProfile')), findsNothing);
+        await ApiService.instance.init();
+        await tester.pumpWidget(const SizedBox());
+      },
+      () => MockClient((req) async {
+        if (req.url.path.endsWith('/auth/login')) {
+          return http.Response(
+            '{"access_token":"synthetic","expires_in":3600,"user_id":"patient-1","role":"patient"}',
+            200,
+          );
+        }
+        if (++reads == 1) {
+          return http.Response(
+            '{"id":"patient-1","role":"patient","full_name":"Synthetic","email":"synthetic@example.invalid","safety_accepted":true}',
+            200,
+          );
+        }
+        return http.Response('{}', 500);
+      }),
+    );
     state.dispose();
   });
 }

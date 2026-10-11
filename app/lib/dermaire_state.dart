@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'baseline/baseline_controller.dart';
+import 'account/account_controller.dart';
 import 'experiments/experiment_controller.dart';
 import 'context_controller.dart';
 import 'home_controller.dart';
@@ -24,6 +25,8 @@ class DermaireState extends ChangeNotifier {
     HomeRepository? homeRepository,
     ExperimentRepository? experimentRepository,
   }) {
+    account = AccountController(ApiService.instance)
+      ..addListener(notifyListeners);
     experiments = ExperimentController(
       experimentRepository ?? RemoteExperimentRepository(),
     )..addListener(notifyListeners);
@@ -41,6 +44,7 @@ class DermaireState extends ChangeNotifier {
     )..addListener(notifyListeners);
   }
 
+  late final AccountController account;
   late final ProductsController productController;
   late final BaselineController baseline;
   late final ContextController dailyContext;
@@ -56,10 +60,12 @@ class DermaireState extends ChangeNotifier {
   bool experimentPaused = false;
   bool get todayCheckedIn => baseline.todayCheckedIn;
   bool doctorLinkActive = false;
-  String selectedGoal = '';
-  final Set<String> skinConcerns = <String>{};
-  String userName = 'Skin Lab User';
-  String userEmail = '';
+  String get selectedGoal => account.value?.selectedGoal ?? '';
+  Set<String> get skinConcerns =>
+      Set.unmodifiable(account.value?.skinConcerns ?? <String>[]);
+  String get userName => account.value?.name ?? '';
+  String get userEmail => account.value?.email ?? '';
+  String? get userRole => account.value?.role;
   final List<JournalEntry> journal = [];
 
   Future<void> loadPreferences() async {
@@ -70,39 +76,13 @@ class DermaireState extends ChangeNotifier {
           ? ThemeMode.dark
           : ThemeMode.light;
       notifyListeners();
-      if (!ApiService.instance.isAuthenticated) return;
-      await productController.load();
-      await baseline.refresh();
-      await dailyContext.refresh();
-      await home.refresh();
-
-      // Fetch live user profile from Azure
-      final userProfile = await ApiService.instance.getCurrentUser();
-      if (userProfile != null) {
-        userName = userProfile['full_name'] as String? ?? userName;
-        userEmail = userProfile['email'] as String? ?? userEmail;
-        selectedGoal = userProfile['selected_goal'] as String? ?? selectedGoal;
-        if (userProfile['skin_concerns'] is List) {
-          skinConcerns.clear();
-          skinConcerns.addAll(
-            (userProfile['skin_concerns'] as List).cast<String>(),
-          );
-        }
-      }
-
-      // Sync remote experiment if active
-      final remoteExp = await ApiService.instance.getCurrentExperiment();
-      if (remoteExp != null) {
-        experimentDay = remoteExp['current_day'] as int? ?? 1;
-        experimentPaused = remoteExp['status'] == 'paused';
-      }
-      notifyListeners();
     } catch (_) {
       // Keep safe defaults when platform storage or network is unavailable.
     }
   }
 
   void clearAccountData() {
+    account.clear();
     selectedTab = 0;
     baseline.clear();
     dailyContext.clear();
@@ -111,10 +91,6 @@ class DermaireState extends ChangeNotifier {
     experimentDay = 1;
     experimentPaused = false;
     doctorLinkActive = false;
-    selectedGoal = '';
-    skinConcerns.clear();
-    userName = 'Skin Lab User';
-    userEmail = '';
     journal.clear();
     productController.clear();
     notifyListeners();
@@ -131,18 +107,6 @@ class DermaireState extends ChangeNotifier {
 
   void selectTab(int value) {
     selectedTab = value;
-    notifyListeners();
-  }
-
-  void selectGoal(String value) {
-    selectedGoal = value;
-    notifyListeners();
-  }
-
-  void toggleConcern(String value) {
-    skinConcerns.contains(value)
-        ? skinConcerns.remove(value)
-        : skinConcerns.add(value);
     notifyListeners();
   }
 
@@ -173,6 +137,9 @@ class DermaireState extends ChangeNotifier {
   @override
   void dispose() {
     ApiService.instance.removeListener(clearAccountData);
+    account
+      ..removeListener(notifyListeners)
+      ..dispose();
     experiments
       ..removeListener(notifyListeners)
       ..dispose();

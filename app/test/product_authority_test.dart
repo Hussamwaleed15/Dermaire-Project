@@ -95,7 +95,7 @@ void main() {
           if (req.url.path.endsWith('/auth/login')) return auth();
           if (req.url.path.endsWith('/users/me')) {
             return http.Response(
-              '{"id":"patient-1","safety_accepted":true}',
+              '{"id":"patient-1","safety_accepted":true,"role":"patient","full_name":"Synthetic account","email":"synthetic@example.invalid"}',
               200,
             );
           }

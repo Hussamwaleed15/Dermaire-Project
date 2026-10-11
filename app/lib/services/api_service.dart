@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:async';
+import '../account/account_profile.dart';
 import 'package:http_parser/http_parser.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
@@ -44,6 +45,10 @@ class ApiService extends ChangeNotifier {
   String? _sessionUserId;
   int? _consentGeneration;
   bool? _confirmedSafetyAcceptance;
+  String? _sessionRole;
+  Map<String, dynamic>? _consentUser;
+  int _profileRevision = 0;
+  int? _consentProfileRevision;
 
   int get sessionGeneration => _sessionGeneration;
   bool isCurrentSession(int generation) =>
@@ -241,6 +246,7 @@ class ApiService extends ChangeNotifier {
     }
     _authToken = token;
     _sessionUserId = data['user_id'] is String ? data['user_id'] as String : null;
+    _sessionRole = data['role'] is String ? data['role'] as String : null;
     _currentUser = Map.of(data)..remove('access_token');
     _expiresAt = DateTime.now().add(Duration(seconds: ttl));
     _expiryTimer = Timer(Duration(seconds: ttl), () => unawaited(_clearSession()));
@@ -250,6 +256,10 @@ class ApiService extends ChangeNotifier {
     final hadSession = _authToken != null;
     _sessionGeneration++;
     _sessionUserId = null;
+    _sessionRole = null;
+    _consentUser = null;
+    _consentProfileRevision = null;
+    _profileRevision++;
     _consentGeneration = null;
     _confirmedSafetyAcceptance = null;
     _expiryTimer?.cancel();
@@ -298,6 +308,8 @@ class ApiService extends ChangeNotifier {
 
   /// Patient entry receipt. Only an owner-matched GET establishes acceptance.
   Future<bool> readSafetyAcceptance() async {
+    final revision = ++_profileRevision;
+    _consentUser = null;
     final generation = _sessionGeneration;
     final owner = _sessionUserId;
     _consentGeneration = null;
@@ -328,6 +340,9 @@ class ApiService extends ChangeNotifier {
       );
     }
     _currentUser = decoded;
+    // A private deep copy; never hydrate from token/currentUser/draft maps.
+    _consentUser = jsonDecode(jsonEncode(decoded)) as Map<String, dynamic>;
+    _consentProfileRevision = revision;
     _consentGeneration = generation;
     _confirmedSafetyAcceptance = decoded['safety_accepted'] as bool;
     return _confirmedSafetyAcceptance!;
@@ -365,6 +380,90 @@ class ApiService extends ChangeNotifier {
     throw ApiException('Safety acceptance is unavailable. Please retry.');
   }
 
+  AccountProfile _accountProfile(Map<String, dynamic> data, int generation) {
+    if (!isCurrentSession(generation) || !hasConfirmedSafetyAcceptance) {
+      throw ProfileRequestException(
+        'Please sign in and verify safety acceptance.',
+        unauthorized: true,
+      );
+    }
+    final owner = _sessionUserId;
+    final role = _sessionRole;
+    if (owner == null || role == null) {
+      throw ProfileRequestException(
+        'Account identity could not be verified. Please sign in again.',
+      );
+    }
+    final AccountProfile profile;
+    try {
+      profile = AccountProfile.fromApi(data, owner: owner, role: role);
+    } catch (_) {
+      throw ProfileRequestException(
+        'Account profile could not be verified. Please retry.',
+      );
+    }
+    if (data['safety_accepted'] != true) {
+      _confirmedSafetyAcceptance = false;
+      _consentUser = null;
+      notifyListeners();
+      throw ProfileRequestException(
+        'Please verify safety acceptance again.',
+        unauthorized: true,
+      );
+    }
+    return profile;
+  }
+
+  Future<AccountProfile> readAccountProfile({bool reuseConsent = true}) async {
+    final generation = _sessionGeneration;
+    if (reuseConsent &&
+        _consentUser != null &&
+        _consentProfileRevision == _profileRevision) {
+      return _accountProfile(_consentUser!, generation);
+    }
+    if (!isCurrentSession(generation) || !hasConfirmedSafetyAcceptance) {
+      throw ProfileRequestException(
+        'Please sign in and verify safety acceptance.',
+        unauthorized: true,
+      );
+    }
+    final revision = ++_profileRevision;
+    final response = await _client
+        .get(Uri.parse('$baseUrl/users/me'), headers: _headers(false))
+        .timeout(const Duration(seconds: 20));
+    if (revision != _profileRevision || !isCurrentSession(generation)) {
+      throw ProfileRequestException(
+        'A newer account request replaced this response.',
+      );
+    }
+    if (response.statusCode != 200) {
+      throw ProfileRequestException(
+        response.statusCode == 403
+            ? 'Profile access was denied. Retry or sign in again.'
+            : 'Account profile is unavailable. Please retry.',
+      );
+    }
+    final Map<String, dynamic> data;
+    try {
+      data = jsonDecode(response.body) as Map<String, dynamic>;
+    } catch (_) {
+      throw ProfileRequestException(
+        'Account profile could not be verified. Please retry.',
+      );
+    }
+    final profile = _accountProfile(data, generation);
+    _currentUser = data;
+    return profile;
+  }
+
+  Future<AccountProfile> updateAccountProfile(
+    Map<String, dynamic> fields,
+  ) async {
+    final generation = _sessionGeneration;
+    final data = await updateSkinProfile(fields: fields, validateAccount: true);
+    return _accountProfile(data, generation);
+  }
+
   Future<Map<String, dynamic>?> getCurrentUser() async {
     final res = await _client.get(
       Uri.parse('$baseUrl/users/me'),
@@ -383,23 +482,43 @@ class ApiService extends ChangeNotifier {
     String? selectedGoal,
     List<String>? skinConcerns,
     Map<String, dynamic>? fields,
+    bool validateAccount = false,
   }) async {
+    final generation = _sessionGeneration;
+    final revision = validateAccount ? ++_profileRevision : _profileRevision;
+    if (validateAccount &&
+        (!isCurrentSession(generation) || !hasConfirmedSafetyAcceptance)) {
+      throw ProfileRequestException(
+        'Please sign in and verify safety acceptance.',
+        unauthorized: true,
+      );
+    }
     final bodyMap = <String, dynamic>{...?fields};
     if (skinType != null) bodyMap['skin_type'] = skinType;
     if (selectedGoal != null) bodyMap['selected_goal'] = selectedGoal;
     if (skinConcerns != null) bodyMap['skin_concerns'] = skinConcerns;
 
-    final res = await _client.patch(
+    final pending = _client.patch(
       Uri.parse('$baseUrl/users/skin-profile'),
       headers: _headers(),
       body: jsonEncode(bodyMap),
     );
+    final res = validateAccount
+        ? await pending.timeout(const Duration(seconds: 20))
+        : await pending;
+    if (validateAccount &&
+        (revision != _profileRevision || !isCurrentSession(generation))) {
+      throw ProfileRequestException(
+        'A newer account request replaced this response.',
+      );
+    }
     final data = jsonDecode(res.body) as Map<String, dynamic>;
     if (res.statusCode == 200 &&
         data['skin_concerns'] is List &&
         (data['skin_concerns'] as List).every((v) => v is String) &&
         data.containsKey('profile_context') &&
         (data['profile_context'] == null || data['profile_context'] is Map)) {
+      if (validateAccount) _accountProfile(data, generation);
       _currentUser = data;
       return data;
     }
@@ -817,4 +936,9 @@ class ApiException implements Exception {
 
   @override
   String toString() => message;
+}
+
+class ProfileRequestException extends ApiException {
+  ProfileRequestException(super.message, {this.unauthorized = false});
+  final bool unauthorized;
 }

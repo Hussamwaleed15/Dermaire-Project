@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import 'app_shell.dart';
+import 'account/account_controller.dart';
 import 'capture/photo_disclosure.dart';
 import 'dermaire_state.dart';
 import 'dermaire_theme.dart';
@@ -48,10 +49,12 @@ class PatientEntryGate extends StatefulWidget {
 class _PatientEntryGateState extends State<PatientEntryGate> {
   late final SafetyConsentController consent;
   bool _loadedShell = false;
+  bool _hydrationStarted = false;
 
   @override
   void initState() {
     super.initState();
+    widget.state.account.addListener(_changed);
     consent = SafetyConsentController(ApiService.instance)
       ..addListener(_changed);
     unawaited(consent.refresh());
@@ -59,9 +62,16 @@ class _PatientEntryGateState extends State<PatientEntryGate> {
 
   void _changed() {
     if (!mounted) return;
-    if (consent.confirmed && !widget.onboarding && !_loadedShell) {
+    if (consent.confirmed && !_hydrationStarted) {
+      _hydrationStarted = true;
+      // Same-session consent GET supplies the initial authoritative profile.
+      unawaited(widget.state.account.hydrate());
+    }
+    if (consent.confirmed &&
+        widget.state.account.ready &&
+        !widget.onboarding &&
+        !_loadedShell) {
       _loadedShell = true;
-      // Load only after the receipt, outside build/ancestor notifications.
       unawaited(widget.state.productController.load());
       unawaited(widget.state.baseline.refresh());
       unawaited(widget.state.dailyContext.refresh());
@@ -72,6 +82,7 @@ class _PatientEntryGateState extends State<PatientEntryGate> {
 
   @override
   void dispose() {
+    widget.state.account.removeListener(_changed);
     consent
       ..removeListener(_changed)
       ..dispose();
@@ -92,9 +103,33 @@ class _PatientEntryGateState extends State<PatientEntryGate> {
 
   @override
   Widget build(BuildContext context) {
-    if (consent.confirmed) {
+    if (consent.confirmed && widget.state.account.ready) {
       if (widget.onboarding) return AccountCreatedScreen(state: widget.state);
       return AppShell(state: widget.state);
+    }
+    if (consent.confirmed) {
+      final account = widget.state.account;
+      return DermairePage(
+        showBack: false,
+        title: 'Load account profile',
+        children: [
+          if (account.phase == AccountPhase.loading) ...[
+            const CircularProgressIndicator(),
+            const Text('Loading your account profile…'),
+          ] else ...[
+            Text(account.error ?? 'Your account profile is unavailable.'),
+            FilledButton(
+              key: const Key('retryAccountProfile'),
+              onPressed: () => account.hydrate(reuseConsent: false),
+              child: const Text('Retry'),
+            ),
+          ],
+          TextButton(
+            onPressed: _signOut,
+            child: const Text('Sign out / use another account'),
+          ),
+        ],
+      );
     }
     if (consent.current &&
         (consent.phase == ConsentPhase.required ||
@@ -1212,36 +1247,60 @@ class SkinProfileScreen extends StatefulWidget {
 }
 
 class _SkinProfileScreenState extends State<SkinProfileScreen> {
-  Map<String, dynamic>? profile;
+  Map<String, dynamic>? get profile =>
+      ApiService.instance.isCurrentSession(generation)
+      ? widget.state.account.value?.editorFields
+      : null;
+  late final int generation;
+  bool _disposed = false;
   final draft = <String, dynamic>{};
   final contextDraft = <String, dynamic>{};
   String? error;
   bool saving = false;
+  bool savedAwaitingRefresh = false;
   int section = 0;
   @override
   void initState() {
     super.initState();
-    load();
+    generation = ApiService.instance.sessionGeneration;
+    widget.state.account.addListener(_accountChanged);
+    if (!widget.state.account.ready) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) load();
+      });
+    }
+  }
+
+  void _accountChanged() {
+    if (!mounted || _disposed) return;
+    if (!ApiService.instance.isCurrentSession(generation)) {
+      draft.clear();
+      contextDraft.clear();
+      error = 'Your session changed. Please sign in again.';
+    }
+    setState(() {});
+  }
+
+  @override
+  void dispose() {
+    _disposed = true;
+    draft.clear();
+    contextDraft.clear();
+    widget.state.account.removeListener(_accountChanged);
+    super.dispose();
   }
 
   Future<void> load() async {
+    if (!mounted || !ApiService.instance.isCurrentSession(generation)) return;
     setState(() {
       error = null;
     });
-    try {
-      final result = await ApiService.instance.getCurrentUser();
-      if (result == null) throw Exception('Profile unavailable');
-      if (mounted) {
-        setState(() {
-          profile = result;
-        });
-      }
-    } catch (_) {
-      if (mounted) {
-        setState(() {
-          error = 'Could not load your profile. Retry before editing.';
-        });
-      }
+    await widget.state.account.hydrate(reuseConsent: false);
+    if (mounted && ApiService.instance.isCurrentSession(generation)) {
+      setState(() {
+        error = widget.state.account.error;
+        if (widget.state.account.ready) savedAwaitingRefresh = false;
+      });
     }
   }
 
@@ -1276,6 +1335,7 @@ class _SkinProfileScreenState extends State<SkinProfileScreen> {
         onChanged: saving
             ? null
             : (v) => setState(() {
+                savedAwaitingRefresh = false;
                 (root ? draft : contextDraft)[key] = v == '' ? null : v;
                 if (key == 'hormonal_disclosure') {
                   contextDraft['hormonal_context'] = null;
@@ -1299,6 +1359,9 @@ class _SkinProfileScreenState extends State<SkinProfileScreen> {
           helperText: 'Separate entries with commas. Clear to remove.',
         ),
         onChanged: (v) {
+          if (savedAwaitingRefresh) {
+            setState(() => savedAwaitingRefresh = false);
+          }
           (root ? draft : contextDraft)[key] = v.trim().isEmpty
               ? []
               : v
@@ -1312,35 +1375,34 @@ class _SkinProfileScreenState extends State<SkinProfileScreen> {
   }
 
   Future<void> save() async {
+    if (saving || !ApiService.instance.isCurrentSession(generation)) return;
     setState(() {
       saving = true;
       error = null;
     });
-    try {
-      final result = await ApiService.instance.updateSkinProfile(
-        fields: {
-          ...draft,
-          if (contextDraft.isNotEmpty) 'profile_context': contextDraft,
-        },
-      );
-      if (!mounted) return;
-      widget.state.skinConcerns
-        ..clear()
-        ..addAll((result['skin_concerns'] as List).cast<String>());
-      widget.state.selectGoal(result['selected_goal'] as String? ?? '');
+    final result = await widget.state.account.save({
+      ...draft,
+      if (contextDraft.isNotEmpty) 'profile_context': Map.of(contextDraft),
+    });
+    if (!mounted || !ApiService.instance.isCurrentSession(generation)) return;
+    if (result == ProfileSaveResult.saved) {
+      draft.clear();
+      contextDraft.clear();
       if (widget.editing) {
         Navigator.of(context).pop();
       } else {
         _openApp(context, widget.state);
       }
-    } catch (_) {
-      if (mounted) {
-        setState(() {
-          saving = false;
-          error =
-              'Save was not confirmed. Your draft is still here. Please retry.';
-        });
+    } else {
+      if (result == ProfileSaveResult.savedReadbackUnavailable) {
+        draft.clear();
+        contextDraft.clear();
+        savedAwaitingRefresh = true;
       }
+      setState(() {
+        saving = false;
+        error = widget.state.account.error;
+      });
     }
   }
 
@@ -1355,12 +1417,21 @@ class _SkinProfileScreenState extends State<SkinProfileScreen> {
     subtitle:
         'Share only what you choose. These answers will provide context for a future personal skin model. No sensitive information is inferred.',
     children: [
-      if (error != null) Text(error!, key: const Key('profileError')),
+      if (error != null || widget.state.account.error != null)
+        Text(
+          error ?? widget.state.account.error!,
+          key: const Key('profileError'),
+        ),
+      if (error == 'Profile saved; latest view unavailable. Retry refresh.')
+        TextButton(onPressed: load, child: const Text('Retry refresh')),
       if (profile == null) ...[
-        if (error == null)
+        if (ApiService.instance.isCurrentSession(generation) &&
+            widget.state.account.phase == AccountPhase.loading)
           const Center(child: CircularProgressIndicator())
-        else
+        else if (ApiService.instance.isCurrentSession(generation))
           TextButton(onPressed: load, child: const Text('Retry')),
+        if (!ApiService.instance.isCurrentSession(generation))
+          const Text('Please sign in again.'),
       ] else ...[
         if (section == 0) ...[
           const Text(
@@ -1472,7 +1543,7 @@ class _SkinProfileScreenState extends State<SkinProfileScreen> {
           ),
         FilledButton(
           key: const Key('saveProfile'),
-          onPressed: saving ? null : save,
+          onPressed: saving || savedAwaitingRefresh ? null : save,
           child: Text(saving ? 'Saving…' : 'Save and continue'),
         ),
         TextButton(

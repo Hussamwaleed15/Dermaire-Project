@@ -17,7 +17,7 @@ void main() {
   setUp(() => SharedPreferences.setMockInitialValues({}));
 
   for (final body in [
-    '{"access_token":"login-token","expires_in":3600,"user_id":"patient-1"}',
+    '{"access_token":"login-token","expires_in":3600,"user_id":"patient-1","role":"patient"}',
     '{"message":"Invalid credentials"}',
     '',
     '{',
@@ -99,7 +99,7 @@ void main() {
           if (request.url.path.endsWith('/users/me')) {
             return Future.value(
               http.Response(
-                '{"id":"patient-1","safety_accepted":true,"skin_concerns":[]}',
+                '{"id":"patient-1","safety_accepted":true,"role":"patient","full_name":"Synthetic account","email":"synthetic@example.invalid","skin_concerns":[]}',
                 200,
               ),
             );
@@ -197,7 +197,7 @@ void main() {
       () => MockClient((request) async {
         if (request.url.path.endsWith('/users/me')) {
           return http.Response(
-            '{"id":"patient-1","safety_accepted":true,"skin_concerns":[],"profile_context":null}',
+            '{"id":"patient-1","safety_accepted":true,"role":"patient","full_name":"Synthetic account","email":"synthetic@example.invalid","skin_concerns":[],"profile_context":null}',
             200,
           );
         }
@@ -206,7 +206,7 @@ void main() {
           expect(body['email'], 'salma@example.com');
           expect(body['accept_safety'], isTrue);
           return http.Response(
-            '{"access_token":"test-token","expires_in":3600,"user_id":"patient-1"}',
+            '{"access_token":"test-token","expires_in":3600,"user_id":"patient-1","role":"patient"}',
             201,
           );
         }

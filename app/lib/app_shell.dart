@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'chatbot.dart';
+import 'account/account_summary.dart';
 import 'capture/capture_panel.dart';
 import 'experiments/experiment_ui.dart';
 import 'onboarding_screens.dart';
@@ -114,7 +115,7 @@ class HomeTab extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              'Welcome, ${state.userName.split(" ").first} 🌿',
+              state.userName.isEmpty ? 'Welcome' : 'Welcome, ${state.userName.split(" ").first} 🌿',
               style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
             ),
             Text(
@@ -463,10 +464,11 @@ class ProfileTab extends StatelessWidget {
           ],
         ),
       ),
+      AccountSummary(account: state.account),
       ActionCard(
         icon: '👤',
         title: 'Account and skin profile',
-        subtitle: '${state.userName}${state.userEmail.isNotEmpty ? " · ${state.userEmail}" : " · Verified Skin Lab Member"}',
+        subtitle: state.userEmail.isEmpty ? 'Account profile unavailable' : '${state.userName} · ${state.userEmail}',
         onTap: () => openPage(context, SkinProfileScreen(state: state, editing: true)),
       ),
       ActionCard(

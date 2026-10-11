@@ -55,7 +55,6 @@ void main() {
       await http.runWithClient(
         () async {
           await login();
-          state.userEmail = 'private@example.com';
           state.journal.add(const JournalEntry('today', 'morning', 'private'));
           expect(ApiService.instance.isAuthenticated, isTrue);
           final prefs = await SharedPreferences.getInstance();
