@@ -30,8 +30,10 @@ http.Response receipt(bool accepted, {String owner = 'patient-1'}) =>
         'id': owner,
         'safety_accepted': accepted,
         'safety_accepted_at': null,
-        'full_name': 'Synthetic account', 'email': '$owner@example.invalid', 'role': 'patient',
-    'skin_concerns': [],
+        'full_name': 'Synthetic account',
+        'email': '$owner@example.invalid',
+        'role': 'patient',
+        'skin_concerns': [],
         'profile_context': null,
       }),
       200,
@@ -422,7 +424,7 @@ void main() {
               expectSync(find.byType(AppShell), findsNothing);
               expectSync(find.byType(AccountCreatedScreen), findsNothing);
               expectSync(
-                find.textContaining('Checking your safety acceptance'),
+                find.textContaining('Confirming your safety acceptance'),
                 findsOneWidget,
               );
               expectSync(state.safetyAccepted, isFalse);
@@ -442,10 +444,10 @@ void main() {
                   isNull,
                 );
                 await acceptInWidget(tester);
-                final button = tester.widget<FilledButton>(
+                expectSync(
                   find.byKey(const Key('acceptSafetyButton')),
+                  findsNothing,
                 );
-                expectSync(button.onPressed, isNull);
                 expectSync(find.byType(AppShell), findsNothing);
                 expectSync(state.safetyAccepted, isFalse);
                 finalRead.complete(receipt(true));
@@ -455,6 +457,11 @@ void main() {
                 expectSync(posts, 0);
               }
               expectSync(state.safetyAccepted, isTrue);
+              if (flow != 'google_signup') {
+                expectSync(find.byType(AppShell), findsNothing);
+                await tester.tap(find.byKey(const Key('continueEntry')));
+                await tester.pumpAndSettle();
+              }
               expectSync(
                 find.byType(
                   flow == 'google_signup' ? AccountCreatedScreen : AppShell,
@@ -521,6 +528,9 @@ void main() {
             } else {
               await tester.tap(find.byKey(const Key('acceptSafetyButton')));
             }
+            await tester.pumpAndSettle();
+            expectSync(find.byType(AppShell), findsNothing);
+            await tester.tap(find.byKey(const Key('continueEntry')));
             await tester.pumpAndSettle();
             expectSync(find.byType(AppShell), findsOneWidget);
             expectSync(state.safetyAccepted, isTrue);
@@ -705,7 +715,7 @@ void main() {
           expectSync(find.text('Old private page'), findsNothing);
           expectSync(find.byType(AppShell), findsNothing);
           expectSync(
-            find.textContaining('Checking your safety acceptance'),
+            find.textContaining('Confirming your safety acceptance'),
             findsOneWidget,
           );
           newRead.complete(receipt(false, owner: 'patient-2'));

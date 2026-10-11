@@ -76,10 +76,10 @@ class Eyebrow extends StatelessWidget {
     padding: const EdgeInsets.only(bottom: 6),
     child: Text(
       text.toUpperCase(),
-      style: const TextStyle(
+      style: TextStyle(
         fontFamily: 'Karla',
         fontSize: 11,
-        color: DermaireColors.deep,
+        color: Theme.of(context).colorScheme.primary,
         letterSpacing: .4,
         fontWeight: FontWeight.w600,
       ),
@@ -140,7 +140,7 @@ class ActionCard extends StatelessWidget {
   Widget build(BuildContext context) => Opacity(
     opacity: enabled ? 1 : .55,
     child: DermaireCard(
-      color: DermaireColors.card,
+      color: Theme.of(context).colorScheme.surface,
       onTap: enabled ? onTap : null,
       child: Row(
         children: [
@@ -149,7 +149,9 @@ class ActionCard extends StatelessWidget {
             height: 40,
             alignment: Alignment.center,
             decoration: BoxDecoration(
-              color: DermaireColors.caramel,
+              color: Theme.of(
+                context,
+              ).colorScheme.primary.withValues(alpha: .18),
               borderRadius: BorderRadius.circular(11),
             ),
             child: Text(icon, style: const TextStyle(fontSize: 18)),
@@ -168,16 +170,18 @@ class ActionCard extends StatelessWidget {
                   subtitle,
                   style: TextStyle(
                     fontSize: 12,
-                    color: DermaireColors.ink.withValues(alpha: .65),
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
               ],
             ),
           ),
           if (onTap != null)
-            const Icon(
+            Icon(
               Icons.chevron_right_rounded,
-              color: DermaireColors.caramel,
+              color: Theme.of(
+                context,
+              ).colorScheme.primary.withValues(alpha: .18),
             ),
         ],
       ),
@@ -186,22 +190,17 @@ class ActionCard extends StatelessWidget {
 }
 
 class Notice extends StatelessWidget {
-  const Notice({
-    super.key,
-    required this.icon,
-    required this.text,
-    this.color = DermaireColors.paper,
-  });
+  const Notice({super.key, required this.icon, required this.text, this.color});
   final String icon;
   final String text;
-  final Color color;
+  final Color? color;
 
   @override
   Widget build(BuildContext context) => Container(
     margin: const EdgeInsets.only(bottom: 14),
     padding: const EdgeInsets.all(12),
     decoration: BoxDecoration(
-      color: color,
+      color: color ?? Theme.of(context).colorScheme.surface,
       borderRadius: BorderRadius.circular(12),
       border: Border.all(color: DermaireColors.line),
     ),
@@ -213,7 +212,7 @@ class Notice extends StatelessWidget {
         Expanded(
           child: Text(
             text,
-            style: const TextStyle(fontSize: 12.5, height: 1.45),
+            style: TextStyle(fontSize: 12.5, height: 1.45, color: color == null ? Theme.of(context).colorScheme.onSurface : DermaireColors.ink),
           ),
         ),
       ],
@@ -231,7 +230,7 @@ class MetricTile extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.all(12),
     decoration: BoxDecoration(
-      color: DermaireColors.card,
+      color: Theme.of(context).colorScheme.surface,
       borderRadius: BorderRadius.circular(12),
       border: Border.all(color: DermaireColors.line),
     ),
@@ -248,7 +247,7 @@ class MetricTile extends StatelessWidget {
           label,
           style: TextStyle(
             fontSize: 11,
-            color: DermaireColors.ink.withValues(alpha: .6),
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
         ),
       ],

@@ -71,6 +71,9 @@ void main() {
           );
           await tester.tap(find.byKey(const Key('signInButton')));
           await tester.pumpAndSettle();
+          expect(find.byType(AppShell), findsNothing);
+          await tester.tap(find.byKey(const Key('continueEntry')));
+          await tester.pumpAndSettle();
           expect(find.byType(AppShell), findsOneWidget);
           expect(state.productController.all.single.name, 'Backend serum');
           state.selectTab(2);

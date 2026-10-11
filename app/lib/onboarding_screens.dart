@@ -4,12 +4,14 @@ import 'package:flutter/material.dart';
 
 import 'app_shell.dart';
 import 'account/account_controller.dart';
-import 'capture/photo_disclosure.dart';
 import 'dermaire_state.dart';
 import 'dermaire_theme.dart';
 import 'dermaire_widgets.dart';
 import 'doctor_portal.dart';
 import 'entry/safety_consent_controller.dart';
+import 'entry/entry_copy.dart';
+import 'entry/entry_motion.dart';
+import 'entry/entry_widgets.dart';
 import 'services/api_service.dart';
 import 'services/google_auth_helper.dart';
 
@@ -26,9 +28,7 @@ void _openApp(
   bool onboarding = false,
 }) {
   Navigator.of(context).pushAndRemoveUntil(
-    MaterialPageRoute(
-      builder: (_) => PatientEntryGate(state: state, onboarding: onboarding),
-    ),
+    entryRoute(context, PatientEntryGate(state: state, onboarding: onboarding)),
     (_) => false,
   );
 }
@@ -50,6 +50,7 @@ class _PatientEntryGateState extends State<PatientEntryGate> {
   late final SafetyConsentController consent;
   bool _loadedShell = false;
   bool _hydrationStarted = false;
+  bool _enteredShell = false;
 
   @override
   void initState() {
@@ -70,6 +71,7 @@ class _PatientEntryGateState extends State<PatientEntryGate> {
     if (consent.confirmed &&
         widget.state.account.ready &&
         !widget.onboarding &&
+        _enteredShell &&
         !_loadedShell) {
       _loadedShell = true;
       unawaited(widget.state.productController.load());
@@ -101,34 +103,42 @@ class _PatientEntryGateState extends State<PatientEntryGate> {
     await logout;
   }
 
+  void _continue() {
+    // A retained callback cannot unlock another account or an ended session.
+    if (!mounted || !consent.confirmed || !widget.state.account.ready) return;
+    _enteredShell = true;
+    _changed();
+  }
+
   @override
   Widget build(BuildContext context) {
+    final c = EntryCopy.of(context);
     if (consent.confirmed && widget.state.account.ready) {
       if (widget.onboarding) return AccountCreatedScreen(state: widget.state);
-      return AppShell(state: widget.state);
+      if (_enteredShell) return AppShell(state: widget.state);
+      return EntryStatusPage(
+        message: c.success,
+        success: true,
+        onContinue: _continue,
+        continueKey: const Key('continueEntry'),
+        onSignOut: _signOut,
+      );
     }
     if (consent.confirmed) {
       final account = widget.state.account;
-      return DermairePage(
-        showBack: false,
-        title: 'Load account profile',
-        children: [
-          if (account.phase == AccountPhase.loading) ...[
-            const CircularProgressIndicator(),
-            const Text('Loading your account profile…'),
-          ] else ...[
-            Text(account.error ?? 'Your account profile is unavailable.'),
-            FilledButton(
-              key: const Key('retryAccountProfile'),
-              onPressed: () => account.hydrate(reuseConsent: false),
-              child: const Text('Retry'),
-            ),
-          ],
-          TextButton(
-            onPressed: _signOut,
-            child: const Text('Sign out / use another account'),
-          ),
-        ],
+      final loading = account.phase == AccountPhase.loading;
+      return EntryStatusPage(
+        message: c.profile,
+        onSignOut: _signOut,
+        error: loading
+            ? null
+            : account.error ??
+                  c.choose(
+                    'Your account profile is unavailable.',
+                    'ملف الحساب غير متاح.',
+                  ),
+        onRetry: loading ? null : () => account.hydrate(reuseConsent: false),
+        retryKey: const Key('retryAccountProfile'),
       );
     }
     if (consent.current &&
@@ -141,32 +151,16 @@ class _PatientEntryGateState extends State<PatientEntryGate> {
         acceptanceError: consent.error,
       );
     }
-    final checking = consent.current && consent.phase == ConsentPhase.checking;
-    return DermairePage(
-      showBack: false,
-      title: 'Confirm safety acceptance',
-      children: [
-        if (checking) ...[
-          const CircularProgressIndicator(),
-          const Text('Checking your safety acceptance with the server…'),
-        ] else ...[
-          Text(
-            consent.error ??
-                'Your session changed or expired. Please sign in again.',
-          ),
-          if (consent.current)
-            FilledButton(
-              key: const Key('retrySafetyRead'),
-              onPressed: consent.refresh,
-              child: const Text('Retry'),
-            ),
-        ],
-        TextButton(
-          key: const Key('consentSignOut'),
-          onPressed: _signOut,
-          child: const Text('Sign out / use another account'),
-        ),
-      ],
+    final checking = consent.phase == ConsentPhase.checking;
+    return EntryStatusPage(
+      message: c.checking,
+      onSignOut: _signOut,
+      error: checking
+          ? null
+          : consent.error ??
+                c.choose('Please sign in again.', 'يرجى تسجيل الدخول مجددًا.'),
+      onRetry: !checking && consent.current ? consent.refresh : null,
+      retryKey: const Key('retrySafetyRead'),
     );
   }
 }
@@ -177,105 +171,89 @@ class WelcomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
+    final c = EntryCopy.of(context);
+    final t = EntryTokens.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Scaffold(
-      body: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) => SingleChildScrollView(
-            child: ConstrainedBox(
-              constraints: BoxConstraints(minHeight: constraints.maxHeight),
-              child: IntrinsicHeight(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 26),
-                  child: Column(
+    return EntryPage(
+      showBack: false,
+      editorial: true,
+      eyebrow: c.choose('Personal Skin Health', 'صحة بشرتك'),
+      title: c.welcome,
+      subtitle: c.welcomeBody,
+      headerActions: [
+        IconButton(
+          key: const Key('languageToggle'),
+          tooltip: c.choose('العربية', 'English'),
+          onPressed: state.toggleLanguage,
+          icon: const Icon(Icons.translate),
+        ),
+        IconButton(
+          key: const Key('themeToggle'),
+          tooltip: isDark
+              ? c.choose('Light mode', 'الوضع الفاتح')
+              : c.choose('Dark mode', 'الوضع الداكن'),
+          onPressed: state.toggleTheme,
+          icon: Icon(
+            isDark ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
+          ),
+        ),
+      ],
+      footer: [
+        EntryPress(
+          child: FilledButton(
+            key: const Key('startExperimentButton'),
+            onPressed: () =>
+                openEntry(context, CreateAccountScreen(state: state)),
+            child: Text(c.create),
+          ),
+        ),
+        OutlinedButton(
+          key: const Key('existingAccountButton'),
+          onPressed: () => openEntry(context, SignInScreen(state: state)),
+          child: Text(c.existing),
+        ),
+      ],
+      children: [
+        EntryCard(
+          child: Column(
+            children: [
+              Image.asset(
+                'assets/images/dermaire-logo.webp',
+                width: 112,
+                height: 112,
+                semanticLabel: 'Dermaire logo',
+              ),
+              const SizedBox(height: 20),
+              ...[
+                (Icons.visibility_outlined, c.choose('Observe', 'لاحظ')),
+                (Icons.insights_outlined, c.choose('Understand', 'افهم')),
+                (Icons.timeline, c.choose('Track', 'تابع')),
+              ].map(
+                (item) => Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Row(
                     children: [
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: IconButton.filledTonal(
-                          key: const Key('themeToggle'),
-                          tooltip: isDark ? 'Light mode' : 'Dark mode',
-                          onPressed: state.toggleTheme,
-                          icon: Icon(
-                            isDark ? Icons.light_mode : Icons.dark_mode,
-                          ),
-                        ),
-                      ),
-                      const Eyebrow('Personal Skin Lab'),
-                      Text(
-                        'Dermaire',
-                        style: Theme.of(
-                          context,
-                        ).textTheme.headlineLarge?.copyWith(fontSize: 30),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Understand what actually works for your skin — measure, experiment, learn.',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: colors.onSurface.withValues(alpha: .72),
-                          height: 1.45,
-                        ),
-                      ),
-                      const SizedBox(height: 18),
+                      Icon(item.$1, color: t.action),
+                      const SizedBox(width: 14),
                       Expanded(
-                        child: Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: isDark
-                                ? DermaireColors.darkPaper
-                                : DermaireColors.paper,
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color: DermaireColors.caramel,
-                              width: 1.5,
-                            ),
-                          ),
-                          clipBehavior: Clip.antiAlias,
-                          child: SizedBox(
-                            height: 160,
-                            child: Image.asset(
-                              'assets/images/dermaire-logo.webp',
-                              fit: BoxFit.contain,
-                              semanticLabel: 'Dermaire logo',
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-                      FilledButton(
-                        key: const Key('startExperimentButton'),
-                        onPressed: () => openPage(
-                          context,
-                          CreateAccountScreen(state: state),
-                        ),
-                        child: const Text('Start my skin experiment'),
-                      ),
-                      const SizedBox(height: 8),
-                      OutlinedButton(
-                        key: const Key('existingAccountButton'),
-                        onPressed: () =>
-                            openPage(context, SignInScreen(state: state)),
-                        child: const Text('I already have an account'),
-                      ),
-                      const SizedBox(height: 14),
-                      Text(
-                        photoUploadDisclosure,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 11.5,
-                          color: colors.onSurface.withValues(alpha: .58),
+                        child: Text(
+                          item.$2,
+                          style: const TextStyle(fontWeight: FontWeight.w600),
                         ),
                       ),
                     ],
                   ),
                 ),
               ),
-            ),
+            ],
           ),
         ),
-      ),
+        const SizedBox(height: 20),
+        Text(
+          c.disclosure,
+          style: TextStyle(fontSize: 12, color: t.secondary, height: 1.5),
+        ),
+      ],
     );
   }
 }
@@ -296,6 +274,7 @@ class _SignInScreenState extends State<SignInScreen> {
   bool hidePassword = true;
 
   bool loading = false;
+  String? authError;
 
   @override
   void dispose() {
@@ -306,7 +285,10 @@ class _SignInScreenState extends State<SignInScreen> {
 
   Future<void> _signInWithGoogle() async {
     if (loading) return;
-    setState(() => loading = true);
+    setState(() {
+      loading = true;
+      authError = null;
+    });
     try {
       final pickerGeneration = ApiService.instance.sessionGeneration;
       final idToken =
@@ -326,12 +308,7 @@ class _SignInScreenState extends State<SignInScreen> {
       _openApp(context, widget.state);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Google sign-in failed: $e'),
-          backgroundColor: Theme.of(context).colorScheme.error,
-        ),
-      );
+      setState(() => authError = EntryCopy.of(context).authError);
       return;
     } finally {
       if (mounted) setState(() => loading = false);
@@ -339,8 +316,11 @@ class _SignInScreenState extends State<SignInScreen> {
   }
 
   Future<void> submit() async {
-    if (!formKey.currentState!.validate() || loading) return;
-    setState(() => loading = true);
+    if (loading || !(formKey.currentState?.validate() ?? false)) return;
+    setState(() {
+      loading = true;
+      authError = null;
+    });
     try {
       final login = ApiService.instance.login(
         email: email.text.trim(),
@@ -352,12 +332,7 @@ class _SignInScreenState extends State<SignInScreen> {
       _openApp(context, widget.state);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Sign-in failed: $e'),
-          backgroundColor: Theme.of(context).colorScheme.error,
-        ),
-      );
+      setState(() => authError = EntryCopy.of(context).authError);
       return;
     } finally {
       if (mounted) setState(() => loading = false);
@@ -365,98 +340,137 @@ class _SignInScreenState extends State<SignInScreen> {
   }
 
   @override
-  Widget build(BuildContext context) => DermairePage(
-    eyebrow: 'Welcome back',
-    title: 'Sign in',
-    subtitle: 'Continue your private skin experiments.',
-    children: [
-      _SocialButton(
-        iconWidget: Container(
-          width: 22,
-          height: 22,
-          alignment: Alignment.center,
-          decoration: const BoxDecoration(
-            shape: BoxShape.circle,
-            color: Colors.white,
-          ),
-          child: const Text(
-            'G',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w900,
-              color: Colors.redAccent,
-            ),
+  Widget build(BuildContext context) {
+    final c = EntryCopy.of(context);
+    if (loading || authError != null) {
+      return EntryStatusPage(
+        message: c.signingIn,
+        error: authError,
+        onSignOut: () async {
+          final logout = ApiService.instance.logout();
+          Navigator.of(context).pushAndRemoveUntil(
+            entryRoute(context, WelcomeScreen(state: widget.state)),
+            (_) => false,
+          );
+          await logout;
+        },
+        onRetry: authError == null
+            ? null
+            : () => setState(() => authError = null),
+        retryKey: const Key('signInButton'),
+      );
+    }
+    return EntryPage(
+      eyebrow: c.choose('Welcome back', 'مرحبًا بعودتك'),
+      title: c.choose('Your journey continues here.', 'رحلتك تستمر من هنا.'),
+      subtitle: c.choose(
+        'Sign in to your private skin history.',
+        'سجّل الدخول إلى سجل بشرتك الخاص.',
+      ),
+      footer: [
+        EntryPress(
+          child: FilledButton(
+            key: const Key('signInButton'),
+            onPressed: loading ? null : submit,
+            child: Text(c.signIn),
           ),
         ),
-        label: 'Continue with Google',
-        onPressed: loading ? null : _signInWithGoogle,
-      ),
-      const _OrDivider(),
-      Form(
-        key: formKey,
-        child: Column(
-          children: [
-            TextFormField(
-              key: const Key('signInEmail'),
-              controller: email,
-              keyboardType: TextInputType.emailAddress,
-              autofillHints: const [AutofillHints.email],
-              decoration: const InputDecoration(labelText: 'Email'),
-              validator: _validateEmail,
+        const SizedBox(height: 8),
+        TextButton(
+          onPressed: () => Navigator.of(context).pushReplacement(
+            entryRoute(context, CreateAccountScreen(state: widget.state)),
+          ),
+          child: Text(c.create),
+        ),
+        TextButton.icon(
+          onPressed: () => openEntry(context, const DoctorSignInScreen()),
+          icon: const Icon(Icons.medical_services_outlined),
+          label: Text(c.choose('Clinician sign in', 'دخول الطبيب')),
+        ),
+      ],
+      children: [
+        _SocialButton(
+          iconWidget: Container(
+            width: 22,
+            height: 22,
+            alignment: Alignment.center,
+            decoration: const BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.white,
             ),
-            const SizedBox(height: 12),
-            TextFormField(
-              key: const Key('signInPassword'),
-              controller: password,
-              obscureText: hidePassword,
-              autofillHints: const [AutofillHints.password],
-              onFieldSubmitted: (_) => submit(),
-              decoration: InputDecoration(
-                labelText: 'Password',
-                suffixIcon: IconButton(
-                  onPressed: () => setState(() => hidePassword = !hidePassword),
-                  icon: Icon(
-                    hidePassword
-                        ? Icons.visibility_outlined
-                        : Icons.visibility_off_outlined,
-                  ),
+            child: const Text(
+              'G',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w900,
+                color: Colors.redAccent,
+              ),
+            ),
+          ),
+          label: c.google,
+          onPressed: loading ? null : _signInWithGoogle,
+        ),
+        const _OrDivider(),
+        Form(
+          key: formKey,
+          child: Column(
+            children: [
+              EntryField(
+                child: TextFormField(
+                  key: const Key('signInEmail'),
+                  controller: email,
+                  keyboardType: TextInputType.emailAddress,
+                  autofillHints: const [AutofillHints.email],
+                  textDirection: TextDirection.ltr,
+                  decoration: InputDecoration(labelText: c.email),
+                  validator: (value) =>
+                      _validateEmail(value) == null ? null : c.validEmail,
                 ),
               ),
-              validator: (value) =>
-                  (value?.isNotEmpty ?? false) ? null : 'Enter your password',
-            ),
-          ],
-        ),
-      ),
-      Align(
-        alignment: Alignment.centerRight,
-        child: TextButton(
-          onPressed: () =>
-              openPage(context, ForgotPasswordScreen(state: widget.state)),
-          child: const Text('Forgot password?'),
-        ),
-      ),
-      FilledButton(
-        key: const Key('signInButton'),
-        onPressed: loading ? null : submit,
-        child: Text(loading ? 'Please wait...' : 'Sign in'),
-      ),
-      const SizedBox(height: 8),
-      TextButton(
-        onPressed: () => Navigator.of(context).pushReplacement(
-          MaterialPageRoute(
-            builder: (_) => CreateAccountScreen(state: widget.state),
+              const SizedBox(height: 12),
+              EntryField(
+                child: TextFormField(
+                  key: const Key('signInPassword'),
+                  controller: password,
+                  obscureText: hidePassword,
+                  autofillHints: const [AutofillHints.password],
+                  onFieldSubmitted: (_) => submit(),
+                  decoration: InputDecoration(
+                    labelText: c.password,
+                    suffixIcon: IconButton(
+                      tooltip: c.choose(
+                        hidePassword ? 'Show password' : 'Hide password',
+                        hidePassword
+                            ? 'إظهار كلمة المرور'
+                            : 'إخفاء كلمة المرور',
+                      ),
+                      onPressed: () =>
+                          setState(() => hidePassword = !hidePassword),
+                      icon: Icon(
+                        hidePassword
+                            ? Icons.visibility_outlined
+                            : Icons.visibility_off_outlined,
+                      ),
+                    ),
+                  ),
+                  validator: (value) =>
+                      (value?.isNotEmpty ?? false) ? null : c.passwordRequired,
+                ),
+              ),
+            ],
           ),
         ),
-        child: const Text('Create account'),
-      ),
-      TextButton.icon(
-        onPressed: () => openPage(context, const DoctorSignInScreen()),
-        icon: const Icon(Icons.medical_services_outlined),
-        label: const Text('Clinician sign in'),
-      ),
-    ],
-  );
+        Align(
+          alignment: Alignment.centerRight,
+          child: TextButton(
+            onPressed: () =>
+                openEntry(context, ForgotPasswordScreen(state: widget.state)),
+            child: Text(c.choose('Forgot password?', 'نسيت كلمة المرور؟')),
+          ),
+        ),
+      ],
+    );
+  }
 }
 
 class CreateAccountScreen extends StatefulWidget {
@@ -480,6 +494,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
   bool hidePassword = true;
   bool hideConfirmation = true;
   bool loading = false;
+  String? authError;
 
   int get strength {
     final value = password.text;
@@ -502,8 +517,8 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
   }
 
   void createAccount() {
-    if (!formKey.currentState!.validate() || loading) return;
-    openPage(
+    if (loading || !(formKey.currentState?.validate() ?? false)) return;
+    openEntry(
       context,
       SafetyResponsibilityScreen(
         state: widget.state,
@@ -515,7 +530,10 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
 
   Future<void> _signUpWithGoogle() async {
     if (loading) return;
-    setState(() => loading = true);
+    setState(() {
+      loading = true;
+      authError = null;
+    });
     try {
       final pickerGeneration = ApiService.instance.sessionGeneration;
       final idToken =
@@ -532,12 +550,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
       _openApp(context, widget.state, onboarding: true);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Google sign-in failed: $e'),
-          backgroundColor: Theme.of(context).colorScheme.error,
-        ),
-      );
+      setState(() => authError = EntryCopy.of(context).authError);
       return;
     } finally {
       if (mounted) setState(() => loading = false);
@@ -545,110 +558,166 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
   }
 
   @override
-  Widget build(BuildContext context) => DermairePage(
-    eyebrow: 'Your private skin lab',
-    title: 'Create account',
-    subtitle: 'Set up your account, then choose what you want to improve.',
-    children: [
-      _SocialButton(
-        iconWidget: Container(
-          width: 22,
-          height: 22,
-          alignment: Alignment.center,
-          decoration: const BoxDecoration(
-            shape: BoxShape.circle,
-            color: Colors.white,
+  Widget build(BuildContext context) {
+    final c = EntryCopy.of(context);
+    if (loading || authError != null) {
+      return EntryStatusPage(
+        message: c.signingIn,
+        error: authError,
+        onSignOut: () async {
+          final logout = ApiService.instance.logout();
+          Navigator.of(context).pushAndRemoveUntil(
+            entryRoute(context, WelcomeScreen(state: widget.state)),
+            (_) => false,
+          );
+          await logout;
+        },
+        onRetry: authError == null
+            ? null
+            : () => setState(() => authError = null),
+        retryKey: const Key('signInButton'),
+      );
+    }
+    return EntryPage(
+      eyebrow: c.choose('Your private skin health', 'صحة بشرتك بخصوصية'),
+      title: c.create,
+      subtitle: c.choose(
+        'Your private skin health account.',
+        'حسابك الخاص لصحة بشرتك.',
+      ),
+      footer: [
+        const SizedBox(height: 16),
+        EntryPress(
+          child: FilledButton(
+            key: const Key('createAccountButton'),
+            onPressed: createAccount,
+            child: Text(c.choose('Continue to safety', 'المتابعة إلى السلامة')),
           ),
-          child: const Text(
-            'G',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w900,
-              color: Colors.redAccent,
+        ),
+        const SizedBox(height: 8),
+        TextButton(
+          onPressed: () => Navigator.of(context).pushReplacement(
+            entryRoute(context, SignInScreen(state: widget.state)),
+          ),
+          child: Text(
+            c.choose(
+              'Already have an account? Sign in',
+              'لديك حساب بالفعل؟ سجّل الدخول',
             ),
           ),
         ),
-        label: 'Sign up with Google',
-        onPressed: loading ? null : _signUpWithGoogle,
-      ),
-      const _OrDivider(),
-      Form(
-        key: formKey,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            TextFormField(
-              key: const Key('createEmail'),
-              controller: email,
-              keyboardType: TextInputType.emailAddress,
-              autofillHints: const [AutofillHints.newUsername],
-              decoration: const InputDecoration(labelText: 'Email'),
-              validator: _validateEmail,
+      ],
+      children: [
+        _SocialButton(
+          iconWidget: Container(
+            width: 22,
+            height: 22,
+            alignment: Alignment.center,
+            decoration: const BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.white,
             ),
-            const SizedBox(height: 12),
-            TextFormField(
-              key: const Key('createPassword'),
-              controller: password,
-              obscureText: hidePassword,
-              autofillHints: const [AutofillHints.newPassword],
-              onChanged: (_) => setState(() {}),
-              decoration: InputDecoration(
-                labelText: 'Password',
-                suffixIcon: IconButton(
-                  onPressed: () => setState(() => hidePassword = !hidePassword),
-                  icon: Icon(
-                    hidePassword
-                        ? Icons.visibility_outlined
-                        : Icons.visibility_off_outlined,
-                  ),
+            child: const Text(
+              'G',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w900,
+                color: Colors.redAccent,
+              ),
+            ),
+          ),
+          label: c.choose('Sign up with Google', 'التسجيل باستخدام Google'),
+          onPressed: loading ? null : _signUpWithGoogle,
+        ),
+        const _OrDivider(),
+        Form(
+          key: formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              EntryField(
+                child: TextFormField(
+                  key: const Key('createEmail'),
+                  controller: email,
+                  keyboardType: TextInputType.emailAddress,
+                  autofillHints: const [AutofillHints.newUsername],
+                  textDirection: TextDirection.ltr,
+                  decoration: InputDecoration(labelText: c.email),
+                  validator: (value) =>
+                      _validateEmail(value) == null ? null : c.validEmail,
                 ),
               ),
-              validator: (_) => strength >= 3
-                  ? null
-                  : 'Use 8+ characters with upper, lower and a number',
-            ),
-            const SizedBox(height: 8),
-            _PasswordStrength(value: strength),
-            const SizedBox(height: 12),
-            TextFormField(
-              key: const Key('confirmPassword'),
-              controller: confirmPassword,
-              obscureText: hideConfirmation,
-              onFieldSubmitted: (_) => createAccount(),
-              decoration: InputDecoration(
-                labelText: 'Confirm password',
-                suffixIcon: IconButton(
-                  onPressed: () =>
-                      setState(() => hideConfirmation = !hideConfirmation),
-                  icon: Icon(
-                    hideConfirmation
-                        ? Icons.visibility_outlined
-                        : Icons.visibility_off_outlined,
+              const SizedBox(height: 12),
+              EntryField(
+                child: TextFormField(
+                  key: const Key('createPassword'),
+                  controller: password,
+                  obscureText: hidePassword,
+                  autofillHints: const [AutofillHints.newPassword],
+                  onChanged: (_) => setState(() {}),
+                  decoration: InputDecoration(
+                    labelText: c.password,
+                    suffixIcon: IconButton(
+                      tooltip: c.choose(
+                        hidePassword ? 'Show password' : 'Hide password',
+                        hidePassword
+                            ? 'إظهار كلمة المرور'
+                            : 'إخفاء كلمة المرور',
+                      ),
+                      onPressed: () =>
+                          setState(() => hidePassword = !hidePassword),
+                      icon: Icon(
+                        hidePassword
+                            ? Icons.visibility_outlined
+                            : Icons.visibility_off_outlined,
+                      ),
+                    ),
                   ),
+                  validator: (_) => strength >= 3 ? null : c.passwordRules,
                 ),
               ),
-              validator: (value) => value == password.text && value!.isNotEmpty
-                  ? null
-                  : 'Passwords do not match',
-            ),
-          ],
+              const SizedBox(height: 8),
+              _PasswordStrength(value: strength),
+              const SizedBox(height: 12),
+              EntryField(
+                child: TextFormField(
+                  key: const Key('confirmPassword'),
+                  controller: confirmPassword,
+                  obscureText: hideConfirmation,
+                  onFieldSubmitted: (_) => createAccount(),
+                  decoration: InputDecoration(
+                    labelText: c.confirm,
+                    suffixIcon: IconButton(
+                      tooltip: c.choose(
+                        hideConfirmation ? 'Show password' : 'Hide password',
+                        hideConfirmation
+                            ? 'إظهار كلمة المرور'
+                            : 'إخفاء كلمة المرور',
+                      ),
+                      onPressed: () =>
+                          setState(() => hideConfirmation = !hideConfirmation),
+                      icon: Icon(
+                        hideConfirmation
+                            ? Icons.visibility_outlined
+                            : Icons.visibility_off_outlined,
+                      ),
+                    ),
+                  ),
+                  validator: (value) =>
+                      value == password.text && value!.isNotEmpty
+                      ? null
+                      : c.choose(
+                          'Passwords do not match',
+                          'كلمتا المرور غير متطابقتين',
+                        ),
+                ),
+              ),
+            ],
+          ),
         ),
-      ),
-      const SizedBox(height: 16),
-      FilledButton(
-        key: const Key('createAccountButton'),
-        onPressed: createAccount,
-        child: const Text('Create account'),
-      ),
-      const SizedBox(height: 8),
-      TextButton(
-        onPressed: () => Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => SignInScreen(state: widget.state)),
-        ),
-        child: const Text('Already have an account? Sign in'),
-      ),
-    ],
-  );
+      ],
+    );
+  }
 }
 
 class _SocialButton extends StatelessWidget {
@@ -681,7 +750,7 @@ class _OrDivider extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12),
           child: Text(
-            'OR',
+            EntryCopy.of(context).choose('OR', 'أو'),
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
               letterSpacing: 1.2,
               color: Theme.of(
@@ -702,18 +771,12 @@ class _PasswordStrength extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = switch (value) {
-      0 || 1 => DermaireColors.conflict,
-      2 => DermaireColors.unknown,
-      _ => DermaireColors.safe,
-    };
-    final label = switch (value) {
-      0 => 'Password strength',
-      1 => 'Weak',
-      2 => 'Fair',
-      3 => 'Strong',
-      _ => 'Very strong',
-    };
+    final color = Theme.of(context).colorScheme.primary;
+    final c = EntryCopy.of(context);
+    final label = c.choose(
+      ['Password strength', 'Weak', 'Fair', 'Strong', 'Very strong'][value],
+      ['قوة كلمة المرور', 'ضعيفة', 'متوسطة', 'قوية', 'قوية جدًا'][value],
+    );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1017,141 +1080,114 @@ class _SafetyResponsibilityScreenState
   }
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(),
-    body: SafeArea(
-      top: false,
-      child: Column(
-        children: [
-          Expanded(
-            child: SingleChildScrollView(
-              key: const Key('safetyScroll'),
-              controller: controller,
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Eyebrow('First-time setup'),
-                  Text(
-                    'Safety & responsibility',
-                    style: Theme.of(
-                      context,
-                    ).textTheme.headlineSmall?.copyWith(fontSize: 23),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    'Please read this once before starting your first skin experiment.',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.onSurface.withValues(alpha: .72),
-                    ),
-                  ),
-                  const SizedBox(height: 18),
-                  const _SafetyItem(
-                    icon: Icons.health_and_safety_outlined,
-                    title: 'Dermaire is not medical advice',
-                    text:
-                        'The app helps you observe patterns. It does not diagnose, treat, or replace a dermatologist or other qualified clinician.',
-                  ),
-                  const _SafetyItem(
-                    icon: Icons.science_outlined,
-                    title: 'Change one thing at a time',
-                    text:
-                        'Patch test new products first. Introduce one product per experiment so you can identify what caused a change.',
-                  ),
-                  const _SafetyItem(
-                    icon: Icons.warning_amber_rounded,
-                    title: 'Stop if irritation appears',
-                    text:
-                        'Stop the experiment if you develop burning, swelling, severe redness, blistering, or rapidly worsening symptoms.',
-                  ),
-                  const _SafetyItem(
-                    icon: Icons.local_hospital_outlined,
-                    title: 'Know when to seek care',
-                    text:
-                        'Seek urgent medical help for trouble breathing, facial swelling, widespread hives, eye involvement, or another severe reaction.',
-                  ),
-                  const _SafetyItem(
-                    icon: Icons.lock_outline,
-                    title: 'Protect your information',
-                    text:
-                        'Use the app on your own device, secure your account, and avoid including identifying information in notes you plan to share.',
-                  ),
-                  DermaireCard(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Disclaimer',
-                          style: Theme.of(context).textTheme.titleMedium
-                              ?.copyWith(fontWeight: FontWeight.w800),
-                        ),
-                        const SizedBox(height: 8),
-                        const Text(
-                          'Skin measurements can vary with lighting, camera quality, environment, routine, and normal biological changes. Results are estimates and may be incomplete or inaccurate. You remain responsible for product choices and for following each manufacturer’s instructions. If you are pregnant, breastfeeding, have a diagnosed skin condition, use prescription treatment, or are unsure whether an ingredient is suitable, speak with a qualified clinician before beginning an experiment.',
-                          style: TextStyle(fontSize: 12.5, height: 1.55),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const Notice(
-                    icon: '↓',
-                    text:
-                        'You’ve reached the end. Continue to confirm that you have read these safety notes.',
-                  ),
-                ],
-              ),
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
-            decoration: BoxDecoration(
-              color: Theme.of(context).scaffoldBackgroundColor,
-              border: Border(
-                top: BorderSide(color: Theme.of(context).dividerColor),
-              ),
-            ),
-            child: Column(
-              children: [
-                if (!reachedEnd)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: Text(
-                      'Scroll to the end to continue',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.onSurface.withValues(alpha: .62),
-                      ),
-                    ),
-                  ),
-                if (error != null || widget.acceptanceError != null)
-                  Text(
-                    error ?? widget.acceptanceError!,
-                    key: const Key('safetyError'),
-                  ),
-                FilledButton(
-                  key: const Key('acceptSafetyButton'),
-                  onPressed: reachedEnd && !loading ? _acceptSafety : null,
-                  child: Text(
-                    loading ? 'Please wait...' : 'I understand — continue',
-                  ),
-                ),
-                if (widget.onSignOut != null)
-                  TextButton(
-                    key: const Key('consentSignOut'),
-                    onPressed: widget.onSignOut,
-                    child: const Text('Sign out / use another account'),
-                  ),
-              ],
-            ),
-          ),
-        ],
+  Widget build(BuildContext context) {
+    final c = EntryCopy.of(context);
+    if (loading) {
+      return EntryStatusPage(
+        message: c.choose('Confirming your acceptance…', 'جارٍ تأكيد موافقتك…'),
+        onSignOut: widget.onSignOut,
+      );
+    }
+    return EntryPage(
+      showBack: widget.onAccept == null,
+      scrollKey: const Key('safetyScroll'),
+      controller: controller,
+      eyebrow: c.choose('Safety before you begin', 'السلامة قبل البدء'),
+      title: c.choose('Safety & responsibility', 'السلامة والمسؤولية'),
+      subtitle: c.choose(
+        'Read these notes before you continue.',
+        'اقرأ هذه الإرشادات قبل المتابعة.',
       ),
-    ),
-  );
+      footer: [
+        if (!reachedEnd)
+          Text(
+            c.choose(
+              'Scroll to the end to continue',
+              'مرّر إلى النهاية للمتابعة',
+            ),
+            style: TextStyle(
+              color: EntryTokens.of(context).secondary,
+              fontSize: 12,
+            ),
+          ),
+        if (error != null || widget.acceptanceError != null)
+          Semantics(
+            liveRegion: true,
+            child: Text(
+              error ?? widget.acceptanceError!,
+              key: const Key('safetyError'),
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
+            ),
+          ),
+        EntryPress(
+          child: FilledButton(
+            key: const Key('acceptSafetyButton'),
+            onPressed: reachedEnd && !loading ? _acceptSafety : null,
+            child: Text(c.choose('I understand — continue', 'فهمت — متابعة')),
+          ),
+        ),
+        if (widget.onSignOut != null)
+          TextButton(
+            key: const Key('consentSignOut'),
+            onPressed: widget.onSignOut,
+            child: Text(c.signOut),
+          ),
+      ],
+      children: [
+        const _SafetyItem(
+          icon: Icons.health_and_safety_outlined,
+          title: 'Dermaire is not medical advice',
+          text:
+              'The app helps you observe patterns. It does not diagnose, treat, or replace a dermatologist or other qualified clinician.',
+        ),
+        const _SafetyItem(
+          icon: Icons.science_outlined,
+          title: 'Change one thing at a time',
+          text:
+              'Patch test new products first. Introduce one product per experiment so you can identify what caused a change.',
+        ),
+        const _SafetyItem(
+          icon: Icons.warning_amber_rounded,
+          title: 'Stop if irritation appears',
+          text:
+              'Stop the experiment if you develop burning, swelling, severe redness, blistering, or rapidly worsening symptoms.',
+        ),
+        const _SafetyItem(
+          icon: Icons.local_hospital_outlined,
+          title: 'Know when to seek care',
+          text:
+              'Seek urgent medical help for trouble breathing, facial swelling, widespread hives, eye involvement, or another severe reaction.',
+        ),
+        const _SafetyItem(
+          icon: Icons.lock_outline,
+          title: 'Protect your information',
+          text:
+              'Use the app on your own device, secure your account, and avoid including identifying information in notes you plan to share.',
+        ),
+        DermaireCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                c.choose('Disclaimer', 'إخلاء مسؤولية'),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                c.choose(
+                  'Skin measurements can vary with lighting, camera quality, environment, routine, and normal biological changes. Results are estimates and may be incomplete or inaccurate. You remain responsible for product choices and for following each manufacturer’s instructions. If you are pregnant, breastfeeding, have a diagnosed skin condition, use prescription treatment, or are unsure whether an ingredient is suitable, speak with a qualified clinician before beginning an experiment.',
+                  'قد تختلف قياسات البشرة باختلاف الإضاءة وجودة الكاميرا والبيئة والروتين والتغيّرات البيولوجية الطبيعية. النتائج تقديرات وقد تكون ناقصة أو غير دقيقة. تظل مسؤولًا عن اختيار المنتجات واتباع تعليمات كل شركة مصنّعة. إذا كنتِ حاملًا أو مرضعة، أو لديك حالة جلدية مشخصة، أو تستخدم علاجًا بوصفة طبية، أو لم تكن متأكدًا من ملاءمة أحد المكوّنات، استشر مختصًا مؤهلًا قبل بدء أي تجربة.',
+                ),
+                style: TextStyle(fontSize: 12.5, height: 1.55),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
 }
 
 class _SafetyItem extends StatelessWidget {
@@ -1176,16 +1212,33 @@ class _SafetyItem extends StatelessWidget {
             color: DermaireColors.caramel.withValues(alpha: .3),
             borderRadius: BorderRadius.circular(12),
           ),
-          child: Icon(icon, color: Theme.of(context).colorScheme.primary),
+          child: Icon(
+            icon,
+            color: icon == Icons.local_hospital_outlined
+                ? Theme.of(context).colorScheme.error
+                : icon == Icons.warning_amber_rounded
+                ? (Theme.of(context).brightness == Brightness.dark
+                      ? const Color(0xFFF4D18B)
+                      : const Color(0xFF75520F))
+                : Theme.of(context).colorScheme.primary,
+          ),
         ),
         const SizedBox(width: 12),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(title, style: const TextStyle(fontWeight: FontWeight.w800)),
+              Text(
+                EntryCopy.of(
+                  context,
+                ).choose(title, _safetyArabic[title] ?? title),
+                style: const TextStyle(fontWeight: FontWeight.w800),
+              ),
               const SizedBox(height: 4),
-              Text(text, style: const TextStyle(fontSize: 12.5, height: 1.45)),
+              Text(
+                EntryCopy.of(context).choose(text, _safetyArabic[text] ?? text),
+                style: const TextStyle(fontSize: 12.5, height: 1.45),
+              ),
             ],
           ),
         ),
@@ -1199,39 +1252,26 @@ class AccountCreatedScreen extends StatelessWidget {
   final DermaireState state;
 
   @override
-  Widget build(BuildContext context) => DermairePage(
-    showBack: false,
-    centered: true,
-    eyebrow: 'You’re ready',
-    title: 'Account created',
-    subtitle: 'Your private skin lab is ready for its first experiment.',
-    children: [
-      const SizedBox(height: 24),
-      Center(
-        child: Container(
-          width: 112,
-          height: 112,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: DermaireColors.safeBackground,
-            border: Border.all(color: DermaireColors.safe, width: 2),
-          ),
-          child: const Icon(
-            Icons.check_rounded,
-            size: 58,
-            color: DermaireColors.safe,
-          ),
-        ),
-      ),
-      const SizedBox(height: 36),
-      FilledButton(
-        onPressed: () => Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => SkinProfileScreen(state: state)),
-        ),
-        child: const Text('Start my skin experiment'),
-      ),
-    ],
-  );
+  Widget build(BuildContext context) {
+    final c = EntryCopy.of(context);
+    final generation = ApiService.instance.sessionGeneration;
+    return EntryStatusPage(
+      message: c.success,
+      success: true,
+      onSignOut: null,
+      continueKey: const Key('continueRegistration'),
+      onContinue: () {
+        if (!ApiService.instance.isCurrentSession(generation) ||
+            !ApiService.instance.hasConfirmedSafetyAcceptance ||
+            !state.account.ready) {
+          return;
+        }
+        Navigator.of(
+          context,
+        ).pushReplacement(entryRoute(context, SkinProfileScreen(state: state)));
+      },
+    );
+  }
 }
 
 class SkinProfileScreen extends StatefulWidget {
@@ -1562,3 +1602,21 @@ class _SkinProfileScreenState extends State<SkinProfileScreen> {
     ],
   );
 }
+
+const _safetyArabic = <String, String>{
+  'Dermaire is not medical advice': 'Dermaire لا يقدّم نصيحة طبية',
+  'The app helps you observe patterns. It does not diagnose, treat, or replace a dermatologist or other qualified clinician.':
+      'يساعدك التطبيق على ملاحظة الأنماط. لا يشخّص أو يعالج، ولا يحلّ محل طبيب الجلدية أو أي مختص مؤهل.',
+  'Change one thing at a time': 'غيّر شيئًا واحدًا في كل مرة',
+  'Patch test new products first. Introduce one product per experiment so you can identify what caused a change.':
+      'اختبر المنتجات الجديدة على مساحة صغيرة أولًا. أدخل منتجًا واحدًا في كل تجربة لتتمكن من معرفة سبب التغيّر.',
+  'Stop if irritation appears': 'توقّف عند ظهور تهيّج',
+  'Stop the experiment if you develop burning, swelling, severe redness, blistering, or rapidly worsening symptoms.':
+      'أوقف التجربة إذا ظهر حرقان أو تورّم أو احمرار شديد أو بثور أو أعراض تتفاقم بسرعة.',
+  'Know when to seek care': 'اعرف متى تطلب الرعاية',
+  'Seek urgent medical help for trouble breathing, facial swelling, widespread hives, eye involvement, or another severe reaction.':
+      'اطلب مساعدة طبية عاجلة عند صعوبة التنفّس أو تورّم الوجه أو طفح منتشر أو تأثّر العين أو أي تفاعل شديد آخر.',
+  'Protect your information': 'احمِ معلوماتك',
+  'Use the app on your own device, secure your account, and avoid including identifying information in notes you plan to share.':
+      'استخدم التطبيق على جهازك الشخصي، وأمّن حسابك، وتجنّب ذكر معلومات تحدد هويتك في الملاحظات التي تخطط لمشاركتها.',
+};

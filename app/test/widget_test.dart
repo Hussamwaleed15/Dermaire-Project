@@ -52,13 +52,8 @@ void main() {
           button.onPressed!();
           await tester.pump();
           expect(requests, 1);
-          expect(find.text('Please wait...'), findsOneWidget);
-          expect(
-            tester
-                .widget<FilledButton>(find.byKey(const Key('signInButton')))
-                .onPressed,
-            isNull,
-          );
+          expect(find.text('Signing you in…'), findsOneWidget);
+          expect(find.byKey(const Key('signInButton')), findsNothing);
           if (body == 'network') {
             pending.completeError(http.ClientException('Connection refused'));
           } else {
@@ -72,6 +67,12 @@ void main() {
           await tester.pump();
           await tester.pump(const Duration(seconds: 1));
           final success = body.contains('login-token');
+          if (success) {
+            expect(find.byType(AppShell), findsNothing);
+            expect(find.text('You’re ready to continue'), findsOneWidget);
+            await tester.tap(find.byKey(const Key('continueEntry')));
+            await tester.pumpAndSettle();
+          }
           expect(
             find.byType(AppShell),
             success ? findsOneWidget : findsNothing,
@@ -117,7 +118,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Dermaire'), findsOneWidget);
-    expect(find.text('Start my skin experiment'), findsOneWidget);
+    expect(find.text('Create account'), findsOneWidget);
 
     await tester.tap(find.byKey(const Key('themeToggle')));
     await tester.pumpAndSettle();
@@ -141,7 +142,9 @@ void main() {
         await tester.tap(find.byKey(const Key('startExperimentButton')));
         await tester.pumpAndSettle();
 
-        await tester.drag(find.byType(ListView).last, const Offset(0, -600));
+        await tester.ensureVisible(
+          find.byKey(const Key('createAccountButton')),
+        );
         await tester.pumpAndSettle();
         await tester.tap(find.byKey(const Key('createAccountButton')));
         await tester.pump();
@@ -184,9 +187,10 @@ void main() {
 
         await tester.tap(find.byKey(const Key('acceptSafetyButton')));
         await tester.pumpAndSettle();
-        expect(find.text('Account created'), findsOneWidget);
+        expect(find.byType(AccountCreatedScreen), findsOneWidget);
+        expect(find.text('You’re ready to continue'), findsOneWidget);
 
-        await tester.tap(find.text('Start my skin experiment'));
+        await tester.tap(find.byKey(const Key('continueRegistration')));
         await tester.pumpAndSettle();
         expect(find.text('Tell us about your skin'), findsOneWidget);
         expect(find.text('Skin type (optional)'), findsOneWidget);
@@ -227,6 +231,7 @@ void main() {
 
         expect(find.text('Sign in'), findsWidgets);
         expect(find.text('Continue with Google'), findsOneWidget);
+        await tester.ensureVisible(find.text('Forgot password?'));
         await tester.tap(find.text('Forgot password?'));
         await tester.pumpAndSettle();
         expect(find.text('Forgot password'), findsOneWidget);
@@ -284,13 +289,8 @@ void main() {
         button.onPressed!();
         await tester.pump();
         expect(requests, 1);
-        expect(find.text('Please wait...'), findsOneWidget);
-        expect(
-          tester
-              .widget<FilledButton>(find.byKey(const Key('acceptSafetyButton')))
-              .onPressed,
-          isNull,
-        );
+        expect(find.text('Confirming your acceptance…'), findsOneWidget);
+        expect(find.byKey(const Key('acceptSafetyButton')), findsNothing);
         pending.complete(
           http.Response('{"message":"Email already registered"}', 409),
         );

@@ -527,6 +527,11 @@ void main() {
             expectSync(reads, 1);
             expectSync(state.userName, 'Synthetic a');
             expectSync(state.userRole, 'patient');
+            if (flow != 'register') {
+              expectSync(find.byType(AppShell), findsNothing);
+              await tester.tap(find.byKey(const Key('continueEntry')));
+              await tester.pumpAndSettle();
+            }
             expectSync(
               find.byType(flow == 'register' ? AccountCreatedScreen : AppShell),
               findsOneWidget,
@@ -869,6 +874,9 @@ void main() {
           expectSync(find.byType(AppShell), findsNothing);
           expectSync(state.userName, isEmpty);
           await tester.tap(find.byKey(const Key('retryAccountProfile')));
+          await tester.pumpAndSettle();
+          expectSync(find.byType(AppShell), findsNothing);
+          await tester.tap(find.byKey(const Key('continueEntry')));
           await tester.pumpAndSettle();
           expectSync(find.byType(AppShell), findsOneWidget);
           expectSync(state.userName, 'Synthetic a');

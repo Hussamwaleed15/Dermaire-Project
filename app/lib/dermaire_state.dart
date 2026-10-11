@@ -52,6 +52,13 @@ class DermaireState extends ChangeNotifier {
   late final ExperimentController experiments;
   static const _darkModeKey = 'dermaire_dark_mode';
 
+  Locale locale = const Locale('en');
+
+  void toggleLanguage() {
+    locale = Locale(locale.languageCode == 'en' ? 'ar' : 'en');
+    notifyListeners();
+  }
+
   ThemeMode themeMode = ThemeMode.light;
   bool get safetyAccepted => ApiService.instance.hasConfirmedSafetyAcceptance;
   int selectedTab = 0;

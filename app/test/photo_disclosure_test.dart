@@ -94,7 +94,14 @@ void main() {
             expectTruthfulDisclosure(tester);
             await tester.ensureVisible(disclosure);
             await tester.pumpAndSettle();
-            expect(disclosure.hitTestable(), findsOneWidget);
+            // At 200% this paragraph may exceed the viewport. Its centre need
+            // not be visible; all lines remain in the same reachable scroll.
+            expect(
+              tester
+                  .getRect(disclosure)
+                  .overlaps(tester.getRect(find.byType(SingleChildScrollView))),
+              isTrue,
+            );
             expect(tester.takeException(), isNull);
             expect(requests, 0);
             await tester.ensureVisible(

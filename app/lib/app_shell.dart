@@ -547,7 +547,7 @@ class ProfileTab extends StatelessWidget {
   void _deleteWarning(BuildContext context) => showDialog<void>(
     context: context,
     builder: (dialogContext) => AlertDialog(
-      backgroundColor: DermaireColors.card,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       title: const Text('Delete account?'),
       content: const Text(
         'This will permanently delete your account, skin history, and photos from Azure PostgreSQL and Azure Blob Storage. This action cannot be undone.',
@@ -558,7 +558,7 @@ class ProfileTab extends StatelessWidget {
           child: const Text('Cancel'),
         ),
         FilledButton(
-          style: FilledButton.styleFrom(backgroundColor: DermaireColors.conflict),
+          style: FilledButton.styleFrom(backgroundColor: DermaireColors.conflict, foregroundColor: Colors.white),
           onPressed: () async {
             Navigator.pop(dialogContext);
             showDermaireSnack(context, 'Deleting your account from Azure cloud…');
@@ -650,8 +650,8 @@ class HowItWorksScreen extends StatelessWidget {
             children: [
               CircleAvatar(
                 radius: 14,
-                backgroundColor: DermaireColors.deep,
-                foregroundColor: Colors.white,
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                foregroundColor: Theme.of(context).colorScheme.onPrimary,
                 child: Text(
                   step.$1,
                   style: const TextStyle(
@@ -850,7 +850,7 @@ class _CameraScreenState extends State<CameraScreen> {
         Notice(icon: '⚠️', text: _errorMessage!, color: DermaireColors.unknownBackground),
       const SizedBox(height: 8),
       FilledButton(
-        style: FilledButton.styleFrom(backgroundColor: DermaireColors.deep),
+        style: FilledButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.primary),
         onPressed: _isUploading ? null : _submitPhoto,
         child: _isUploading
             ? const SizedBox(
