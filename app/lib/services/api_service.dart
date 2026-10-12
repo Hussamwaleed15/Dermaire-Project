@@ -7,6 +7,8 @@ import '../observations/observation_models.dart';
 import '../capture/photo_preparation.dart';
 import '../capture/guided_capture_models.dart';
 import '../capture/capture_history_models.dart';
+import '../psm/psm_models.dart';
+import '../psm/psm_controller.dart' show PsmReadException;
 import 'package:http_parser/http_parser.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
@@ -186,6 +188,24 @@ class ApiService extends ChangeNotifier {
     final bytes = builder.takeBytes();
     _guardGuidedCapture(generation);
     return PrivateImageBytes(bytes, response.headers['content-type'] ?? '');
+  }
+
+  Future<PersonalSkinModel> readPersonalSkinModel(int generation) async {
+    void guard() {
+      if (!isCurrentSession(generation) || !canReadPatientClinicalStatus) {
+        throw ApiException('Session changed. Reopen your skin evidence after sign-in.');
+      }
+    }
+    guard();
+    final owner = _sessionUserId!;
+    final request = http.Request('GET',Uri.parse('$baseUrl/personal-skin-model'));
+    request.headers.addAll(_headers(false));
+    request.followRedirects = false;
+    final response = await _client.send(request).then(http.Response.fromStream)
+        .timeout(const Duration(seconds: 20));
+    guard();
+    if (response.statusCode != 200) throw PsmReadException(response.statusCode);
+    return PersonalSkinModel.fromApi(jsonDecode(response.body) as Map<String, dynamic>, owner: owner);
   }
 
   static const String _tokenKey = 'dermaire_jwt_token';

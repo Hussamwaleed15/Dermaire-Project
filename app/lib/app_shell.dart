@@ -11,6 +11,7 @@ import 'dermaire_theme.dart';
 import 'dermaire_widgets.dart';
 import 'products/products_ui.dart';
 import 'services/api_service.dart';
+import 'psm/psm_screen.dart';
 
 class AppShell extends StatelessWidget {
   const AppShell({super.key, required this.state});
@@ -142,7 +143,10 @@ class ReportsTab extends StatelessWidget {
   final DermaireState state;
   @override
   Widget build(BuildContext context) =>
-      ExperimentsView(controller: state.experiments);
+      ExperimentsView(
+        controller: state.experiments,
+        header: PersonalSkinModelEntry(state: state),
+      );
 }
 
 class ResultsScreen extends StatelessWidget {
