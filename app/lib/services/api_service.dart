@@ -1,10 +1,12 @@
 import 'dart:convert';
 import 'dart:async';
+import 'dart:typed_data';
 import '../account/account_profile.dart';
 import '../clinical/clinical_models.dart';
 import '../observations/observation_models.dart';
 import '../capture/photo_preparation.dart';
 import '../capture/guided_capture_models.dart';
+import '../capture/capture_history_models.dart';
 import 'package:http_parser/http_parser.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
@@ -108,7 +110,7 @@ class ApiService extends ChangeNotifier {
         .timeout(const Duration(seconds: 20));
     _guardGuidedCapture(generation);
     if (response.statusCode != 200) {
-      throw ApiException('Capture information could not be read.');
+      throw PrivateCaptureException(response.statusCode);
     }
     return jsonDecode(response.body) as Map<String, dynamic>;
   }
@@ -143,6 +145,47 @@ class ApiService extends ChangeNotifier {
       await _readCaptureResource('measurements/$id', generation),
       captureId: id,
     );
+  }
+
+  Future<List<GuidedCaptureRecord>> readPrivateCaptureHistory(
+    int generation,
+  ) async {
+    _guardGuidedCapture(generation);
+    final owner = _sessionUserId!;
+    final response = await _client
+        .get(Uri.parse('$baseUrl/captures?limit=100'), headers: _headers(false))
+        .timeout(const Duration(seconds: 20));
+    _guardGuidedCapture(generation);
+    if (response.statusCode != 200) {
+      throw PrivateCaptureException(response.statusCode);
+    }
+    return parseCaptureHistory(jsonDecode(response.body), owner);
+  }
+
+  Future<PrivateImageBytes> readPrivateCaptureImage(
+    String id,
+    int generation,
+  ) async {
+    _guardGuidedCapture(generation);
+    if (!RegExp(r'^[A-Za-z0-9_-]+$').hasMatch(id)) {
+      throw ArgumentError('Invalid capture identity');
+    }
+    final request = _PrivateImageRequest(
+      Uri.parse('$baseUrl/captures/$id/image'),
+    );
+    request.headers.addAll(_headers(false));
+    final response = await _client.send(request);
+    _guardGuidedCapture(generation);
+    if (response.statusCode != 200) {
+      throw PrivateCaptureException(response.statusCode);
+    }
+    final builder = BytesBuilder(copy: false);
+    await for (final chunk in response.stream) {
+      builder.add(chunk);
+    }
+    final bytes = builder.takeBytes();
+    _guardGuidedCapture(generation);
+    return PrivateImageBytes(bytes, response.headers['content-type'] ?? '');
   }
 
   static const String _tokenKey = 'dermaire_jwt_token';
@@ -1099,6 +1142,10 @@ class ApiService extends ChangeNotifier {
   }
 }
 
+class _PrivateImageRequest extends http.Request {
+  _PrivateImageRequest(Uri uri) : super('GET', uri) { followRedirects = false; }
+}
+
 class _SessionClient extends http.BaseClient {
   @override
   Future<http.StreamedResponse> send(http.BaseRequest request) async {
@@ -1107,10 +1154,49 @@ class _SessionClient extends http.BaseClient {
     final client = http.Client();
     http.StreamedResponse response;
     try {
-      final streamed = await client.send(request).timeout(const Duration(seconds: 60));
-      final bytes = await streamed.stream.toBytes().timeout(const Duration(seconds: 60));
-      response = http.StreamedResponse(Stream.value(bytes), streamed.statusCode,
-          headers: streamed.headers, request: request, reasonPhrase: streamed.reasonPhrase);
+      if (request is _PrivateImageRequest) {
+        final api = ApiService.instance;
+        void sessionChanged() {
+          if (!api.isCurrentSession(generation) || !api.canReadPatientClinicalStatus) client.close();
+        }
+        api.addListener(sessionChanged);
+        try {
+          response = await (() async {
+            final streamed = await client.send(request);
+            if (!api.isCurrentSession(generation) || !api.canReadPatientClinicalStatus) {
+              throw ApiException('Session changed. Please try again');
+            }
+            // Errors need no body. In particular, a current 401 must invalidate
+            // the session even if an error body stalls or exceeds the byte cap.
+            if (streamed.statusCode != 200) {
+              return http.StreamedResponse(const Stream.empty(), streamed.statusCode,
+                headers: streamed.headers, request: request);
+            }
+            if ((streamed.contentLength ?? 0) > maxPrivateImageBytes) {
+              throw const FormatException('Private image exceeds the memory limit');
+            }
+            final builder = BytesBuilder(copy: false);
+            await for (final chunk in streamed.stream) {
+              if (!api.isCurrentSession(generation) || !api.canReadPatientClinicalStatus) {
+                throw ApiException('Session changed. Please try again');
+              }
+              if (builder.length + chunk.length > maxPrivateImageBytes) {
+                throw const FormatException('Private image exceeds the memory limit');
+              }
+              builder.add(chunk);
+            }
+            return http.StreamedResponse(Stream.value(builder.takeBytes()), 200,
+              headers: streamed.headers, request: request);
+          })().timeout(const Duration(seconds: 20));
+        } finally {
+          api.removeListener(sessionChanged);
+        }
+      } else {
+        final streamed = await client.send(request).timeout(const Duration(seconds: 60));
+        final bytes = await streamed.stream.toBytes().timeout(const Duration(seconds: 60));
+        response = http.StreamedResponse(Stream.value(bytes), streamed.statusCode,
+            headers: streamed.headers, request: request, reasonPhrase: streamed.reasonPhrase);
+      }
     } finally {
       client.close();
     }

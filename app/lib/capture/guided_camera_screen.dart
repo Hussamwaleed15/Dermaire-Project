@@ -6,6 +6,7 @@ import '../clinical/clinical_ui.dart';
 import '../entry/entry_motion.dart';
 import '../services/api_service.dart';
 import 'camera_session.dart';
+import 'capture_history_screen.dart';
 import 'native_camera_port.dart';
 import 'photo_preparation.dart';
 import 'dart:typed_data';
@@ -39,6 +40,17 @@ class GuidedCaptureEntry extends StatelessWidget {
             },
             icon: const Icon(Icons.camera_alt_outlined),
             label: const Text('Open guided camera'),
+          ),
+          OutlinedButton.icon(
+            key: const Key('openPrivateCaptureHistory'),
+            onPressed: () {
+              if (ApiService.instance.isCurrentSession(generation) &&
+                  ApiService.instance.canReadPatientClinicalStatus) {
+                openEntry(context, CaptureHistoryScreen(state: state));
+              }
+            },
+            icon: const Icon(Icons.photo_library_outlined),
+            label: const Text('Private image history'),
           ),
         ],
       ),
@@ -85,7 +97,10 @@ class _GuidedCameraScreenState extends State<GuidedCameraScreen>
       widget.cameraPort ??
           NativeCameraPort(
             onFailure: (failure) => camera.deviceFailed(failure),
-            canInitialize: () => current && !camera.backgrounded,
+            canInitialize: () =>
+                current &&
+                !camera.backgrounded &&
+                ModalRoute.of(context)?.isCurrent == true,
           ),
       allowed: () => current && capture.canChoose,
       prepare: widget.prepare,
@@ -163,6 +178,7 @@ class _GuidedCameraScreenState extends State<GuidedCameraScreen>
     if (value == AppLifecycleState.resumed) {
       camera.foreground();
       if (current &&
+          ModalRoute.of(context)?.isCurrent == true &&
           camera.phase == CameraSessionPhase.paused &&
           camera.requestedCamera &&
           capture.phase == GuidedCapturePhase.ready) {
@@ -285,6 +301,23 @@ class _GuidedCameraScreenState extends State<GuidedCameraScreen>
                 children: [
                   ClinicalHomePanel(controller: widget.state.clinical),
                   const SizedBox(height: 16),
+                  if (capture.phase != GuidedCapturePhase.uploading)
+                    OutlinedButton.icon(
+                      key: const Key('captureOpenHistory'),
+                      onPressed: camera.busy
+                          ? null
+                          : () {
+                              if (current) {
+                                camera.invalidate();
+                                openEntry(
+                                  context,
+                                  CaptureHistoryScreen(state: widget.state),
+                                );
+                              }
+                            },
+                      icon: const Icon(Icons.photo_library_outlined),
+                      label: const Text('View private image history'),
+                    ),
                   if (capture.phase == GuidedCapturePhase.confirmed &&
                       capture.record != null)
                     CaptureResult(
