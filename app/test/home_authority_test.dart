@@ -7,17 +7,38 @@ import 'package:http/testing.dart';
 import 'package:dermaire_app/home_controller.dart';
 import 'package:dermaire_app/dermaire_state.dart';
 import 'package:dermaire_app/app_shell.dart';
+import 'package:dermaire_app/services/api_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'observation_test.dart' as observation;
+import 'clinical_status_test.dart' as clinical;
+import 'baseline_authority_test.dart' as baseline;
 
 Map<String, dynamic> snapshot() => {
   'as_of': DateTime.now().toUtc().toIso8601String(),
   'date': DateTime.now().toUtc().toIso8601String().split('T').first,
   'today_checked_in': true,
-  'experiment': {'id': 'server-exp', 'status': 'paused', 'current_day': 4,
-    'target_days': 14, 'primary_concern': 'redness', 'product_name': 'Server product',
-    'redness_delta_percent': -50, 'texture_delta_percent': 25, 'hydration_delta_percent': null},
-  'journal': [{'id': 'server-checkin', 'created_at': '2026-01-01T12:00:00',
-    'time_of_day': 'Evening', 'measurement_source': 'manual',
-    'hydration_score': 80, 'texture_score': 75, 'redness_score': 10}],
+  'experiment': {
+    'id': 'server-exp',
+    'status': 'paused',
+    'current_day': 4,
+    'target_days': 14,
+    'primary_concern': 'redness',
+    'product_name': 'Server product',
+    'redness_delta_percent': -50,
+    'texture_delta_percent': 25,
+    'hydration_delta_percent': null,
+  },
+  'journal': [
+    {
+      'id': 'server-checkin',
+      'created_at': '2026-01-01T12:00:00',
+      'time_of_day': 'Evening',
+      'measurement_source': 'manual',
+      'hydration_score': 80,
+      'texture_score': 75,
+      'redness_score': 10,
+    },
+  ],
 };
 
 class Repository implements HomeRepository {
@@ -33,40 +54,62 @@ class Repository implements HomeRepository {
 }
 
 void main() {
-  test('refresh, restart, failures and empty state follow server only', () async {
-    final repo = Repository();
-    final home = HomeController(repo);
-    expect(await home.refresh(), true);
-    expect(home.current!['experiment']['current_day'], 4);
-    home.current!['experiment']['current_day'] = 99;
-    expect(home.current!['experiment']['current_day'], 4);
-    repo.pending = Completer();
-    final refresh = home.refresh();
-    expect(home.current, isNull);
-    repo.pending!.completeError(Exception('offline'));
-    expect(await refresh, false);
-    expect(home.current, isNull);
-    repo.pending = null;
-    repo.data = {...snapshot(), 'experiment': null, 'journal': [], 'today_checked_in': false};
-    expect(await home.refresh(), true);
-    expect(home.current!['experiment'], isNull);
-    home.dispose();
-    final restarted = HomeController(repo);
-    expect(restarted.current, isNull);
-    expect(await restarted.refresh(), true);
-    expect(restarted.current!['journal'], isEmpty);
-    restarted.dispose();
-  });
+  test(
+    'refresh, restart, failures and empty state follow server only',
+    () async {
+      final repo = Repository();
+      final home = HomeController(repo);
+      expect(await home.refresh(), true);
+      expect(home.current!['experiment']['current_day'], 4);
+      home.current!['experiment']['current_day'] = 99;
+      expect(home.current!['experiment']['current_day'], 4);
+      repo.pending = Completer();
+      final refresh = home.refresh();
+      expect(home.current, isNull);
+      repo.pending!.completeError(Exception('offline'));
+      expect(await refresh, false);
+      expect(home.current, isNull);
+      repo.pending = null;
+      repo.data = {
+        ...snapshot(),
+        'experiment': null,
+        'journal': [],
+        'today_checked_in': false,
+      };
+      expect(await home.refresh(), true);
+      expect(home.current!['experiment'], isNull);
+      home.dispose();
+      final restarted = HomeController(repo);
+      expect(restarted.current, isNull);
+      expect(await restarted.refresh(), true);
+      expect(restarted.current!['journal'], isEmpty);
+      restarted.dispose();
+    },
+  );
 
   test('malformed or stale data never confirms Home', () async {
     final repo = Repository();
     final home = HomeController(repo);
     for (final bad in [
-      {...snapshot(), 'experiment': {'id': 'fake'}},
-      {...snapshot(), 'journal': [{'id': 'seed'}]},
+      {
+        ...snapshot(),
+        'experiment': {'id': 'fake'},
+      },
+      {
+        ...snapshot(),
+        'journal': [
+          {'id': 'seed'},
+        ],
+      },
       {...snapshot(), 'date': '2000-01-01'},
       {...snapshot(), 'today_checked_in': null},
-      {...snapshot(), 'experiment': {...snapshot()['experiment'], 'texture_delta_percent': double.nan}},
+      {
+        ...snapshot(),
+        'experiment': {
+          ...snapshot()['experiment'],
+          'texture_delta_percent': double.nan,
+        },
+      },
     ]) {
       repo.data = bad;
       expect(await home.refresh(), false);
@@ -95,50 +138,118 @@ void main() {
     state.dispose();
   });
 
-  test('HTTP server failures throw instead of returning empty success', () async {
-    var status = 200;
-    await http.runWithClient(() async {
-      final repo = RemoteHomeRepository();
-      expect((await repo.read())['today_checked_in'], true);
-      for (final code in [401, 403, 500, 503]) {
-        status = code;
-        await expectLater(repo.read(), throwsException);
-      }
-    }, () => MockClient((request) async {
-      expect(request.url.path, '/api/v1/home');
-      return http.Response(jsonEncode(snapshot()), status);
-    }));
-  });
+  test(
+    'HTTP server failures throw instead of returning empty success',
+    () async {
+      var status = 200;
+      await http.runWithClient(
+        () async {
+          final repo = RemoteHomeRepository();
+          expect((await repo.read())['today_checked_in'], true);
+          for (final code in [401, 403, 500, 503]) {
+            status = code;
+            await expectLater(repo.read(), throwsException);
+          }
+        },
+        () => MockClient((request) async {
+          expect(request.url.path, '/api/v1/home');
+          return http.Response(jsonEncode(snapshot()), status);
+        }),
+      );
+    },
+  );
 
-  testWidgets('Home displays server facts and removes stale facts on failure', (tester) async {
+  testWidgets('Home displays server facts and removes stale facts on failure', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
     final repo = Repository();
-    final state = DermaireState(homeRepository: repo);
-    state.experimentDay = 99;
-    state.journal.add(const JournalEntry('Today', 'Morning', 'Fake private values'));
-    await state.home.refresh();
-    await tester.pumpWidget(MaterialApp(home: Scaffold(body: AnimatedBuilder(
-      animation: state, builder: (_, _) => HomeTab(state: state)))));
-    expect(find.text('Day 4 of 14'), findsOneWidget);
-    expect(find.text('Testing: Server product · redness'), findsOneWidget);
-    expect(find.text('-50.0%'), findsOneWidget);
-    expect(find.text('Completed'), findsOneWidget);
-    expect(find.textContaining('Fake private'), findsNothing);
-    repo.fail = true;
-    await tester.tap(find.text('Refresh Home'));
-    await tester.pumpAndSettle();
-    expect(find.text('Day 4 of 14'), findsNothing);
-    expect(find.text('-50.0%'), findsNothing);
-    expect(find.text('Completed'), findsNothing);
-    expect(find.text('Progress unconfirmed'), findsOneWidget);
-    expect(find.textContaining('Home unavailable'), findsOneWidget);
-    repo.fail = false;
-    repo.data = {...snapshot(), 'experiment': null, 'journal': [], 'today_checked_in': false};
-    await state.home.refresh();
-    await tester.pump();
-    expect(find.text('No current experiment'), findsOneWidget);
-    await tester.scrollUntilVisible(find.text('No confirmed journal entries'), 200);
-    expect(find.text('No confirmed journal entries'), findsOneWidget);
-    await tester.pumpWidget(const SizedBox());
-    state.dispose();
+    final state = DermaireState(
+      homeRepository: repo,
+      baselineRepository: baseline.FakeBaseline(),
+    );
+    await http.runWithClient(
+      () async {
+        await observation.login('a');
+        await state.account.hydrate();
+        state.experimentDay = 99;
+        state.journal.add(
+          const JournalEntry('Today', 'Morning', 'Fake private values'),
+        );
+        await state.refreshPatientHome(
+          generation: ApiService.instance.sessionGeneration,
+        );
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(body: HomeTab(state: state)),
+          ),
+        );
+        await tester.pumpAndSettle();
+        await tester.scrollUntilVisible(find.text('Day 4 of 14'), 200);
+        expect(find.text('Day 4 of 14'), findsOneWidget);
+        expect(find.text('Testing: Server product · redness'), findsOneWidget);
+        // Home's legacy deltas lack provenance; no improvement/completion claim.
+        expect(find.text('-50.0%'), findsNothing);
+        expect(find.text('Completed'), findsNothing);
+        expect(
+          find.text('Confirmed tracking measurement recorded today (UTC)'),
+          findsOneWidget,
+        );
+        expect(find.textContaining('Fake private'), findsNothing);
+        repo.fail = true;
+        await tester.scrollUntilVisible(find.text('Refresh Home'), 200);
+        await tester.tap(find.text('Refresh Home'));
+        await tester.pumpAndSettle();
+        await tester.scrollUntilVisible(
+          find.textContaining('Home unavailable'),
+          -200,
+        );
+        expect(find.text('Day 4 of 14'), findsNothing);
+        expect(
+          find.text('Confirmed tracking measurement recorded today (UTC)'),
+          findsNothing,
+        );
+        expect(find.textContaining('Home unavailable'), findsOneWidget);
+        repo.fail = false;
+        repo.data = {
+          ...snapshot(),
+          'experiment': null,
+          'journal': [],
+          'today_checked_in': false,
+        };
+        await state.home.refresh();
+        await tester.pump();
+        expect(find.text('No current experiment'), findsOneWidget);
+        expect(
+          find.text('No confirmed tracking measurement recorded today (UTC)'),
+          findsOneWidget,
+        );
+        await tester.scrollUntilVisible(
+          find.text('No saved observations in server history.'),
+          200,
+        );
+        expect(
+          find.text('No saved observations in server history.'),
+          findsOneWidget,
+        );
+        await tester.pumpWidget(const SizedBox());
+        state.dispose();
+        await ApiService.instance.init();
+      },
+      () => observation.isolated((r) async {
+        if (r.url.path.endsWith('/auth/login')) return observation.auth('a');
+        if (r.url.path.endsWith('/users/me')) return observation.user('a');
+        if (r.url.path.endsWith('/checkins')) {
+          return observation.jsonResponse([]);
+        }
+        if (r.url.path.endsWith('/safety')) {
+          return observation.jsonResponse(clinical.safety());
+        }
+        if (r.url.path.endsWith('/doctor/review-status')) {
+          return observation.jsonResponse(clinical.review());
+        }
+        throw StateError('Unexpected fixture request');
+      }),
+    );
   });
 }

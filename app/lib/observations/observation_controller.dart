@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import '../services/api_service.dart';
 import 'observation_models.dart';
@@ -57,6 +58,17 @@ class ObservationController extends ChangeNotifier {
   ObservationHistoryPhase historyPhase = ObservationHistoryPhase.empty;
   String? message, historyError;
   bool historyStale = false, confirmedByHistory = false;
+  DateTime? historyRetrievedAt;
+  void markHistoryStale() {
+    if (_disposed || !current) return;
+    _historyRevision++;
+    historyStale = _history != null;
+    historyPhase = _history == null
+        ? ObservationHistoryPhase.empty
+        : ObservationHistoryPhase.ready;
+    notifyListeners();
+  }
+
   bool get allowed => !_disposed && api.canReadPatientClinicalStatus;
   bool get current => allowed && api.isCurrentSession(_session ?? -1);
   ObservationDraft get draft => current ? _draft : ObservationDraft();
@@ -206,7 +218,9 @@ class ObservationController extends ChangeNotifier {
     historyError = null;
     notifyListeners();
     try {
-      final records = await repository.history(generation);
+      final records = await repository
+          .history(generation)
+          .timeout(const Duration(seconds: 20));
       if (!current ||
           !api.isCurrentSession(generation) ||
           revision != _historyRevision) {
@@ -217,6 +231,7 @@ class ObservationController extends ChangeNotifier {
         throw const FormatException('Duplicate history identity');
       }
       _history = List.unmodifiable(records);
+      historyRetrievedAt = DateTime.now().toUtc();
       historyPhase = ObservationHistoryPhase.ready;
       historyStale = false;
       notifyListeners();
@@ -270,6 +285,7 @@ class ObservationController extends ChangeNotifier {
     _submitted = null;
     _saved = null;
     _history = null;
+    historyRetrievedAt = null;
     _candidateId = null;
     phase = ObservationPhase.ended;
     historyPhase = ObservationHistoryPhase.empty;

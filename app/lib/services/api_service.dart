@@ -786,8 +786,10 @@ class ApiService extends ChangeNotifier {
   }
 
   Future<Map<String, dynamic>> getBaseline() async {
+    final generation = sessionGeneration;
     final res = await _client.get(Uri.parse('$baseUrl/baseline'),
         headers: _headers(false)).timeout(const Duration(seconds: 20));
+    if (generation != sessionGeneration) throw ApiException('Session changed.');
     if (res.statusCode != 200) {
       throw ApiException('Could not load baseline (status ${res.statusCode})');
     }
@@ -810,8 +812,10 @@ class ApiService extends ChangeNotifier {
   }
 
   Future<Map<String, dynamic>> getHome() async {
+    final generation = sessionGeneration;
     final res = await _client.get(Uri.parse('$baseUrl/home'), headers: _headers(false))
         .timeout(const Duration(seconds: 15));
+    if (generation != sessionGeneration) throw ApiException('Session changed.');
     if (res.statusCode != 200) throw ApiException('Home unavailable');
     return jsonDecode(res.body) as Map<String, dynamic>;
   }

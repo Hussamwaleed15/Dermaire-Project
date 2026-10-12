@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'chatbot.dart';
 import 'clinical/clinical_ui.dart';
+import 'home/patient_home.dart';
 import 'observations/observation_ui.dart';
 import 'account/account_summary.dart';
 import 'experiments/experiment_ui.dart';
@@ -81,16 +82,15 @@ class AppShell extends StatelessWidget {
 }
 
 class _TabPage extends StatelessWidget {
-  const _TabPage({required this.children, this.header});
+  const _TabPage({required this.children});
   final List<Widget> children;
-  final Widget? header;
 
   @override
   Widget build(BuildContext context) => SafeArea(
     bottom: false,
     child: ListView(
       padding: const EdgeInsets.fromLTRB(20, 22, 20, 28),
-      children: [?header, ...children],
+      children: children,
     ),
   );
 }
@@ -98,176 +98,11 @@ class _TabPage extends StatelessWidget {
 class HomeTab extends StatelessWidget {
   const HomeTab({super.key, required this.state});
   final DermaireState state;
-
   @override
-  Widget build(BuildContext context) {
-    final snapshot = state.home.current;
-    final experiment = snapshot?['experiment'] as Map?;
-    final entries = snapshot?['journal'] as List? ?? [];
-    String delta(String key) {
-      final value = experiment?[key] as num?;
-      return value == null ? 'Unavailable' : '${value > 0 ? '+' : ''}${value.toStringAsFixed(1)}%';
-    }
-    return _TabPage(
-      header: Padding(
-        padding: const EdgeInsets.only(bottom: 16),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              state.userName.isEmpty ? 'Welcome' : 'Welcome, ${state.userName.split(" ").first} 🌿',
-              style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
-            ),
-            Text(
-              '${DateTime.now().year}-${DateTime.now().month.toString().padLeft(2, '0')}-${DateTime.now().day.toString().padLeft(2, '0')}',
-              style: TextStyle(
-                fontSize: 11,
-                color: DermaireColors.ink.withValues(alpha: .55),
-              ),
-            ),
-          ],
-        ),
-      ),
-      children: [
-        ClinicalHomePanel(controller: state.clinical),
-        const SizedBox(height: 12),
-        if (snapshot == null)
-          Notice(icon: 'ℹ️', text: state.home.loading ? 'Loading Home…' :
-            state.home.error ?? 'Home unconfirmed. Refresh to load current data.')
-        else if (experiment == null)
-          const Notice(icon: 'ℹ️', text: 'No current experiment')
-        else ...[
-          Text('Day ${experiment['current_day']} of ${experiment['target_days']}',
-            style: Theme.of(context).textTheme.headlineSmall),
-          const SizedBox(height: 6),
-          Text('Testing: ${experiment['product_name'] ?? 'No linked product'} · ${experiment['primary_concern']}'),
-          Text('Status: ${experiment['status']}'),
-          const SizedBox(height: 13),
-          LinearProgressIndicator(value: (experiment['current_day'] as int) /
-              (experiment['target_days'] as int)),
-        ],
-        OutlinedButton(
-          onPressed: state.home.loading ? null : state.home.refresh,
-          child: const Text('Refresh Home'),
-        ),
-        const SizedBox(height: 16),
-        Row(children: [
-          Expanded(child: MetricTile(delta('redness_delta_percent'), 'Redness vs baseline')),
-          const SizedBox(width: 10),
-          Expanded(child: MetricTile(delta('texture_delta_percent'), 'Texture vs baseline')),
-        ]),
-        const SizedBox(height: 14),
-        DermaireCard(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          (snapshot?['today_checked_in'] == true)
-                              ? "✓ Today's check-in"
-                              : "🟢 Today's check-in",
-                          style: const TextStyle(fontWeight: FontWeight.w700),
-                        ),
-                        Text(
-                          (snapshot?['today_checked_in'] == true)
-                              ? 'Completed'
-                              : snapshot != null ? 'Not yet completed' : 'Progress unconfirmed',
-                          style: const TextStyle(fontSize: 11.5),
-                        ),
-                      ],
-                    ),
-                  ),
-                  if ((snapshot?['today_checked_in'] == true)) const StatusPill('Done'),
-                ],
-              ),
-              if (!(snapshot?['today_checked_in'] == true)) ...[
-                const SizedBox(height: 12),
-                FilledButton(
-                  onPressed: () => openPage(context, CameraScreen(state: state)),
-                  child: const Text('Check in now'),
-                ),
-              ],
-            ],
-          ),
-        ),
-        const Notice(
-          icon: '🌤',
-          text:
-              'Weather is not measured. Context does not currently adjust skin scores.',
-        ),
-        OutlinedButton(
-          onPressed: () => openPage(context, ContextScreen(state: state)),
-          child: const Text("View or edit today's context"),
-        ),
-        OutlinedButton(
-          onPressed: () => openPage(context, TimelineScreen(state: state)),
-          child: const Text('View experiment timeline'),
-        ),
-        const SizedBox(height: 18),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              'Latest journal entries',
-              style: Theme.of(
-                context,
-              ).textTheme.titleLarge?.copyWith(fontSize: 16),
-            ),
-            TextButton(
-              onPressed: () => state.selectTab(2),
-              child: const Text('View products'),
-            ),
-          ],
-        ),
-        if (snapshot != null && entries.isEmpty)
-          const Text('No confirmed journal entries'),
-        ...entries
-            .map(
-              (entry) => DermaireCard(
-                color: DermaireColors.card,
-                child: Row(
-                  children: [
-                    Container(
-                      width: 48,
-                      height: 48,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(12),
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFFEAD3BC), Color(0xFFC9A47E)],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            "${(entry['created_at'] as String).split('T').first} · ${entry['time_of_day']}",
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w700,
-                              fontSize: 13,
-                            ),
-                          ),
-                          Text(
-                            "Hydration: ${entry['hydration_score']} · Redness: ${entry['redness_score']} · Texture: ${entry['texture_score']} (${entry['measurement_source']})",
-                            style: const TextStyle(fontSize: 11.5),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-      ],
-    );
-  }
+  Widget build(BuildContext context) => PatientHome(
+    key: ValueKey(ApiService.instance.sessionGeneration),
+    state: state,
+  );
 }
 
 class ExperimentTab extends StatelessWidget {
@@ -718,17 +553,22 @@ class _ContextScreenState extends State<ContextScreen> {
   bool? unusual;
   final cycle = TextEditingController();
   bool initialized = false;
+  late final int generation;
 
   @override
   void initState() {
     super.initState();
-    widget.state.dailyContext.refresh().then((_) {
-      if (!mounted) return;
-      final value = widget.state.dailyContext.current;
-      setState(() {
-        unusual = value?['unusual_conditions'] as bool?;
-        cycle.text = value?['cycle_day']?.toString() ?? '';
-        initialized = true;
+    generation = ApiService.instance.sessionGeneration;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || generation != ApiService.instance.sessionGeneration) return;
+      widget.state.dailyContext.refresh().then((_) {
+        if (!mounted || generation != ApiService.instance.sessionGeneration) return;
+        final value = widget.state.dailyContext.current;
+        setState(() {
+          unusual = value?['unusual_conditions'] as bool?;
+          cycle.text = value?['cycle_day']?.toString() ?? '';
+          initialized = true;
+        });
       });
     });
   }
@@ -743,6 +583,9 @@ class _ContextScreenState extends State<ContextScreen> {
   Widget build(BuildContext context) => AnimatedBuilder(
     animation: widget.state.dailyContext,
     builder: (context, _) {
+      if (generation != ApiService.instance.sessionGeneration) {
+        return const DermairePage(title: 'Session ended', children: [Text('Reopen context from your current account.')]);
+      }
       final controller = widget.state.dailyContext;
       return DermairePage(
         eyebrow: "Today's context (UTC)",
@@ -772,6 +615,7 @@ class _ContextScreenState extends State<ContextScreen> {
             child: const Text('Refresh server context')),
           FilledButton(
             onPressed: !initialized || controller.loading ? null : () async {
+              if (generation != ApiService.instance.sessionGeneration) return;
               final text = cycle.text.trim();
               final day = text.isEmpty ? null : int.tryParse(text);
               if (text.isNotEmpty && (day == null || day < 1 || day > 60)) {
@@ -779,7 +623,7 @@ class _ContextScreenState extends State<ContextScreen> {
                 return;
               }
               final saved = await controller.save(unusual, day);
-              if (!context.mounted || !saved) return;
+              if (!context.mounted || !saved || generation != ApiService.instance.sessionGeneration) return;
               showDermaireSnack(context, 'Context saved on server');
               Navigator.pop(context);
             }, child: const Text('Save context')),

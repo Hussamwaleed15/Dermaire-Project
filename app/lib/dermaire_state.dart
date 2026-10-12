@@ -69,7 +69,9 @@ class DermaireState extends ChangeNotifier {
   void _observationConfirmed() {
     // Only re-read server projections, never increment Home/baseline locally.
     _refreshObservationSafety();
+    final generation = ApiService.instance.sessionGeneration;
     unawaited(markTodayCheckedIn());
+    unawaited(observations.loadHistory(generation: generation));
   }
 
   late final ObservationController observations;
@@ -165,8 +167,41 @@ class DermaireState extends ChangeNotifier {
 
   // A confirmed write never increments baseline locally. Read its server projection.
   Future<void> markTodayCheckedIn() async {
-    await baseline.refresh();
-    await home.refresh();
+    // Dispatch in this session together; never start a second read after logout.
+    await Future.wait([baseline.refresh(), home.refresh()]);
+  }
+
+  Future<void> refreshPatientHome({
+    required int generation,
+    bool refreshProfile = false,
+  }) async {
+    final api = ApiService.instance;
+    if (!api.canReadPatientClinicalStatus ||
+        !api.isCurrentSession(generation)) {
+      return;
+    }
+    // Independent sections render as soon as they arrive. No local projection.
+    await Future.wait([
+      home.refresh(),
+      baseline.refresh(),
+      observations.loadHistory(generation: generation),
+      clinical.refresh(expectedGeneration: generation),
+      if (refreshProfile) account.hydrate(reuseConsent: false),
+    ]);
+  }
+
+  void resumePatientHome() {
+    if (!ApiService.instance.canReadPatientClinicalStatus) return;
+    home.markStale();
+    baseline.markStale();
+    observations.markHistoryStale();
+    clinical.markStale();
+    unawaited(
+      refreshPatientHome(
+        generation: ApiService.instance.sessionGeneration,
+        refreshProfile: true,
+      ),
+    );
   }
 
   void togglePause() {

@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 
 import 'dermaire_state.dart';
@@ -52,8 +51,7 @@ class _DermaireAppState extends State<DermaireApp> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState status) {
     if (status == AppLifecycleState.resumed && state.clinical.allowed) {
-      state.clinical.markStale();
-      unawaited(state.clinical.refresh());
+      state.resumePatientHome();
     }
   }
 
