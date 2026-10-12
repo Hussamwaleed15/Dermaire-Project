@@ -3,7 +3,7 @@ import '../dermaire_state.dart';
 import '../dermaire_theme.dart';
 import '../dermaire_widgets.dart';
 import '../clinical/clinical_ui.dart';
-import '../capture/capture_panel.dart';
+import '../capture/guided_camera_screen.dart';
 import '../entry/entry_motion.dart';
 import '../services/api_service.dart';
 import 'observation_controller.dart';
@@ -357,7 +357,7 @@ class _ObservationScreenState extends State<ObservationScreen> {
                       : const AnimationStyle(
                           duration: Duration(milliseconds: 180),
                         ),
-                  children: const [CapturePanel()],
+                  children: [GuidedCaptureEntry(state: widget.state)],
                 ),
               ),
               EntryPress(

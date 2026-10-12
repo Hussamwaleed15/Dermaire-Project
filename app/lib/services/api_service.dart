@@ -3,6 +3,8 @@ import 'dart:async';
 import '../account/account_profile.dart';
 import '../clinical/clinical_models.dart';
 import '../observations/observation_models.dart';
+import '../capture/photo_preparation.dart';
+import '../capture/guided_capture_models.dart';
 import 'package:http_parser/http_parser.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
@@ -28,6 +30,119 @@ class ApiService extends ChangeNotifier {
     final response = await _client.get(Uri.parse('$baseUrl/captures'), headers: _headers()).timeout(const Duration(seconds: 30));
     if (response.statusCode != 200) throw ApiException('Capture history unavailable');
     return (jsonDecode(response.body) as List).cast<Map<String, dynamic>>();
+  }
+
+  void _guardGuidedCapture(int generation) {
+    if (!isCurrentSession(generation) || !canReadPatientClinicalStatus) {
+      throw ApiException(
+        'Your session changed. Reopen the photo flow after sign-in.',
+      );
+    }
+  }
+
+  Future<GuidedCaptureRecord> submitGuidedCapture({
+    required PreparedPhoto photo,
+    required String source,
+    required String attemptKey,
+    required int generation,
+  }) async {
+    _guardGuidedCapture(generation);
+    final owner = _sessionUserId!;
+    if (!['camera', 'upload'].contains(source) ||
+        !RegExp(r'^[a-f0-9]{32}$').hasMatch(attemptKey) ||
+        photo.bytes.length > maxPhotoBytes) {
+      throw ArgumentError('Invalid prepared upload');
+    }
+    final request = http.MultipartRequest(
+      'POST',
+      Uri.parse('$baseUrl/captures'),
+    );
+    request.headers.addAll(_headers(false));
+    request.headers['Idempotency-Key'] = attemptKey;
+    request.fields.addAll({'source': source, 'view': 'front'});
+    request.files.add(
+      http.MultipartFile.fromBytes(
+        'photo',
+        Uint8List.fromList(photo.bytes),
+        filename: photo.filename,
+        contentType: MediaType.parse(photo.mime),
+      ),
+    );
+    final response = await _client
+        .send(request)
+        .then(http.Response.fromStream)
+        .timeout(const Duration(seconds: 60));
+    _guardGuidedCapture(generation);
+    if ([400, 403, 409, 413, 415, 422].contains(response.statusCode)) {
+      throw const GuidedCaptureWriteException(CaptureWriteFailure.rejected);
+    }
+    if (response.statusCode != 201) {
+      throw const GuidedCaptureWriteException(CaptureWriteFailure.uncertain);
+    }
+    String? candidate;
+    try {
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      final ref = data['image_reference'];
+      if (data['id'] is String &&
+          RegExp(r'^[A-Za-z0-9_-]+$').hasMatch(data['id'] as String) &&
+          (ref == null ||
+              ref is String && ref.startsWith('skin_photos/$owner/${owner}_'))) {
+        candidate = data['id'] as String;
+      }
+      return GuidedCaptureRecord.fromApi(data, owner: owner);
+    } catch (_) {
+      throw GuidedCaptureWriteException(
+        CaptureWriteFailure.uncertain,
+        candidateId: candidate,
+      );
+    }
+  }
+
+  Future<Map<String, dynamic>> _readCaptureResource(
+    String path,
+    int generation,
+  ) async {
+    _guardGuidedCapture(generation);
+    final response = await _client
+        .get(Uri.parse('$baseUrl/$path'), headers: _headers(false))
+        .timeout(const Duration(seconds: 20));
+    _guardGuidedCapture(generation);
+    if (response.statusCode != 200) {
+      throw ApiException('Capture information could not be read.');
+    }
+    return jsonDecode(response.body) as Map<String, dynamic>;
+  }
+
+  Future<GuidedCaptureRecord> readGuidedCapture({
+    required String id,
+    required int generation,
+  }) async {
+    if (!RegExp(r'^[A-Za-z0-9_-]+$').hasMatch(id)) {
+      throw ArgumentError('Invalid capture identity');
+    }
+    final data = await _readCaptureResource('captures/$id', generation);
+    final record = GuidedCaptureRecord.fromApi(
+      data,
+      owner: _sessionUserId!,
+      readback: true,
+    );
+    if (record.id != id) {
+      throw const FormatException('Capture identity mismatch');
+    }
+    return record;
+  }
+
+  Future<CaptureMeasurement> readCaptureMeasurement({
+    required String id,
+    required int generation,
+  }) async {
+    if (!RegExp(r'^[A-Za-z0-9_-]+$').hasMatch(id)) {
+      throw ArgumentError('Invalid capture identity');
+    }
+    return CaptureMeasurement.fromApi(
+      await _readCaptureResource('measurements/$id', generation),
+      captureId: id,
+    );
   }
 
   static const String _tokenKey = 'dermaire_jwt_token';

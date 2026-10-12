@@ -13,7 +13,7 @@ import 'package:http/testing.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 Finder get disclosure =>
-    find.textContaining('Choosing a photo securely uploads');
+    find.textContaining('private Azure Blob Storage when storage is available');
 
 void expectTruthfulDisclosure(WidgetTester tester) {
   expect(disclosure, findsOneWidget);
@@ -85,6 +85,10 @@ void main() {
             );
             await tester.pumpAndSettle();
             expectTruthfulDisclosure(tester);
+            expect(
+              tester.widget<Text>(disclosure).data,
+              contains('Only Confirm photo & upload'),
+            );
             await tester.ensureVisible(disclosure);
             await tester.pumpAndSettle();
             // At 200% this paragraph may exceed the viewport. Its centre need

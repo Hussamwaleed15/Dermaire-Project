@@ -1,4 +1,4 @@
-import '../capture/photo_disclosure.dart';
+import '../capture/guided_photo_disclosure.dart';
 
 /// Fixed English product copy. Independent of device locale, preferences and
 /// server account state. User-provided text is not translated or modified.
@@ -27,7 +27,7 @@ class EntryCopy {
   String get continueApp => 'Continue to Dermaire';
   String get clinicalDisclaimer =>
       'Sign-in confirmation is not a clinical assessment.';
-  String get disclosure => photoUploadDisclosure;
+  String get disclosure => guidedPhotoDisclosure;
   String get validEmail => 'Enter a valid email address';
   String get passwordRequired => 'Enter your password';
   String get passwordRules =>

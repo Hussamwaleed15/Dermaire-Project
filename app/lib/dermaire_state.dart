@@ -9,6 +9,7 @@ import 'observations/observation_controller.dart';
 import 'experiments/experiment_controller.dart';
 import 'context_controller.dart';
 import 'home_controller.dart';
+import 'capture/guided_capture_controller.dart';
 import 'products/product_repository.dart';
 import 'products/products_controller.dart';
 import 'services/api_service.dart';
@@ -29,7 +30,12 @@ class DermaireState extends ChangeNotifier {
     ExperimentRepository? experimentRepository,
     ClinicalRepository? clinicalRepository,
     ObservationRepository? observationRepository,
+    GuidedCaptureRepository? captureRepository,
   }) {
+    guidedCapture = GuidedCaptureController(
+      ApiService.instance,
+      repository: captureRepository,
+    );
     observations = ObservationController(
       ApiService.instance,
       repository: observationRepository,
@@ -75,6 +81,7 @@ class DermaireState extends ChangeNotifier {
   }
 
   late final ObservationController observations;
+  late final GuidedCaptureController guidedCapture;
 
   Object? _clinicalProfile;
   void _accountChanged() {
@@ -131,6 +138,7 @@ class DermaireState extends ChangeNotifier {
   }
 
   void clearAccountData() {
+    guidedCapture.clear();
     observations.clear();
     clinical.clear();
     _clinicalProfile = null;
@@ -222,6 +230,7 @@ class DermaireState extends ChangeNotifier {
   @override
   void dispose() {
     ApiService.instance.removeListener(clearAccountData);
+    guidedCapture.dispose();
     observations
       ..removeListener(notifyListeners)
       ..dispose();
