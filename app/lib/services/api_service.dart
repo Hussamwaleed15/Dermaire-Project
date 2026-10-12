@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:async';
 import '../account/account_profile.dart';
+import '../clinical/clinical_models.dart';
 import 'package:http_parser/http_parser.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
@@ -56,6 +57,41 @@ class ApiService extends ChangeNotifier {
   bool get hasConfirmedSafetyAcceptance =>
       isCurrentSession(_consentGeneration ?? -1) &&
       _confirmedSafetyAcceptance == true;
+
+  // Presentation guard only; the server still authorizes every patient read.
+  bool get canReadPatientClinicalStatus => isAuthenticated &&
+      hasConfirmedSafetyAcceptance && _sessionRole == 'patient';
+
+  Future<Map<String, dynamic>> _readClinical(String path, int generation) async {
+    if (!isCurrentSession(generation) || !canReadPatientClinicalStatus) {
+      throw ClinicalRequestException('Sign in and confirm safety acceptance to view clinical information.');
+    }
+    final response = await _client.get(Uri.parse('$baseUrl/$path'), headers: _headers(false))
+        .timeout(const Duration(seconds: 20));
+    if (!isCurrentSession(generation) || !canReadPatientClinicalStatus) {
+      throw ClinicalRequestException('Your session changed. Please sign in again.');
+    }
+    if (response.statusCode == 403) {
+      throw ClinicalRequestException('Access to this clinical information was denied. Refresh or sign in again.');
+    }
+    if (response.statusCode != 200) {
+      throw ClinicalRequestException('Clinical information is unavailable. Refresh to confirm the latest information.');
+    }
+    try { return jsonDecode(response.body) as Map<String, dynamic>; }
+    catch (_) { throw ClinicalRequestException('The clinical response could not be verified. Please refresh.'); }
+  }
+
+  Future<SafetyAssessment> getPatientSafety({required int generation}) async =>
+      SafetyAssessment.fromApi(await _readClinical('safety', generation));
+
+  Future<ClinicianReview> getPatientClinicalReview({required int generation}) async {
+    final owner = _sessionUserId;
+    final value = await _readClinical('doctor/review-status', generation);
+    if (owner == null || !isCurrentSession(generation)) {
+      throw ClinicalRequestException('Your session changed. Please sign in again.');
+    }
+    return ClinicianReview.fromApi(value, owner: owner);
+  }
 
   // Invalidate earlier auth attempts before sending another request. Logout
   // increments the same generation even when no token has arrived yet.
@@ -941,4 +977,8 @@ class ApiException implements Exception {
 class ProfileRequestException extends ApiException {
   ProfileRequestException(super.message, {this.unauthorized = false});
   final bool unauthorized;
+}
+
+class ClinicalRequestException extends ApiException {
+  ClinicalRequestException(super.message);
 }

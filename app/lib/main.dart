@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 
 import 'dermaire_state.dart';
@@ -17,7 +18,7 @@ class DermaireApp extends StatefulWidget {
   State<DermaireApp> createState() => _DermaireAppState();
 }
 
-class _DermaireAppState extends State<DermaireApp> {
+class _DermaireAppState extends State<DermaireApp> with WidgetsBindingObserver {
   final navigatorKey = GlobalKey<NavigatorState>();
 
   void _sessionEnded() {
@@ -43,12 +44,22 @@ class _DermaireAppState extends State<DermaireApp> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     ApiService.instance.addListener(_sessionEnded);
     state.loadPreferences();
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState status) {
+    if (status == AppLifecycleState.resumed && state.clinical.allowed) {
+      state.clinical.markStale();
+      unawaited(state.clinical.refresh());
+    }
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     ApiService.instance.removeListener(_sessionEnded);
     state.dispose();
     super.dispose();

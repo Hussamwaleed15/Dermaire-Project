@@ -1,6 +1,8 @@
-import 'package:flutter/material.dart';
+import 'dart:async';
 
+import 'package:flutter/material.dart';
 import 'chatbot.dart';
+import 'clinical/clinical_ui.dart';
 import 'account/account_summary.dart';
 import 'capture/capture_panel.dart';
 import 'experiments/experiment_ui.dart';
@@ -129,6 +131,8 @@ class HomeTab extends StatelessWidget {
         ),
       ),
       children: [
+        ClinicalHomePanel(controller: state.clinical),
+        const SizedBox(height: 12),
         if (snapshot == null)
           Notice(icon: 'ℹ️', text: state.home.loading ? 'Loading Home…' :
             state.home.error ?? 'Home unconfirmed. Refresh to load current data.')
@@ -465,6 +469,7 @@ class ProfileTab extends StatelessWidget {
         ),
       ),
       AccountSummary(account: state.account),
+      OutlinedButton(onPressed: () => openPage(context, ClinicalStatusScreen(controller: state.clinical)), child: const Text('Safety & clinician guidance')),
       ActionCard(
         icon: '👤',
         title: 'Account and skin profile',
@@ -791,6 +796,7 @@ class _CameraScreenState extends State<CameraScreen> {
       _errorMessage = null;
     });
 
+    final generation = ApiService.instance.sessionGeneration;
     Map<String, dynamic>? analysisResult;
     try {
       analysisResult = await ApiService.instance.submitCheckIn(
@@ -809,10 +815,14 @@ class _CameraScreenState extends State<CameraScreen> {
       }
       return;
     }
+    if (!mounted || !ApiService.instance.isCurrentSession(generation)) return;
+    // Refresh clinical readbacks only; never manufacture check-in completion.
+    widget.state.clinical.markStale();
+    unawaited(widget.state.clinical.refresh(expectedGeneration: generation));
     // The write is confirmed; separately confirm baseline progress on the server.
     await widget.state.markTodayCheckedIn();
     if (mounted) setState(() => _isUploading = false);
-    if (!mounted) return;
+    if (!mounted || !ApiService.instance.isCurrentSession(generation)) return;
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(
         builder: (_) => CheckInCompleteScreen(
@@ -884,6 +894,7 @@ class CheckInCompleteScreen extends StatelessWidget {
       subtitle: "Server saved your observation. Optional photo estimates are not clinical measurements.",
       centered: true,
       children: [
+        ClinicalHomePanel(controller: state.clinical),
         if (state.baseline.error != null) Text('Check-in saved; ${state.baseline.error}'),
         const SizedBox(height: 8),
         if (analysisData?['observation']?['user_reported'] != null)

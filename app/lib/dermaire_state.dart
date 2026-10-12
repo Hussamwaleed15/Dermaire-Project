@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'baseline/baseline_controller.dart';
 import 'account/account_controller.dart';
+import 'clinical/clinical_controller.dart';
 import 'experiments/experiment_controller.dart';
 import 'context_controller.dart';
 import 'home_controller.dart';
@@ -24,9 +26,14 @@ class DermaireState extends ChangeNotifier {
     ContextRepository? contextRepository,
     HomeRepository? homeRepository,
     ExperimentRepository? experimentRepository,
+    ClinicalRepository? clinicalRepository,
   }) {
+    clinical = ClinicalController(
+      ApiService.instance,
+      repository: clinicalRepository,
+    )..addListener(notifyListeners);
     account = AccountController(ApiService.instance)
-      ..addListener(notifyListeners);
+      ..addListener(_accountChanged);
     experiments = ExperimentController(
       experimentRepository ?? RemoteExperimentRepository(),
     )..addListener(notifyListeners);
@@ -44,6 +51,23 @@ class DermaireState extends ChangeNotifier {
     )..addListener(notifyListeners);
   }
 
+  Object? _clinicalProfile;
+  void _accountChanged() {
+    final profile = account.value;
+    if (account.ready && !identical(profile, _clinicalProfile)) {
+      _clinicalProfile = profile;
+      // A verified profile update can change ingredient/sensitivity evidence.
+      // Refresh server guidance; never recalculate it on the device.
+      if (clinical.allowed &&
+          (clinical.safety.value != null || clinical.review.value != null)) {
+        clinical.markStale();
+        unawaited(clinical.refresh());
+      }
+    }
+    notifyListeners();
+  }
+
+  late final ClinicalController clinical;
   late final AccountController account;
   late final ProductsController productController;
   late final BaselineController baseline;
@@ -82,6 +106,8 @@ class DermaireState extends ChangeNotifier {
   }
 
   void clearAccountData() {
+    clinical.clear();
+    _clinicalProfile = null;
     account.clear();
     selectedTab = 0;
     baseline.clear();
@@ -137,8 +163,11 @@ class DermaireState extends ChangeNotifier {
   @override
   void dispose() {
     ApiService.instance.removeListener(clearAccountData);
-    account
+    clinical
       ..removeListener(notifyListeners)
+      ..dispose();
+    account
+      ..removeListener(_accountChanged)
       ..dispose();
     experiments
       ..removeListener(notifyListeners)
