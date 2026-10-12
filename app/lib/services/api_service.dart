@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:async';
 import '../account/account_profile.dart';
 import '../clinical/clinical_models.dart';
+import '../observations/observation_models.dart';
 import 'package:http_parser/http_parser.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
@@ -91,6 +92,50 @@ class ApiService extends ChangeNotifier {
       throw ClinicalRequestException('Your session changed. Please sign in again.');
     }
     return ClinicianReview.fromApi(value, owner: owner);
+  }
+
+  String? get observationOwner => canReadPatientClinicalStatus ? _sessionUserId : null;
+
+  void _guardObservation(int generation) {
+    if (!isCurrentSession(generation) || !canReadPatientClinicalStatus) {
+      throw ApiException('Sign in and confirm safety acceptance to use your observations.');
+    }
+  }
+
+  Future<List<ObservationRecord>> getPatientObservations({required int generation}) async {
+    _guardObservation(generation);
+    final owner = _sessionUserId!;
+    final response = await _client.get(Uri.parse('$baseUrl/checkins'), headers: _headers(false)).timeout(const Duration(seconds: 20));
+    _guardObservation(generation);
+    if(response.statusCode != 200) throw ApiException('Observation history unavailable.');
+    final list = jsonDecode(response.body) as List;
+    return List.unmodifiable(list.map((row) => ObservationRecord.fromApi(row as Map<String,dynamic>, owner:owner)));
+  }
+
+  Future<ObservationRecord> submitPatientObservation({required ObservationDraft draft, required int generation}) async {
+    _guardObservation(generation);
+    if(draft.validation != null) throw ArgumentError('Invalid observation fields');
+    final owner = _sessionUserId!;
+    final request = http.MultipartRequest('POST', Uri.parse('$baseUrl/checkins'));
+    request.headers.addAll(_headers(false));
+    request.fields['time_of_day'] = draft.moment!;
+    request.fields['report'] = jsonEncode(draft.report);
+    if(draft.submittedNotes != null) request.fields['notes'] = draft.submittedNotes!;
+    // Report-only writes have no server idempotency guarantee. Send once only.
+    final response = await _client.send(request).then(http.Response.fromStream).timeout(const Duration(seconds: 30));
+    _guardObservation(generation);
+    if([400,403,404,409,422].contains(response.statusCode)) throw const ObservationWriteException(ObservationFailure.rejected);
+    if(response.statusCode != 201) throw const ObservationWriteException(ObservationFailure.uncertain);
+    String? candidate;
+    try {
+      final data = jsonDecode(response.body) as Map<String,dynamic>;
+      if(data['user_id'] == owner && data['id'] is String && (data['id'] as String).isNotEmpty) candidate = data['id'] as String;
+      final record = ObservationRecord.fromApi(data,owner:owner);
+      if(!record.matches(draft)) throw const FormatException('Observation fields unconfirmed');
+      return record;
+    } catch(_) {
+      throw ObservationWriteException(ObservationFailure.uncertain,candidateId:candidate);
+    }
   }
 
   // Invalidate earlier auth attempts before sending another request. Logout

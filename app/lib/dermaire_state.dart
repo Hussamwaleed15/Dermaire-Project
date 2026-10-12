@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'baseline/baseline_controller.dart';
 import 'account/account_controller.dart';
 import 'clinical/clinical_controller.dart';
+import 'observations/observation_controller.dart';
 import 'experiments/experiment_controller.dart';
 import 'context_controller.dart';
 import 'home_controller.dart';
@@ -27,7 +28,14 @@ class DermaireState extends ChangeNotifier {
     HomeRepository? homeRepository,
     ExperimentRepository? experimentRepository,
     ClinicalRepository? clinicalRepository,
+    ObservationRepository? observationRepository,
   }) {
+    observations = ObservationController(
+      ApiService.instance,
+      repository: observationRepository,
+      onConfirmed: _observationConfirmed,
+      onUncertain: _refreshObservationSafety,
+    )..addListener(notifyListeners);
     clinical = ClinicalController(
       ApiService.instance,
       repository: clinicalRepository,
@@ -50,6 +58,21 @@ class DermaireState extends ChangeNotifier {
       productRepository ?? RemoteProductRepository(),
     )..addListener(notifyListeners);
   }
+
+  void _refreshObservationSafety() {
+    // The server may have received an uncertain write. Re-read guidance without
+    // using a safety response as proof that the observation was saved.
+    clinical.markStale();
+    unawaited(clinical.refresh());
+  }
+
+  void _observationConfirmed() {
+    // Only re-read server projections, never increment Home/baseline locally.
+    _refreshObservationSafety();
+    unawaited(markTodayCheckedIn());
+  }
+
+  late final ObservationController observations;
 
   Object? _clinicalProfile;
   void _accountChanged() {
@@ -106,6 +129,7 @@ class DermaireState extends ChangeNotifier {
   }
 
   void clearAccountData() {
+    observations.clear();
     clinical.clear();
     _clinicalProfile = null;
     account.clear();
@@ -163,6 +187,9 @@ class DermaireState extends ChangeNotifier {
   @override
   void dispose() {
     ApiService.instance.removeListener(clearAccountData);
+    observations
+      ..removeListener(notifyListeners)
+      ..dispose();
     clinical
       ..removeListener(notifyListeners)
       ..dispose();

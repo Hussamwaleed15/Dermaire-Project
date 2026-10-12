@@ -12,8 +12,10 @@ class DermairePage extends StatelessWidget {
     this.actions,
     this.centered = false,
     this.showBack = true,
+    this.scrollController,
   });
 
+  final ScrollController? scrollController;
   final String? eyebrow;
   final String title;
   final String? subtitle;
@@ -51,6 +53,7 @@ class DermairePage extends StatelessWidget {
       appBar: showBack ? AppBar(actions: actions) : null,
       body: SafeArea(
         child: ListView(
+          controller: scrollController,
           padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
           children: [
             if (centered)

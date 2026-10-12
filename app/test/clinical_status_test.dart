@@ -958,22 +958,38 @@ void main() {
             MaterialApp(home: CameraScreen(state: state)),
           );
           await tester.pumpAndSettle();
-          tester
-              .widget<DropdownButtonFormField<String>>(
-                find.byType(DropdownButtonFormField<String>).first,
-              )
-              .onChanged!('same');
-          await tester.pump();
           await tester.scrollUntilVisible(
-            find.text('Save check-in'),
-            150,
+            find.byKey(const Key('change_same')),
+            160,
             scrollable: find.byType(Scrollable).first,
           );
           await tester.pumpAndSettle();
-          await tester.tap(find.text('Save check-in'));
+          await tester.tap(find.byKey(const Key('change_same')));
+          await tester.scrollUntilVisible(
+            find.byKey(const Key('moment_Morning')),
+            160,
+            scrollable: find.byType(Scrollable).first,
+          );
+          await tester.pumpAndSettle();
+          await tester.tap(find.byKey(const Key('moment_Morning')));
+          await tester.scrollUntilVisible(
+            find.byKey(const Key('reviewObservation')),
+            200,
+            scrollable: find.byType(Scrollable).first,
+          );
+          await tester.pumpAndSettle();
+          await tester.tap(find.byKey(const Key('reviewObservation')));
+          await tester.pumpAndSettle();
+          await tester.scrollUntilVisible(
+            find.byKey(const Key('submitObservation')),
+            200,
+            scrollable: find.byType(Scrollable).first,
+          );
+          await tester.pumpAndSettle();
+          await tester.tap(find.byKey(const Key('submitObservation')));
           await tester.pumpAndSettle();
           expect(recorded, isTrue);
-          expect(find.byType(CheckInCompleteScreen), findsOneWidget);
+          expect(find.byKey(const Key('observationReceipt')), findsOneWidget);
           expect(state.clinical.safety.value!.level, SafetyLevel.doctorReview);
           expect(state.home.current, isNull);
           expect(state.baseline.completedDays, isNull);
@@ -998,6 +1014,8 @@ void main() {
             return http.Response(
               jsonEncode({
                 'id': 'synthetic-observation',
+                'user_id': 'a',
+                'time_of_day': 'Morning',
                 'created_at': '2026-10-12T12:00:00Z',
                 'ai_vision_analysis': {'measurement_source': 'none'},
                 'observation': {
