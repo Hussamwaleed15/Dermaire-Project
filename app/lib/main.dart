@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'dermaire_state.dart';
 import 'dermaire_theme.dart';
@@ -66,9 +65,9 @@ class _DermaireAppState extends State<DermaireApp> {
       darkTheme: DermaireTheme.dark,
       themeMode: state.themeMode,
       themeAnimationDuration: Duration.zero,
-      locale: state.locale,
-      supportedLocales: const [Locale('en'), Locale('ar')],
-      localizationsDelegates: GlobalMaterialLocalizations.delegates,
+      // Product language is fixed, regardless of device or old preferences.
+      locale: const Locale('en'),
+      supportedLocales: const [Locale('en')],
       home: WelcomeScreen(state: state),
     ),
   );

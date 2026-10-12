@@ -113,12 +113,7 @@ abstract final class DermaireTheme {
     final t = brightness == Brightness.dark
         ? EntryTokens.dark
         : EntryTokens.light;
-    final body = TextStyle(
-      fontFamily: 'Karla',
-      fontFamilyFallback: const ['Noto Sans Arabic', 'Geeza Pro', 'SF Arabic'],
-      color: t.ink,
-      height: 1.35,
-    );
+    final body = TextStyle(fontFamily: 'Karla', color: t.ink, height: 1.35);
     final display = body.copyWith(
       fontFamily: 'Fraunces',
       fontWeight: FontWeight.w600,
@@ -132,7 +127,6 @@ abstract final class DermaireTheme {
     return ThemeData(
       useMaterial3: true,
       fontFamily: 'Karla',
-      fontFamilyFallback: const ['Noto Sans Arabic', 'Geeza Pro', 'SF Arabic'],
       brightness: brightness,
       extensions: [t],
       scaffoldBackgroundColor: t.canvas,
@@ -176,11 +170,6 @@ abstract final class DermaireTheme {
               foregroundColor: t.onAction,
               textStyle: const TextStyle(
                 fontFamily: 'Karla',
-                fontFamilyFallback: [
-                  'Noto Sans Arabic',
-                  'Geeza Pro',
-                  'SF Arabic',
-                ],
                 fontWeight: FontWeight.w700,
               ),
               padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
@@ -205,11 +194,6 @@ abstract final class DermaireTheme {
           side: BorderSide(color: t.border),
           textStyle: const TextStyle(
             fontFamily: 'Karla',
-            fontFamilyFallback: [
-              'Noto Sans Arabic',
-              'Geeza Pro',
-              'SF Arabic',
-            ],
             fontWeight: FontWeight.w700,
           ),
           shape: RoundedRectangleBorder(
@@ -241,15 +225,7 @@ abstract final class DermaireTheme {
       dividerColor: t.border,
       snackBarTheme: SnackBarThemeData(
         backgroundColor: t.ink,
-        contentTextStyle: TextStyle(
-          fontFamily: 'Karla',
-          fontFamilyFallback: const [
-            'Noto Sans Arabic',
-            'Geeza Pro',
-            'SF Arabic',
-          ],
-          color: t.canvas,
-        ),
+        contentTextStyle: TextStyle(fontFamily: 'Karla', color: t.canvas),
         behavior: SnackBarBehavior.floating,
       ),
     );

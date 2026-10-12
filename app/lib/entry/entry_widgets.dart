@@ -198,7 +198,7 @@ class EntryStatusPage extends StatelessWidget {
   final bool success;
   @override
   Widget build(BuildContext context) {
-    final c = EntryCopy.of(context);
+    final c = EntryCopy.english;
     return EntryPage(
       showBack: false,
       footer: [
@@ -280,7 +280,7 @@ class EntryStatusPage extends StatelessWidget {
                   const SizedBox(height: 16),
                   if (error != null)
                     Text(
-                      c.error(error!),
+                      error!,
                       textAlign: TextAlign.center,
                       style: TextStyle(color: t.secondary),
                     )
@@ -288,19 +288,9 @@ class EntryStatusPage extends StatelessWidget {
                     EntryCard(
                       child: Column(
                         children: [
-                          Text(
-                            c.choose(
-                              'Safety acceptance confirmed by the server',
-                              'تم تأكيد موافقة السلامة من السيرفر',
-                            ),
-                          ),
+                          Text('Safety acceptance confirmed by the server'),
                           const SizedBox(height: 8),
-                          Text(
-                            c.choose(
-                              'Account profile loaded',
-                              'تم تحميل ملف الحساب',
-                            ),
-                          ),
+                          Text('Account profile loaded'),
                         ],
                       ),
                     ),

@@ -61,9 +61,7 @@ void main() {
 
   for (final dark in [false, true]) {
     for (final large in [false, true]) {
-      testWidgets('welcome disclosure dark=$dark large/RTL=$large', (
-        tester,
-      ) async {
+      testWidgets('welcome disclosure dark=$dark large=$large', (tester) async {
         tester.view.physicalSize = const Size(360, 640);
         tester.view.devicePixelRatio = 1;
         addTearDown(tester.view.resetPhysicalSize);
@@ -80,12 +78,7 @@ void main() {
                     textScaler: TextScaler.linear(large ? 2 : 1),
                     disableAnimations: true,
                   ),
-                  child: Directionality(
-                    textDirection: large
-                        ? TextDirection.rtl
-                        : TextDirection.ltr,
-                    child: child!,
-                  ),
+                  child: child!,
                 ),
                 home: WelcomeScreen(state: state),
               ),

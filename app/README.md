@@ -2,6 +2,19 @@
 
 Dermaire is a Flutter prototype for personal skin experiments. It includes onboarding, product and interaction management, experiment and check-in flows, reports, rewards, a safety-limited app guide, and a clinician workspace demonstration.
 
+## Current Flutter product and workflow
+
+Dermaire is English-only, including on devices configured in Arabic. Language
+selection/localization and custom RTL support are not product requirements.
+Implement directly in Flutter using the approved design, in small testable
+increments. Separate visual prototypes, HTML mockups and Stage A approvals
+are no longer required; expensive visual generation needs an explicit request.
+
+See [permanent Flutter rules](AGENTS.md) and the
+[English-only cleanup decision](docs/M1_F1B_3C_ENGLISH_ONLY.md). Historical audits
+and earlier milestone reports record their original context; these current rules
+supersede their language and visual-approval requirements.
+
 ## Status
 
 This repository is **not production medical software**. Authentication, camera analysis, OCR, messaging, notifications, clinical storage, consent enforcement, and server-side authorization require real services before human use. Demo screens and records are labelled in the UI.

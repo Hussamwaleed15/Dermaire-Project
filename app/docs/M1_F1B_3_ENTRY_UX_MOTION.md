@@ -1,5 +1,11 @@
 # M1-F1b-3 Stage B — approved entry UX and motion
 
+Historical implementation record at d4d1e8d. On 2026-10-12 Amr superseded the
+bilingual/RTL requirement and separate Stage A/Stage B workflow with English-only
+UI and direct Flutter implementation. See [M1-F1b-3c](M1_F1B_3C_ENGLISH_ONLY.md)
+and [current Flutter rules](../AGENTS.md). The historical evidence below remains
+an accurate record of that earlier increment, not current product requirements.
+
 Amr explicitly approved all Stage A screens/motion and requested Flutter
 implementation in this chat. Base: clean main at
 `7ca495f77addaefc57f0a87dcf2d3a870f86dda3`, matching fresh GitHub main.

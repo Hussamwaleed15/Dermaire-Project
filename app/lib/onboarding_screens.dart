@@ -112,7 +112,7 @@ class _PatientEntryGateState extends State<PatientEntryGate> {
 
   @override
   Widget build(BuildContext context) {
-    final c = EntryCopy.of(context);
+    final c = EntryCopy.english;
     if (consent.confirmed && widget.state.account.ready) {
       if (widget.onboarding) return AccountCreatedScreen(state: widget.state);
       if (_enteredShell) return AppShell(state: widget.state);
@@ -132,11 +132,7 @@ class _PatientEntryGateState extends State<PatientEntryGate> {
         onSignOut: _signOut,
         error: loading
             ? null
-            : account.error ??
-                  c.choose(
-                    'Your account profile is unavailable.',
-                    'ملف الحساب غير متاح.',
-                  ),
+            : account.error ?? 'Your account profile is unavailable.',
         onRetry: loading ? null : () => account.hydrate(reuseConsent: false),
         retryKey: const Key('retryAccountProfile'),
       );
@@ -155,10 +151,7 @@ class _PatientEntryGateState extends State<PatientEntryGate> {
     return EntryStatusPage(
       message: c.checking,
       onSignOut: _signOut,
-      error: checking
-          ? null
-          : consent.error ??
-                c.choose('Please sign in again.', 'يرجى تسجيل الدخول مجددًا.'),
+      error: checking ? null : consent.error ?? 'Please sign in again.',
       onRetry: !checking && consent.current ? consent.refresh : null,
       retryKey: const Key('retrySafetyRead'),
     );
@@ -171,27 +164,19 @@ class WelcomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final c = EntryCopy.of(context);
+    final c = EntryCopy.english;
     final t = EntryTokens.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return EntryPage(
       showBack: false,
       editorial: true,
-      eyebrow: c.choose('Personal Skin Health', 'صحة بشرتك'),
+      eyebrow: 'Personal Skin Health',
       title: c.welcome,
       subtitle: c.welcomeBody,
       headerActions: [
         IconButton(
-          key: const Key('languageToggle'),
-          tooltip: c.choose('العربية', 'English'),
-          onPressed: state.toggleLanguage,
-          icon: const Icon(Icons.translate),
-        ),
-        IconButton(
           key: const Key('themeToggle'),
-          tooltip: isDark
-              ? c.choose('Light mode', 'الوضع الفاتح')
-              : c.choose('Dark mode', 'الوضع الداكن'),
+          tooltip: isDark ? 'Light mode' : 'Dark mode',
           onPressed: state.toggleTheme,
           icon: Icon(
             isDark ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
@@ -225,9 +210,9 @@ class WelcomeScreen extends StatelessWidget {
               ),
               const SizedBox(height: 20),
               ...[
-                (Icons.visibility_outlined, c.choose('Observe', 'لاحظ')),
-                (Icons.insights_outlined, c.choose('Understand', 'افهم')),
-                (Icons.timeline, c.choose('Track', 'تابع')),
+                (Icons.visibility_outlined, 'Observe'),
+                (Icons.insights_outlined, 'Understand'),
+                (Icons.timeline, 'Track'),
               ].map(
                 (item) => Padding(
                   padding: const EdgeInsets.symmetric(vertical: 8),
@@ -308,7 +293,7 @@ class _SignInScreenState extends State<SignInScreen> {
       _openApp(context, widget.state);
     } catch (e) {
       if (!mounted) return;
-      setState(() => authError = EntryCopy.of(context).authError);
+      setState(() => authError = EntryCopy.english.authError);
       return;
     } finally {
       if (mounted) setState(() => loading = false);
@@ -332,7 +317,7 @@ class _SignInScreenState extends State<SignInScreen> {
       _openApp(context, widget.state);
     } catch (e) {
       if (!mounted) return;
-      setState(() => authError = EntryCopy.of(context).authError);
+      setState(() => authError = EntryCopy.english.authError);
       return;
     } finally {
       if (mounted) setState(() => loading = false);
@@ -341,7 +326,7 @@ class _SignInScreenState extends State<SignInScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final c = EntryCopy.of(context);
+    final c = EntryCopy.english;
     if (loading || authError != null) {
       return EntryStatusPage(
         message: c.signingIn,
@@ -361,12 +346,9 @@ class _SignInScreenState extends State<SignInScreen> {
       );
     }
     return EntryPage(
-      eyebrow: c.choose('Welcome back', 'مرحبًا بعودتك'),
-      title: c.choose('Your journey continues here.', 'رحلتك تستمر من هنا.'),
-      subtitle: c.choose(
-        'Sign in to your private skin history.',
-        'سجّل الدخول إلى سجل بشرتك الخاص.',
-      ),
+      eyebrow: 'Welcome back',
+      title: 'Your journey continues here.',
+      subtitle: 'Sign in to your private skin history.',
       footer: [
         EntryPress(
           child: FilledButton(
@@ -385,7 +367,7 @@ class _SignInScreenState extends State<SignInScreen> {
         TextButton.icon(
           onPressed: () => openEntry(context, const DoctorSignInScreen()),
           icon: const Icon(Icons.medical_services_outlined),
-          label: Text(c.choose('Clinician sign in', 'دخول الطبيب')),
+          label: Text('Clinician sign in'),
         ),
       ],
       children: [
@@ -438,12 +420,7 @@ class _SignInScreenState extends State<SignInScreen> {
                   decoration: InputDecoration(
                     labelText: c.password,
                     suffixIcon: IconButton(
-                      tooltip: c.choose(
-                        hidePassword ? 'Show password' : 'Hide password',
-                        hidePassword
-                            ? 'إظهار كلمة المرور'
-                            : 'إخفاء كلمة المرور',
-                      ),
+                      tooltip: hidePassword ? 'Show password' : 'Hide password',
                       onPressed: () =>
                           setState(() => hidePassword = !hidePassword),
                       icon: Icon(
@@ -465,7 +442,7 @@ class _SignInScreenState extends State<SignInScreen> {
           child: TextButton(
             onPressed: () =>
                 openEntry(context, ForgotPasswordScreen(state: widget.state)),
-            child: Text(c.choose('Forgot password?', 'نسيت كلمة المرور؟')),
+            child: Text('Forgot password?'),
           ),
         ),
       ],
@@ -550,7 +527,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
       _openApp(context, widget.state, onboarding: true);
     } catch (e) {
       if (!mounted) return;
-      setState(() => authError = EntryCopy.of(context).authError);
+      setState(() => authError = EntryCopy.english.authError);
       return;
     } finally {
       if (mounted) setState(() => loading = false);
@@ -559,7 +536,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final c = EntryCopy.of(context);
+    final c = EntryCopy.english;
     if (loading || authError != null) {
       return EntryStatusPage(
         message: c.signingIn,
@@ -579,19 +556,16 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
       );
     }
     return EntryPage(
-      eyebrow: c.choose('Your private skin health', 'صحة بشرتك بخصوصية'),
+      eyebrow: 'Your private skin health',
       title: c.create,
-      subtitle: c.choose(
-        'Your private skin health account.',
-        'حسابك الخاص لصحة بشرتك.',
-      ),
+      subtitle: 'Your private skin health account.',
       footer: [
         const SizedBox(height: 16),
         EntryPress(
           child: FilledButton(
             key: const Key('createAccountButton'),
             onPressed: createAccount,
-            child: Text(c.choose('Continue to safety', 'المتابعة إلى السلامة')),
+            child: Text('Continue to safety'),
           ),
         ),
         const SizedBox(height: 8),
@@ -599,12 +573,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
           onPressed: () => Navigator.of(context).pushReplacement(
             entryRoute(context, SignInScreen(state: widget.state)),
           ),
-          child: Text(
-            c.choose(
-              'Already have an account? Sign in',
-              'لديك حساب بالفعل؟ سجّل الدخول',
-            ),
-          ),
+          child: Text('Already have an account? Sign in'),
         ),
       ],
       children: [
@@ -626,7 +595,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
               ),
             ),
           ),
-          label: c.choose('Sign up with Google', 'التسجيل باستخدام Google'),
+          label: 'Sign up with Google',
           onPressed: loading ? null : _signUpWithGoogle,
         ),
         const _OrDivider(),
@@ -658,12 +627,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                   decoration: InputDecoration(
                     labelText: c.password,
                     suffixIcon: IconButton(
-                      tooltip: c.choose(
-                        hidePassword ? 'Show password' : 'Hide password',
-                        hidePassword
-                            ? 'إظهار كلمة المرور'
-                            : 'إخفاء كلمة المرور',
-                      ),
+                      tooltip: hidePassword ? 'Show password' : 'Hide password',
                       onPressed: () =>
                           setState(() => hidePassword = !hidePassword),
                       icon: Icon(
@@ -688,12 +652,9 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                   decoration: InputDecoration(
                     labelText: c.confirm,
                     suffixIcon: IconButton(
-                      tooltip: c.choose(
-                        hideConfirmation ? 'Show password' : 'Hide password',
-                        hideConfirmation
-                            ? 'إظهار كلمة المرور'
-                            : 'إخفاء كلمة المرور',
-                      ),
+                      tooltip: hideConfirmation
+                          ? 'Show password'
+                          : 'Hide password',
                       onPressed: () =>
                           setState(() => hideConfirmation = !hideConfirmation),
                       icon: Icon(
@@ -706,10 +667,7 @@ class _CreateAccountScreenState extends State<CreateAccountScreen> {
                   validator: (value) =>
                       value == password.text && value!.isNotEmpty
                       ? null
-                      : c.choose(
-                          'Passwords do not match',
-                          'كلمتا المرور غير متطابقتين',
-                        ),
+                      : 'Passwords do not match',
                 ),
               ),
             ],
@@ -750,7 +708,7 @@ class _OrDivider extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12),
           child: Text(
-            EntryCopy.of(context).choose('OR', 'أو'),
+            'OR',
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
               letterSpacing: 1.2,
               color: Theme.of(
@@ -772,11 +730,13 @@ class _PasswordStrength extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = Theme.of(context).colorScheme.primary;
-    final c = EntryCopy.of(context);
-    final label = c.choose(
-      ['Password strength', 'Weak', 'Fair', 'Strong', 'Very strong'][value],
-      ['قوة كلمة المرور', 'ضعيفة', 'متوسطة', 'قوية', 'قوية جدًا'][value],
-    );
+    final label = [
+      'Password strength',
+      'Weak',
+      'Fair',
+      'Strong',
+      'Very strong',
+    ][value];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1081,10 +1041,10 @@ class _SafetyResponsibilityScreenState
 
   @override
   Widget build(BuildContext context) {
-    final c = EntryCopy.of(context);
+    final c = EntryCopy.english;
     if (loading) {
       return EntryStatusPage(
-        message: c.choose('Confirming your acceptance…', 'جارٍ تأكيد موافقتك…'),
+        message: 'Confirming your acceptance…',
         onSignOut: widget.onSignOut,
       );
     }
@@ -1092,19 +1052,13 @@ class _SafetyResponsibilityScreenState
       showBack: widget.onAccept == null,
       scrollKey: const Key('safetyScroll'),
       controller: controller,
-      eyebrow: c.choose('Safety before you begin', 'السلامة قبل البدء'),
-      title: c.choose('Safety & responsibility', 'السلامة والمسؤولية'),
-      subtitle: c.choose(
-        'Read these notes before you continue.',
-        'اقرأ هذه الإرشادات قبل المتابعة.',
-      ),
+      eyebrow: 'Safety before you begin',
+      title: 'Safety & responsibility',
+      subtitle: 'Read these notes before you continue.',
       footer: [
         if (!reachedEnd)
           Text(
-            c.choose(
-              'Scroll to the end to continue',
-              'مرّر إلى النهاية للمتابعة',
-            ),
+            'Scroll to the end to continue',
             style: TextStyle(
               color: EntryTokens.of(context).secondary,
               fontSize: 12,
@@ -1123,7 +1077,7 @@ class _SafetyResponsibilityScreenState
           child: FilledButton(
             key: const Key('acceptSafetyButton'),
             onPressed: reachedEnd && !loading ? _acceptSafety : null,
-            child: Text(c.choose('I understand — continue', 'فهمت — متابعة')),
+            child: Text('I understand — continue'),
           ),
         ),
         if (widget.onSignOut != null)
@@ -1169,17 +1123,14 @@ class _SafetyResponsibilityScreenState
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                c.choose('Disclaimer', 'إخلاء مسؤولية'),
+                'Disclaimer',
                 style: Theme.of(
                   context,
                 ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800),
               ),
               const SizedBox(height: 8),
               Text(
-                c.choose(
-                  'Skin measurements can vary with lighting, camera quality, environment, routine, and normal biological changes. Results are estimates and may be incomplete or inaccurate. You remain responsible for product choices and for following each manufacturer’s instructions. If you are pregnant, breastfeeding, have a diagnosed skin condition, use prescription treatment, or are unsure whether an ingredient is suitable, speak with a qualified clinician before beginning an experiment.',
-                  'قد تختلف قياسات البشرة باختلاف الإضاءة وجودة الكاميرا والبيئة والروتين والتغيّرات البيولوجية الطبيعية. النتائج تقديرات وقد تكون ناقصة أو غير دقيقة. تظل مسؤولًا عن اختيار المنتجات واتباع تعليمات كل شركة مصنّعة. إذا كنتِ حاملًا أو مرضعة، أو لديك حالة جلدية مشخصة، أو تستخدم علاجًا بوصفة طبية، أو لم تكن متأكدًا من ملاءمة أحد المكوّنات، استشر مختصًا مؤهلًا قبل بدء أي تجربة.',
-                ),
+                'Skin measurements can vary with lighting, camera quality, environment, routine, and normal biological changes. Results are estimates and may be incomplete or inaccurate. You remain responsible for product choices and for following each manufacturer’s instructions. If you are pregnant, breastfeeding, have a diagnosed skin condition, use prescription treatment, or are unsure whether an ingredient is suitable, speak with a qualified clinician before beginning an experiment.',
                 style: TextStyle(fontSize: 12.5, height: 1.55),
               ),
             ],
@@ -1228,17 +1179,9 @@ class _SafetyItem extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                EntryCopy.of(
-                  context,
-                ).choose(title, _safetyArabic[title] ?? title),
-                style: const TextStyle(fontWeight: FontWeight.w800),
-              ),
+              Text(title, style: const TextStyle(fontWeight: FontWeight.w800)),
               const SizedBox(height: 4),
-              Text(
-                EntryCopy.of(context).choose(text, _safetyArabic[text] ?? text),
-                style: const TextStyle(fontSize: 12.5, height: 1.45),
-              ),
+              Text(text, style: const TextStyle(fontSize: 12.5, height: 1.45)),
             ],
           ),
         ),
@@ -1253,7 +1196,7 @@ class AccountCreatedScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final c = EntryCopy.of(context);
+    final c = EntryCopy.english;
     final generation = ApiService.instance.sessionGeneration;
     return EntryStatusPage(
       message: c.success,
@@ -1602,21 +1545,3 @@ class _SkinProfileScreenState extends State<SkinProfileScreen> {
     ],
   );
 }
-
-const _safetyArabic = <String, String>{
-  'Dermaire is not medical advice': 'Dermaire لا يقدّم نصيحة طبية',
-  'The app helps you observe patterns. It does not diagnose, treat, or replace a dermatologist or other qualified clinician.':
-      'يساعدك التطبيق على ملاحظة الأنماط. لا يشخّص أو يعالج، ولا يحلّ محل طبيب الجلدية أو أي مختص مؤهل.',
-  'Change one thing at a time': 'غيّر شيئًا واحدًا في كل مرة',
-  'Patch test new products first. Introduce one product per experiment so you can identify what caused a change.':
-      'اختبر المنتجات الجديدة على مساحة صغيرة أولًا. أدخل منتجًا واحدًا في كل تجربة لتتمكن من معرفة سبب التغيّر.',
-  'Stop if irritation appears': 'توقّف عند ظهور تهيّج',
-  'Stop the experiment if you develop burning, swelling, severe redness, blistering, or rapidly worsening symptoms.':
-      'أوقف التجربة إذا ظهر حرقان أو تورّم أو احمرار شديد أو بثور أو أعراض تتفاقم بسرعة.',
-  'Know when to seek care': 'اعرف متى تطلب الرعاية',
-  'Seek urgent medical help for trouble breathing, facial swelling, widespread hives, eye involvement, or another severe reaction.':
-      'اطلب مساعدة طبية عاجلة عند صعوبة التنفّس أو تورّم الوجه أو طفح منتشر أو تأثّر العين أو أي تفاعل شديد آخر.',
-  'Protect your information': 'احمِ معلوماتك',
-  'Use the app on your own device, secure your account, and avoid including identifying information in notes you plan to share.':
-      'استخدم التطبيق على جهازك الشخصي، وأمّن حسابك، وتجنّب ذكر معلومات تحدد هويتك في الملاحظات التي تخطط لمشاركتها.',
-};
