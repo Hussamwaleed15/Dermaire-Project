@@ -124,6 +124,9 @@ class DoctorReviewSnapshot extends StatelessWidget {
         Text('Author account: ${value.doctor}'),
         Text('Recorded: ${clinicalTime(value.createdAt)}'),
         Text(
+          'Safety Engine snapshot at review: ${value.safety.rawStatus} · ${clinicalTime(value.safety.evaluatedAt)}',
+        ),
+        Text(
           value.visible
               ? 'Patient-visible server record (not a delivery receipt)'
               : 'Private clinician record',

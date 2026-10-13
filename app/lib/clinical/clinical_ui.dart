@@ -441,6 +441,30 @@ class ClinicalStatusPanel extends StatelessWidget {
           ],
         ] else
           const Text('No clinician approval or decision can be inferred.'),
+        if (!compact && supported && value != null) ...[
+          Text(
+            read.stale
+                ? 'Previously retrieved clinician notes'
+                : 'Patient-visible clinician notes',
+            style: const TextStyle(fontWeight: FontWeight.w700),
+          ),
+          if (value.notes == null)
+            const Text('Clinician notes could not be verified.')
+          else if (value.notes!.isEmpty)
+            const Text('No patient-visible notes returned.')
+          else
+            for (final note in value.notes!) ...[
+              Text(note.content),
+              Text(
+                'Clinician author: ${note.author} · ${clinicalTime(note.createdAt)}',
+              ),
+              if (note.followUp != null)
+                Text('Follow-up guidance: ${note.followUp}'),
+              const Text(
+                'Recorded guidance only; no appointment, reminder, message delivery or medical clearance is established.',
+              ),
+            ],
+        ],
         if (!compact)
           Text(
             read.stale

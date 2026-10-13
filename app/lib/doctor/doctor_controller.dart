@@ -199,12 +199,15 @@ class DoctorWorkspaceController extends ChangeNotifier {
     final key = '${patient.id}:notes';
     if (!allows(patient.id) ||
         saving ||
+        api.inFlightDoctorWrites.isNotEmpty ||
+        (activePatient != null && activePatient != patient.id) ||
         patient.fileClosed ||
         validateNote(value) != null ||
         api.uncertainDoctorWrites.contains(key)) {
       return false;
     }
-    final revision = _revision;
+    final revision = _revision, selection = selectionRevision;
+    api.inFlightDoctorWrites.add(key);
     saving = true;
     errorPatient = patient.id;
     error = null;
@@ -225,7 +228,8 @@ class DoctorWorkspaceController extends ChangeNotifier {
       if (detail['patient_id'] != patient.id ||
           !grant.active(DateTime.now().toUtc()) ||
           !current ||
-          revision != _revision) {
+          revision != _revision ||
+          selection != selectionRevision) {
         return false;
       }
       sent = true;
@@ -251,6 +255,12 @@ class DoctorWorkspaceController extends ChangeNotifier {
           receipt.followUp != null) {
         throw const FormatException('Unconfirmed note');
       }
+      if (selection != selectionRevision) {
+        if (api.isCurrentSession(generation)) {
+          api.uncertainDoctorWrites.add(key);
+        }
+        return false;
+      }
       final rows =
           (await api.doctorResource('patients/${patient.id}/notes', generation)
                   as List)
@@ -264,7 +274,13 @@ class DoctorWorkspaceController extends ChangeNotifier {
           !RoutineController.sameWire(match.wire, receipt.wire)) {
         throw const FormatException('Missing note readback');
       }
-      if (!current || revision != _revision || !allows(patient.id)) {
+      if (!current ||
+          revision != _revision ||
+          selection != selectionRevision ||
+          !allows(patient.id)) {
+        if (api.isCurrentSession(generation)) {
+          api.uncertainDoctorWrites.add(key);
+        }
         return false;
       }
       notes[patient.id] = rows.map((n) => n.content).toList();
@@ -300,6 +316,9 @@ class DoctorWorkspaceController extends ChangeNotifier {
           : 'Patient access could not be verified. Refresh connections before writing.';
       return false;
     } finally {
+      if (api.isCurrentSession(generation)) {
+        api.inFlightDoctorWrites.remove(key);
+      }
       if (!_disposed && revision == _revision) {
         saving = false;
         notifyListeners();

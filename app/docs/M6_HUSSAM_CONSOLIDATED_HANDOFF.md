@@ -42,3 +42,13 @@ not a complete/stable history. P1 if consistent longitudinal export/read is requ
 provide a stable snapshot/cursor with explicit completeness/retention limits and
 capture-observation linkage; dynamic offset pages and mutable rows cannot prove this.
 No image export is enabled while separate explicit consent scopes are unresolved.
+
+F4 verified: patient-row lock + expected_sequence409 + UNIQUE(patient_id,sequence)
+already protect review sequencing. Notes/reviews are immutable; do not request CAS
+from scratch. P1 provide operation ID/idempotency receipt lookup, replay-safe semantics
+and explicit unknown/rejected/committed results for lost clinical responses. Flutter
+retains confirmed receipt candidates for GET-only reconciliation and locks unknown
+POSTs in-session. No exactly-once claim across logout/device restart.
+Follow_up text/follow_up_needed exist; typed appointments/timezone/cancellation/
+reminder consent/delivery do not. If scheduling is required, provide those contracts
+with current grant/role/safety protections. No inferred appointment from guidance.

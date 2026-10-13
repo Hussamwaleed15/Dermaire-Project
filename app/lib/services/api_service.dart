@@ -331,6 +331,8 @@ class ApiService extends ChangeNotifier {
   String? get authenticatedOwner => isAuthenticated ? _sessionUserId : null;
   String? get authenticatedRole => isAuthenticated ? _sessionRole : null;
   final Set<String> uncertainDoctorWrites = {};
+  final Set<String> inFlightDoctorWrites = {};
+  final Map<String, Map<String, dynamic>> pendingDoctorReceipts = {};
 
   Future<Object?> doctorResource(
     String path,
@@ -724,6 +726,8 @@ class ApiService extends ChangeNotifier {
     final hadSession = _authToken != null;
     _sessionGeneration++;
     uncertainDoctorWrites.clear();
+    inFlightDoctorWrites.clear();
+    pendingDoctorReceipts.clear();
     uncertainGrantRevocations.clear();
     _sessionUserId = null;
     _sessionRole = null;

@@ -209,9 +209,23 @@ class ClinicianReview {
                 decision!.rawState != rawState))) {
       throw const FormatException('Unverified current clinician projection');
     }
+    // Note failures cannot suppress independent canonical Safety/current decision.
+    try {
+      if (schemaVersion != 'doctor-loop-2.0') {
+        throw const FormatException('Unsupported notes');
+      }
+      notes = List.unmodifiable(
+        (value['notes'] as List).map(
+          (v) => PatientClinicianNote.fromApi(object(v), owner),
+        ),
+      );
+    } catch (_) {
+      notes = null;
+    }
     // History/notes are not substituted for the current_decision, even when the
     // latest action is private or has no recommendation.
   }
+  List<PatientClinicianNote>? notes;
   final String schemaVersion, patientId, rawState;
   final int latestSequence;
   final DateTime? changedAt;
@@ -220,4 +234,29 @@ class ClinicianReview {
   ReviewState get state => ReviewState.parse(rawState);
   bool get supported =>
       schemaVersion == 'doctor-loop-2.0' && state != ReviewState.unknown;
+}
+
+/// Patient-visible immutable clinician note, independent of current decision.
+class PatientClinicianNote {
+  PatientClinicianNote.fromApi(Map<String, dynamic> value, String owner)
+    : content = text(value['content']),
+      author = text(value['doctor_id']),
+      priority = text(value['priority']),
+      followUp = optionalText(value['follow_up']),
+      createdAt = timestamp(value['created_at'], naiveUtc: true) {
+    text(value['id']);
+    timestamp(value['updated_at'], naiveUtc: true);
+    if (value['patient_id'] != owner ||
+        value['patient_visible'] != true ||
+        value['provenance'] != 'clinician_authored' ||
+        !['routine', 'review', 'urgent'].contains(priority) ||
+        content.length < 10 ||
+        content.length > 1500 ||
+        (followUp != null && followUp!.length > 100)) {
+      throw const FormatException('Unverified visible clinical note');
+    }
+  }
+  final String content, author, priority;
+  final String? followUp;
+  final DateTime createdAt;
 }

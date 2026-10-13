@@ -10,6 +10,7 @@ import 'doctor/doctor_models.dart';
 import 'doctor/doctor_controller.dart';
 import 'doctor/doctor_connection.dart';
 import 'doctor/doctor_evidence_ui.dart';
+import 'doctor/doctor_clinical_ui.dart';
 import 'clinical/clinical_models.dart' show object;
 export 'doctor/doctor_models.dart';
 export 'doctor/doctor_controller.dart';
@@ -397,57 +398,12 @@ class _PatientDetailScreenState extends State<PatientDetailScreen> {
           const Text(
             'This is a connection summary, not a complete medical record.',
           ),
-          for (final value in c.notes[widget.patient.id] ?? <String>[])
-            DermaireCard(child: Text(value)),
-          TextField(
-            key: const Key('clinicalNote'),
-            controller: note,
-            maxLength: 1500,
-            maxLines: 4,
-            decoration: InputDecoration(
-              labelText: 'Private clinical note',
-              errorText: error,
-              helperText: 'Append-only. Saved only after server readback.',
+          OutlinedButton(
+            onPressed: () => openEntry(
+              context,
+              DoctorClinicalScreen(connection: connection),
             ),
-          ),
-          if (c.error != null && c.errorPatient == widget.patient.id)
-            Text(c.error!),
-          if (c.api.uncertainDoctorWrites.contains(
-            '${widget.patient.id}:notes',
-          ))
-            const Text(
-              'Previous note outcome is unconfirmed. Do not resend it. Refresh current records.',
-            ),
-          FilledButton(
-            key: const Key('addClinicalNote'),
-            onPressed:
-                c.saving ||
-                    c.api.uncertainDoctorWrites.contains(
-                      '${widget.patient.id}:notes',
-                    )
-                ? null
-                : () async {
-                    if (!connection.confirmed || !c.allows(widget.patient.id)) {
-                      return;
-                    }
-                    setState(() => error = c.validateNote(note.text));
-                    if (error != null) return;
-                    final saved = await c.addNote(widget.patient, note.text);
-                    if (!context.mounted ||
-                        !c.allows(widget.patient.id) ||
-                        !connection.confirmed ||
-                        ModalRoute.of(context)?.isCurrent != true) {
-                      return;
-                    }
-                    if (saved) {
-                      note.clear();
-                      showDermaireSnack(
-                        context,
-                        'Clinical note confirmed by server.',
-                      );
-                    }
-                  },
-            child: const Text('Save private note'),
+            child: const Text('Notes and clinical reviews'),
           ),
           const Text(
             'Doctor-patient messaging is unavailable. This workspace is not an emergency messaging service.',

@@ -49,7 +49,8 @@ class DoctorDecision {
 
 class DoctorReviewRead {
   DoctorReviewRead.fromApi(Map<String, dynamic> value, String patient)
-    : state = text(value['state']),
+    : wire = Map.unmodifiable(value),
+      state = text(value['state']),
       sequence = count(value['latest_sequence']),
       safety = SafetyAssessment.fromApi(object(value['safety'])),
       decision = value['current_decision'] == null
@@ -82,6 +83,7 @@ class DoctorReviewRead {
     }
     history.sort((a, b) => b.sequence.compareTo(a.sequence));
   }
+  final Map<String, dynamic> wire;
   final String state;
   final int sequence;
   final SafetyAssessment safety;
