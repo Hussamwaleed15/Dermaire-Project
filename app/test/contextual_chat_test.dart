@@ -1,36 +1,61 @@
+// F3 replaces the obsolete unauthenticated/minimal chat response fixture with
+// actual consent/session + typed server envelope. These regressions still assert
+// server-only canonical text and no local medical fallback.
 import 'package:dermaire_app/chatbot.dart';
-import 'package:dermaire_app/services/api_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:http/http.dart' as http;
-import 'package:http/testing.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:dermaire_app/services/api_service.dart';
+import 'patient_chat_test.dart' as p;
+import 'private_capture_history_test.dart' as h;
 
 void main() {
-  setUp(() => SharedPreferences.setMockInitialValues({}));
-  tearDown(() => ApiService.instance.init());
-
-  testWidgets('failed server chat shows unavailable assessment, not local conclusions', (tester) async {
-    await http.runWithClient(() async {
-      await tester.pumpWidget(const MaterialApp(home: SkinAssistantScreen()));
-      await tester.enterText(find.byKey(const Key('assistantInput')), 'my routine is worse');
-      await tester.tap(find.byTooltip('Send message'));
-      await tester.pumpAndSettle();
-      expect(find.textContaining('server assistant is unavailable'), findsOneWidget);
-      expect(find.textContaining('safety status could not be checked'), findsOneWidget);
-    }, () => MockClient((_) async => http.Response('{}', 503)));
+  setUp(() async {
+    SharedPreferences.setMockInitialValues({});
+    await ApiService.instance.init();
   });
-
-  testWidgets('chat displays canonical server response', (tester) async {
-    await http.runWithClient(() async {
-      await tester.pumpWidget(const MaterialApp(home: SkinAssistantScreen()));
-      await tester.enterText(find.byKey(const Key('assistantInput')), 'what changed?');
-      await tester.tap(find.byTooltip('Send message'));
-      await tester.pumpAndSettle();
+  tearDown(() => ApiService.instance.init());
+  testWidgets(
+    'failed server chat shows unavailable assessment, not local conclusions',
+    (t) async {
+      final f = p.Fixture()..code = 503;
+      await f.run(() async {
+        await f.login();
+        await h.mount(t, f, SkinAssistantScreen(state: f.state));
+        await t.pumpAndSettle();
+        await t.enterText(
+          find.byKey(const Key('assistantInput')),
+          'my routine is worse',
+        );
+        await t.tap(find.byTooltip('Send message'));
+        await t.pumpAndSettle();
+        expect(
+          find.textContaining('server assistant is unavailable'),
+          findsOneWidget,
+        );
+        expect(
+          find.textContaining('safety status could not be checked'),
+          findsOneWidget,
+        );
+        await f.done(t);
+      });
+    },
+  );
+  testWidgets('chat displays canonical server response', (t) async {
+    final f = p.Fixture()
+      ..body = p.envelope(message: 'Recorded evidence remains uncertain.');
+    await f.run(() async {
+      await f.login();
+      await h.mount(t, f, SkinAssistantScreen(state: f.state));
+      await t.pumpAndSettle();
+      await t.enterText(
+        find.byKey(const Key('assistantInput')),
+        'what changed?',
+      );
+      await t.tap(find.byTooltip('Send message'));
+      await t.pumpAndSettle();
       expect(find.text('Recorded evidence remains uncertain.'), findsOneWidget);
-    }, () => MockClient((request) async {
-      expect(request.url.path, endsWith('/chat'));
-      return http.Response('{"reply":"Recorded evidence remains uncertain.","kind":"education"}', 200);
-    }));
+      await f.done(t);
+    });
   });
 }

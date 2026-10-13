@@ -50,7 +50,7 @@ class AppShell extends StatelessWidget {
         body: IndexedStack(index: state.selectedTab, children: pages),
         floatingActionButton: FloatingActionButton.small(
           tooltip: 'Open Dermaire guide',
-          onPressed: () => openPage(context, const SkinAssistantScreen()),
+          onPressed: () => openPage(context, SkinAssistantScreen(state:state)),
           child: const Icon(Icons.chat_bubble_outline_rounded),
         ),
         bottomNavigationBar: BottomNavigationBar(
@@ -344,7 +344,7 @@ class ProfileTab extends StatelessWidget {
         icon: '💬',
         title: 'Dermaire guide',
         subtitle: 'App help, measurement explanations and safety escalation',
-        onTap: () => openPage(context, const SkinAssistantScreen()),
+        onTap: () => openPage(context, SkinAssistantScreen(state:state)),
       ),
       TextButton(
         onPressed: () async {

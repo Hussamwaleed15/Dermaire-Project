@@ -790,8 +790,10 @@ class ApiService extends ChangeNotifier {
   }
 
   Future<AssistanceResponse> requestPatientAssistance(String message, int generation) async {
+    final owner = observationOwner;
     final data = await patientInformationalPost('assistance',message,generation);
-    return AssistanceResponse.fromApi(data,owner:_sessionUserId!);
+    if(!isCurrentSession(generation)||owner==null||observationOwner!=owner)throw ApiException('Session changed. Reopen assistance.');
+    return AssistanceResponse.fromApi(data,owner:owner);
   }
 
   Future<Map<String,dynamic>> patientInformationalPost(String route,String message,int generation) async {

@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 
-import 'dermaire_theme.dart';
+import 'dermaire_state.dart';
+import 'clinical/clinical_ui.dart';
+import 'entry/entry_motion.dart';
+import 'chat/chat_controller.dart';
+import 'assistance/assistance_ui.dart';
 import 'dermaire_widgets.dart';
 import 'services/api_service.dart';
 
@@ -77,188 +81,248 @@ class ChatMessage {
 }
 
 class SkinAssistantScreen extends StatefulWidget {
-  const SkinAssistantScreen({super.key});
-
+  const SkinAssistantScreen({super.key, this.state, this.repository});
+  final DermaireState? state;
+  final PatientChatRepository? repository;
   @override
   State<SkinAssistantScreen> createState() => _SkinAssistantScreenState();
 }
 
 class _SkinAssistantScreenState extends State<SkinAssistantScreen> {
+  late final DermaireState state;
+  late final PatientChatController chat;
   final input = TextEditingController();
   final scroll = ScrollController();
-  final messages = <ChatMessage>[];
-  bool typing = false;
-
+  bool followEnd = true;
   @override
-  void dispose() {
-    input.dispose();
-    scroll.dispose();
-    super.dispose();
+  void initState() {
+    super.initState();
+    state = widget.state ?? DermaireState();
+    chat = PatientChatController(
+      ApiService.instance,
+      repository: widget.repository,
+    )..addListener(changed);
   }
 
-  Future<void> send() async {
-    final value = input.text.trim();
-    if (value.isEmpty || typing) return;
-    setState(() {
-      messages.add(
-        ChatMessage(
-          text: value,
-          fromUser: true,
-          kind: AssistantReplyKind.education,
-        ),
-      );
-      input.clear();
-      typing = true;
-    });
-    AssistantReply reply;
-    try {
-      final res = await ApiService.instance.sendChatMessage(value);
-      final replyText = res['reply'] as String? ?? 'No response';
-      final kindStr = res['kind'] as String? ?? 'education';
-      final kind = switch (kindStr) {
-        'escalation' => AssistantReplyKind.escalation,
-        'uncertainty' => AssistantReplyKind.uncertainty,
-        _ => AssistantReplyKind.education,
-      };
-      reply = AssistantReply(replyText, kind);
-    } catch (_) {
-      reply = const AssistantReply(
-        'The server assistant is unavailable. Your current skin context and safety status could not be checked. Retry, or seek medical guidance if symptoms concern you.',
-        AssistantReplyKind.uncertainty,
-      );
-    }
-    if (!mounted) return;
-    setState(() {
-      messages.add(
-        ChatMessage(text: reply.text, fromUser: false, kind: reply.kind),
-      );
-      typing = false;
-    });
+  void changed() {
+    if (!chat.current) input.clear();
+    if (mounted) setState(() {});
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (scroll.hasClients) {
-        scroll.animateTo(
-          scroll.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.easeOut,
-        );
+      if (mounted && scroll.hasClients && followEnd) {
+        if (EntryMotion.reduced(context)) {
+          scroll.jumpTo(scroll.position.maxScrollExtent);
+        } else {
+          scroll.animateTo(
+            scroll.position.maxScrollExtent,
+            duration: const Duration(milliseconds: 180),
+            curve: Curves.easeOut,
+          );
+        }
       }
     });
   }
 
+  Future<void> send() async {
+    if (!chat.current || chat.busy) return;
+    final value = input.text;
+    if (value.trim().isNotEmpty &&
+        value.trim().runes.length <= 1000 &&
+        chat.turns.length < 20) {
+      input.clear();
+      followEnd = true;
+    }
+    await chat.send(value);
+  }
+
   @override
-  Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(
-      title: const Text('Dermaire guide'),
-      actions: [
-        IconButton(
-          tooltip: 'Clear conversation',
-          onPressed: messages.isEmpty ? null : () => setState(messages.clear),
-          icon: const Icon(Icons.delete_outline),
-        ),
-      ],
-    ),
-    body: SafeArea(
-      top: false,
-      child: Column(
+  void dispose() {
+    chat.removeListener(changed);
+    chat.dispose();
+    input.dispose();
+    scroll.dispose();
+    if (widget.state == null) state.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!chat.current) {
+      return const DermairePage(
+        title: 'Session ended',
         children: [
-          const Notice(
-            icon: 'ⓘ',
-            text:
-                'This guide explains the app and your recorded trends. It does not diagnose or prescribe treatment.',
-            color: DermaireColors.unknownBackground,
+          Text(
+            'Temporary chat messages have been cleared. Reopen after sign-in and safety acceptance.',
           ),
-          Expanded(
-            child: messages.isEmpty
-                ? const Center(
-                    child: Padding(
-                      padding: EdgeInsets.all(28),
-                      child: Text(
-                        'Ask about a measurement, your journal, or how to add a product.',
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                  )
-                : ListView.builder(
-                    controller: scroll,
-                    padding: const EdgeInsets.all(16),
-                    itemCount: messages.length,
-                    itemBuilder: (context, index) {
-                      final message = messages[index];
-                      final escalation =
-                          message.kind == AssistantReplyKind.escalation;
-                      return Align(
-                        alignment: message.fromUser
-                            ? Alignment.centerRight
-                            : Alignment.centerLeft,
-                        child: Container(
-                          constraints: const BoxConstraints(maxWidth: 520),
-                          margin: const EdgeInsets.only(bottom: 10),
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: escalation
-                                ? DermaireColors.conflictBackground
-                                : message.fromUser
-                                ? DermaireColors.caramel.withValues(alpha: .32)
-                                : Theme.of(context).colorScheme.surface,
-                            borderRadius: BorderRadius.circular(14),
-                            border: Border.all(
-                              color: escalation
-                                  ? DermaireColors.conflict
-                                  : Theme.of(context).dividerColor,
-                            ),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(message.text),
-                              if (escalation) ...[
-                                const SizedBox(height: 10),
-                                FilledButton.icon(
-                                  onPressed: () => showDermaireSnack(
-                                    context,
-                                    'Clinician contact requires a connected care provider.',
-                                  ),
-                                  icon: const Icon(
-                                    Icons.local_hospital_outlined,
-                                  ),
-                                  label: const Text('Contact doctor'),
-                                ),
-                              ],
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-          ),
-          if (typing) const LinearProgressIndicator(),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    key: const Key('assistantInput'),
-                    controller: input,
-                    minLines: 1,
-                    maxLines: 4,
-                    onSubmitted: (_) => send(),
-                    decoration: const InputDecoration(
-                      hintText: 'Ask Dermaire…',
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                IconButton.filled(
-                  tooltip: 'Send message',
-                  onPressed: typing ? null : send,
-                  icon: const Icon(Icons.send_rounded),
-                ),
-              ],
-            ),
+        ],
+      );
+    }
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Dermaire guide'),
+        actions: [
+          IconButton(
+            tooltip: 'Clear conversation',
+            onPressed: chat.turns.isEmpty
+                ? null
+                : () {
+                    input.clear();
+                    chat.clear();
+                  },
+            icon: const Icon(Icons.delete_outline),
           ),
         ],
       ),
-    ),
-  );
+      body: SafeArea(
+        child: Column(
+          children: [
+            Expanded(
+              child: NotificationListener<ScrollNotification>(
+                onNotification: (n) {
+                  if (n is UserScrollNotification) {
+                    followEnd = scroll.position.extentAfter < 100;
+                  }
+                  return false;
+                },
+                child: ListView(
+                  controller: scroll,
+                  padding: const EdgeInsets.all(16),
+                  children: [
+                    const Text(
+                      'Temporary device view only. Each question is sent alone; earlier messages may not inform the next reply. No saved conversation, streaming, image analysis or automatic actions.',
+                    ),
+                    ClinicalHomePanel(controller: state.clinical),
+                    if (chat.turns.isEmpty)
+                      const DermaireCard(
+                        child: Text(
+                          'Ask about recorded changes, tracking, routines or questions for your clinician. This guide cannot diagnose or prescribe.',
+                        ),
+                      ),
+                    for (final turn in chat.turns) ...[
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: DermaireCard(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text('You'),
+                              SelectableText(turn.question),
+                              Text(
+                                'Submitted on this device: ${clinicalTime(turn.submittedAt)}',
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      if (turn.response != null)
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: DermaireCard(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                Text(
+                                  'Dermaire informational response · ${turn.response!.kind}',
+                                ),
+                                AssistanceSafetySnapshot(
+                                  response: turn.response!.assistance,
+                                ),
+                                SelectableText(turn.response!.textReply),
+                                Text(
+                                  'Received on this device: ${clinicalTime(turn.receivedAt!)}',
+                                ),
+                                ExpansionTile(
+                                  title: const Text(
+                                    'Response evidence and limits',
+                                  ),
+                                  expansionAnimationStyle:
+                                      EntryMotion.reduced(context)
+                                      ? AnimationStyle.noAnimation
+                                      : const AnimationStyle(
+                                          duration: Duration(milliseconds: 180),
+                                        ),
+                                  children: [
+                                    AssistanceEvidence(
+                                      response: turn.response!.assistance,
+                                      showMessage: false,
+                                      showSafety: false,
+                                    ),
+                                    Text(
+                                      'Server compatibility source label: ${turn.response!.compatibilitySource}',
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      if (turn.error != null)
+                        DermaireCard(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Semantics(
+                                liveRegion: true,
+                                child: Text(turn.error!),
+                              ),
+                              const Text(
+                                'No reply confirmed. This question is not evidence of server persistence.',
+                              ),
+                              if (turn.attempts == 1 && !chat.busy)
+                                OutlinedButton(
+                                  onPressed: () => chat.retry(turn),
+                                  child: const Text(
+                                    'Retry once — may repeat the provider request',
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                    ],
+                    if (chat.busy)
+                      Semantics(
+                        liveRegion: true,
+                        child: const Text('Waiting for the server response…'),
+                      ),
+                    if (chat.validation != null)
+                      Semantics(
+                        liveRegion: true,
+                        child: Text(chat.validation!),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Expanded(
+                    child: TextField(
+                      key: const Key('assistantInput'),
+                      controller: input,
+                      minLines: 1,
+                      maxLines: 4,
+                      maxLength: 1000,
+                      textInputAction: TextInputAction.send,
+                      onSubmitted: (_) => send(),
+                      decoration: const InputDecoration(
+                        labelText: 'Message Dermaire',
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton.filled(
+                    tooltip: 'Send message',
+                    onPressed: chat.busy ? null : send,
+                    icon: const Icon(Icons.send_rounded),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }

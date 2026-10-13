@@ -8,53 +8,67 @@ import '../services/api_service.dart';
 import 'assistance_models.dart';
 import 'assistance_controller.dart';
 
-class AssistanceEvidence extends StatelessWidget {
-  const AssistanceEvidence({super.key, required this.response});
+class AssistanceSafetySnapshot extends StatelessWidget {
+  const AssistanceSafetySnapshot({super.key, required this.response});
   final AssistanceResponse response;
+  @override
+  Widget build(BuildContext context) => DermaireCard(
+    borderColor: response.safety.level == SafetyLevel.urgent
+        ? Theme.of(context).colorScheme.error
+        : null,
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('Safety Engine · response snapshot'),
+        Semantics(
+          liveRegion: true,
+          child: Text(
+            response.safety.supported
+                ? response.safety.level.label
+                : response.safety.level == SafetyLevel.urgent
+                ? 'Unsupported safety format — server reports urgent'
+                : 'Unsupported safety status — no clearance',
+          ),
+        ),
+        SelectableText(response.safety.guidance),
+        Text('Evaluated: ${clinicalTime(response.safety.evaluatedAt)}'),
+        Text('Server escalation: ${response.escalation}'),
+        if (response.safety.riskScreenComplete != true)
+          const Text(
+            'Risk-screen evidence is incomplete. Missing information does not rule out risk.',
+          ),
+        for (final limitation in response.safety.limitations) Text(limitation),
+        if (response.clinician != null) ...[
+          const Text('Clinician-authored decision · response snapshot'),
+          Text(
+            'Decision: ${response.clinician!.id} · Sequence: ${response.clinician!.sequence}',
+          ),
+          Text(
+            'Clinician recommendation: ${response.clinician!.recommendation}',
+          ),
+        ],
+        const Text(
+          'Response snapshots do not replace separately retrieved current safety or clinician guidance. The device does not resolve conflicts.',
+        ),
+      ],
+    ),
+  );
+}
+
+class AssistanceEvidence extends StatelessWidget {
+  const AssistanceEvidence({
+    super.key,
+    required this.response,
+    this.showMessage = true,
+    this.showSafety = true,
+  });
+  final AssistanceResponse response;
+  final bool showMessage, showSafety;
   @override
   Widget build(BuildContext context) => Column(
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
-      DermaireCard(
-        borderColor: response.safety.level == SafetyLevel.urgent
-            ? Theme.of(context).colorScheme.error
-            : null,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Safety Engine · response snapshot'),
-            Semantics(
-              liveRegion: true,
-              child: Text(
-                response.safety.supported
-                    ? response.safety.level.label
-                    : 'Unsupported safety status — no clearance',
-              ),
-            ),
-            SelectableText(response.safety.guidance),
-            Text('Evaluated: ${clinicalTime(response.safety.evaluatedAt)}'),
-            Text('Server escalation: ${response.escalation}'),
-            if (response.safety.riskScreenComplete != true)
-              const Text(
-                'Risk-screen evidence is incomplete. Missing information does not rule out risk.',
-              ),
-            for (final limitation in response.safety.limitations)
-              Text(limitation),
-            if (response.clinician != null) ...[
-              const Text('Clinician-authored decision · response snapshot'),
-              Text(
-                'Decision: ${response.clinician!.id} · Sequence: ${response.clinician!.sequence}',
-              ),
-              Text(
-                'Clinician recommendation: ${response.clinician!.recommendation}',
-              ),
-            ],
-            const Text(
-              'Response snapshots do not replace separately retrieved current safety or clinician guidance. The device does not resolve conflicts.',
-            ),
-          ],
-        ),
-      ),
+      if (showSafety) AssistanceSafetySnapshot(response: response),
       DermaireCard(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -63,7 +77,7 @@ class AssistanceEvidence extends StatelessWidget {
               'Assistance response',
               style: Theme.of(context).textTheme.titleLarge,
             ),
-            SelectableText(response.message),
+            if (showMessage) SelectableText(response.message),
             Text(
               'Response source mode: ${response.provider.mode} · Availability: ${response.provider.availability}',
             ),
