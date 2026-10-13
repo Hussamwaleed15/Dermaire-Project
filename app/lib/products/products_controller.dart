@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 
+import '../services/api_service.dart';
 import 'product.dart';
 import 'product_repository.dart';
 import 'product_validation.dart';
@@ -13,11 +14,27 @@ class ProductOperationResult {
 }
 
 class ProductsController extends ChangeNotifier {
-  ProductsController(this._repository);
+  ProductsController(this._repository) {
+    if (requiresServerSession) {
+      _session = ApiService.instance.sessionGeneration;
+      ApiService.instance.addListener(_sessionChanged);
+    }
+  }
+  int _session = 0;
+  void _sessionChanged() {
+    if (!_disposed && _session != ApiService.instance.sessionGeneration) {
+      _session = ApiService.instance.sessionGeneration;
+      clear();
+    }
+  }
+
   final ProductRepository _repository;
 
+  bool _disposed = false;
+  bool get requiresServerSession => _repository is RemoteProductRepository;
   List<Product> _products = [];
   int _generation = 0;
+  bool createUncertain = false;
   bool isStale = false;
   bool isLoading = true;
   bool isSaving = false;
@@ -72,6 +89,8 @@ class ProductsController extends ChangeNotifier {
 
   void clear() {
     _generation++;
+    isSaving = false;
+    createUncertain = false;
     isLoading = true;
     isStale = false;
     _products = [];
@@ -83,24 +102,26 @@ class ProductsController extends ChangeNotifier {
   }
 
   Future<void> load() async {
-    if (isSaving) return;
+    if (_disposed || isSaving) return;
     final generation = ++_generation;
     isLoading = true;
     errorMessage = null;
     notifyListeners();
     try {
       final products = await _repository.fetchProducts();
-      if (generation != _generation) return;
+      if (_disposed || generation != _generation) return;
       _products = products;
       isStale = false;
     } on Object {
-      if (generation != _generation) return;
+      if (_disposed || generation != _generation) return;
       isStale = true;
       errorMessage =
           'Could not refresh products. Displayed data may be stale. Connect and retry.';
     } finally {
-      if (generation == _generation) isLoading = false;
-      notifyListeners();
+      if (!_disposed && generation == _generation) {
+        isLoading = false;
+        notifyListeners();
+      }
     }
   }
 
@@ -128,15 +149,24 @@ class ProductsController extends ChangeNotifier {
       _products.where((item) => item.id == id).firstOrNull;
 
   Future<ProductOperationResult> add(Product product) async {
+    if (createUncertain) {
+      return const ProductOperationResult.failure(
+        'Previous creation is unconfirmed. Inspect refreshed records; do not submit it again.',
+      );
+    }
     if (ProductValidation.duplicate(product, _products)) {
       return const ProductOperationResult.failure(
         'This product is already in your library.',
       );
     }
-    return _commit(() async {
+    final result = await _commit(() async {
       final saved = await _repository.create(product);
       return [..._products, saved];
     }, 'Product saved to your library.');
+    if (!result.success && requiresServerSession && isStale) {
+      createUncertain = true;
+    }
+    return result;
   }
 
   Future<ProductOperationResult> update(Product product) async {
@@ -244,7 +274,7 @@ class ProductsController extends ChangeNotifier {
     Future<List<Product>> Function() operation,
     String success,
   ) async {
-    if (isStale || isLoading) {
+    if (_disposed || isStale || isLoading) {
       return const ProductOperationResult.failure(
         'Refresh products online before making changes.',
       );
@@ -260,7 +290,7 @@ class ProductsController extends ChangeNotifier {
     notifyListeners();
     try {
       final next = await operation();
-      if (generation != _generation) {
+      if (_disposed || generation != _generation) {
         return const ProductOperationResult.failure(
           'Session or product data changed. Refresh and retry.',
         );
@@ -268,7 +298,7 @@ class ProductsController extends ChangeNotifier {
       _products = next;
       return ProductOperationResult.success(success);
     } on Object {
-      if (generation != _generation) {
+      if (_disposed || generation != _generation) {
         return const ProductOperationResult.failure(
           'Session changed. Please sign in again.',
         );
@@ -277,8 +307,21 @@ class ProductsController extends ChangeNotifier {
       errorMessage = 'Change not confirmed. Refresh online before retrying.';
       return ProductOperationResult.failure(errorMessage!);
     } finally {
-      isSaving = false;
-      notifyListeners();
+      if (!_disposed && generation == _generation) {
+        isSaving = false;
+        notifyListeners();
+      }
     }
+  }
+
+  @override
+  void dispose() {
+    if (requiresServerSession) {
+      ApiService.instance.removeListener(_sessionChanged);
+    }
+    _disposed = true;
+    _generation++;
+    _products = [];
+    super.dispose();
   }
 }

@@ -20,21 +20,47 @@ class ApiService extends ChangeNotifier {
   ApiService._();
   static final ApiService instance = ApiService._();
 
-  Future<Map<String, dynamic>> submitCapture(Uint8List bytes, String filename) async {
-    final request = http.MultipartRequest('POST', Uri.parse('$baseUrl/captures'));
+  Future<Map<String, dynamic>> submitCapture(
+    Uint8List bytes,
+    String filename,
+  ) async {
+    final request = http.MultipartRequest(
+      'POST',
+      Uri.parse('$baseUrl/captures'),
+    );
     request.headers.addAll(_headers(false));
     request.fields.addAll({'source': 'upload', 'view': 'front'});
-    final isPng = bytes.length >= 8 && bytes[0] == 137 && bytes[1] == 80 && bytes[2] == 78 && bytes[3] == 71;
-    request.files.add(http.MultipartFile.fromBytes('photo', bytes,
-        filename: isPng ? 'capture.png' : 'capture.jpg', contentType: MediaType.parse(isPng ? 'image/png' : 'image/jpeg')));
-    final response = await _client.send(request).then(http.Response.fromStream).timeout(const Duration(seconds: 60));
-    if (response.statusCode != 201) throw ApiException('Capture quality checking failed');
+    final isPng =
+        bytes.length >= 8 &&
+        bytes[0] == 137 &&
+        bytes[1] == 80 &&
+        bytes[2] == 78 &&
+        bytes[3] == 71;
+    request.files.add(
+      http.MultipartFile.fromBytes(
+        'photo',
+        bytes,
+        filename: isPng ? 'capture.png' : 'capture.jpg',
+        contentType: MediaType.parse(isPng ? 'image/png' : 'image/jpeg'),
+      ),
+    );
+    final response = await _client
+        .send(request)
+        .then(http.Response.fromStream)
+        .timeout(const Duration(seconds: 60));
+    if (response.statusCode != 201) {
+      throw ApiException('Capture quality checking failed');
+    }
     return jsonDecode(response.body) as Map<String, dynamic>;
   }
 
   Future<List<Map<String, dynamic>>> getCaptureHistory() async {
-    final response = await _client.get(Uri.parse('$baseUrl/captures'), headers: _headers()).timeout(const Duration(seconds: 30));
-    if (response.statusCode != 200) throw ApiException('Capture history unavailable');
+    final response = await _client
+        .get(Uri.parse('$baseUrl/captures'), headers: _headers())
+        .timeout(const Duration(seconds: 30));
+    if (response.statusCode != 200) {
+      throw ApiException('Capture history unavailable');
+    }
     return (jsonDecode(response.body) as List).cast<Map<String, dynamic>>();
   }
 
@@ -92,7 +118,8 @@ class ApiService extends ChangeNotifier {
       if (data['id'] is String &&
           RegExp(r'^[A-Za-z0-9_-]+$').hasMatch(data['id'] as String) &&
           (ref == null ||
-              ref is String && ref.startsWith('skin_photos/$owner/${owner}_'))) {
+              ref is String &&
+                  ref.startsWith('skin_photos/$owner/${owner}_'))) {
         candidate = data['id'] as String;
       }
       return GuidedCaptureRecord.fromApi(data, owner: owner);
@@ -195,19 +222,30 @@ class ApiService extends ChangeNotifier {
   Future<PersonalSkinModel> readPersonalSkinModel(int generation) async {
     void guard() {
       if (!isCurrentSession(generation) || !canReadPatientClinicalStatus) {
-        throw ApiException('Session changed. Reopen your skin evidence after sign-in.');
+        throw ApiException(
+          'Session changed. Reopen your skin evidence after sign-in.',
+        );
       }
     }
+
     guard();
     final owner = _sessionUserId!;
-    final request = http.Request('GET',Uri.parse('$baseUrl/personal-skin-model'));
+    final request = http.Request(
+      'GET',
+      Uri.parse('$baseUrl/personal-skin-model'),
+    );
     request.headers.addAll(_headers(false));
     request.followRedirects = false;
-    final response = await _client.send(request).then(http.Response.fromStream)
+    final response = await _client
+        .send(request)
+        .then(http.Response.fromStream)
         .timeout(const Duration(seconds: 20));
     guard();
     if (response.statusCode != 200) throw PsmReadException(response.statusCode);
-    return PersonalSkinModel.fromApi(jsonDecode(response.body) as Map<String, dynamic>, owner: owner);
+    return PersonalSkinModel.fromApi(
+      jsonDecode(response.body) as Map<String, dynamic>,
+      owner: owner,
+    );
   }
 
   static const String _tokenKey = 'dermaire_jwt_token';
@@ -240,81 +278,146 @@ class ApiService extends ChangeNotifier {
       _confirmedSafetyAcceptance == true;
 
   // Presentation guard only; the server still authorizes every patient read.
-  bool get canReadPatientClinicalStatus => isAuthenticated &&
-      hasConfirmedSafetyAcceptance && _sessionRole == 'patient';
+  bool get canReadPatientClinicalStatus =>
+      isAuthenticated &&
+      hasConfirmedSafetyAcceptance &&
+      _sessionRole == 'patient';
 
-  Future<Map<String, dynamic>> _readClinical(String path, int generation) async {
+  Future<Map<String, dynamic>> _readClinical(
+    String path,
+    int generation,
+  ) async {
     if (!isCurrentSession(generation) || !canReadPatientClinicalStatus) {
-      throw ClinicalRequestException('Sign in and confirm safety acceptance to view clinical information.');
+      throw ClinicalRequestException(
+        'Sign in and confirm safety acceptance to view clinical information.',
+      );
     }
-    final response = await _client.get(Uri.parse('$baseUrl/$path'), headers: _headers(false))
+    final response = await _client
+        .get(Uri.parse('$baseUrl/$path'), headers: _headers(false))
         .timeout(const Duration(seconds: 20));
     if (!isCurrentSession(generation) || !canReadPatientClinicalStatus) {
-      throw ClinicalRequestException('Your session changed. Please sign in again.');
+      throw ClinicalRequestException(
+        'Your session changed. Please sign in again.',
+      );
     }
     if (response.statusCode == 403) {
-      throw ClinicalRequestException('Access to this clinical information was denied. Refresh or sign in again.');
+      throw ClinicalRequestException(
+        'Access to this clinical information was denied. Refresh or sign in again.',
+      );
     }
     if (response.statusCode != 200) {
-      throw ClinicalRequestException('Clinical information is unavailable. Refresh to confirm the latest information.');
+      throw ClinicalRequestException(
+        'Clinical information is unavailable. Refresh to confirm the latest information.',
+      );
     }
-    try { return jsonDecode(response.body) as Map<String, dynamic>; }
-    catch (_) { throw ClinicalRequestException('The clinical response could not be verified. Please refresh.'); }
+    try {
+      return jsonDecode(response.body) as Map<String, dynamic>;
+    } catch (_) {
+      throw ClinicalRequestException(
+        'The clinical response could not be verified. Please refresh.',
+      );
+    }
   }
 
   Future<SafetyAssessment> getPatientSafety({required int generation}) async =>
       SafetyAssessment.fromApi(await _readClinical('safety', generation));
 
-  Future<ClinicianReview> getPatientClinicalReview({required int generation}) async {
+  Future<ClinicianReview> getPatientClinicalReview({
+    required int generation,
+  }) async {
     final owner = _sessionUserId;
     final value = await _readClinical('doctor/review-status', generation);
     if (owner == null || !isCurrentSession(generation)) {
-      throw ClinicalRequestException('Your session changed. Please sign in again.');
+      throw ClinicalRequestException(
+        'Your session changed. Please sign in again.',
+      );
     }
     return ClinicianReview.fromApi(value, owner: owner);
   }
 
-  String? get observationOwner => canReadPatientClinicalStatus ? _sessionUserId : null;
+  String? get observationOwner =>
+      canReadPatientClinicalStatus ? _sessionUserId : null;
 
   void _guardObservation(int generation) {
     if (!isCurrentSession(generation) || !canReadPatientClinicalStatus) {
-      throw ApiException('Sign in and confirm safety acceptance to use your observations.');
+      throw ApiException(
+        'Sign in and confirm safety acceptance to use your observations.',
+      );
     }
   }
 
-  Future<List<ObservationRecord>> getPatientObservations({required int generation}) async {
+  Future<List<ObservationRecord>> getPatientObservations({
+    required int generation,
+  }) async {
     _guardObservation(generation);
     final owner = _sessionUserId!;
-    final response = await _client.get(Uri.parse('$baseUrl/checkins'), headers: _headers(false)).timeout(const Duration(seconds: 20));
+    final response = await _client
+        .get(Uri.parse('$baseUrl/checkins'), headers: _headers(false))
+        .timeout(const Duration(seconds: 20));
     _guardObservation(generation);
-    if(response.statusCode != 200) throw ApiException('Observation history unavailable.');
+    if (response.statusCode != 200) {
+      throw ApiException('Observation history unavailable.');
+    }
     final list = jsonDecode(response.body) as List;
-    return List.unmodifiable(list.map((row) => ObservationRecord.fromApi(row as Map<String,dynamic>, owner:owner)));
+    return List.unmodifiable(
+      list.map(
+        (row) => ObservationRecord.fromApi(
+          row as Map<String, dynamic>,
+          owner: owner,
+        ),
+      ),
+    );
   }
 
-  Future<ObservationRecord> submitPatientObservation({required ObservationDraft draft, required int generation}) async {
+  Future<ObservationRecord> submitPatientObservation({
+    required ObservationDraft draft,
+    required int generation,
+  }) async {
     _guardObservation(generation);
-    if(draft.validation != null) throw ArgumentError('Invalid observation fields');
+    if (draft.validation != null) {
+      throw ArgumentError('Invalid observation fields');
+    }
     final owner = _sessionUserId!;
-    final request = http.MultipartRequest('POST', Uri.parse('$baseUrl/checkins'));
+    final request = http.MultipartRequest(
+      'POST',
+      Uri.parse('$baseUrl/checkins'),
+    );
     request.headers.addAll(_headers(false));
     request.fields['time_of_day'] = draft.moment!;
     request.fields['report'] = jsonEncode(draft.report);
-    if(draft.submittedNotes != null) request.fields['notes'] = draft.submittedNotes!;
+    if (draft.submittedNotes != null) {
+      request.fields['notes'] = draft.submittedNotes!;
+    }
     // Report-only writes have no server idempotency guarantee. Send once only.
-    final response = await _client.send(request).then(http.Response.fromStream).timeout(const Duration(seconds: 30));
+    final response = await _client
+        .send(request)
+        .then(http.Response.fromStream)
+        .timeout(const Duration(seconds: 30));
     _guardObservation(generation);
-    if([400,403,404,409,422].contains(response.statusCode)) throw const ObservationWriteException(ObservationFailure.rejected);
-    if(response.statusCode != 201) throw const ObservationWriteException(ObservationFailure.uncertain);
+    if ([400, 403, 404, 409, 422].contains(response.statusCode)) {
+      throw const ObservationWriteException(ObservationFailure.rejected);
+    }
+    if (response.statusCode != 201) {
+      throw const ObservationWriteException(ObservationFailure.uncertain);
+    }
     String? candidate;
     try {
-      final data = jsonDecode(response.body) as Map<String,dynamic>;
-      if(data['user_id'] == owner && data['id'] is String && (data['id'] as String).isNotEmpty) candidate = data['id'] as String;
-      final record = ObservationRecord.fromApi(data,owner:owner);
-      if(!record.matches(draft)) throw const FormatException('Observation fields unconfirmed');
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      if (data['user_id'] == owner &&
+          data['id'] is String &&
+          (data['id'] as String).isNotEmpty) {
+        candidate = data['id'] as String;
+      }
+      final record = ObservationRecord.fromApi(data, owner: owner);
+      if (!record.matches(draft)) {
+        throw const FormatException('Observation fields unconfirmed');
+      }
       return record;
-    } catch(_) {
-      throw ObservationWriteException(ObservationFailure.uncertain,candidateId:candidate);
+    } catch (_) {
+      throw ObservationWriteException(
+        ObservationFailure.uncertain,
+        candidateId: candidate,
+      );
     }
   }
 
@@ -332,8 +435,10 @@ class ApiService extends ChangeNotifier {
 
   String? get authToken => _authToken;
   Map<String, dynamic>? get currentUser => _currentUser;
-  bool get isAuthenticated => _authToken != null &&
-      _expiresAt != null && DateTime.now().isBefore(_expiresAt!);
+  bool get isAuthenticated =>
+      _authToken != null &&
+      _expiresAt != null &&
+      DateTime.now().isBefore(_expiresAt!);
 
   Future<void> init() async {
     // Sessions are memory-only. Never restore legacy plaintext credentials.
@@ -360,16 +465,18 @@ class ApiService extends ChangeNotifier {
     bool acceptSafety = true,
   }) async {
     final generation = await _beginAuthentication();
-    final res = await _client.post(
-      Uri.parse('$baseUrl/auth/register'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'email': email,
-        'password': password,
-        'full_name': fullName,
-        'accept_safety': acceptSafety,
-      }),
-    ).timeout(const Duration(seconds: 20));
+    final res = await _client
+        .post(
+          Uri.parse('$baseUrl/auth/register'),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({
+            'email': email,
+            'password': password,
+            'full_name': fullName,
+            'accept_safety': acceptSafety,
+          }),
+        )
+        .timeout(const Duration(seconds: 20));
     if (res.body.isEmpty) {
       throw ApiException(
         'Empty response from server (status ${res.statusCode})',
@@ -392,11 +499,13 @@ class ApiService extends ChangeNotifier {
     String? requiredRole,
   }) async {
     final generation = await _beginAuthentication();
-    final res = await _client.post(
-      Uri.parse('$baseUrl/auth/login'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'email': email, 'password': password}),
-    ).timeout(const Duration(seconds: 20));
+    final res = await _client
+        .post(
+          Uri.parse('$baseUrl/auth/login'),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({'email': email, 'password': password}),
+        )
+        .timeout(const Duration(seconds: 20));
     if (res.body.isEmpty) {
       throw ApiException(
         'Empty response from server (status ${res.statusCode})',
@@ -410,7 +519,9 @@ class ApiService extends ChangeNotifier {
               (data['user_id'] as String).trim().isEmpty ||
               data['expires_in'] is! int ||
               (data['expires_in'] as int) <= 0)) {
-        throw ApiException('This account is not authorized for the clinician workspace');
+        throw ApiException(
+          'This account is not authorized for the clinician workspace',
+        );
       }
       await _persistAuth(data, generation);
       return data;
@@ -424,11 +535,13 @@ class ApiService extends ChangeNotifier {
     required String idToken,
   }) async {
     final generation = await _beginAuthentication();
-    final res = await _client.post(
-      Uri.parse('$baseUrl/auth/google'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'id_token': idToken}),
-    ).timeout(const Duration(seconds: 20));
+    final res = await _client
+        .post(
+          Uri.parse('$baseUrl/auth/google'),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({'id_token': idToken}),
+        )
+        .timeout(const Duration(seconds: 20));
     if (res.body.isEmpty) {
       throw ApiException(
         'Empty response from server (status ${res.statusCode})',
@@ -506,11 +619,16 @@ class ApiService extends ChangeNotifier {
       throw ApiException('Session changed. Please sign in again');
     }
     _authToken = token;
-    _sessionUserId = data['user_id'] is String ? data['user_id'] as String : null;
+    _sessionUserId = data['user_id'] is String
+        ? data['user_id'] as String
+        : null;
     _sessionRole = data['role'] is String ? data['role'] as String : null;
     _currentUser = Map.of(data)..remove('access_token');
     _expiresAt = DateTime.now().add(Duration(seconds: ttl));
-    _expiryTimer = Timer(Duration(seconds: ttl), () => unawaited(_clearSession()));
+    _expiryTimer = Timer(
+      Duration(seconds: ttl),
+      () => unawaited(_clearSession()),
+    );
   }
 
   Future<void> _clearSession() async {
@@ -532,7 +650,10 @@ class ApiService extends ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       for (final key in [
-        _tokenKey, _userKey, 'dermaire_products_v2', 'dermaire_safety_accepted',
+        _tokenKey,
+        _userKey,
+        'dermaire_products_v2',
+        'dermaire_safety_accepted',
       ]) {
         await prefs.remove(key);
       }
@@ -546,7 +667,8 @@ class ApiService extends ChangeNotifier {
     await _clearSession();
     if (headers == null) return;
     try {
-      await _client.post(Uri.parse('$baseUrl/auth/logout'), headers: headers)
+      await _client
+          .post(Uri.parse('$baseUrl/auth/logout'), headers: headers)
           .timeout(const Duration(seconds: 10));
     } catch (_) {
       // Offline logout still clears this device; server expiry remains bounded.
@@ -789,34 +911,73 @@ class ApiService extends ChangeNotifier {
     );
   }
 
-  Future<AssistanceResponse> requestPatientAssistance(String message, int generation) async {
+  Future<AssistanceResponse> requestPatientAssistance(
+    String message,
+    int generation,
+  ) async {
     final owner = observationOwner;
-    final data = await patientInformationalPost('assistance',message,generation);
-    if(!isCurrentSession(generation)||owner==null||observationOwner!=owner)throw ApiException('Session changed. Reopen assistance.');
-    return AssistanceResponse.fromApi(data,owner:owner);
+    final data = await patientInformationalPost(
+      'assistance',
+      message,
+      generation,
+    );
+    if (!isCurrentSession(generation) ||
+        owner == null ||
+        observationOwner != owner) {
+      throw ApiException('Session changed. Reopen assistance.');
+    }
+    return AssistanceResponse.fromApi(data, owner: owner);
   }
 
-  Future<Map<String,dynamic>> patientInformationalPost(String route,String message,int generation) async {
-    void guard() { if(!isCurrentSession(generation)||!canReadPatientClinicalStatus) throw ApiException('Session changed. Reopen assistance after sign-in.'); }
+  Future<Map<String, dynamic>> patientInformationalPost(
+    String route,
+    String message,
+    int generation,
+  ) async {
+    void guard() {
+      if (!isCurrentSession(generation) || !canReadPatientClinicalStatus) {
+        throw ApiException('Session changed. Reopen assistance after sign-in.');
+      }
+    }
+
     guard();
-    if(!['assistance','chat'].contains(route)||message.trim().isEmpty||message.trim().runes.length>1000) throw ArgumentError('Invalid assistance request');
-    final request=http.Request('POST',Uri.parse('$baseUrl/$route'));
-    request.followRedirects=false;request.headers.addAll(_headers());request.body=jsonEncode({'message':message.trim()});
-    final response=await _client.send(request).then(http.Response.fromStream).timeout(const Duration(seconds:60));
-    guard();if(response.statusCode!=200) throw AssistanceReadException(response.statusCode);
-    return jsonDecode(response.body) as Map<String,dynamic>;
+    if (!['assistance', 'chat'].contains(route) ||
+        message.trim().isEmpty ||
+        message.trim().runes.length > 1000) {
+      throw ArgumentError('Invalid assistance request');
+    }
+    final request = http.Request('POST', Uri.parse('$baseUrl/$route'));
+    request.followRedirects = false;
+    request.headers.addAll(_headers());
+    request.body = jsonEncode({'message': message.trim()});
+    final response = await _client
+        .send(request)
+        .then(http.Response.fromStream)
+        .timeout(const Duration(seconds: 60));
+    guard();
+    if (response.statusCode != 200) {
+      throw AssistanceReadException(response.statusCode);
+    }
+    return jsonDecode(response.body) as Map<String, dynamic>;
   }
 
   Future<Map<String, dynamic>> requestAssistance(String message) async {
-    final response = await _client.post(Uri.parse('$baseUrl/assistance'),
-        headers: _headers(), body: jsonEncode({'message': message}))
+    final response = await _client
+        .post(
+          Uri.parse('$baseUrl/assistance'),
+          headers: _headers(),
+          body: jsonEncode({'message': message}),
+        )
         .timeout(const Duration(seconds: 60));
     if (response.statusCode != 200) {
-      throw ApiException('Assistance unavailable (status ${response.statusCode})');
+      throw ApiException(
+        'Assistance unavailable (status ${response.statusCode})',
+      );
     }
     final data = jsonDecode(response.body) as Map<String, dynamic>;
     if (data['schema_version'] != 'contextual-ai-1.0' ||
-        data['message'] is! String || data['metadata'] is! Map) {
+        data['message'] is! String ||
+        data['metadata'] is! Map) {
       throw ApiException('Invalid assistance response');
     }
     return data;
@@ -860,34 +1021,104 @@ class ApiService extends ChangeNotifier {
     return jsonDecode(response.body);
   }
 
-  Future<dynamic> routineRequest(String resource, {String method = 'GET', Map<String, dynamic>? payload}) async {
+  Future<dynamic> routineRequest(
+    String resource, {
+    String method = 'GET',
+    Map<String, dynamic>? payload,
+  }) async {
     final uri = Uri.parse('$baseUrl/routine/$resource');
-    final response = await (method == 'GET' ? _client.get(uri, headers: _headers(false)) :
-      method == 'PATCH' ? _client.patch(uri, headers: _headers(), body: jsonEncode(payload)) :
-      _client.post(uri, headers: _headers(), body: jsonEncode(payload))).timeout(const Duration(seconds: 20));
+    final response =
+        await (method == 'GET'
+                ? _client.get(uri, headers: _headers(false))
+                : method == 'PATCH'
+                ? _client.patch(
+                    uri,
+                    headers: _headers(),
+                    body: jsonEncode(payload),
+                  )
+                : _client.post(
+                    uri,
+                    headers: _headers(),
+                    body: jsonEncode(payload),
+                  ))
+            .timeout(const Duration(seconds: 20));
     if (response.statusCode != (method == 'POST' ? 201 : 200)) {
-      throw ApiException('Routine request failed (status ${response.statusCode})');
+      throw ApiException(
+        'Routine request failed (status ${response.statusCode})',
+      );
     }
     return jsonDecode(response.body);
   }
+
   Future<Map<String, dynamic>> getProductIntelligence(String id) async {
     final token = authToken;
     final responses = await Future.wait([
-      _client.get(Uri.parse('$baseUrl/products/${Uri.encodeComponent(id)}/intelligence'), headers: _headers(false)),
-      _client.get(Uri.parse('$baseUrl/routine/intelligence'), headers: _headers(false)),
+      _client.get(
+        Uri.parse('$baseUrl/products/${Uri.encodeComponent(id)}/intelligence'),
+        headers: _headers(false),
+      ),
+      _client.get(
+        Uri.parse('$baseUrl/routine/intelligence'),
+        headers: _headers(false),
+      ),
     ]).timeout(const Duration(seconds: 20));
     if (token != authToken || responses.any((r) => r.statusCode != 200)) {
-      throw ApiException('Product intelligence unavailable. Refresh and retry.');
+      throw ApiException(
+        'Product intelligence unavailable. Refresh and retry.',
+      );
     }
     final product = jsonDecode(responses[0].body) as Map<String, dynamic>;
     final routine = jsonDecode(responses[1].body) as Map<String, dynamic>;
-    if (product['product_id'] != id || product['ingredients'] is! List ||
-        product['facts'] is! Map || routine['warnings'] is! List || product['warnings'] is! List) {
+    if (product['product_id'] != id ||
+        product['ingredients'] is! List ||
+        product['facts'] is! Map ||
+        routine['warnings'] is! List ||
+        product['warnings'] is! List) {
       throw ApiException('Invalid product intelligence response');
     }
-    product['routine_warnings'] = (routine['warnings'] as List).where((w) =>
-      (w['evidence'] as List).any((e) => e['product_id'] == id)).toList();
+    product['routine_warnings'] = (routine['warnings'] as List)
+        .where((w) => (w['evidence'] as List).any((e) => e['product_id'] == id))
+        .toList();
     return product;
+  }
+
+  Future<Object?> patientResource(
+    String path,
+    int generation, {
+    String method = 'GET',
+    Map<String, dynamic>? payload,
+  }) async {
+    void guard() {
+      if (!isCurrentSession(generation) || !canReadPatientClinicalStatus) {
+        throw ApiException('Session changed. Reopen this workflow.');
+      }
+    }
+
+    guard();
+    if (!RegExp(
+          r'^(products|routine/(entries|adherence)|experiments)(/[A-Za-z0-9_-]+){0,2}(\?[A-Za-z0-9_=&-]+)?$',
+        ).hasMatch(path) ||
+        !['GET', 'POST', 'PATCH', 'DELETE'].contains(method)) {
+      throw ArgumentError('Invalid patient resource');
+    }
+    final request = http.Request(method, Uri.parse('$baseUrl/$path'));
+    request.followRedirects = false;
+    request.headers.addAll(_headers(payload != null));
+    if (payload != null) request.body = jsonEncode(payload);
+    final response = await _client
+        .send(request)
+        .then(http.Response.fromStream)
+        .timeout(const Duration(seconds: 30));
+    guard();
+    if (response.statusCode == 404 && method == 'GET') {
+      throw PatientResourceMissing();
+    }
+    if (![200, 201, 204].contains(response.statusCode)) {
+      throw ApiException(
+        'Request unavailable (status ${response.statusCode}). Refresh before any new change.',
+      );
+    }
+    return response.statusCode == 204 ? null : jsonDecode(response.body);
   }
 
   Future<List<Map<String, dynamic>>> getProducts({
@@ -928,9 +1159,15 @@ class ApiService extends ChangeNotifier {
     );
   }
 
-  Future<Map<String, dynamic>> updateProduct(String id, Map<String, dynamic> product) async {
-    final res = await _client.patch(Uri.parse('$baseUrl/products/$id'),
-        headers: _headers(), body: jsonEncode(product));
+  Future<Map<String, dynamic>> updateProduct(
+    String id,
+    Map<String, dynamic> product,
+  ) async {
+    final res = await _client.patch(
+      Uri.parse('$baseUrl/products/$id'),
+      headers: _headers(),
+      body: jsonEncode(product),
+    );
     if (res.statusCode != 200) {
       throw ApiException('Could not update product (status ${res.statusCode})');
     }
@@ -985,8 +1222,9 @@ class ApiService extends ChangeNotifier {
 
   Future<Map<String, dynamic>> getBaseline() async {
     final generation = sessionGeneration;
-    final res = await _client.get(Uri.parse('$baseUrl/baseline'),
-        headers: _headers(false)).timeout(const Duration(seconds: 20));
+    final res = await _client
+        .get(Uri.parse('$baseUrl/baseline'), headers: _headers(false))
+        .timeout(const Duration(seconds: 20));
     if (generation != sessionGeneration) throw ApiException('Session changed.');
     if (res.statusCode != 200) {
       throw ApiException('Could not load baseline (status ${res.statusCode})');
@@ -995,15 +1233,27 @@ class ApiService extends ChangeNotifier {
   }
 
   Future<Map<String, dynamic>> getDailyContext(String day) async {
-    final res = await _client.get(Uri.parse('$baseUrl/context/$day'),
-        headers: _headers(false)).timeout(const Duration(seconds: 15));
+    final res = await _client
+        .get(Uri.parse('$baseUrl/context/$day'), headers: _headers(false))
+        .timeout(const Duration(seconds: 15));
     if (res.statusCode != 200) throw ApiException('Context unavailable');
     return jsonDecode(res.body) as Map<String, dynamic>;
   }
 
-  Future<Map<String, dynamic>> saveDailyContext(String day, bool? unusual, int? cycleDay) async {
-    final res = await _client.put(Uri.parse('$baseUrl/context/$day'), headers: _headers(),
-        body: jsonEncode({'unusual_conditions': unusual, 'cycle_day': cycleDay}))
+  Future<Map<String, dynamic>> saveDailyContext(
+    String day,
+    bool? unusual,
+    int? cycleDay,
+  ) async {
+    final res = await _client
+        .put(
+          Uri.parse('$baseUrl/context/$day'),
+          headers: _headers(),
+          body: jsonEncode({
+            'unusual_conditions': unusual,
+            'cycle_day': cycleDay,
+          }),
+        )
         .timeout(const Duration(seconds: 15));
     if (res.statusCode != 200) throw ApiException('Context save unconfirmed');
     return jsonDecode(res.body) as Map<String, dynamic>;
@@ -1011,7 +1261,8 @@ class ApiService extends ChangeNotifier {
 
   Future<Map<String, dynamic>> getHome() async {
     final generation = sessionGeneration;
-    final res = await _client.get(Uri.parse('$baseUrl/home'), headers: _headers(false))
+    final res = await _client
+        .get(Uri.parse('$baseUrl/home'), headers: _headers(false))
         .timeout(const Duration(seconds: 15));
     if (generation != sessionGeneration) throw ApiException('Session changed.');
     if (res.statusCode != 200) throw ApiException('Home unavailable');
@@ -1019,10 +1270,9 @@ class ApiService extends ChangeNotifier {
   }
 
   Future<List<Map<String, dynamic>>> getCheckIns() async {
-    final res = await _client.get(
-      Uri.parse('$baseUrl/checkins'),
-      headers: _headers(false),
-    ).timeout(const Duration(seconds: 15));
+    final res = await _client
+        .get(Uri.parse('$baseUrl/checkins'), headers: _headers(false))
+        .timeout(const Duration(seconds: 15));
     if (res.statusCode != 200) throw ApiException('Skin history unavailable');
     final list = jsonDecode(res.body) as List<dynamic>;
     final rows = list.cast<Map<String, dynamic>>();
@@ -1033,29 +1283,45 @@ class ApiService extends ChangeNotifier {
   }
 
   void _validateCheckIn(Map<String, dynamic> data) {
-    if (data['id'] is! String || (data['id'] as String).isEmpty ||
-        data['created_at'] is! String || DateTime.tryParse(data['created_at'] as String) == null) {
-      throw ApiException('Invalid check-in confirmation. Refresh before retrying');
+    if (data['id'] is! String ||
+        (data['id'] as String).isEmpty ||
+        data['created_at'] is! String ||
+        DateTime.tryParse(data['created_at'] as String) == null) {
+      throw ApiException(
+        'Invalid check-in confirmation. Refresh before retrying',
+      );
     }
-    final report = data['observation'] is Map ? data['observation']['user_reported'] : null;
-    if (data['observation'] != null && (data['observation'] is! Map ||
-        data['observation']['schema_version'] != 1 || data['observation']['provenance'] is! Map ||
-        data['observation']['daily_context_date'] is! String)) {
+    final report = data['observation'] is Map
+        ? data['observation']['user_reported']
+        : null;
+    if (data['observation'] != null &&
+        (data['observation'] is! Map ||
+            data['observation']['schema_version'] != 1 ||
+            data['observation']['provenance'] is! Map ||
+            data['observation']['daily_context_date'] is! String)) {
       throw ApiException('Invalid observation evidence');
     }
-    if (report != null && (report is! Map ||
-        !['better', 'same', 'worse'].contains(report['overall_change']) || report['symptoms'] is! List)) {
+    if (report != null &&
+        (report is! Map ||
+            !['better', 'same', 'worse'].contains(report['overall_change']) ||
+            report['symptoms'] is! List)) {
       throw ApiException('Invalid structured report');
     }
     final analysis = data['ai_vision_analysis'];
     final source = analysis is Map ? analysis['measurement_source'] : null;
     if (source == 'none' && report != null) {
-      if (['hydration_score', 'texture_score', 'redness_score'].any((key) => data[key] != null)) {
+      if ([
+        'hydration_score',
+        'texture_score',
+        'redness_score',
+      ].any((key) => data[key] != null)) {
         throw ApiException('Unexpected check-in measurements');
       }
       return;
     }
-    if (!['manual', 'image_proxy'].contains(source)) throw ApiException('Unknown measurement source');
+    if (!['manual', 'image_proxy'].contains(source)) {
+      throw ApiException('Unknown measurement source');
+    }
     for (final key in ['hydration_score', 'texture_score', 'redness_score']) {
       final value = data[key];
       if (value is! num || !value.isFinite || value < 0 || value > 100) {
@@ -1082,7 +1348,9 @@ class ApiService extends ChangeNotifier {
     request.headers.addAll(_headers(false));
     request.fields['time_of_day'] = timeOfDay;
     if (report != null) request.fields['report'] = jsonEncode(report);
-    if (hydration != null) request.fields['hydration_score'] = hydration.toString();
+    if (hydration != null) {
+      request.fields['hydration_score'] = hydration.toString();
+    }
     if (texture != null) request.fields['texture_score'] = texture.toString();
     if (redness != null) request.fields['redness_score'] = redness.toString();
     if (notes != null) request.fields['notes'] = notes;
@@ -1098,7 +1366,9 @@ class ApiService extends ChangeNotifier {
       );
     }
 
-    final streamedRes = await _client.send(request).timeout(const Duration(seconds: 30));
+    final streamedRes = await _client
+        .send(request)
+        .timeout(const Duration(seconds: 30));
     final res = await http.Response.fromStream(streamedRes);
     final data = jsonDecode(res.body) as Map<String, dynamic>;
     if (res.statusCode == 201) {
@@ -1106,7 +1376,8 @@ class ApiService extends ChangeNotifier {
       if (report != null) {
         final confirmed = data['observation']?['user_reported'];
         final symptoms = (report['symptoms'] as List? ?? []).toSet().toList();
-        if (confirmed is! Map || confirmed['overall_change'] != report['overall_change'] ||
+        if (confirmed is! Map ||
+            confirmed['overall_change'] != report['overall_change'] ||
             confirmed['routine_status'] != report['routine_status'] ||
             !listEquals(confirmed['symptoms'] as List?, symptoms)) {
           throw ApiException('Structured report was not confirmed');
@@ -1173,9 +1444,12 @@ class ApiService extends ChangeNotifier {
       throw ApiException('Clinical note could not be saved');
     }
     final data = jsonDecode(res.body) as Map<String, dynamic>;
-    if (data['id'] is! String || (data['id'] as String).isEmpty ||
-        data['patient_id'] != patientId || data['content'] is! String ||
-        data['created_at'] is! String || DateTime.tryParse(data['created_at'] as String) == null) {
+    if (data['id'] is! String ||
+        (data['id'] as String).isEmpty ||
+        data['patient_id'] != patientId ||
+        data['content'] is! String ||
+        data['created_at'] is! String ||
+        DateTime.tryParse(data['created_at'] as String) == null) {
       throw ApiException('Invalid clinical note confirmation');
     }
     return data;
@@ -1183,7 +1457,9 @@ class ApiService extends ChangeNotifier {
 }
 
 class _PrivateImageRequest extends http.Request {
-  _PrivateImageRequest(Uri uri) : super('GET', uri) { followRedirects = false; }
+  _PrivateImageRequest(Uri uri) : super('GET', uri) {
+    followRedirects = false;
+  }
 }
 
 class _SessionClient extends http.BaseClient {
@@ -1197,56 +1473,85 @@ class _SessionClient extends http.BaseClient {
       if (request is _PrivateImageRequest) {
         final api = ApiService.instance;
         void sessionChanged() {
-          if (!api.isCurrentSession(generation) || !api.canReadPatientClinicalStatus) client.close();
+          if (!api.isCurrentSession(generation) ||
+              !api.canReadPatientClinicalStatus) {
+            client.close();
+          }
         }
+
         api.addListener(sessionChanged);
         try {
           response = await (() async {
             final streamed = await client.send(request);
-            if (!api.isCurrentSession(generation) || !api.canReadPatientClinicalStatus) {
+            if (!api.isCurrentSession(generation) ||
+                !api.canReadPatientClinicalStatus) {
               throw ApiException('Session changed. Please try again');
             }
             // Errors need no body. In particular, a current 401 must invalidate
             // the session even if an error body stalls or exceeds the byte cap.
             if (streamed.statusCode != 200) {
-              return http.StreamedResponse(const Stream.empty(), streamed.statusCode,
-                headers: streamed.headers, request: request);
+              return http.StreamedResponse(
+                const Stream.empty(),
+                streamed.statusCode,
+                headers: streamed.headers,
+                request: request,
+              );
             }
             if ((streamed.contentLength ?? 0) > maxPrivateImageBytes) {
-              throw const FormatException('Private image exceeds the memory limit');
+              throw const FormatException(
+                'Private image exceeds the memory limit',
+              );
             }
             final builder = BytesBuilder(copy: false);
             await for (final chunk in streamed.stream) {
-              if (!api.isCurrentSession(generation) || !api.canReadPatientClinicalStatus) {
+              if (!api.isCurrentSession(generation) ||
+                  !api.canReadPatientClinicalStatus) {
                 throw ApiException('Session changed. Please try again');
               }
               if (builder.length + chunk.length > maxPrivateImageBytes) {
-                throw const FormatException('Private image exceeds the memory limit');
+                throw const FormatException(
+                  'Private image exceeds the memory limit',
+                );
               }
               builder.add(chunk);
             }
-            return http.StreamedResponse(Stream.value(builder.takeBytes()), 200,
-              headers: streamed.headers, request: request);
+            return http.StreamedResponse(
+              Stream.value(builder.takeBytes()),
+              200,
+              headers: streamed.headers,
+              request: request,
+            );
           })().timeout(const Duration(seconds: 20));
         } finally {
           api.removeListener(sessionChanged);
         }
       } else {
-        final streamed = await client.send(request).timeout(const Duration(seconds: 60));
-        final bytes = await streamed.stream.toBytes().timeout(const Duration(seconds: 60));
-        response = http.StreamedResponse(Stream.value(bytes), streamed.statusCode,
-            headers: streamed.headers, request: request, reasonPhrase: streamed.reasonPhrase);
+        final streamed = await client
+            .send(request)
+            .timeout(const Duration(seconds: 60));
+        final bytes = await streamed.stream.toBytes().timeout(
+          const Duration(seconds: 60),
+        );
+        response = http.StreamedResponse(
+          Stream.value(bytes),
+          streamed.statusCode,
+          headers: streamed.headers,
+          request: request,
+          reasonPhrase: streamed.reasonPhrase,
+        );
       }
     } finally {
       client.close();
     }
     final api = ApiService.instance;
     if (sentToken != null &&
-        (!api.isCurrentSession(generation) || sentToken != 'Bearer ${api.authToken}') &&
+        (!api.isCurrentSession(generation) ||
+            sentToken != 'Bearer ${api.authToken}') &&
         !request.url.path.endsWith('/auth/logout')) {
       throw ApiException('Session changed. Please try again');
     }
-    if (response.statusCode == 401 && sentToken != null &&
+    if (response.statusCode == 401 &&
+        sentToken != null &&
         sentToken == 'Bearer ${api.authToken}') {
       await api._clearSession();
       throw ApiException('Session expired or invalid. Please sign in again');
@@ -1254,6 +1559,8 @@ class _SessionClient extends http.BaseClient {
     return response;
   }
 }
+
+class PatientResourceMissing implements Exception {}
 
 class ApiException implements Exception {
   ApiException(this.message, [this.details]);

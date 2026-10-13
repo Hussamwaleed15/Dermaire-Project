@@ -4,6 +4,8 @@ import '../dermaire_state.dart';
 import '../dermaire_theme.dart';
 import '../dermaire_widgets.dart';
 import '../routine/routine_ui.dart';
+import '../services/api_service.dart';
+import '../clinical/clinical_ui.dart';
 import 'product.dart';
 import 'product_validation.dart';
 import 'products_controller.dart';
@@ -70,6 +72,10 @@ class ProductsFeatureTab extends StatelessWidget {
                   child: Column(
                     children: [
                       const Text(
+                        'Personal, user-entered records — not a verified catalog or proof of use.',
+                      ),
+
+                      const Text(
                         'Saved products and usage preferences do not confirm routine use.',
                       ),
                       OutlinedButton(
@@ -105,7 +111,7 @@ class ProductsFeatureTab extends StatelessWidget {
                     onRetry: controller.load,
                   ),
                 )
-              else if (controller.active.isEmpty)
+              else if (controller.all.isEmpty)
                 SliverFillRemaining(
                   child: _EmptyProducts(
                     onAdd: () =>
@@ -129,7 +135,9 @@ class ProductsFeatureTab extends StatelessWidget {
                           ),
                         ),
                       ),
-                      if (controller.archived.isNotEmpty) ...[
+                      if (controller.all.any(
+                        (p) => p.status != ProductStatus.active,
+                      )) ...[
                         const Divider(height: 30),
                         Text(
                           'INACTIVE',
@@ -140,22 +148,25 @@ class ProductsFeatureTab extends StatelessWidget {
                               ),
                         ),
                         const SizedBox(height: 8),
-                        ...controller.archived.map(
-                          (product) => Opacity(
-                            opacity: .65,
-                            child: ProductCard(
-                              product: product,
-                              onTap: () => openPage(
-                                context,
-                                ProductFeatureDetailScreen(
-                                  state: state,
-                                  productId: product.id,
+                        ...controller.all
+                            .where((p) => p.status != ProductStatus.active)
+                            .map(
+                              (product) => Opacity(
+                                opacity: .65,
+                                child: ProductCard(
+                                  product: product,
+                                  onTap: () => openPage(
+                                    context,
+                                    ProductFeatureDetailScreen(
+                                      state: state,
+                                      productId: product.id,
+                                    ),
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
-                        ),
                       ],
+                      ClinicalHomePanel(controller: state.clinical),
                       const SizedBox(height: 4),
                       FilledButton(
                         onPressed: () => openPage(
@@ -259,7 +270,7 @@ class _EmptyProducts extends StatelessWidget {
       ),
       const SizedBox(height: 8),
       const Text(
-        'Add the products you already use. Dermaire will check interactions and keep your experiments consistent.',
+        'Save your own product records. A saved record does not verify ingredients, safety or actual use.',
         textAlign: TextAlign.center,
       ),
       const SizedBox(height: 22),
@@ -303,17 +314,8 @@ class ProductAddChoiceScreen extends StatelessWidget {
       ActionCard(
         icon: '🔍',
         title: 'Search product',
-        subtitle: 'Match a product from the library',
+        subtitle: 'Search your saved personal records',
         onTap: () => openPage(context, ProductsSearchScreen(state: state)),
-      ),
-      ActionCard(
-        icon: '📇',
-        title: 'Scan product label',
-        subtitle: 'Review the extracted details before saving',
-        onTap: () => showDermaireSnack(
-          context,
-          'Label scanning needs camera permission and OCR integration.',
-        ),
       ),
       ActionCard(
         icon: '✏️',
@@ -560,15 +562,32 @@ class _ProductEditorScreenState extends State<ProductEditorScreen> {
   late bool inRoutine = widget.product?.inRoutine ?? true;
   DateTime? startDate;
   bool submitted = false;
+  late final int generation;
+  bool get current =>
+      !widget.state.productController.requiresServerSession ||
+      ApiService.instance.isCurrentSession(generation) &&
+          ApiService.instance.canReadPatientClinicalStatus;
+  void sessionChanged() {
+    if (!current) {
+      name.clear();
+      brand.clear();
+      ingredients.clear();
+      notes.clear();
+      if (mounted) setState(() {});
+    }
+  }
 
   @override
   void initState() {
     super.initState();
+    generation = ApiService.instance.sessionGeneration;
+    ApiService.instance.addListener(sessionChanged);
     startDate = widget.product?.startDate ?? DateTime.now();
   }
 
   @override
   void dispose() {
+    ApiService.instance.removeListener(sessionChanged);
     name.dispose();
     brand.dispose();
     ingredients.dispose();
@@ -580,140 +599,160 @@ class _ProductEditorScreenState extends State<ProductEditorScreen> {
   @override
   Widget build(BuildContext context) => AnimatedBuilder(
     animation: widget.state.productController,
-    builder: (context, _) => DermairePage(
-      eyebrow: widget.product == null ? 'Add product' : 'Edit product',
-      title: widget.product == null
-          ? 'Enter product details'
-          : 'Update product',
-      subtitle: 'Keep usage accurate so experiments remain comparable.',
-      children: [
-        Form(
-          key: formKey,
-          autovalidateMode: submitted
-              ? AutovalidateMode.onUserInteraction
-              : AutovalidateMode.disabled,
-          child: Column(
+    builder: (context, _) => !current
+        ? const DermairePage(
+            title: 'Session ended',
             children: [
-              TextFormField(
-                key: const Key('productName'),
-                controller: name,
-                focusNode: nameFocus,
-                textInputAction: TextInputAction.next,
-                decoration: const InputDecoration(labelText: 'Product name *'),
-                validator: ProductValidation.name,
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: brand,
-                textInputAction: TextInputAction.next,
-                decoration: const InputDecoration(
-                  labelText: 'Brand (optional)',
-                ),
-                validator: ProductValidation.brand,
-              ),
-              const SizedBox(height: 12),
-              DropdownButtonFormField<ProductCategory>(
-                key: const Key('productCategory'),
-                initialValue: category,
-                decoration: const InputDecoration(labelText: 'Category *'),
-                items: ProductCategory.values
-                    .map(
-                      (value) => DropdownMenuItem(
-                        value: value,
-                        child: Text(value.label),
-                      ),
-                    )
-                    .toList(),
-                onChanged: (value) =>
-                    setState(() => category = value ?? category),
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                key: const Key('productIngredients'),
-                controller: ingredients,
-                textInputAction: TextInputAction.next,
-                decoration: const InputDecoration(
-                  labelText: 'Active ingredients',
-                  hintText: 'Retinol, Niacinamide',
-                ),
-              ),
-              const SizedBox(height: 12),
-              DropdownButtonFormField<UsageTime>(
-                initialValue: time,
-                decoration: const InputDecoration(labelText: 'Time of use *'),
-                items: UsageTime.values
-                    .map(
-                      (value) => DropdownMenuItem(
-                        value: value,
-                        child: Text(value.label),
-                      ),
-                    )
-                    .toList(),
-                onChanged: (value) => setState(() => time = value ?? time),
-              ),
-              const SizedBox(height: 12),
-              SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                title: const Text('Save usage preference'),
-                value: inRoutine,
-                onChanged: (value) => setState(() => inRoutine = value),
-              ),
-              if (inRoutine) ...[
-                Row(
+              Text('Product draft cleared. Reopen from your current account.'),
+            ],
+          )
+        : DermairePage(
+            eyebrow: widget.product == null ? 'Add product' : 'Edit product',
+            title: widget.product == null
+                ? 'Enter product details'
+                : 'Update product',
+            subtitle:
+                'Your product notes and cosmetic usage preferences are not clinician instructions or verified compatibility.',
+            children: [
+              Form(
+                key: formKey,
+                autovalidateMode: submitted
+                    ? AutovalidateMode.onUserInteraction
+                    : AutovalidateMode.disabled,
+                child: Column(
                   children: [
-                    const Expanded(child: Text('Frequency per week')),
-                    IconButton(
-                      tooltip: 'Decrease frequency',
-                      onPressed: frequency > 1
-                          ? () => setState(() => frequency--)
-                          : null,
-                      icon: const Icon(Icons.remove_circle_outline),
+                    TextFormField(
+                      key: const Key('productName'),
+                      controller: name,
+                      focusNode: nameFocus,
+                      textInputAction: TextInputAction.next,
+                      decoration: const InputDecoration(
+                        labelText: 'Product name *',
+                      ),
+                      validator: ProductValidation.name,
                     ),
-                    Text('$frequency', key: const Key('productFrequency')),
-                    IconButton(
-                      tooltip: 'Increase frequency',
-                      onPressed: frequency < 14
-                          ? () => setState(() => frequency++)
-                          : null,
-                      icon: const Icon(Icons.add_circle_outline),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: brand,
+                      textInputAction: TextInputAction.next,
+                      decoration: const InputDecoration(
+                        labelText: 'Brand (optional)',
+                      ),
+                      validator: ProductValidation.brand,
+                    ),
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<ProductCategory>(
+                      key: const Key('productCategory'),
+                      initialValue: category,
+                      decoration: const InputDecoration(
+                        labelText: 'Category *',
+                      ),
+                      items: ProductCategory.values
+                          .map(
+                            (value) => DropdownMenuItem(
+                              value: value,
+                              child: Text(value.label),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (value) =>
+                          setState(() => category = value ?? category),
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      key: const Key('productIngredients'),
+                      controller: ingredients,
+                      textInputAction: TextInputAction.next,
+                      decoration: const InputDecoration(
+                        labelText: 'Active ingredients',
+                        hintText: 'Retinol, Niacinamide',
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<UsageTime>(
+                      initialValue: time,
+                      decoration: const InputDecoration(
+                        labelText: 'Time of use *',
+                      ),
+                      items: UsageTime.values
+                          .map(
+                            (value) => DropdownMenuItem(
+                              value: value,
+                              child: Text(value.label),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (value) =>
+                          setState(() => time = value ?? time),
+                    ),
+                    const SizedBox(height: 12),
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text('Save usage preference'),
+                      value: inRoutine,
+                      onChanged: (value) => setState(() => inRoutine = value),
+                    ),
+                    if (inRoutine) ...[
+                      Row(
+                        children: [
+                          const Expanded(child: Text('Frequency per week')),
+                          IconButton(
+                            tooltip: 'Decrease frequency',
+                            onPressed: frequency > 1
+                                ? () => setState(() => frequency--)
+                                : null,
+                            icon: const Icon(Icons.remove_circle_outline),
+                          ),
+                          Text(
+                            '$frequency',
+                            key: const Key('productFrequency'),
+                          ),
+                          IconButton(
+                            tooltip: 'Increase frequency',
+                            onPressed: frequency < 14
+                                ? () => setState(() => frequency++)
+                                : null,
+                            icon: const Icon(Icons.add_circle_outline),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: const Text('Start date'),
+                        subtitle: Text(_dateLabel(startDate!)),
+                        trailing: const Icon(Icons.calendar_month_outlined),
+                        onTap: _pickDate,
+                      ),
+                    ],
+                    TextFormField(
+                      controller: notes,
+                      maxLength: 500,
+                      maxLines: 3,
+                      decoration: const InputDecoration(
+                        labelText: 'Notes (optional)',
+                      ),
+                      validator: ProductValidation.notes,
                     ),
                   ],
                 ),
-                const SizedBox(height: 8),
-                ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: const Text('Start date'),
-                  subtitle: Text(_dateLabel(startDate!)),
-                  trailing: const Icon(Icons.calendar_month_outlined),
-                  onTap: _pickDate,
+              ),
+              if (widget.state.productController.isSaving)
+                const Padding(
+                  padding: EdgeInsets.only(bottom: 12),
+                  child: LinearProgressIndicator(),
                 ),
-              ],
-              TextFormField(
-                controller: notes,
-                maxLength: 500,
-                maxLines: 3,
-                decoration: const InputDecoration(
-                  labelText: 'Notes (optional)',
+              FilledButton(
+                key: const Key('saveProduct'),
+                onPressed: widget.state.productController.isSaving
+                    ? null
+                    : _save,
+                child: Text(
+                  widget.product == null ? 'Review product' : 'Save changes',
                 ),
-                validator: ProductValidation.notes,
               ),
             ],
           ),
-        ),
-        if (widget.state.productController.isSaving)
-          const Padding(
-            padding: EdgeInsets.only(bottom: 12),
-            child: LinearProgressIndicator(),
-          ),
-        FilledButton(
-          key: const Key('saveProduct'),
-          onPressed: widget.state.productController.isSaving ? null : _save,
-          child: Text(
-            widget.product == null ? 'Review product' : 'Save changes',
-          ),
-        ),
-      ],
-    ),
   );
 
   Future<void> _pickDate() async {
@@ -723,10 +762,13 @@ class _ProductEditorScreenState extends State<ProductEditorScreen> {
       firstDate: DateTime(2000),
       lastDate: DateTime.now(),
     );
-    if (selected != null) setState(() => startDate = selected);
+    if (selected != null && mounted && current) {
+      setState(() => startDate = selected);
+    }
   }
 
   Future<void> _save() async {
+    if (!current) return;
     setState(() => submitted = true);
     if (!formKey.currentState!.validate()) {
       nameFocus.requestFocus();
@@ -756,7 +798,7 @@ class _ProductEditorScreenState extends State<ProductEditorScreen> {
           .where((value) => value.isNotEmpty)
           .toSet()
           .toList(),
-      skinConcerns: widget.state.skinConcerns.toList(),
+      skinConcerns: widget.product?.skinConcerns ?? const [],
       usageInstructions: widget.product?.usageInstructions ?? '',
       frequencyPerWeek: frequency,
       timeOfUse: time,
@@ -795,7 +837,7 @@ class _ProductEditorScreenState extends State<ProductEditorScreen> {
   String _dateLabel(DateTime date) => '${date.day}/${date.month}/${date.year}';
 }
 
-class ProductInteractionScreen extends StatelessWidget {
+class ProductInteractionScreen extends StatefulWidget {
   const ProductInteractionScreen({
     super.key,
     required this.state,
@@ -805,17 +847,57 @@ class ProductInteractionScreen extends StatelessWidget {
   final Product product;
 
   @override
+  State<ProductInteractionScreen> createState() =>
+      _ProductInteractionScreenState();
+}
+
+class _ProductInteractionScreenState extends State<ProductInteractionScreen> {
+  late final int generation;
+  bool get current =>
+      !widget.state.productController.requiresServerSession ||
+      ApiService.instance.isCurrentSession(generation) &&
+          ApiService.instance.canReadPatientClinicalStatus;
+  @override
+  void initState() {
+    super.initState();
+    generation = ApiService.instance.sessionGeneration;
+    ApiService.instance.addListener(changed);
+    widget.state.productController.addListener(changed);
+  }
+
+  void changed() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void dispose() {
+    ApiService.instance.removeListener(changed);
+    widget.state.productController.removeListener(changed);
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    if (!current) {
+      return const DermairePage(
+        title: 'Session ended',
+        children: [
+          Text('Product draft cleared. Reopen from your current account.'),
+        ],
+      );
+    }
     return DermairePage(
       eyebrow: 'Save product',
       title: 'Product details are user-reported',
       children: [
-        Text(product.name),
+        Text(widget.product.name),
         const Text(
           'Saving does not verify ingredients or compatibility. Server-backed facts and routine warnings are available in saved product details.',
         ),
         FilledButton(
-          onPressed: () => _add(context),
+          onPressed: widget.state.productController.isSaving
+              ? null
+              : () => _add(context),
           child: const Text('Add product'),
         ),
       ],
@@ -823,14 +905,15 @@ class ProductInteractionScreen extends StatelessWidget {
   }
 
   Future<void> _add(BuildContext context) async {
-    final result = await state.productController.add(
-      product.copyWith(inExperiment: false, inRoutine: true),
+    if (!current) return;
+    final result = await widget.state.productController.add(
+      widget.product.copyWith(inExperiment: false),
     );
     if (!context.mounted) return;
     showDermaireSnack(context, result.message);
     if (result.success) {
       Navigator.of(context).popUntil((route) => route.isFirst);
-      state.selectTab(2);
+      widget.state.selectTab(2);
     }
   }
 }
@@ -891,9 +974,7 @@ class ProductFeatureDetailScreen extends StatelessWidget {
             alignment: Alignment.center,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(16),
-              gradient: const LinearGradient(
-                colors: [Color(0xFFF1E1CC), DermaireColors.caramel],
-              ),
+              color: Theme.of(context).colorScheme.surfaceContainerHighest,
             ),
             child: Text(
               product.category.icon,
@@ -905,11 +986,14 @@ class ProductFeatureDetailScreen extends StatelessWidget {
             runSpacing: 7,
             children: [
               StatusPill(product.status.name.toUpperCase()),
-              if (product.inExperiment) const StatusPill('IN EXPERIMENT'),
+              if (product.inExperiment) const StatusPill('EXPERIMENT MARKER'),
               if (product.rating != null) StatusPill('★ ${product.rating}'),
             ],
           ),
           const SizedBox(height: 14),
+          const Text(
+            'User-entered product data. Category illustration is not a product photo. Appearance in this list does not verify safety.',
+          ),
           _DetailValue(
             'Brand & category',
             [

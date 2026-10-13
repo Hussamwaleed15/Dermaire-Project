@@ -1,3 +1,5 @@
+import '../clinical/clinical_models.dart' show timestamp;
+
 enum ProductCategory {
   cleanser,
   toner,
@@ -21,6 +23,8 @@ class Product {
     required this.category,
     required this.createdAt,
     required this.updatedAt,
+    this.serverUpdatedAt,
+    this.owner,
     this.brand,
     this.productType,
     this.activeIngredients = const [],
@@ -39,6 +43,8 @@ class Product {
     this.inExperiment = false,
   });
 
+  final DateTime? serverUpdatedAt;
+  final String? owner;
   final String id;
   final String name;
   final String? brand;
@@ -87,6 +93,8 @@ class Product {
     DateTime? createdAt,
     DateTime? updatedAt,
   }) => Product(
+    serverUpdatedAt: serverUpdatedAt,
+    owner: owner,
     id: id ?? this.id,
     name: name ?? this.name,
     brand: clearBrand ? null : brand ?? this.brand,
@@ -150,15 +158,70 @@ class Product {
     'updatedAt': 'updated_at',
   };
 
-  factory Product.fromApi(Map<String, Object?> json) => Product.fromJson({
-    for (final entry in json.entries)
-      (_apiKeys.entries
-                  .where((key) => key.value == entry.key)
-                  .firstOrNull
-                  ?.key ??
-              entry.key):
-          entry.value,
-  });
+  factory Product.fromApi(Map<String, Object?> json) {
+    if (json['created_at'] is! String ||
+        json['updated_at'] is! String ||
+        json['id'] is! String ||
+        (json['id'] as String).isEmpty ||
+        json['name'] is! String ||
+        (json['name'] as String).trim().isEmpty ||
+        json['user_id'] is! String ||
+        (json['user_id'] as String).isEmpty ||
+        !ProductCategory.values.any((v) => v.name == json['category']) ||
+        !ProductStatus.values.any((v) => v.name == json['status']) ||
+        !UsageTime.values.any((v) => v.name == json['time_of_use']) ||
+        json['in_routine'] is! bool ||
+        json['in_experiment'] is! bool ||
+        json['frequency_per_week'] is! int ||
+        (json['frequency_per_week'] as int) < 1 ||
+        (json['frequency_per_week'] as int) > 14 ||
+        ['active_ingredients', 'skin_concerns', 'tags'].any(
+          (k) => json[k] is! List || (json[k] as List).any((v) => v is! String),
+        )) {
+      throw const FormatException('Unsupported product contract');
+    }
+    final parsed = Product.fromJson({
+      for (final entry in json.entries)
+        (_apiKeys.entries
+                    .where((key) => key.value == entry.key)
+                    .firstOrNull
+                    ?.key ??
+                entry.key):
+            entry.value,
+    });
+    final updated = timestamp(json['updated_at'], naiveUtc: true);
+    return parsed
+        .copyWith(
+          createdAt: timestamp(json['created_at'], naiveUtc: true),
+          updatedAt: updated,
+        )
+        .withServerIdentity(json['user_id'] as String, updated);
+  }
+  Product withServerIdentity(String owner, DateTime version) => Product(
+    id: id,
+    name: name,
+    category: category,
+    createdAt: createdAt,
+    updatedAt: updatedAt,
+    serverUpdatedAt: version,
+    owner: owner,
+    brand: brand,
+    productType: productType,
+    activeIngredients: List.unmodifiable(activeIngredients),
+    skinConcerns: List.unmodifiable(skinConcerns),
+    usageInstructions: usageInstructions,
+    frequencyPerWeek: frequencyPerWeek,
+    timeOfUse: timeOfUse,
+    startDate: startDate,
+    endDate: endDate,
+    status: status,
+    notes: notes,
+    imagePath: imagePath,
+    tags: List.unmodifiable(tags),
+    rating: rating,
+    inRoutine: inRoutine,
+    inExperiment: inExperiment,
+  );
 
   Map<String, dynamic> toApi({bool create = false}) => {
     for (final entry in toJson().entries)

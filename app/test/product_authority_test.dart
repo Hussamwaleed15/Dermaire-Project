@@ -15,6 +15,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 Map<String, dynamic> row(String name) => {
   'id': 'server-id',
+  'user_id': 'patient-1',
+  'status': 'active',
   'name': name,
   'category': 'serum',
   'active_ingredients': ['Niacinamide'],
@@ -31,6 +33,7 @@ Map<String, dynamic> row(String name) => {
 };
 Future<void> login() async {
   await ApiService.instance.login(email: 'test@example.com', password: 'test');
+  await ApiService.instance.readSafetyAcceptance();
 }
 
 http.Response auth() => http.Response(
@@ -143,10 +146,20 @@ void main() {
       },
       () => MockClient((req) async {
         if (req.url.path.endsWith('/auth/login')) return auth();
+        if (req.url.path.endsWith('/users/me')) {
+          return http.Response(
+            '{"id":"patient-1","role":"patient","safety_accepted":true,"full_name":"Synthetic account","email":"synthetic@example.invalid","skin_concerns":[]}',
+            200,
+          );
+        }
         expect(req.headers['Authorization'], 'Bearer test-session');
         if (req.method == 'POST' || req.method == 'PATCH') {
           final body = jsonDecode(req.body) as Map<String, dynamic>;
-          expect(body['active_ingredients'], ['Niacinamide']);
+          if (req.method == 'POST') {
+            expect(body['active_ingredients'], ['Niacinamide']);
+          } else {
+            expect(body['notes'], 'Edited');
+          }
           expect(body.containsKey('createdAt'), isFalse);
           expect(body.containsKey('id'), isFalse);
           rows = [
@@ -161,7 +174,15 @@ void main() {
           rows = [];
           return http.Response('', 204);
         }
-        return http.Response(jsonEncode(rows), 200);
+        if (req.url.path.endsWith('/products/server-id') && rows.isEmpty) {
+          return http.Response('{}', 404);
+        }
+        return http.Response(
+          jsonEncode(
+            req.url.path.endsWith('/products/server-id') ? rows.single : rows,
+          ),
+          200,
+        );
       }),
     );
   });
@@ -199,6 +220,12 @@ void main() {
         },
         () => MockClient((req) async {
           if (req.url.path.endsWith('/auth/login')) return auth();
+          if (req.url.path.endsWith('/users/me')) {
+            return http.Response(
+              '{"id":"patient-1","role":"patient","safety_accepted":true,"full_name":"Synthetic account","email":"synthetic@example.invalid","skin_concerns":[]}',
+              200,
+            );
+          }
           if (fail) return http.Response('server failed', 503);
           return http.Response(jsonEncode(empty ? [] : [row('Cached')]), 200);
         }),
@@ -234,6 +261,12 @@ void main() {
         },
         () => MockClient((req) async {
           if (req.url.path.endsWith('/auth/login')) return auth();
+          if (req.url.path.endsWith('/users/me')) {
+            return http.Response(
+              '{"id":"patient-1","role":"patient","safety_accepted":true,"full_name":"Synthetic account","email":"synthetic@example.invalid","skin_concerns":[]}',
+              200,
+            );
+          }
           if (req.url.path.endsWith('/auth/logout')) {
             return http.Response('', 204);
           }
