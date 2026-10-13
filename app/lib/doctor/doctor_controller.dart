@@ -22,6 +22,16 @@ class DoctorWorkspaceController extends ChangeNotifier {
   Timer? _grantTimer;
   bool loading = false, saving = false;
   String? error;
+  String? errorPatient;
+  String? activePatient;
+  int selectionRevision = 0;
+  int selectPatient(String id) {
+    selectionRevision++;
+    activePatient = allows(id) ? id : null;
+    notifyListeners();
+    return selectionRevision;
+  }
+
   DateTime? retrievedAt;
   String query = '';
   PatientPriority? filter;
@@ -196,6 +206,7 @@ class DoctorWorkspaceController extends ChangeNotifier {
     }
     final revision = _revision;
     saving = true;
+    errorPatient = patient.id;
     error = null;
     notifyListeners();
     bool sent = false, acknowledged = false;

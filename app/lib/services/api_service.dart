@@ -222,6 +222,39 @@ class ApiService extends ChangeNotifier {
     return PrivateImageBytes(bytes, response.headers['content-type'] ?? '');
   }
 
+  Future<PrivateImageBytes> readDoctorCaptureImage(
+    String id,
+    int generation, {
+    required Listenable scope,
+    required bool Function() active,
+  }) async {
+    void guard() {
+      if (!isCurrentSession(generation) ||
+          !canReadDoctorWorkspace ||
+          !active()) {
+        throw ApiException('Doctor image access ended.');
+      }
+    }
+
+    guard();
+    if (!RegExp(r'^[A-Za-z0-9_-]+$').hasMatch(id)) {
+      throw ArgumentError('Invalid capture identity');
+    }
+    final request = _DoctorImageRequest(
+      Uri.parse('$baseUrl/captures/$id/image'),
+      scope,
+      active,
+    )..headers.addAll(_headers(false));
+    final response = await _client.send(request);
+    guard();
+    if (response.statusCode != 200) {
+      throw PrivateCaptureException(response.statusCode);
+    }
+    final bytes = await response.stream.toBytes();
+    guard();
+    return PrivateImageBytes(bytes, response.headers['content-type'] ?? '');
+  }
+
   Future<PersonalSkinModel> readPersonalSkinModel(int generation) async {
     void guard() {
       if (!isCurrentSession(generation) || !canReadPatientClinicalStatus) {
@@ -1552,6 +1585,12 @@ class _PrivateImageRequest extends http.Request {
   }
 }
 
+class _DoctorImageRequest extends _PrivateImageRequest {
+  _DoctorImageRequest(super.uri, this.scope, this.active);
+  final Listenable scope;
+  final bool Function() active;
+}
+
 class _SessionClient extends http.BaseClient {
   @override
   Future<http.StreamedResponse> send(http.BaseRequest request) async {
@@ -1583,20 +1622,26 @@ class _SessionClient extends http.BaseClient {
     try {
       if (request is _PrivateImageRequest) {
         final api = ApiService.instance;
+        bool allowed() =>
+            api.isCurrentSession(generation) &&
+            (request is _DoctorImageRequest
+                ? api.canReadDoctorWorkspace && request.active()
+                : api.canReadPatientClinicalStatus);
         void sessionChanged() {
-          if (!api.isCurrentSession(generation) ||
-              !api.canReadPatientClinicalStatus) {
+          if (!allowed()) {
             client.close();
           }
         }
 
         api.addListener(sessionChanged);
+        if (request is _DoctorImageRequest) {
+          request.scope.addListener(sessionChanged);
+        }
         try {
           response = await (() async {
             final streamed = await client.send(request);
             await validate(streamed.statusCode);
-            if (!api.isCurrentSession(generation) ||
-                !api.canReadPatientClinicalStatus) {
+            if (!allowed()) {
               throw ApiException('Session changed. Please try again');
             }
             // Errors need no body. In particular, a current 401 must invalidate
@@ -1616,8 +1661,7 @@ class _SessionClient extends http.BaseClient {
             }
             final builder = BytesBuilder(copy: false);
             await for (final chunk in streamed.stream) {
-              if (!api.isCurrentSession(generation) ||
-                  !api.canReadPatientClinicalStatus) {
+              if (!allowed()) {
                 throw ApiException('Session changed. Please try again');
               }
               if (builder.length + chunk.length > maxPrivateImageBytes) {
@@ -1636,6 +1680,9 @@ class _SessionClient extends http.BaseClient {
           })().timeout(const Duration(seconds: 20));
         } finally {
           api.removeListener(sessionChanged);
+          if (request is _DoctorImageRequest) {
+            request.scope.removeListener(sessionChanged);
+          }
         }
       } else {
         final streamed = await client

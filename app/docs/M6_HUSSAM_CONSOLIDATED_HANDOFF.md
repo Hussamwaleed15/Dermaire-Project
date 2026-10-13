@@ -34,3 +34,11 @@ Provide distinct patient opt-in/consent receipt, export/view scopes and readable
 clinician identity before new linking can be enabled. Do not recreate existing
 grant read/revoke/detail/authentication APIs. A continuous revocation/change feed
 is not present; every new doctor resource request remains server-authorized.
+
+F3: existing doctor-authorized private image read is verified in image_access;
+do not recreate it. Owner capture metadata/measurement/PSM APIs are not substituted
+for doctor reads. Timeline includes actual source rows and bounded context projections,
+not a complete/stable history. P1 if consistent longitudinal export/read is required:
+provide a stable snapshot/cursor with explicit completeness/retention limits and
+capture-observation linkage; dynamic offset pages and mutable rows cannot prove this.
+No image export is enabled while separate explicit consent scopes are unresolved.

@@ -9,6 +9,8 @@ import 'services/api_service.dart';
 import 'doctor/doctor_models.dart';
 import 'doctor/doctor_controller.dart';
 import 'doctor/doctor_connection.dart';
+import 'doctor/doctor_evidence_ui.dart';
+import 'clinical/clinical_models.dart' show object;
 export 'doctor/doctor_models.dart';
 export 'doctor/doctor_controller.dart';
 
@@ -378,6 +380,17 @@ class _PatientDetailScreenState extends State<PatientDetailScreen> {
             onPressed: c.saving ? null : connection.refresh,
             child: const Text('Verify current access'),
           ),
+          DoctorReviewSnapshot(
+            data: object(connection.record!['review']),
+            patient: widget.patient.id,
+          ),
+          OutlinedButton(
+            onPressed: () => openEntry(
+              context,
+              DoctorEvidenceScreen(connection: connection),
+            ),
+            child: const Text('Review clinical evidence'),
+          ),
           Text('Server priority: ${widget.patient.priority.name}'),
           Text(widget.patient.experiment),
           Text('Last check-in: ${widget.patient.lastCheckIn}'),
@@ -397,7 +410,8 @@ class _PatientDetailScreenState extends State<PatientDetailScreen> {
               helperText: 'Append-only. Saved only after server readback.',
             ),
           ),
-          if (c.error != null) Text(c.error!),
+          if (c.error != null && c.errorPatient == widget.patient.id)
+            Text(c.error!),
           if (c.api.uncertainDoctorWrites.contains(
             '${widget.patient.id}:notes',
           ))
@@ -419,7 +433,10 @@ class _PatientDetailScreenState extends State<PatientDetailScreen> {
                     setState(() => error = c.validateNote(note.text));
                     if (error != null) return;
                     final saved = await c.addNote(widget.patient, note.text);
-                    if (!context.mounted || !c.allows(widget.patient.id)) {
+                    if (!context.mounted ||
+                        !c.allows(widget.patient.id) ||
+                        !connection.confirmed ||
+                        ModalRoute.of(context)?.isCurrent != true) {
                       return;
                     }
                     if (saved) {

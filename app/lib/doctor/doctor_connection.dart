@@ -9,17 +9,23 @@ import 'doctor_models.dart';
 /// the backend-authorized detail and never promotes a cached list to permission.
 class DoctorConnectionController extends ChangeNotifier {
   DoctorConnectionController(this.parent, this.patientId) {
+    selection = parent.selectPatient(patientId);
     parent.addListener(_parentChanged);
   }
   final DoctorWorkspaceController parent;
   final String patientId;
+  late final int selection;
   Map<String, dynamic>? _record;
   DoctorGrant? _grant;
   bool loading = false, _disposed = false;
   String? error;
   int _revision = 0;
   Timer? _expiry;
-  bool get current => !_disposed && parent.allows(patientId);
+  bool get current =>
+      !_disposed &&
+      parent.allows(patientId) &&
+      parent.activePatient == patientId &&
+      parent.selectionRevision == selection;
   bool get confirmed =>
       current &&
       _grant?.active(DateTime.now().toUtc()) == true &&
@@ -97,6 +103,34 @@ class DoctorConnectionController extends ChangeNotifier {
       }
     }
     return confirmed;
+  }
+
+  Future<bool> verifyForRead() async {
+    if (!confirmed) return false;
+    try {
+      final data =
+          await parent.api.doctorResource(
+                'patients/${doctorId(patientId)}',
+                parent.generation,
+              )
+              as Map<String, dynamic>;
+      if (!confirmed) return false;
+      final active = DoctorGrant.fromApi(
+        data['access'] as Map<String, dynamic>,
+        patient: patientId,
+        doctor: parent.session.userId,
+      );
+      if (data['patient_id'] != patientId ||
+          !active.active(DateTime.now().toUtc()) ||
+          active.id != _grant?.id) {
+        invalidate();
+        return false;
+      }
+      return confirmed;
+    } catch (_) {
+      if (current) invalidate();
+      return false;
+    }
   }
 
   @override

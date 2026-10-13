@@ -25,25 +25,33 @@ typedef PrivateImageReader =
 // No ImageProvider, disk files or global ImageCache entry. Explicit decoded
 // leases and one queue bound downloads/decodes across history and detail routes.
 class PrivateCaptureImages extends ChangeNotifier {
-  PrivateCaptureImages(this.api, {PrivateImageReader? reader})
-    : reader = reader ?? ApiService.instance.readPrivateCaptureImage {
+  PrivateCaptureImages(
+    this.api, {
+    PrivateImageReader? reader,
+    this.authorization,
+    this.scope,
+  }) : reader = reader ?? ApiService.instance.readPrivateCaptureImage {
     api.addListener(sessionChanged);
+    scope?.addListener(sessionChanged);
   }
   static final shared = PrivateCaptureImages(ApiService.instance);
   final ApiService api;
   final PrivateImageReader reader;
+  final bool Function(int)? authorization;
+  final Listenable? scope;
+  static final Set<PrivateImageLease> _allLeases = {};
   final Set<PrivateImageLease> _leases = {};
   Future<void> _tail = Future.value();
+  static int _reservedPixels = 0;
   bool disposed = false;
   int? _leaseGeneration;
-  int get decodedPixels => _leases.fold(0, (n, l) => n + l.pixels);
+  int get decodedPixels => _allLeases.fold(0, (n, l) => n + l.pixels);
   bool allowed(int generation) =>
       !disposed &&
       api.isCurrentSession(generation) &&
-      api.canReadPatientClinicalStatus;
+      (authorization?.call(generation) ?? api.canReadPatientClinicalStatus);
   void sessionChanged() {
-    if (!api.canReadPatientClinicalStatus ||
-        _leaseGeneration != api.sessionGeneration) {
+    if (!allowed(_leaseGeneration ?? -1)) {
       for (final lease in _leases.toList()) {
         lease.dispose();
       }
@@ -66,6 +74,7 @@ class PrivateCaptureImages extends ChangeNotifier {
     ui.Codec? codec;
     ui.Image? decoded;
     bool decoding = false;
+    int reserved = 0;
     try {
       await before;
       if (!valid()) throw const FormatException('Image request ended');
@@ -114,9 +123,12 @@ class PrivateCaptureImages extends ChangeNotifier {
       );
       final width = math.max(1, (descriptor.width * scale).floor());
       final height = math.max(1, (descriptor.height * scale).floor());
-      if (decodedPixels + width * height > maxPrivateDecodedPixels) {
+      if (decodedPixels + _reservedPixels + width * height >
+          maxPrivateDecodedPixels) {
         throw const FormatException('Image exceeds the memory limit');
       }
+      reserved = width * height;
+      _reservedPixels += reserved;
       codec = await descriptor.instantiateCodec(
         targetWidth: width,
         targetHeight: height,
@@ -133,7 +145,11 @@ class PrivateCaptureImages extends ChangeNotifier {
         throw const FormatException('Image exceeds the memory limit');
       }
       _leaseGeneration = generation;
-      final lease = PrivateImageLease(decoded, _leases.remove);
+      final lease = PrivateImageLease(decoded, (lease) {
+        _leases.remove(lease);
+        _allLeases.remove(lease);
+      });
+      _allLeases.add(lease);
       _leases.add(lease);
       decoded = null;
       return lease;
@@ -147,6 +163,7 @@ class PrivateCaptureImages extends ChangeNotifier {
       codec?.dispose();
       descriptor?.dispose();
       buffer?.dispose();
+      _reservedPixels -= reserved;
       done.complete();
     }
   }
@@ -155,6 +172,7 @@ class PrivateCaptureImages extends ChangeNotifier {
   void dispose() {
     disposed = true;
     api.removeListener(sessionChanged);
+    scope?.removeListener(sessionChanged);
     for (final lease in _leases.toList()) {
       lease.dispose();
     }
