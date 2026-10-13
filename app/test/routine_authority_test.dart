@@ -119,7 +119,7 @@ void main() {
       find.text('Routine unavailable. Refresh to try again.'),
       findsOneWidget,
     );
-    expect(find.text('Inventory · AM · daily'), findsNothing);
+    expect(find.text('Inventory · AM · daily'), findsOneWidget);
   });
   testWidgets('stop waits for confirmation and never reports fake success', (
     tester,
@@ -132,6 +132,8 @@ void main() {
     );
     await tester.pumpAndSettle();
     await tester.tap(find.text('Stop'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Stop step'));
     await tester.pump();
     expect(find.text('Saved on server'), findsNothing);
     repository.pendingWrite!.complete({
@@ -152,6 +154,8 @@ void main() {
     await tester.pumpWidget(MaterialApp(home: RoutineScreen(repository: bad)));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Stop'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Stop step'));
     await tester.pumpAndSettle();
     expect(find.text('Saved on server'), findsNothing);
     expect(
@@ -187,7 +191,7 @@ void main() {
       expect(repository.entries.single['active'], true);
       repository.fail = true;
       await restarted.refresh();
-      expect(restarted.entries, null);
+      expect(restarted.entries!.single['id'], 'entry');
       expect(await controller.write('entries', {'schedule': 'PM'}), false);
       controller.dispose();
       restarted.dispose();

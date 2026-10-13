@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import 'routine_controller.dart';
+import '../products/product_repository.dart';
 
 class RoutineScreen extends StatefulWidget {
   const RoutineScreen({super.key, this.repository, this.stopEntryId});
@@ -13,9 +14,15 @@ class RoutineScreen extends StatefulWidget {
 
 class _RoutineScreenState extends State<RoutineScreen> {
   late final RoutineController controller;
+  late final int generation;
+  bool get current =>
+      widget.repository != null ||
+      ApiService.instance.isCurrentSession(generation) &&
+          ApiService.instance.canReadPatientClinicalStatus;
   @override
   void initState() {
     super.initState();
+    generation = ApiService.instance.sessionGeneration;
     controller = RoutineController(
       widget.repository ?? RemoteRoutineRepository(),
     );
@@ -23,7 +30,10 @@ class _RoutineScreenState extends State<RoutineScreen> {
     controller.refresh();
   }
 
-  void _sessionChanged() => controller.clear();
+  void _sessionChanged() {
+    if (!current) controller.clear();
+  }
+
   @override
   void dispose() {
     ApiService.instance.removeListener(_sessionChanged);
@@ -37,7 +47,16 @@ class _RoutineScreenState extends State<RoutineScreen> {
     Map<String, dynamic> payload, {
     String method = 'POST',
   }) async {
-    final success = await controller.write(resource, payload, method: method);
+    if (!current) return;
+    final entry = controller.entries
+        ?.where((e) => e['id'] == resource.split('/').last)
+        .firstOrNull;
+    final success = await controller.write(
+      resource,
+      payload,
+      method: method,
+      expectedUpdatedAt: entry?['updated_at'] as String?,
+    );
     if (mounted && success) {
       ScaffoldMessenger.of(
         context,
@@ -46,11 +65,13 @@ class _RoutineScreenState extends State<RoutineScreen> {
   }
 
   Future<void> _editor([Map<String, dynamic>? entry]) async {
+    if (!current || controller.stale || controller.saving) return;
     List<Map<String, dynamic>> products = [];
     if (entry == null) {
       try {
-        products = (await ApiService.instance.getProducts())
-            .where((p) => p['status'] == 'active')
+        products = (await RemoteProductRepository().fetchProducts())
+            .where((p) => p.status.name == 'active')
+            .map((p) => {'id': p.id, 'name': p.name})
             .toList();
       } catch (_) {
         if (mounted) {
@@ -60,7 +81,7 @@ class _RoutineScreenState extends State<RoutineScreen> {
         }
         return;
       }
-      if (!mounted) return;
+      if (!mounted || !current) return;
       if (products.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Save an active product first')),
@@ -68,7 +89,7 @@ class _RoutineScreenState extends State<RoutineScreen> {
         return;
       }
     }
-    if (!mounted) return;
+    if (!mounted || !current) return;
     final note = TextEditingController(
       text: entry?['instructions'] as String? ?? '',
     );
@@ -78,139 +99,177 @@ class _RoutineScreenState extends State<RoutineScreen> {
     var productId =
         entry?['product_id'] as String? ?? products.first['id'] as String;
     var schedule = entry?['schedule'] as String? ?? 'AM';
+    var pending = false;
     final form = GlobalKey<FormState>();
     await showDialog<void>(
       context: context,
-      builder: (dialogContext) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
-          title: Text(
-            entry == null ? 'Configure daily routine' : 'Edit routine',
-          ),
-          content: SingleChildScrollView(
-            child: Form(
-              key: form,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (entry == null)
-                    DropdownButtonFormField<String>(
-                      initialValue: productId,
-                      decoration: const InputDecoration(
-                        labelText: 'Saved product',
-                      ),
-                      items: products
-                          .map(
-                            (p) => DropdownMenuItem(
-                              value: p['id'] as String,
-                              child: Text(p['name'] as String),
-                            ),
-                          )
-                          .toList(),
-                      onChanged: (v) => setState(() => productId = v!),
-                    ),
-                  DropdownButtonFormField<String>(
-                    initialValue: schedule,
-                    decoration: const InputDecoration(
-                      labelText: 'Daily schedule',
-                    ),
-                    items: ['AM', 'PM', 'BOTH']
-                        .map((s) => DropdownMenuItem(value: s, child: Text(s)))
-                        .toList(),
-                    onChanged: (v) => setState(() => schedule = v!),
-                  ),
-                  if (entry == null)
-                    TextFormField(
-                      controller: start,
-                      decoration: const InputDecoration(
-                        labelText: 'Start date (YYYY-MM-DD, UTC)',
-                      ),
-                      validator: (v) =>
-                          v != null &&
-                              RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(v) &&
-                              DateTime.tryParse(v) != null
-                          ? null
-                          : 'Enter a valid date',
-                    ),
-                  TextFormField(
-                    controller: order,
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      labelText: 'AM sequence (0–100)',
-                    ),
-                    validator: _orderValidator,
-                  ),
-                  TextFormField(
-                    controller: pmOrder,
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      labelText: 'PM sequence (0–100)',
-                    ),
-                    validator: _orderValidator,
-                  ),
-                  TextFormField(
-                    controller: note,
-                    maxLength: 2000,
-                    decoration: const InputDecoration(
-                      labelText: 'Your instructions / notes',
-                    ),
-                  ),
-                  const Text(
-                    'Configuration does not confirm use. Record completed or skipped separately.',
-                  ),
-                ],
+      builder: (dialogContext) => AnimatedBuilder(
+        animation: ApiService.instance,
+        builder: (context, _) {
+          if (!current) {
+            note.clear();
+            start.clear();
+            order.clear();
+            pmOrder.clear();
+            return AlertDialog(
+              title: const Text('Session ended'),
+              content: const Text(
+                'Draft cleared. Reopen from your current account.',
               ),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: controller.saving
-                  ? null
-                  : () async {
-                      if (!form.currentState!.validate()) return;
-                      final payload = <String, dynamic>{
-                        'schedule': schedule,
-                        'frequency': 'daily',
-                        'instructions': note.text,
-                        'am_order': int.parse(order.text),
-                        'pm_order': int.parse(pmOrder.text),
-                      };
-                      if (entry == null) {
-                        payload['product_id'] = productId;
-                        payload['start_date'] = start.text;
-                      }
-                      setState(() {});
-                      final success = await controller.write(
-                        entry == null ? 'entries' : 'entries/${entry['id']}',
-                        payload,
-                        method: entry == null ? 'POST' : 'PATCH',
-                      );
-                      if (!dialogContext.mounted) return;
-                      if (success) {
-                        Navigator.pop(dialogContext);
-                        if (mounted) {
-                          ScaffoldMessenger.of(this.context).showSnackBar(
-                            const SnackBar(content: Text('Saved on server')),
-                          );
-                        }
-                      } else {
-                        setState(() {});
-                        ScaffoldMessenger.of(dialogContext).showSnackBar(
-                          const SnackBar(
-                            content: Text(
-                              'Save unconfirmed. Your draft is still here.',
-                            ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogContext),
+                  child: const Text('Close'),
+                ),
+              ],
+            );
+          }
+          return StatefulBuilder(
+            builder: (context, setState) => AlertDialog(
+              title: Text(
+                entry == null ? 'Configure daily routine' : 'Edit routine',
+              ),
+              content: SingleChildScrollView(
+                child: Form(
+                  key: form,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (entry == null)
+                        DropdownButtonFormField<String>(
+                          initialValue: productId,
+                          decoration: const InputDecoration(
+                            labelText: 'Saved product',
                           ),
-                        );
-                      }
-                    },
-              child: const Text('Save on server'),
+                          items: products
+                              .map(
+                                (p) => DropdownMenuItem(
+                                  value: p['id'] as String,
+                                  child: Text(p['name'] as String),
+                                ),
+                              )
+                              .toList(),
+                          onChanged: (v) => setState(() => productId = v!),
+                        ),
+                      DropdownButtonFormField<String>(
+                        initialValue: schedule,
+                        decoration: const InputDecoration(
+                          labelText: 'Daily schedule',
+                        ),
+                        items: ['AM', 'PM', 'BOTH']
+                            .map(
+                              (s) => DropdownMenuItem(value: s, child: Text(s)),
+                            )
+                            .toList(),
+                        onChanged: (v) => setState(() => schedule = v!),
+                      ),
+                      if (entry == null)
+                        TextFormField(
+                          controller: start,
+                          decoration: const InputDecoration(
+                            labelText: 'Start date (YYYY-MM-DD, UTC)',
+                          ),
+                          validator: (v) =>
+                              v != null &&
+                                  RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(v) &&
+                                  DateTime.tryParse(v) != null
+                              ? null
+                              : 'Enter a valid date',
+                        ),
+                      TextFormField(
+                        controller: order,
+                        keyboardType: TextInputType.number,
+                        decoration: const InputDecoration(
+                          labelText: 'AM sequence (0–100)',
+                        ),
+                        validator: _orderValidator,
+                      ),
+                      TextFormField(
+                        controller: pmOrder,
+                        keyboardType: TextInputType.number,
+                        decoration: const InputDecoration(
+                          labelText: 'PM sequence (0–100)',
+                        ),
+                        validator: _orderValidator,
+                      ),
+                      TextFormField(
+                        controller: note,
+                        maxLength: 2000,
+                        decoration: const InputDecoration(
+                          labelText: 'Your instructions / notes',
+                        ),
+                      ),
+                      const Text(
+                        'Configuration does not confirm use. Record completed or skipped separately.',
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogContext),
+                  child: const Text('Cancel'),
+                ),
+                FilledButton(
+                  onPressed: pending || controller.saving || controller.stale
+                      ? null
+                      : () async {
+                          if (!current ||
+                              pending ||
+                              !form.currentState!.validate()) {
+                            return;
+                          }
+                          final payload = <String, dynamic>{
+                            'schedule': schedule,
+                            'frequency': 'daily',
+                            'instructions': note.text,
+                            'am_order': int.parse(order.text),
+                            'pm_order': int.parse(pmOrder.text),
+                          };
+                          if (entry == null) {
+                            payload['product_id'] = productId;
+                            payload['start_date'] = start.text;
+                          }
+                          setState(() {
+                            pending = true;
+                          });
+                          final success = await controller.write(
+                            entry == null
+                                ? 'entries'
+                                : 'entries/${entry['id']}',
+                            payload,
+                            method: entry == null ? 'POST' : 'PATCH',
+                            expectedUpdatedAt: entry?['updated_at'] as String?,
+                          );
+                          if (!dialogContext.mounted || !current) return;
+                          pending = false;
+                          if (success) {
+                            Navigator.pop(dialogContext);
+                            if (mounted) {
+                              ScaffoldMessenger.of(this.context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Saved on server'),
+                                ),
+                              );
+                            }
+                          } else {
+                            setState(() {});
+                            ScaffoldMessenger.of(dialogContext).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  'Save unconfirmed. Your draft is still here.',
+                                ),
+                              ),
+                            );
+                          }
+                        },
+                  child: const Text('Save on server'),
+                ),
+              ],
             ),
-          ],
-        ),
+          );
+        },
       ),
     );
     // Controllers belong to the dialog; dispose after the route animation ends.
@@ -219,6 +278,48 @@ class _RoutineScreenState extends State<RoutineScreen> {
     start.dispose();
     order.dispose();
     pmOrder.dispose();
+  }
+
+  Iterable<Map<String, dynamic>> _group(String slot) {
+    final rows = controller.entries!
+        .where(
+          (e) => slot == 'Stopped'
+              ? e['active'] == false
+              : e['active'] == true &&
+                    (e['schedule'] == slot || e['schedule'] == 'BOTH'),
+        )
+        .toList();
+    rows.sort(
+      (a, b) => (a[slot == 'PM' ? 'pm_order' : 'am_order'] as int).compareTo(
+        b[slot == 'PM' ? 'pm_order' : 'am_order'] as int,
+      ),
+    );
+    return rows;
+  }
+
+  Future<void> _stop(Map<String, dynamic> entry) async {
+    final yes = await showDialog<bool>(
+      context: context,
+      builder: (c) => AlertDialog(
+        title: const Text('Stop this step?'),
+        content: const Text(
+          'History remains. Resume requires a new step; this does not schedule a comparison.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(c, false),
+            child: const Text('Keep step'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(c, true),
+            child: const Text('Stop step'),
+          ),
+        ],
+      ),
+    );
+    if (yes == true && mounted && current) {
+      await _save('entries/${entry['id']}', {'active': false}, method: 'PATCH');
+    }
   }
 
   String? _orderValidator(String? v) {
@@ -237,17 +338,20 @@ class _RoutineScreenState extends State<RoutineScreen> {
             onPressed: controller.loading || controller.saving
                 ? null
                 : controller.refresh,
+            tooltip: 'Refresh routine',
             icon: const Icon(Icons.refresh),
           ),
         ],
       ),
-      body: controller.loading
+      body: !current
+          ? const Center(child: Text('Session ended. Reopen your routine.'))
+          : controller.loading
           ? const Center(child: CircularProgressIndicator())
           : ListView(
               padding: const EdgeInsets.all(20),
               children: [
                 const Text(
-                  'Daily user-configured routine. Days and reports use UTC. Missing reports mean unknown adherence.',
+                  'Cosmetic preferences, not clinician-directed treatment. Daily user-configured routine. Days and reports use UTC. Missing reports mean unknown adherence.',
                 ),
                 if (controller.error != null) ...[
                   Text(controller.error!),
@@ -260,78 +364,109 @@ class _RoutineScreenState extends State<RoutineScreen> {
                   if (controller.entries!.isEmpty)
                     const Text('No routine configured'),
                   FilledButton(
-                    onPressed: controller.saving ? null : () => _editor(),
+                    onPressed:
+                        controller.saving ||
+                            controller.stale ||
+                            controller.uncertain.contains('entries')
+                        ? null
+                        : () => _editor(),
                     child: const Text('Configure routine'),
                   ),
-                  for (final entry in controller.entries!)
-                    Card(
-                      child: Padding(
-                        padding: const EdgeInsets.all(12),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              '${entry['product_name']} · ${entry['schedule']} · daily',
-                            ),
-                            Text(
-                              '${entry['active'] == true ? 'Active' : 'Stopped'} · Start ${entry['start_date']}',
-                            ),
-                            if (entry['instructions'] != null)
-                              Text(entry['instructions'] as String),
-                            if (entry['active'] == true || entry['id'] == widget.stopEntryId) ...[
-                              if (entry['active'] == true) Wrap(
-                                children: [
-                                  TextButton(
-                                    onPressed: controller.saving
-                                        ? null
-                                        : () => _editor(entry),
-                                    child: const Text('Edit'),
-                                  ),
-                                  TextButton(
-                                    onPressed: controller.saving
-                                        ? null
-                                        : () => _save(
-                                            'entries/${entry['id']}',
-                                            {'active': false},
-                                            method: 'PATCH',
-                                          ),
-                                    child: const Text('Stop'),
-                                  ),
-                                ],
+                  if (controller.stale)
+                    const Text(
+                      'Previously confirmed data may be stale. Changes are unavailable until refresh.',
+                    ),
+                  for (final group in ['AM', 'PM', 'Stopped']) ...[
+                    Text(
+                      group == 'AM'
+                          ? 'Morning'
+                          : group == 'PM'
+                          ? 'Evening'
+                          : 'Stopped steps',
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                    for (final entry in _group(group))
+                      Card(
+                        child: Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '${entry['product_name']} · ${entry['schedule']} · daily',
                               ),
-                              for (final slot
-                                  in entry['schedule'] == 'BOTH'
-                                      ? ['AM', 'PM']
-                                      : [entry['schedule'] as String])
-                                Wrap(
-                                  children: [
-                                    for (final status in entry['active'] == true ? ['completed', 'skipped'] : ['skipped'])
+                              Text(
+                                '${entry['active'] == true ? 'Active' : 'Stopped'} · Start ${entry['start_date']}',
+                              ),
+                              if (entry['instructions'] != null)
+                                Text(entry['instructions'] as String),
+                              if (entry['active'] == true ||
+                                  entry['id'] == widget.stopEntryId) ...[
+                                if (entry['active'] == true)
+                                  Wrap(
+                                    children: [
                                       TextButton(
                                         onPressed:
                                             controller.saving ||
-                                                controller.history!.any(
-                                                  (h) =>
-                                                      h['routine_entry_id'] ==
-                                                          entry['id'] &&
-                                                      h['date'] == day &&
-                                                      h['slot'] == slot,
+                                                controller.stale ||
+                                                controller.uncertain.contains(
+                                                  "entries/${entry['id']}",
                                                 )
                                             ? null
-                                            : () => _save('adherence', {
-                                                'routine_entry_id': entry['id'],
-                                                'date': day,
-                                                'slot': slot,
-                                                'status': status,
-                                              }),
-                                        child: Text('$slot $status today'),
+                                            : () => _editor(entry),
+                                        child: const Text('Edit'),
                                       ),
-                                  ],
-                                ),
+                                      TextButton(
+                                        onPressed:
+                                            controller.saving ||
+                                                controller.stale ||
+                                                controller.uncertain.contains(
+                                                  "entries/${entry['id']}",
+                                                )
+                                            ? null
+                                            : () => _stop(entry),
+                                        child: const Text('Stop'),
+                                      ),
+                                    ],
+                                  ),
+                                for (final slot
+                                    in entry['schedule'] == 'BOTH'
+                                        ? ['AM', 'PM']
+                                        : [entry['schedule'] as String])
+                                  Wrap(
+                                    children: [
+                                      for (final status
+                                          in entry['active'] == true
+                                              ? ['completed', 'skipped']
+                                              : ['skipped'])
+                                        TextButton(
+                                          onPressed:
+                                              controller.saving ||
+                                                  controller.history!.any(
+                                                    (h) =>
+                                                        h['routine_entry_id'] ==
+                                                            entry['id'] &&
+                                                        h['date'] == day &&
+                                                        h['slot'] == slot,
+                                                  )
+                                              ? null
+                                              : () => _save('adherence', {
+                                                  'routine_entry_id':
+                                                      entry['id'],
+                                                  'date': day,
+                                                  'slot': slot,
+                                                  'status': status,
+                                                }),
+                                          child: Text('$slot $status today'),
+                                        ),
+                                    ],
+                                  ),
+                              ],
                             ],
-                          ],
+                          ),
                         ),
                       ),
-                    ),
+                  ],
                   const Text(
                     'Recent reports (latest 100; full history available through the API)',
                   ),
