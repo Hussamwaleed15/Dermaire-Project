@@ -78,7 +78,22 @@ class RemoteRoutineRepository implements RoutineRepository {
         !patch.entries.every((e) => receipt[e.key] == e.value)) {
       throw const FormatException('Unconfirmed routine mutation');
     }
-    if (evidence) return receipt;
+    if (evidence) {
+      final rows =
+          (await api.patientResource(
+                    'routine/adherence?routine_entry_id=${receipt['routine_entry_id']}&limit=100&offset=0',
+                    generation,
+                  )
+                  as List)
+              .cast<Map<String, dynamic>>();
+      final verified = rows.where((r) => r['id'] == receipt['id']).firstOrNull;
+      if (verified == null ||
+          !RoutineController.validRow(verified, 'user_reported') ||
+          !RoutineController.sameWire(receipt, verified)) {
+        throw const FormatException('Adherence readback not confirmed');
+      }
+      return verified;
+    }
     final id = receipt['id'] as String;
     final verified =
         await api.patientResource('routine/entries/$id', generation)
@@ -111,6 +126,34 @@ class RoutineController extends ChangeNotifier {
 
   final Set<String> uncertain = {};
   bool stale = false;
+  bool loadingMore = false;
+  bool historyHasMore = false;
+  String writeKey(String resource, Map<String, dynamic> payload) =>
+      resource == 'adherence'
+      ? 'adherence:${payload['routine_entry_id']}:${payload['date']}:${payload['slot']}'
+      : resource;
+  static bool sameWire(Object? a, Object? b) {
+    if (a is Map && b is Map) {
+      return a.length == b.length &&
+          a.entries.every(
+            (e) => b.containsKey(e.key) && sameWire(e.value, b[e.key]),
+          );
+    }
+    if (a is List && b is List) {
+      return a.length == b.length &&
+          List.generate(a.length, (i) => i).every((i) => sameWire(a[i], b[i]));
+    }
+    return a == b;
+  }
+
+  static bool validDay(Object? value) {
+    if (value is! String || !RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(value)) {
+      return false;
+    }
+    final date = DateTime.tryParse(value);
+    return date != null && date.toIso8601String().substring(0, 10) == value;
+  }
+
   final RoutineRepository repository;
   List<Map<String, dynamic>>? entries;
   List<Map<String, dynamic>>? history;
@@ -146,18 +189,27 @@ class RoutineController extends ChangeNotifier {
           : row['routine_entry_id'] is String &&
                 ['AM', 'PM'].contains(row['slot']) &&
                 ['completed', 'skipped'].contains(row['status']) &&
-                row['date'] is String &&
-                DateTime.tryParse(row['date'] as String) != null &&
-                row['configuration_snapshot'] is Map);
+                validDay(row['date']) &&
+                row['configuration_snapshot'] is Map<String, dynamic> &&
+                validRow(
+                  row['configuration_snapshot'] as Map<String, dynamic>,
+                  'user_configured',
+                ) &&
+                row['configuration_snapshot']['id'] ==
+                    row['routine_entry_id'] &&
+                (row['configuration_snapshot']['schedule'] == 'BOTH' ||
+                    row['configuration_snapshot']['schedule'] == row['slot']));
   Future<void> refresh() async {
-    if (_disposed || saving) return;
+    if (_disposed || saving || loadingMore) return;
     final generation = ++_generation;
     loading = true;
     error = null;
     notifyListeners();
     try {
       final configured = await repository.read('entries');
-      final reported = await repository.read('adherence');
+      final reported = await repository.read(
+        remote ? 'adherence?limit=100&offset=0' : 'adherence',
+      );
       if (!configured.every((e) => valid(e, 'user_configured')) ||
           !reported.every((e) => valid(e, 'user_reported'))) {
         throw const FormatException('Invalid routine response');
@@ -165,6 +217,8 @@ class RoutineController extends ChangeNotifier {
       if (generation != _generation || _disposed) return;
       entries = configured;
       history = reported;
+      historyHasMore = reported.length == 100;
+      loadingMore = false;
       stale = false;
     } catch (_) {
       if (generation != _generation || _disposed) return;
@@ -185,7 +239,19 @@ class RoutineController extends ChangeNotifier {
     if (saving ||
         loading ||
         (remote &&
-            (entries == null || stale || uncertain.contains(resource)))) {
+            (entries == null ||
+                stale ||
+                uncertain.contains(writeKey(resource, payload))))) {
+      return false;
+    }
+    if (resource == 'adherence' &&
+        history?.any(
+              (r) =>
+                  r['routine_entry_id'] == payload['routine_entry_id'] &&
+                  r['date'] == payload['date'] &&
+                  r['slot'] == payload['slot'],
+            ) ==
+            true) {
       return false;
     }
     final generation = _generation;
@@ -218,7 +284,7 @@ class RoutineController extends ChangeNotifier {
           entries != null &&
           history != null;
       if (!confirmed && remote && !_disposed && _generation == generation + 1) {
-        uncertain.add(resource);
+        uncertain.add(writeKey(resource, payload));
         stale = true;
         notifyListeners();
       }
@@ -226,7 +292,7 @@ class RoutineController extends ChangeNotifier {
     } catch (_) {
       if (generation != _generation || _disposed) return false;
       if (remote) {
-        uncertain.add(resource);
+        uncertain.add(writeKey(resource, payload));
         stale = true;
       }
       error = 'Save unconfirmed. Refresh before retrying.';
@@ -236,10 +302,49 @@ class RoutineController extends ChangeNotifier {
     }
   }
 
+  Future<void> loadMoreHistory() async {
+    if (_disposed ||
+        saving ||
+        loading ||
+        loadingMore ||
+        stale ||
+        !historyHasMore ||
+        history == null) {
+      return;
+    }
+    final generation = _generation;
+    loadingMore = true;
+    notifyListeners();
+    try {
+      final page = await repository.read(
+        'adherence?limit=100&offset=${history!.length}',
+      );
+      if (_disposed || generation != _generation) return;
+      final ids = history!.map((r) => r['id']).toSet();
+      if (!page.every((r) => valid(r, 'user_reported') && ids.add(r['id']))) {
+        throw const FormatException('History changed. Refresh.');
+      }
+      history = [...history!, ...page];
+      historyHasMore = page.length == 100;
+    } catch (_) {
+      if (_disposed || generation != _generation) return;
+      stale = true;
+      error =
+          'History refresh failed or changed. Previously confirmed reports remain; refresh before recording.';
+    } finally {
+      if (!_disposed && generation == _generation) {
+        loadingMore = false;
+        notifyListeners();
+      }
+    }
+  }
+
   void clear() {
     ++_generation;
     uncertain.clear();
     stale = false;
+    loadingMore = false;
+    historyHasMore = false;
     entries = null;
     history = null;
     loading = false;

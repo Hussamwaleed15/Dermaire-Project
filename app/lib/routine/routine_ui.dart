@@ -15,6 +15,7 @@ class RoutineScreen extends StatefulWidget {
 class _RoutineScreenState extends State<RoutineScreen> {
   late final RoutineController controller;
   late final int generation;
+  late String reportDay;
   bool get current =>
       widget.repository != null ||
       ApiService.instance.isCurrentSession(generation) &&
@@ -23,6 +24,7 @@ class _RoutineScreenState extends State<RoutineScreen> {
   void initState() {
     super.initState();
     generation = ApiService.instance.sessionGeneration;
+    reportDay = DateTime.now().toUtc().toIso8601String().substring(0, 10);
     controller = RoutineController(
       widget.repository ?? RemoteRoutineRepository(),
     );
@@ -41,7 +43,7 @@ class _RoutineScreenState extends State<RoutineScreen> {
     super.dispose();
   }
 
-  String get day => DateTime.now().toUtc().toIso8601String().substring(0, 10);
+  String get day => reportDay;
   Future<void> _save(
     String resource,
     Map<String, dynamic> payload, {
@@ -280,6 +282,18 @@ class _RoutineScreenState extends State<RoutineScreen> {
     pmOrder.dispose();
   }
 
+  Future<void> _chooseReportDay() async {
+    final selected = await showDatePicker(
+      context: context,
+      initialDate: DateTime.parse(day),
+      firstDate: DateTime(2000),
+      lastDate: DateTime.now().toUtc(),
+    );
+    if (selected != null && mounted && current) {
+      setState(() => reportDay = selected.toIso8601String().substring(0, 10));
+    }
+  }
+
   Iterable<Map<String, dynamic>> _group(String slot) {
     final rows = controller.entries!
         .where(
@@ -361,6 +375,17 @@ class _RoutineScreenState extends State<RoutineScreen> {
                   ),
                 ],
                 if (controller.entries != null) ...[
+                  OutlinedButton(
+                    onPressed: controller.saving ? null : _chooseReportDay,
+                    child: Text('Report date: $day (UTC)'),
+                  ),
+                  const Text(
+                    'Date is selected on this device; the server validates reporting eligibility. This is not a treatment deadline.',
+                  ),
+                  if (controller.saving)
+                    const LinearProgressIndicator(
+                      semanticsLabel: 'Waiting for server confirmation',
+                    ),
                   if (controller.entries!.isEmpty)
                     const Text('No routine configured'),
                   FilledButton(
@@ -409,6 +434,7 @@ class _RoutineScreenState extends State<RoutineScreen> {
                                         onPressed:
                                             controller.saving ||
                                                 controller.stale ||
+                                                controller.stale ||
                                                 controller.uncertain.contains(
                                                   "entries/${entry['id']}",
                                                 )
@@ -420,6 +446,7 @@ class _RoutineScreenState extends State<RoutineScreen> {
                                         onPressed:
                                             controller.saving ||
                                                 controller.stale ||
+                                                controller.stale ||
                                                 controller.uncertain.contains(
                                                   "entries/${entry['id']}",
                                                 )
@@ -429,10 +456,22 @@ class _RoutineScreenState extends State<RoutineScreen> {
                                       ),
                                     ],
                                   ),
+                                for (final report in controller.history!.where(
+                                  (h) =>
+                                      h['routine_entry_id'] == entry['id'] &&
+                                      h['date'] == day &&
+                                      (group == 'Stopped' ||
+                                          h['slot'] == group),
+                                ))
+                                  Text(
+                                    '${report['slot']} · Server-confirmed ${report['status']} report · ${report['date']} UTC',
+                                  ),
                                 for (final slot
-                                    in entry['schedule'] == 'BOTH'
-                                        ? ['AM', 'PM']
-                                        : [entry['schedule'] as String])
+                                    in group == 'Stopped'
+                                        ? (entry['schedule'] == 'BOTH'
+                                              ? ['AM', 'PM']
+                                              : [entry['schedule'] as String])
+                                        : [group])
                                   Wrap(
                                     children: [
                                       for (final status
@@ -442,6 +481,10 @@ class _RoutineScreenState extends State<RoutineScreen> {
                                         TextButton(
                                           onPressed:
                                               controller.saving ||
+                                                  controller.stale ||
+                                                  controller.uncertain.contains(
+                                                    'adherence:${entry['id']}:$day:$slot',
+                                                  ) ||
                                                   controller.history!.any(
                                                     (h) =>
                                                         h['routine_entry_id'] ==
@@ -457,7 +500,9 @@ class _RoutineScreenState extends State<RoutineScreen> {
                                                   'slot': slot,
                                                   'status': status,
                                                 }),
-                                          child: Text('$slot $status today'),
+                                          child: Text(
+                                            '$slot $status ${day == DateTime.now().toUtc().toIso8601String().substring(0, 10) ? 'today' : day}',
+                                          ),
                                         ),
                                     ],
                                   ),
@@ -467,18 +512,29 @@ class _RoutineScreenState extends State<RoutineScreen> {
                         ),
                       ),
                   ],
-                  const Text(
-                    'Recent reports (latest 100; full history available through the API)',
+                  Text(
+                    'Reported history · ${controller.history!.length} loaded records (UTC). No overall adherence or clinical progress inferred.',
                   ),
                   if (controller.history!.isEmpty)
                     const Text('No adherence reported'),
+                  if (controller.historyHasMore)
+                    TextButton(
+                      onPressed: controller.loadingMore || controller.stale
+                          ? null
+                          : controller.loadMoreHistory,
+                      child: Text(
+                        controller.loadingMore
+                            ? 'Loading reports…'
+                            : 'Load older reports',
+                      ),
+                    ),
                   for (final row in controller.history!)
                     ListTile(
                       title: Text(
                         '${row['date']} ${row['slot']} · ${row['status']}',
                       ),
                       subtitle: Text(
-                        '${(row['configuration_snapshot'] as Map)['product_name']} · user reported',
+                        '${(row['configuration_snapshot'] as Map)['product_name']} · user reported\nRecorded ${row['created_at']} · Snapshot schedule ${(row['configuration_snapshot'] as Map)['schedule']}${row['note'] == null ? '' : '\nNote: ${row['note']}'}',
                       ),
                     ),
                 ],
