@@ -691,6 +691,7 @@ class ApiService extends ChangeNotifier {
     final hadSession = _authToken != null;
     _sessionGeneration++;
     uncertainDoctorWrites.clear();
+    uncertainGrantRevocations.clear();
     _sessionUserId = null;
     _sessionRole = null;
     _consentUser = null;
@@ -750,6 +751,7 @@ class ApiService extends ChangeNotifier {
   Future<bool> readSafetyAcceptance() async {
     final wasAccepted = _confirmedSafetyAcceptance == true;
     final wasDoctor = canReadDoctorWorkspace;
+    final wasPatientGrant = canManageDoctorGrants;
     final revision = ++_profileRevision;
     _consentUser = null;
     final generation = _sessionGeneration;
@@ -789,7 +791,8 @@ class ApiService extends ChangeNotifier {
     final accepted = decoded['safety_accepted'] as bool;
     _confirmedSafetyAcceptance = accepted;
     if ((!accepted && wasAccepted) ||
-        (wasDoctor && decoded['role'] != 'doctor')) {
+        (wasDoctor && decoded['role'] != 'doctor') ||
+        (wasPatientGrant && decoded['role'] != 'patient')) {
       notifyListeners();
     }
     return accepted;
@@ -1451,20 +1454,54 @@ class ApiService extends ChangeNotifier {
   }
 
   Future<Map<String, dynamic>> generateDoctorQr({int minutes = 60}) async {
-    final res = await _client.post(
-      Uri.parse('$baseUrl/doctor/generate-qr?minutes_valid=$minutes'),
-      headers: _headers(),
+    throw ApiException(
+      'New clinician connections are unavailable until viewing and export permissions can be confirmed separately.',
     );
-    return jsonDecode(res.body) as Map<String, dynamic>;
   }
 
   Future<bool> claimDoctorAccess(String token) async {
-    final res = await _client.post(
-      Uri.parse('$baseUrl/doctor/claim'),
-      headers: _headers(),
-      body: jsonEncode({'access_token': token}),
+    throw ApiException(
+      'New clinician connections are unavailable until consent scopes can be verified.',
     );
-    return res.statusCode == 200;
+  }
+
+  bool get canManageDoctorGrants =>
+      canReadPatientClinicalStatus &&
+      _consentUser?['role'] == 'patient' &&
+      _consentUser?['id'] == _sessionUserId;
+  final Set<String> uncertainGrantRevocations = {};
+  Future<Object?> patientGrantResource(
+    int generation, {
+    String? revokeId,
+  }) async {
+    void guard() {
+      if (!isCurrentSession(generation) || !canManageDoctorGrants) {
+        throw ApiException(
+          'Patient session changed. Sign in and verify access again.',
+        );
+      }
+    }
+
+    guard();
+    if (revokeId != null && !RegExp(r'^[A-Za-z0-9_-]+$').hasMatch(revokeId)) {
+      throw ArgumentError('Invalid grant identity');
+    }
+    final request = http.Request(
+      revokeId == null ? 'GET' : 'DELETE',
+      Uri.parse(
+        '$baseUrl/doctor/access${revokeId == null ? '' : '/$revokeId'}',
+      ),
+    )..followRedirects = false;
+    request.headers.addAll(_headers(false));
+    final response = await _client
+        .send(request)
+        .then(http.Response.fromStream)
+        .timeout(const Duration(seconds: 20));
+    guard();
+    if (response.statusCode != 200) {
+      throw RequestFailure.http(response.statusCode);
+    }
+    return jsonDecode(response.body);
   }
 
   Future<bool> revokeDoctorAccess(String patientId) async {

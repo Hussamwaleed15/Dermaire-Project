@@ -75,6 +75,16 @@ class DoctorWorkspaceController extends ChangeNotifier {
     notifyListeners();
   }
 
+  void forgetPatient(String id) {
+    if (_disposed) return;
+    patients.removeWhere((p) => p.id == id);
+    notes.remove(id);
+    audit.remove(id);
+    error =
+        'Patient access could not be confirmed. Refresh current connections.';
+    notifyListeners();
+  }
+
   void search(String value) {
     if (!current) return;
     query = value;
@@ -188,7 +198,7 @@ class DoctorWorkspaceController extends ChangeNotifier {
     saving = true;
     error = null;
     notifyListeners();
-    bool sent = false;
+    bool sent = false, acknowledged = false;
     try {
       final detail =
           await api.doctorResource(
@@ -222,6 +232,7 @@ class DoctorWorkspaceController extends ChangeNotifier {
             as Map<String, dynamic>,
         patient.id,
       );
+      acknowledged = true;
       if (receipt.doctor != session.userId ||
           receipt.content != value.trim() ||
           receipt.priority != 'routine' ||
@@ -258,6 +269,7 @@ class DoctorWorkspaceController extends ChangeNotifier {
     } catch (failure) {
       if (!current || revision != _revision) return false;
       final rejected =
+          !acknowledged &&
           failure is RequestFailure &&
           [
             RequestFailureKind.denied,

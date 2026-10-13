@@ -107,6 +107,7 @@ class DoctorWire {
         saved.add(data);
         return json(data, 201);
       }
+      if (noteMode == 'readback denied' && writes > 0) return json({}, 403);
       return json(saved);
     }
     return json({}, 404);

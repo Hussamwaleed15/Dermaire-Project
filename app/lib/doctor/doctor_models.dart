@@ -19,7 +19,11 @@ class DoctorGrant {
            : doctorId(value['doctor_id']),
        status = text(value['status']),
        expiresAt = timestamp(value['expires_at'], naiveUtc: true),
-       createdAt = timestamp(value['created_at'], naiveUtc: true) {
+       createdAt = timestamp(value['created_at'], naiveUtc: true),
+       revokedAt = value['revoked_at'] == null
+           ? null
+           : timestamp(value['revoked_at'], naiveUtc: true),
+       revokedBy = optionalText(value['revoked_by']) {
     if (patientId != patient ||
         value['granted_by'] != patient ||
         !['pending', 'active', 'revoked', 'expired'].contains(status) ||
@@ -39,7 +43,11 @@ class DoctorGrant {
     }
   }
   final String id, patientId, status;
-  final String? doctorIdValue;
+  final String? doctorIdValue, revokedBy;
+  final DateTime? revokedAt;
+  bool get confirmedRevoked =>
+      status == 'revoked' && revokedAt != null && revokedBy == patientId;
+
   final DateTime expiresAt, createdAt;
   bool active(DateTime now) => status == 'active' && now.isBefore(expiresAt);
 }

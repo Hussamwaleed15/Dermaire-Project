@@ -25,3 +25,12 @@ uncertain operations within the session, no blind replay/exactly-once claim.
 Current grant authorization and review sequencing will be audited further in F2–F4.
 Additional actual evidence/communication requirements will be recorded per phase.
 Existing M1–M5/B1/B2 and M4/M5 remaining requirements stay separate/unresolved.
+
+F2 verified evidence: doctor.py:31–38 explicitly grants export_consent=True;
+services/doctor_loop.py:access_out omits export/view scope readback. Flutter blocks
+both new QR generation/claim, removes placeholder QR/export/expiry/revoked claims,
+and uses existing owner-scoped access GET + per-grant DELETE/GET confirmation.
+Provide distinct patient opt-in/consent receipt, export/view scopes and readable
+clinician identity before new linking can be enabled. Do not recreate existing
+grant read/revoke/detail/authentication APIs. A continuous revocation/change feed
+is not present; every new doctor resource request remains server-authorized.

@@ -8,6 +8,7 @@ import 'onboarding_screens.dart';
 import 'services/api_service.dart';
 import 'doctor/doctor_models.dart';
 import 'doctor/doctor_controller.dart';
+import 'doctor/doctor_connection.dart';
 export 'doctor/doctor_models.dart';
 export 'doctor/doctor_controller.dart';
 
@@ -289,15 +290,52 @@ class PatientDetailScreen extends StatefulWidget {
 class _PatientDetailScreenState extends State<PatientDetailScreen> {
   final note = TextEditingController();
   String? error;
+  late DoctorConnectionController connection;
+  @override
+  void initState() {
+    super.initState();
+    _bind();
+  }
+
+  void _bind() {
+    connection = DoctorConnectionController(
+      widget.controller,
+      widget.patient.id,
+    )..addListener(_accessChanged);
+    connection.refresh();
+  }
+
+  void _accessChanged() {
+    if (!connection.confirmed) {
+      note.clear();
+      error = null;
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant PatientDetailScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.patient.id != widget.patient.id ||
+        oldWidget.controller != widget.controller) {
+      connection.removeListener(_accessChanged);
+      connection.dispose();
+      note.clear();
+      error = null;
+      _bind();
+    }
+  }
+
   @override
   void dispose() {
+    connection.removeListener(_accessChanged);
+    connection.dispose();
     note.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) => AnimatedBuilder(
-    animation: widget.controller,
+    animation: Listenable.merge([widget.controller, connection]),
     builder: (context, _) {
       final c = widget.controller;
       if (!c.allows(widget.patient.id)) {
@@ -311,10 +349,35 @@ class _PatientDetailScreenState extends State<PatientDetailScreen> {
           ),
         );
       }
+      if (!connection.confirmed) {
+        return DermairePage(
+          eyebrow: 'Clinician access',
+          title: 'Verify current patient access',
+          children: [
+            if (connection.loading) const Text('Checking current access…'),
+            if (connection.error != null) Text(connection.error!),
+            OutlinedButton(
+              onPressed: connection.loading ? null : connection.refresh,
+              child: const Text('Retry patient access'),
+            ),
+          ],
+        );
+      }
       return DermairePage(
         eyebrow: 'Connected patient',
-        title: widget.patient.name,
+        title: connection.record!['full_name'] as String,
         children: [
+          Text('Grant status: ${connection.grant!.status}'),
+          Text(
+            'Grant expiry: ${connection.grant!.expiresAt.toUtc().toIso8601String()} (UTC)',
+          ),
+          const Text(
+            'Detailed viewing and export scopes are unavailable. Export is not enabled.',
+          ),
+          OutlinedButton(
+            onPressed: c.saving ? null : connection.refresh,
+            child: const Text('Verify current access'),
+          ),
           Text('Server priority: ${widget.patient.priority.name}'),
           Text(widget.patient.experiment),
           Text('Last check-in: ${widget.patient.lastCheckIn}'),
@@ -350,6 +413,9 @@ class _PatientDetailScreenState extends State<PatientDetailScreen> {
                     )
                 ? null
                 : () async {
+                    if (!connection.confirmed || !c.allows(widget.patient.id)) {
+                      return;
+                    }
                     setState(() => error = c.validateNote(note.text));
                     if (error != null) return;
                     final saved = await c.addNote(widget.patient, note.text);

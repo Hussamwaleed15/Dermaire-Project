@@ -12,6 +12,7 @@ import 'dermaire_widgets.dart';
 import 'products/products_ui.dart';
 import 'services/api_service.dart';
 import 'psm/psm_screen.dart';
+import 'doctor/patient_access.dart';
 import 'notifications/notification_availability.dart';
 
 class AppShell extends StatelessWidget {
@@ -202,111 +203,8 @@ class ReportScreen extends StatelessWidget {
 class DoctorAccessScreen extends StatelessWidget {
   const DoctorAccessScreen({super.key, required this.state});
   final DermaireState state;
-
   @override
-  Widget build(BuildContext context) => AnimatedBuilder(
-    animation: state,
-    builder: (context, _) => DermairePage(
-      eyebrow: 'Doctor access',
-      title: state.doctorLinkActive ? 'Scan to view report' : 'Access revoked',
-      children: [
-        if (state.doctorLinkActive) ...[
-          Center(
-            child: Container(
-              width: 156,
-              height: 156,
-              margin: const EdgeInsets.symmetric(vertical: 12),
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: DermaireColors.paper,
-                border: Border.all(color: DermaireColors.caramel),
-              ),
-              child: const _QrPattern(),
-            ),
-          ),
-          const DermaireCard(
-            color: DermaireColors.card,
-            child: Column(
-              children: [
-                Text(
-                  'Valid for 7 days',
-                  style: TextStyle(fontWeight: FontWeight.w700),
-                ),
-                Text('Expires Apr 29, 2025', style: TextStyle(fontSize: 11.5)),
-              ],
-            ),
-          ),
-          OutlinedButton(
-            style: OutlinedButton.styleFrom(
-              foregroundColor: DermaireColors.conflict,
-              side: const BorderSide(color: DermaireColors.conflict),
-            ),
-            onPressed: state.revokeDoctorLink,
-            child: const Text('Revoke access'),
-          ),
-          const SizedBox(height: 8),
-          OutlinedButton(
-            onPressed: () =>
-                showDermaireSnack(context, 'Report prepared for export'),
-            child: const Text('Export report'),
-          ),
-          const SizedBox(height: 14),
-          const Text(
-            'No login required — your doctor opens this on any browser.',
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 11.5),
-          ),
-        ] else ...[
-          const SizedBox(height: 24),
-          const Center(
-            child: Icon(
-              Icons.lock_outline_rounded,
-              size: 48,
-              color: DermaireColors.conflict,
-            ),
-          ),
-          const SizedBox(height: 18),
-          const Notice(
-            icon: '✓',
-            text: 'The previous link can no longer be used.',
-            color: DermaireColors.safeBackground,
-          ),
-        ],
-      ],
-    ),
-  );
-}
-
-class _QrPattern extends StatelessWidget {
-  const _QrPattern();
-  @override
-  Widget build(BuildContext context) =>
-      CustomPaint(painter: _QrPainter(), child: const SizedBox.expand());
-}
-
-class _QrPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()..color = DermaireColors.ink;
-    const cells = 13;
-    final cell = size.width / cells;
-    for (var y = 0; y < cells; y++) {
-      for (var x = 0; x < cells; x++) {
-        if (((x * 7 + y * 11 + x * y) % 5 < 2) ||
-            (x < 3 && y < 3) ||
-            (x > 9 && y < 3) ||
-            (x < 3 && y > 9)) {
-          canvas.drawRect(
-            Rect.fromLTWH(x * cell, y * cell, cell - 1, cell - 1),
-            paint,
-          );
-        }
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  Widget build(BuildContext context) => const PatientAccessScreen();
 }
 
 class ProfileTab extends StatelessWidget {
@@ -362,9 +260,7 @@ class ProfileTab extends StatelessWidget {
       ActionCard(
         icon: '🔒',
         title: 'Doctor access',
-        subtitle: state.doctorLinkActive
-            ? 'One active QR link'
-            : 'No active links',
+        subtitle: 'Review current server sharing permissions',
         onTap: () => openPage(context, DoctorAccessScreen(state: state)),
       ),
       ActionCard(

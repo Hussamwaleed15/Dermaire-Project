@@ -119,7 +119,6 @@ class DermaireState extends ChangeNotifier {
   int experimentDay = 1;
   bool experimentPaused = false;
   bool get todayCheckedIn => baseline.todayCheckedIn;
-  bool doctorLinkActive = false;
   String get selectedGoal => account.value?.selectedGoal ?? '';
   Set<String> get skinConcerns =>
       Set.unmodifiable(account.value?.skinConcerns ?? <String>[]);
@@ -154,7 +153,6 @@ class DermaireState extends ChangeNotifier {
     experiments.clear();
     experimentDay = 1;
     experimentPaused = false;
-    doctorLinkActive = false;
     journal.clear();
     productController.clear();
     notifyListeners();
@@ -209,7 +207,8 @@ class DermaireState extends ChangeNotifier {
     bool experiments = true,
   }) async {
     final api = ApiService.instance;
-    if (!api.isCurrentSession(generation) || !api.canReadPatientClinicalStatus) {
+    if (!api.isCurrentSession(generation) ||
+        !api.canReadPatientClinicalStatus) {
       return;
     }
     await Future.wait([
@@ -236,17 +235,6 @@ class DermaireState extends ChangeNotifier {
 
   void togglePause() {
     experiments.refresh();
-  }
-
-  void revokeDoctorLink() {
-    doctorLinkActive = false;
-    notifyListeners();
-    final user = ApiService.instance.currentUser;
-    if (user != null && user['user_id'] != null) {
-      ApiService.instance
-          .revokeDoctorAccess(user['user_id'].toString())
-          .catchError((_) => false);
-    }
   }
 
   @override
