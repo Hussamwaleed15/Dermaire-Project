@@ -1,4 +1,7 @@
 import 'dart:convert';
+import 'api_exception.dart';
+import 'request_failure.dart';
+export 'api_exception.dart';
 import 'dart:async';
 import 'dart:typed_data';
 import '../account/account_profile.dart';
@@ -1117,9 +1120,7 @@ class ApiService extends ChangeNotifier {
       throw PatientResourceMissing();
     }
     if (![200, 201, 204].contains(response.statusCode)) {
-      throw ApiException(
-        'Request unavailable (status ${response.statusCode}). Refresh before any new change.',
-      );
+      throw RequestFailure.http(response.statusCode);
     }
     return response.statusCode == 204 ? null : jsonDecode(response.body);
   }
@@ -1470,6 +1471,27 @@ class _SessionClient extends http.BaseClient {
   Future<http.StreamedResponse> send(http.BaseRequest request) async {
     final sentToken = request.headers['Authorization'];
     final generation = ApiService.instance.sessionGeneration;
+    final api = ApiService.instance;
+    Future<void> validate(int status) async {
+      final logout = request.url.path.endsWith('/auth/logout');
+      if (sentToken != null &&
+          (!api.isCurrentSession(generation) ||
+              sentToken != 'Bearer ${api.authToken}') &&
+          !logout) {
+        throw ApiException('Session changed. Please try again');
+      }
+      // Logout is intentionally sent after local invalidation. Its response must
+      // never invalidate a new session, even when the provider reuses a token.
+      if (status == 401 &&
+          !logout &&
+          sentToken != null &&
+          api.isCurrentSession(generation) &&
+          sentToken == 'Bearer ${api.authToken}') {
+        await api._clearSession();
+        throw RequestFailure.session();
+      }
+    }
+
     final client = http.Client();
     http.StreamedResponse response;
     try {
@@ -1486,6 +1508,7 @@ class _SessionClient extends http.BaseClient {
         try {
           response = await (() async {
             final streamed = await client.send(request);
+            await validate(streamed.statusCode);
             if (!api.isCurrentSession(generation) ||
                 !api.canReadPatientClinicalStatus) {
               throw ApiException('Session changed. Please try again');
@@ -1532,6 +1555,7 @@ class _SessionClient extends http.BaseClient {
         final streamed = await client
             .send(request)
             .timeout(const Duration(seconds: 60));
+        await validate(streamed.statusCode);
         final bytes = await streamed.stream.toBytes().timeout(
           const Duration(seconds: 60),
         );
@@ -1546,33 +1570,12 @@ class _SessionClient extends http.BaseClient {
     } finally {
       client.close();
     }
-    final api = ApiService.instance;
-    if (sentToken != null &&
-        (!api.isCurrentSession(generation) ||
-            sentToken != 'Bearer ${api.authToken}') &&
-        !request.url.path.endsWith('/auth/logout')) {
-      throw ApiException('Session changed. Please try again');
-    }
-    if (response.statusCode == 401 &&
-        sentToken != null &&
-        sentToken == 'Bearer ${api.authToken}') {
-      await api._clearSession();
-      throw ApiException('Session expired or invalid. Please sign in again');
-    }
+    await validate(response.statusCode);
     return response;
   }
 }
 
 class PatientResourceMissing implements Exception {}
-
-class ApiException implements Exception {
-  ApiException(this.message, [this.details]);
-  final String message;
-  final Map<String, dynamic>? details;
-
-  @override
-  String toString() => message;
-}
 
 class ProfileRequestException extends ApiException {
   ProfileRequestException(super.message, {this.unauthorized = false});

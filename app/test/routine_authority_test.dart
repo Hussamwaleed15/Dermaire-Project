@@ -117,10 +117,7 @@ void main() {
     repository.fail = true;
     await tester.tap(find.byIcon(Icons.refresh));
     await tester.pumpAndSettle();
-    expect(
-      find.text('Routine unavailable. Refresh to try again.'),
-      findsOneWidget,
-    );
+    expect(find.textContaining('Routine unavailable.'), findsOneWidget);
     expect(find.text('Inventory · AM · daily'), findsOneWidget);
   });
   testWidgets('stop waits for confirmation and never reports fake success', (

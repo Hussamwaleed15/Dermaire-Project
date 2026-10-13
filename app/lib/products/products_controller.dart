@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 import '../services/api_service.dart';
+import '../services/request_failure.dart';
 import 'product.dart';
 import 'product_repository.dart';
 import 'product_validation.dart';
@@ -42,6 +43,9 @@ class ProductsController extends ChangeNotifier {
   bool isLoading = true;
   bool isSaving = false;
   String? errorMessage;
+  RequestFailure? readFailure;
+  DateTime? lastConfirmedAt;
+  bool _reading = false;
   String query = '';
   ProductCategory? categoryFilter;
   ProductStatus? statusFilter;
@@ -94,6 +98,9 @@ class ProductsController extends ChangeNotifier {
     _generation++;
     isSaving = false;
     createUncertain = false;
+    _reading = false;
+    readFailure = null;
+    lastConfirmedAt = null;
     isLoading = true;
     isStale = false;
     _products = [];
@@ -105,23 +112,29 @@ class ProductsController extends ChangeNotifier {
   }
 
   Future<void> load() async {
-    if (_disposed || isSaving) return;
+    if (_disposed || isSaving || _reading) return;
     final generation = ++_generation;
+    _reading = true;
     isLoading = true;
+    isStale = _products.isNotEmpty;
+    readFailure = null;
     errorMessage = null;
     notifyListeners();
     try {
       final products = await _repository.fetchProducts();
       if (_disposed || generation != _generation) return;
+      lastConfirmedAt = DateTime.now().toUtc();
       _products = products;
       isStale = false;
-    } on Object {
+    } on Object catch (failure) {
       if (_disposed || generation != _generation) return;
       isStale = true;
+      readFailure = RequestFailure.from(failure);
       errorMessage =
-          'Could not refresh products. Displayed data may be stale. Connect and retry.';
+          'Could not refresh products. ${readFailure!.message} Displayed data may be stale.';
     } finally {
       if (!_disposed && generation == _generation) {
+        _reading = false;
         isLoading = false;
         notifyListeners();
       }

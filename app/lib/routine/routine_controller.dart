@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import '../services/api_service.dart';
+import '../services/request_failure.dart';
 
 abstract class RoutineRepository {
   Future<List<Map<String, dynamic>>> read(String resource);
@@ -160,6 +161,8 @@ class RoutineController extends ChangeNotifier {
   bool loading = false;
   bool saving = false;
   String? error;
+  RequestFailure? readFailure;
+  DateTime? lastConfirmedAt;
   int _generation = 0;
   bool _disposed = false;
   bool valid(Map<String, dynamic> row, String source) => validRow(row, source);
@@ -200,9 +203,11 @@ class RoutineController extends ChangeNotifier {
                 (row['configuration_snapshot']['schedule'] == 'BOTH' ||
                     row['configuration_snapshot']['schedule'] == row['slot']));
   Future<void> refresh() async {
-    if (_disposed || saving || loadingMore) return;
+    if (_disposed || saving || loadingMore || loading) return;
     final generation = ++_generation;
     loading = true;
+    stale = entries != null;
+    readFailure = null;
     error = null;
     notifyListeners();
     try {
@@ -215,15 +220,17 @@ class RoutineController extends ChangeNotifier {
         throw const FormatException('Invalid routine response');
       }
       if (generation != _generation || _disposed) return;
+      lastConfirmedAt = DateTime.now().toUtc();
       entries = configured;
       history = reported;
       historyHasMore = reported.length == 100;
       loadingMore = false;
       stale = false;
-    } catch (_) {
+    } catch (failure) {
       if (generation != _generation || _disposed) return;
       stale = true;
-      error = 'Routine unavailable. Refresh to try again.';
+      readFailure = RequestFailure.from(failure);
+      error = 'Routine unavailable. ${readFailure!.message}';
     }
     if (generation != _generation || _disposed) return;
     loading = false;
@@ -342,6 +349,8 @@ class RoutineController extends ChangeNotifier {
   void clear() {
     ++_generation;
     uncertain.clear();
+    readFailure = null;
+    lastConfirmedAt = null;
     stale = false;
     loadingMore = false;
     historyHasMore = false;

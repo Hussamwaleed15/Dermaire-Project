@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import '../services/api_service.dart';
+import '../services/request_failure.dart';
 import '../routine/routine_controller.dart';
 import 'experiment_contract.dart';
 
@@ -153,6 +154,8 @@ class ExperimentController extends ChangeNotifier {
   bool loading = false;
   bool saving = false;
   String? error;
+  RequestFailure? readFailure;
+  DateTime? lastConfirmedAt;
   int _generation = 0;
   bool _disposed = false;
   static const labels = [
@@ -201,9 +204,11 @@ class ExperimentController extends ChangeNotifier {
       (row['result'] == null || validResult(row['result']));
 
   Future<bool> refresh() async {
-    if (_disposed || saving || loadingMore) return false;
+    if (_disposed || saving || loadingMore || loading) return false;
     final generation = ++_generation;
     loading = true;
+    stale = rows != null;
+    readFailure = null;
     error = null;
     notifyListeners();
     try {
@@ -212,13 +217,15 @@ class ExperimentController extends ChangeNotifier {
         throw const FormatException('Invalid experiment response');
       }
       if (generation != _generation || _disposed) return false;
+      lastConfirmedAt = DateTime.now().toUtc();
       rows = response;
       stale = false;
       hasMore = response.length == 100;
-    } catch (_) {
+    } catch (failure) {
       if (generation != _generation || _disposed) return false;
       stale = true;
-      error = 'Experiments unavailable. Refresh to retry.';
+      readFailure = RequestFailure.from(failure);
+      error = 'Experiments unavailable. ${readFailure!.message}';
     }
     if (generation != _generation || _disposed) return false;
     loading = false;
@@ -363,6 +370,8 @@ class ExperimentController extends ChangeNotifier {
     loadingMore = false;
     hasMore = false;
     uncertain.clear();
+    readFailure = null;
+    lastConfirmedAt = null;
     rows = null;
     error = null;
     loading = saving = false;
