@@ -15,12 +15,37 @@ These are capability requirements, not proposed endpoints or existing promises.
 | P1 | Device registration/revocation | Scoped install/token ownership, rotation, expiry, unregister across logout/account switching, failure recovery. No cross-account queued dispatch. |
 | P1 | Push delivery infrastructure/status | Distinguish requested, provider accepted, delivered only when proved, failed/expired/cancelled. History/receipt contract and isolated provider tests before Flutter adapter. |
 | P1 | Scheduling and cancellation | Persisted user-selected time/IANA timezone/DST policy, eligibility, schedule receipt, reschedule/cancel and reconciliation. AM/PM routine grouping is not a clock schedule. |
-| P1 | Clinical follow-up authority | Persisted author/role/permissions, patient confirmation if required, revision, purpose and related resources. No AI/client invented dates; no routine-end comparison authorization. |
+| P1 | Typed scheduling for existing clinical follow-up | Existing ClinicalNote.follow_up is free text and follow_up_needed is a review state; doctor/patient ownership and visible-note provenance already exist. Add explicit due-time/timezone, scheduling intent/permission, patient confirmation if required, revision, reschedule/cancel receipt and purpose. No AI/client invented dates or routine-end comparison authorization. |
 | P2 | Paging/freshness/observability | Stable ordered cursor/as-of/revision, duplicate/conflict behavior, privacy-safe diagnostics and exact delivery analytics semantics. |
 
 Existing M1–M4/B1/B2 unresolved work stays separate: report-only Home/baseline,
 general check-in idempotency/attempt receipts, consent policy/onboarding read model,
 comparison timing/doctor or authorized AI contracts, Agent memory/execution and
 M4 atomic revision/operation receipts. Do not duplicate RoutineAdherence uniqueness
-already present in backend. No client workaround. Additional offline receipts
-requirements will be recorded after F4 inspection.
+already present in backend. No client workaround. Offline requirements follow from the verified F4/F5 behavior below.
+
+
+Offline reconciliation requirements, preserving existing privacy limits:
+
+- P1: Owner/payload/attempt-bound operation receipts and GET lookup for general
+  check-ins, routine/adherence, product/experiment mutations and consent where
+  supported. A timeout may follow commit. Distinguish rejected, pending, committed,
+  unknown and expired attempts; define same-key/payload conflict semantics, TTL,
+  deletion/race behavior and atomic revision preconditions. Existing adherence
+  uniqueness is not an attempt receipt; existing capture idempotency is retained.
+- P1: Projections expose server freshness/as-of/revision and explicit clinical
+  permissions/source; cached positive guidance is never clearance during outage.
+- P2: Document HTTP 429 Retry-After semantics and safe recovery eligibility.
+  Flutter currently offers manual GET retry without a guessed cooldown, automatic
+  mutation replay, retry loop or exactly-once guarantee.
+
+Flutter delivered: template disclosure removal, UTC slot/reminder distinction,
+request-based failure feedback, concurrent GET guards, authenticated401 body
+handling and old logout401/account isolation; accessible recovery controls.
+Blocked: live preferences, notification center, device tokens/permission/provider
+operations, push/local scheduling and clinical follow-up/comparison execution.
+No notification delivery is inferred from existing clinical/routine records.
+
+Audit clarification: clinical follow-up notes/review status already exist; missing
+capability is typed actionable scheduling/delivery, not the ability for a doctor
+to record free-text guidance. No request to recreate current note or role APIs.

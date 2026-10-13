@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
+import '../services/recovery_notice.dart';
 import 'routine_controller.dart';
 import '../products/product_repository.dart';
 import '../products/products_ui.dart';
@@ -419,7 +420,10 @@ class _RoutineScreenState extends State<RoutineScreen> {
         title: const Text('My routine'),
         actions: [
           IconButton(
-            onPressed: controller.loading || controller.saving
+            onPressed:
+                controller.loading ||
+                    controller.saving ||
+                    controller.loadingMore
                 ? null
                 : controller.refresh,
             tooltip: 'Refresh routine',
@@ -429,8 +433,14 @@ class _RoutineScreenState extends State<RoutineScreen> {
       ),
       body: !current
           ? const Center(child: Text('Session ended. Reopen your routine.'))
-          : controller.loading
-          ? const Center(child: CircularProgressIndicator())
+          : controller.loading && controller.entries == null
+          ? Center(
+              child: EntryMotion.reduced(context)
+                  ? const Text('Loading your routine…')
+                  : const CircularProgressIndicator(
+                      semanticsLabel: 'Loading routine',
+                    ),
+            )
           : ListView(
               padding: const EdgeInsets.all(20),
               children: [
@@ -445,13 +455,23 @@ class _RoutineScreenState extends State<RoutineScreen> {
                     'Morning and Evening group your routine steps; they do not set a clock time. No reminders are scheduled by this app. Follow-up and photo comparison dates require confirmed clinical guidance.',
                   ),
                 ),
-                if (controller.error != null) ...[
-                  Text(controller.error!),
-                  TextButton(
-                    onPressed: controller.refresh,
-                    child: const Text('Retry'),
+                if (controller.error != null ||
+                    controller.stale ||
+                    controller.loading ||
+                    controller.uncertain.isNotEmpty)
+                  RecoveryNotice(
+                    message: controller.error,
+                    hasPreviousData:
+                        controller.stale && controller.entries != null,
+                    confirmedAt: controller.lastConfirmedAt,
+                    uncertainWrite: controller.uncertain.isNotEmpty,
+                    busy:
+                        controller.loading ||
+                        controller.saving ||
+                        controller.loadingMore,
+                    onRefresh: controller.refresh,
+                    refreshLabel: 'Retry',
                   ),
-                ],
                 if (controller.entries != null) ...[
                   OutlinedButton(
                     onPressed: controller.saving ? null : _chooseReportDay,
@@ -461,9 +481,12 @@ class _RoutineScreenState extends State<RoutineScreen> {
                     'Date is selected on this device; the server validates reporting eligibility. This is not a treatment deadline.',
                   ),
                   if (controller.saving)
-                    const LinearProgressIndicator(
-                      semanticsLabel: 'Waiting for server confirmation',
-                    ),
+                    if (EntryMotion.reduced(context))
+                      const Text('Waiting for server confirmation…')
+                    else
+                      const LinearProgressIndicator(
+                        semanticsLabel: 'Waiting for server confirmation',
+                      ),
                   if (widget.productId != null &&
                       !controller.entries!.any(
                         (e) => e['product_id'] == widget.productId,
@@ -480,10 +503,6 @@ class _RoutineScreenState extends State<RoutineScreen> {
                         : () => _editor(),
                     child: const Text('Configure routine'),
                   ),
-                  if (controller.stale)
-                    const Text(
-                      'Previously confirmed data may be stale. Changes are unavailable until refresh.',
-                    ),
                   for (final group in ['AM', 'PM', 'Stopped']) ...[
                     Text(
                       group == 'AM'

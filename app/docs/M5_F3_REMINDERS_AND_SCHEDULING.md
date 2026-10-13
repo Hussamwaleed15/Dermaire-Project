@@ -9,11 +9,14 @@ reports are unknown adherence. These are grouping/report contracts, not wall
 clock reminder times, timezone/quiet-hour settings or delivery jobs. Existing
 adherence uniqueness does not authorize scheduling or clinical follow-up.
 
-No reminder/follow-up resource, scheduling/cancel receipt, device dispatch,
+No reminder or typed follow-up scheduling resource/receipt, device dispatch,
 push opt-in, IANA timezone/DST policy, persisted doctor/authorized AI comparison
 schedule or patient confirmation lifecycle exists. An experiment target/end
-is not a medical comparison date. Existing doctor notes remain visible in their
-own clinical UI and are not interpreted into scheduled operations.
+is not a medical comparison date. ClinicalNote.follow_up is an existing optional free-text field, not a typed
+due-time/timezone or scheduling receipt. The backend review projection includes
+patient-visible notes, but current Flutter ClinicianReview renders the current
+decision/state rather than a note feed. Neither follow_up text nor the real
+follow_up_needed review state is interpreted into a scheduled operation.
 
 Completed: routine now explicitly explains grouping versus clock time, absent
 scheduled reminders and the requirement for confirmed clinical follow-up/photo

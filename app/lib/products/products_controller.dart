@@ -165,6 +165,13 @@ class ProductsController extends ChangeNotifier {
       _products.where((item) => item.id == id).firstOrNull;
 
   Future<ProductOperationResult> add(Product product) async {
+    // No request was sent when the current read is stale/loading. Do not invent
+    // an uncertain creation receipt just because this local guard rejected it.
+    if (_disposed || isStale || isLoading) {
+      return const ProductOperationResult.failure(
+        'Refresh products online before making changes.',
+      );
+    }
     if (createUncertain) {
       return const ProductOperationResult.failure(
         'Previous creation is unconfirmed. Inspect refreshed records; do not submit it again.',

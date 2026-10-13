@@ -118,6 +118,8 @@ void main() {
     await tester.tap(find.byIcon(Icons.refresh));
     await tester.pumpAndSettle();
     expect(find.textContaining('Routine unavailable.'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('Inventory · AM · daily'), 150);
+    await tester.pumpAndSettle();
     expect(find.text('Inventory · AM · daily'), findsOneWidget);
   });
   testWidgets('stop waits for confirmation and never reports fake success', (

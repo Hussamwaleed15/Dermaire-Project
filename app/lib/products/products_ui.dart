@@ -5,6 +5,7 @@ import '../dermaire_theme.dart';
 import '../dermaire_widgets.dart';
 import '../routine/routine_ui.dart';
 import '../services/api_service.dart';
+import '../services/recovery_notice.dart';
 import '../clinical/clinical_ui.dart';
 import '../entry/entry_motion.dart';
 import 'product.dart';
@@ -57,10 +58,16 @@ class ProductsFeatureTab extends StatelessWidget {
                       IconButton.filledTonal(
                         key: const Key('addProduct'),
                         tooltip: 'Add product',
-                        onPressed: () => openPage(
-                          context,
-                          ProductAddChoiceScreen(state: state),
-                        ),
+                        onPressed:
+                            controller.isLoading ||
+                                controller.isSaving ||
+                                controller.isStale ||
+                                controller.createUncertain
+                            ? null
+                            : () => openPage(
+                                context,
+                                ProductAddChoiceScreen(state: state),
+                              ),
                         icon: const Icon(Icons.add_rounded),
                       ),
                     ],
@@ -89,30 +96,38 @@ class ProductsFeatureTab extends StatelessWidget {
                   ),
                 ),
               ),
-              if (controller.errorMessage != null && controller.all.isNotEmpty)
-                SliverToBoxAdapter(
-                  child: Column(
-                    children: [
-                      Text(controller.errorMessage!),
-                      TextButton(
-                        onPressed: controller.load,
-                        child: const Text('Retry refresh'),
-                      ),
-                    ],
+              if (controller.errorMessage != null ||
+                  controller.isStale ||
+                  controller.createUncertain)
+                SliverPadding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  sliver: SliverToBoxAdapter(
+                    child: RecoveryNotice(
+                      message: controller.errorMessage,
+                      hasPreviousData:
+                          controller.isStale &&
+                          controller.lastConfirmedAt != null,
+                      confirmedAt: controller.lastConfirmedAt,
+                      uncertainWrite: controller.createUncertain,
+                      busy: controller.isLoading || controller.isSaving,
+                      onRefresh: controller.load,
+                      refreshLabel: 'Retry refresh',
+                    ),
                   ),
                 ),
-              if (controller.isLoading)
-                const SliverFillRemaining(
-                  child: Center(child: CircularProgressIndicator()),
+              if (controller.isLoading && controller.all.isEmpty)
+                SliverFillRemaining(
+                  child: Center(
+                    child: EntryMotion.reduced(context)
+                        ? const Text('Loading products…')
+                        : const CircularProgressIndicator(
+                            semanticsLabel: 'Loading products',
+                          ),
+                  ),
                 )
               else if (controller.errorMessage != null &&
                   controller.all.isEmpty)
-                SliverFillRemaining(
-                  child: _ErrorState(
-                    message: controller.errorMessage!,
-                    onRetry: controller.load,
-                  ),
-                )
+                const SliverToBoxAdapter(child: SizedBox.shrink())
               else if (controller.all.isEmpty)
                 SliverFillRemaining(
                   child: _EmptyProducts(
@@ -277,29 +292,6 @@ class _EmptyProducts extends StatelessWidget {
       const SizedBox(height: 22),
       FilledButton(onPressed: onAdd, child: const Text('Add my first product')),
     ],
-  );
-}
-
-class _ErrorState extends StatelessWidget {
-  const _ErrorState({required this.message, required this.onRetry});
-  final String message;
-  final VoidCallback onRetry;
-
-  @override
-  Widget build(BuildContext context) => Center(
-    child: Padding(
-      padding: const EdgeInsets.all(28),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.cloud_off_outlined, size: 54),
-          const SizedBox(height: 14),
-          Text(message, textAlign: TextAlign.center),
-          const SizedBox(height: 16),
-          FilledButton(onPressed: onRetry, child: const Text('Try again')),
-        ],
-      ),
-    ),
   );
 }
 

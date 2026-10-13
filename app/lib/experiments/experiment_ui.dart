@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'experiment_controller.dart';
 import '../services/api_service.dart';
+import '../services/recovery_notice.dart';
 import '../routine/routine_ui.dart';
 import '../routine/routine_controller.dart';
 import 'experiment_contract.dart';
@@ -79,13 +80,27 @@ class _ExperimentsViewState extends State<ExperimentsView> {
             const Text(
               'Change one routine variable. Results describe observations and associations, not diagnosis or causality.',
             ),
-            if (c.loading) const LinearProgressIndicator(),
-            if (c.error != null)
-              Text(c.error!, key: const Key('experimentError')),
-            OutlinedButton(
-              onPressed: c.loading || c.saving ? null : c.refresh,
-              child: const Text('Refresh experiments'),
-            ),
+            if (c.error != null ||
+                c.stale ||
+                c.loading ||
+                c.uncertain.isNotEmpty)
+              RecoveryNotice(
+                message: c.error,
+                messageKey: c.error == null
+                    ? null
+                    : const Key('experimentError'),
+                hasPreviousData: c.stale && c.rows != null,
+                confirmedAt: c.lastConfirmedAt,
+                uncertainWrite: c.uncertain.isNotEmpty,
+                busy: c.loading || c.saving || c.loadingMore,
+                onRefresh: c.refresh,
+                refreshLabel: 'Refresh experiments',
+              )
+            else
+              OutlinedButton(
+                onPressed: c.saving || c.loadingMore ? null : c.refresh,
+                child: const Text('Refresh experiments'),
+              ),
             FilledButton(
               onPressed:
                   c.loading || c.saving || c.stale || c.uncertain.contains('')
@@ -95,10 +110,6 @@ class _ExperimentsViewState extends State<ExperimentsView> {
                     ),
               child: const Text('Plan one change'),
             ),
-            if (c.stale)
-              const Text(
-                'Previously confirmed experiments may be stale. Refresh before making changes.',
-              ),
             if (!c.loading && !c.stale && c.rows?.isEmpty == true)
               const Text('No experiments yet.'),
             if (c.hasMore)
