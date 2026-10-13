@@ -1,8 +1,9 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'experiment_controller.dart';
 import '../services/api_service.dart';
 import '../routine/routine_ui.dart';
+import '../routine/routine_controller.dart';
+import 'experiment_contract.dart';
 
 class ExperimentsView extends StatefulWidget {
   const ExperimentsView({
@@ -60,7 +61,8 @@ class _ExperimentsViewState extends State<ExperimentsView> {
               child: const Text('Refresh experiments'),
             ),
             FilledButton(
-              onPressed: c.loading || c.saving
+              onPressed:
+                  c.loading || c.saving || c.stale || c.uncertain.contains('')
                   ? null
                   : () => Navigator.of(context).push(
                       MaterialPageRoute<void>(
@@ -69,7 +71,19 @@ class _ExperimentsViewState extends State<ExperimentsView> {
                     ),
               child: const Text('Plan one change'),
             ),
-            if (c.rows?.isEmpty == true) const Text('No experiments yet.'),
+            if (c.stale)
+              const Text(
+                'Previously confirmed experiments may be stale. Refresh before making changes.',
+              ),
+            if (!c.loading && !c.stale && c.rows?.isEmpty == true)
+              const Text('No experiments yet.'),
+            if (c.hasMore)
+              TextButton(
+                onPressed: c.loadingMore ? null : c.loadMore,
+                child: Text(
+                  c.loadingMore ? 'Loading history…' : 'Load older experiments',
+                ),
+              ),
             for (final row in c.rows ?? <Map<String, dynamic>>[])
               Card(
                 child: Padding(
@@ -116,27 +130,64 @@ class _ExperimentsViewState extends State<ExperimentsView> {
                       Text(
                         'Adherence coverage: ${row['coverage']['adherence_coverage']} · Context coverage: ${row['coverage']['context_coverage']}',
                       ),
-                      if (row['status'] == 'draft')
+                      const Text(
+                        'Current coverage is refreshed from the server. Evaluation below is a saved snapshot.',
+                      ),
+                      if (row['status'] == 'draft' &&
+                          row['engine_version'] == 2)
                         TextButton(
-                          onPressed: c.saving
+                          onPressed: c.saving || c.stale
                               ? null
-                              : () => c.write('${row['id']}/activate', {}),
+                              : () => Navigator.of(context).push(
+                                  MaterialPageRoute<void>(
+                                    builder: (_) => _DraftForm(
+                                      controller: c,
+                                      original: row,
+                                    ),
+                                  ),
+                                ),
+                          child: const Text('Edit draft'),
+                        ),
+                      if (row['status'] == 'draft' &&
+                          row['engine_version'] == 2)
+                        TextButton(
+                          onPressed:
+                              c.saving ||
+                                  c.stale ||
+                                  c.uncertain.any(
+                                    (p) => p.startsWith('${row['id']}/'),
+                                  )
+                              ? null
+                              : () => c.write(
+                                  '${row['id']}/activate',
+                                  {},
+                                  expected: row,
+                                ),
                           child: const Text('Activate today'),
                         ),
-                      if ([
-                        'active',
-                        'paused',
-                        'baseline',
-                        'draft',
-                      ].contains(row['status']))
+                      if (row['engine_version'] == 2 &&
+                          [
+                            'active',
+                            'paused',
+                            'baseline',
+                            'draft',
+                          ].contains(row['status']))
                         TextButton(
-                          onPressed: c.saving
+                          onPressed:
+                              c.saving ||
+                                  c.stale ||
+                                  c.uncertain.any(
+                                    (p) => p.startsWith('${row['id']}/'),
+                                  )
                               ? null
-                              : () => c.write('${row['id']}/finish', {
-                                  'status': row['status'] == 'draft'
+                              : () => _finish(
+                                  context,
+                                  c,
+                                  row,
+                                  row['status'] == 'draft'
                                       ? 'cancelled'
                                       : 'stopped',
-                                }),
+                                ),
                           child: Text(
                             row['status'] == 'draft'
                                 ? 'Cancel draft'
@@ -146,11 +197,16 @@ class _ExperimentsViewState extends State<ExperimentsView> {
                       if (row['status'] == 'active' &&
                           row['engine_version'] == 2)
                         TextButton(
-                          onPressed: c.saving
+                          onPressed:
+                              c.saving ||
+                                  c.stale ||
+                                  c.uncertain.any(
+                                    (p) => p.startsWith('${row['id']}/'),
+                                  )
                               ? null
                               : () => c.write('${row['id']}/finish', {
                                   'status': 'completed',
-                                }),
+                                }, expected: row),
                           child: const Text('Complete elapsed experiment'),
                         ),
                       if (row['engine_version'] == 2 &&
@@ -160,9 +216,18 @@ class _ExperimentsViewState extends State<ExperimentsView> {
                             'stopped',
                           ].contains(row['status']))
                         TextButton(
-                          onPressed: c.saving
+                          onPressed:
+                              c.saving ||
+                                  c.stale ||
+                                  c.uncertain.any(
+                                    (p) => p.startsWith('${row['id']}/'),
+                                  )
                               ? null
-                              : () => c.write('${row['id']}/evaluate', {}),
+                              : () => c.write(
+                                  '${row['id']}/evaluate',
+                                  {},
+                                  expected: row,
+                                ),
                           child: const Text('Evaluate evidence'),
                         ),
                       if (row['result'] != null) ...[
@@ -179,14 +244,10 @@ class _ExperimentsViewState extends State<ExperimentsView> {
                             in row['result']['result']['limitations'])
                           Text('• $limitation'),
                         ExpansionTile(
-                          title: const Text(
-                            'Evidence, comparison and source references',
-                          ),
+                          title: const Text('Evidence and source references'),
                           children: [
-                            SelectableText(
-                              const JsonEncoder.withIndent(
-                                '  ',
-                              ).convert(row['result']['result']),
+                            _EvidenceDetails(
+                              result: row['result']['result'] as Map,
                             ),
                           ],
                         ),
@@ -202,14 +263,107 @@ class _ExperimentsViewState extends State<ExperimentsView> {
   );
 }
 
+Future<void> _finish(
+  BuildContext context,
+  ExperimentController c,
+  Map<String, dynamic> row,
+  String status,
+) async {
+  final generation = ApiService.instance.sessionGeneration;
+  final yes = await showDialog<bool>(
+    context: context,
+    builder: (dialog) => AlertDialog(
+      title: Text(status == 'cancelled' ? 'Cancel draft?' : 'Stop experiment?'),
+      content: const Text(
+        'History remains. Stopping does not restore the previous routine or schedule an image comparison.',
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(dialog, false),
+          child: const Text('Keep experiment'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(dialog, true),
+          child: const Text('Confirm'),
+        ),
+      ],
+    ),
+  );
+  if (yes == true &&
+      context.mounted &&
+      (!c.remote || ApiService.instance.isCurrentSession(generation))) {
+    await c.write('${row['id']}/finish', {'status': status}, expected: row);
+  }
+}
+
+class _EvidenceDetails extends StatelessWidget {
+  const _EvidenceDetails({required this.result});
+  final Map result;
+  @override
+  Widget build(BuildContext context) {
+    final comparison = result['comparison'] as Map? ?? const {};
+    final change = result['observed_change'] as Map? ?? const {};
+    final provenance = result['provenance'] as Map;
+    final snapshot = provenance['definition_snapshot'] is Map
+        ? provenance['definition_snapshot'] as Map
+        : null;
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Saved evaluation: ${result['evaluated_at']}'),
+          Text(
+            'Source: ${provenance['source']} · ${provenance['algorithm'] ?? 'Not supplied'}',
+          ),
+          if (snapshot != null)
+            Text(
+              'Frozen definition: ${snapshot['frozen_at'] ?? 'Not supplied'} · Routine ${snapshot['expected'] is Map ? snapshot['expected']['id'] ?? 'Not supplied' : 'Not supplied'}',
+            ),
+          Text(
+            'Baseline window: ${comparison['start'] ?? 'Not supplied'} to ${comparison['end_exclusive'] ?? 'Not supplied'} (end excluded)',
+          ),
+          Text(
+            'Source compared: ${comparison['measurement_source'] ?? 'Not supplied'} · Baseline days: ${comparison['baseline_days'] ?? 'Unknown'} · Experiment days: ${comparison['experiment_days'] ?? 'Unknown'}',
+          ),
+          if (change.isNotEmpty)
+            Text(
+              'Metric: ${change['metric'] ?? 'Unknown'} · Baseline value: ${change['baseline_mean'] ?? 'Unavailable'} · Experiment value: ${change['experiment_mean'] ?? 'Unavailable'} · Difference: ${change['delta_points'] ?? 'Unavailable'}',
+            ),
+          const Text(
+            'Numeric values keep the server scale. This API does not provide explicit units; values are not interpreted as percentages or capture fractions.',
+          ),
+          const Text(
+            'Rule-based observational evidence. Not image comparison, causal proof, diagnosis or an AI-directed treatment plan.',
+          ),
+          for (final item
+              in provenance['experiment_checkins'] is List
+                  ? provenance['experiment_checkins'] as List
+                  : const [])
+            if (item is Map)
+              Text(
+                'Observation ${item['id']} · ${item['created_at']} · Source ${item['source'] ?? 'user report; measurement unknown'}',
+              ),
+        ],
+      ),
+    );
+  }
+}
+
 class _DraftForm extends StatefulWidget {
-  const _DraftForm({required this.controller});
+  const _DraftForm({required this.controller, this.original});
+  final Map<String, dynamic>? original;
   final ExperimentController controller;
   @override
   State<_DraftForm> createState() => _DraftFormState();
 }
 
 class _DraftFormState extends State<_DraftForm> {
+  late final int generation;
+  bool get current =>
+      !widget.controller.remote ||
+      ApiService.instance.isCurrentSession(generation) &&
+          ApiService.instance.canReadPatientClinicalStatus;
   List<Map<String, dynamic>>? entries;
   String? entryId;
   String type = 'change_schedule';
@@ -225,23 +379,47 @@ class _DraftFormState extends State<_DraftForm> {
   @override
   void initState() {
     super.initState();
+    generation = ApiService.instance.sessionGeneration;
+    ApiService.instance.addListener(sessionChanged);
+    final row = widget.original;
+    if (row != null) {
+      entryId = row['routine_entry_id'];
+      type = row['intervention']['type'];
+      schedule = row['intervention']['schedule'] ?? 'PM';
+      metric = row['primary_concern'];
+      goal.text = row['goal'] ?? '';
+      notes.text = row['notes'] ?? '';
+      duration.text = '${row['target_days']}';
+      date.text = (row['start_date'] as String).substring(0, 10);
+    }
     load();
+  }
+
+  void sessionChanged() {
+    if (!current && mounted) {
+      for (final c in [goal, notes, duration, date]) {
+        c.clear();
+      }
+      setState(() {
+        entries = null;
+        entryId = null;
+      });
+    }
   }
 
   Future<void> load() async {
     try {
-      final response =
-          (await ApiService.instance.routineRequest('entries?active=true')
-                  as List)
-              .cast<Map<String, dynamic>>();
-      if (mounted) {
+      final response = await RemoteRoutineRepository().read(
+        'entries?active=true',
+      );
+      if (mounted && current) {
         setState(() {
           entries = response;
           error = null;
         });
       }
     } catch (_) {
-      if (mounted) {
+      if (mounted && current) {
         setState(
           () => error = 'Routine unavailable. Retry to choose a target.',
         );
@@ -251,6 +429,7 @@ class _DraftFormState extends State<_DraftForm> {
 
   @override
   void dispose() {
+    ApiService.instance.removeListener(sessionChanged);
     for (final c in [goal, notes, duration, date]) {
       c.dispose();
     }
@@ -259,109 +438,162 @@ class _DraftFormState extends State<_DraftForm> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('Plan one change')),
+    appBar: AppBar(
+      title: Text(widget.original == null ? 'Plan one change' : 'Edit draft'),
+    ),
     body: AnimatedBuilder(
       animation: widget.controller,
-      builder: (context, _) => ListView(
-        padding: const EdgeInsets.all(20),
-        children: [
-          const Text(
-            'Add a new daily entry today for a start experiment, or choose an existing entry to stop or change its schedule. Activation applies the planned configuration. Stopping the experiment does not restore your previous routine.',
-          ),
-          if (error != null) ...[
-            Text(error!),
-            TextButton(onPressed: load, child: const Text('Retry routine')),
-          ],
-          if (entries == null && error == null) const LinearProgressIndicator(),
-          if (entries?.isEmpty == true)
-            const Text('Add an active routine entry in Products first.'),
-          DropdownButtonFormField<String>(
-            initialValue: entryId,
-            decoration: const InputDecoration(labelText: 'One routine entry'),
-            items: [
-              for (final e in entries ?? <Map<String, dynamic>>[])
-                DropdownMenuItem(
-                  value: e['id'] as String,
-                  child: Text('${e['product_name']} · ${e['schedule']}'),
+      builder: (context, _) => !current
+          ? const Center(child: Text('Session ended. Draft cleared.'))
+          : ListView(
+              padding: const EdgeInsets.all(20),
+              children: [
+                const Text(
+                  'Add a new daily entry today for a start experiment, or choose an existing entry to stop or change its schedule. Activation applies the planned configuration. Stopping the experiment does not restore your previous routine.',
                 ),
-            ],
-            onChanged: (v) => setState(() => entryId = v),
-          ),
-          DropdownButtonFormField<String>(
-            initialValue: type,
-            items: [
-              for (final v in ['start_entry', 'stop_entry', 'change_schedule'])
-                DropdownMenuItem(value: v, child: Text(v.replaceAll('_', ' '))),
-            ],
-            onChanged: (v) => setState(() => type = v!),
-          ),
-          if (type != 'stop_entry')
-            DropdownButtonFormField<String>(
-              initialValue: schedule,
-              items: [
-                for (final v in ['AM', 'PM', 'BOTH'])
-                  DropdownMenuItem(value: v, child: Text(v)),
+                if (error != null) ...[
+                  Text(error!),
+                  TextButton(
+                    onPressed: load,
+                    child: const Text('Retry routine'),
+                  ),
+                ],
+                if (entries == null && error == null)
+                  const LinearProgressIndicator(),
+                if (entries?.isEmpty == true)
+                  const Text('Add an active routine entry in Products first.'),
+                DropdownButtonFormField<String>(
+                  isExpanded: true,
+                  initialValue: entryId,
+                  decoration: const InputDecoration(
+                    labelText: 'One routine entry',
+                  ),
+                  items: [
+                    for (final e in entries ?? <Map<String, dynamic>>[])
+                      DropdownMenuItem(
+                        value: e['id'] as String,
+                        child: Text('${e['product_name']} · ${e['schedule']}'),
+                      ),
+                  ],
+                  onChanged: (v) => setState(() => entryId = v),
+                ),
+                DropdownButtonFormField<String>(
+                  isExpanded: true,
+                  initialValue: type,
+                  items: [
+                    for (final v in [
+                      'start_entry',
+                      'stop_entry',
+                      'change_schedule',
+                    ])
+                      DropdownMenuItem(
+                        value: v,
+                        child: Text(v.replaceAll('_', ' ')),
+                      ),
+                  ],
+                  onChanged: (v) => setState(() => type = v!),
+                ),
+                if (type != 'stop_entry')
+                  DropdownButtonFormField<String>(
+                    isExpanded: true,
+                    initialValue: schedule,
+                    items: [
+                      for (final v in ['AM', 'PM', 'BOTH'])
+                        DropdownMenuItem(value: v, child: Text(v)),
+                    ],
+                    onChanged: (v) => setState(() => schedule = v!),
+                  ),
+                DropdownButtonFormField<String>(
+                  isExpanded: true,
+                  initialValue: metric,
+                  items: [
+                    for (final v in ['texture', 'hydration', 'redness'])
+                      DropdownMenuItem(value: v, child: Text(v)),
+                  ],
+                  onChanged: (v) => setState(() => metric = v!),
+                ),
+                TextField(
+                  controller: date,
+                  decoration: const InputDecoration(
+                    labelText: 'Start date (UTC YYYY-MM-DD)',
+                  ),
+                ),
+                TextField(
+                  controller: duration,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    labelText: 'Duration (7–90 days)',
+                  ),
+                ),
+                TextField(
+                  maxLength: 500,
+                  controller: goal,
+                  decoration: const InputDecoration(
+                    labelText: 'Goal or question (optional)',
+                  ),
+                ),
+                TextField(
+                  maxLength: 2000,
+                  controller: notes,
+                  decoration: const InputDecoration(
+                    labelText: 'Notes (optional)',
+                  ),
+                ),
+                if (widget.controller.error != null)
+                  Text(widget.controller.error!),
+                FilledButton(
+                  onPressed:
+                      entryId == null ||
+                          widget.controller.saving ||
+                          widget.controller.stale ||
+                          widget.controller.uncertain.contains(
+                            widget.original?['id'] ?? '',
+                          )
+                      ? null
+                      : () async {
+                          if (!current) return;
+                          final payload = <String, dynamic>{
+                            'routine_entry_id': entryId,
+                            'intervention': {
+                              'type': type,
+                              if (type != 'stop_entry') 'schedule': schedule,
+                            },
+                            'start_date': date.text.trim(),
+                            'target_days': int.tryParse(duration.text),
+                            'primary_concern': metric,
+                            'goal': goal.text.trim().isEmpty
+                                ? null
+                                : goal.text.trim(),
+                            'notes': notes.text.trim().isEmpty
+                                ? null
+                                : notes.text.trim(),
+                          };
+                          if (!ExperimentContract.draft(payload)) {
+                            setState(
+                              () => error =
+                                  'Choose a valid entry, date, duration, goal and notes.',
+                            );
+                            return;
+                          }
+                          final success = await widget.controller.write(
+                            widget.original?['id'] as String? ?? '',
+                            widget.original == null
+                                ? payload
+                                : {
+                                    'definition': payload,
+                                    'notes': payload['notes'],
+                                  },
+                            method: widget.original == null ? 'POST' : 'PATCH',
+                            expected: widget.original,
+                          );
+                          if (success && current && context.mounted) {
+                            Navigator.pop(context);
+                          }
+                        },
+                  child: const Text('Save draft on server'),
+                ),
               ],
-              onChanged: (v) => setState(() => schedule = v!),
             ),
-          DropdownButtonFormField<String>(
-            initialValue: metric,
-            items: [
-              for (final v in ['texture', 'hydration', 'redness'])
-                DropdownMenuItem(value: v, child: Text(v)),
-            ],
-            onChanged: (v) => setState(() => metric = v!),
-          ),
-          TextField(
-            controller: date,
-            decoration: const InputDecoration(
-              labelText: 'Start date (UTC YYYY-MM-DD)',
-            ),
-          ),
-          TextField(
-            controller: duration,
-            keyboardType: TextInputType.number,
-            decoration: const InputDecoration(
-              labelText: 'Duration (7–90 days)',
-            ),
-          ),
-          TextField(
-            controller: goal,
-            decoration: const InputDecoration(
-              labelText: 'Goal or question (optional)',
-            ),
-          ),
-          TextField(
-            controller: notes,
-            decoration: const InputDecoration(labelText: 'Notes (optional)'),
-          ),
-          if (widget.controller.error != null) Text(widget.controller.error!),
-          FilledButton(
-            onPressed: entryId == null || widget.controller.saving
-                ? null
-                : () async {
-                    final success = await widget.controller.write('', {
-                      'routine_entry_id': entryId,
-                      'intervention': {
-                        'type': type,
-                        if (type != 'stop_entry') 'schedule': schedule,
-                      },
-                      'start_date': date.text.trim(),
-                      'target_days': int.tryParse(duration.text),
-                      'primary_concern': metric,
-                      'goal': goal.text.trim().isEmpty
-                          ? null
-                          : goal.text.trim(),
-                      'notes': notes.text.trim().isEmpty
-                          ? null
-                          : notes.text.trim(),
-                    });
-                    if (success && context.mounted) Navigator.pop(context);
-                  },
-            child: const Text('Save draft on server'),
-          ),
-        ],
-      ),
     ),
   );
 }

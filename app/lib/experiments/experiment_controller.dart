@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
 import '../services/api_service.dart';
+import '../routine/routine_controller.dart';
+import 'experiment_contract.dart';
 
 abstract class ExperimentRepository {
   Future<List<Map<String, dynamic>>> read();
@@ -7,25 +9,144 @@ abstract class ExperimentRepository {
 }
 
 class RemoteExperimentRepository implements ExperimentRepository {
+  final api = ApiService.instance;
   @override
-  Future<List<Map<String, dynamic>>> read() async =>
-      (await ApiService.instance.experimentRequest('') as List)
-          .cast<Map<String, dynamic>>();
+  Future<List<Map<String, dynamic>>> read() => readPage(0);
+  Future<List<Map<String, dynamic>>> readPage(int offset) async {
+    final generation = api.sessionGeneration, owner = api.observationOwner;
+    final rows =
+        (await api.patientResource(
+                  'experiments?limit=100&offset=$offset',
+                  generation,
+                )
+                as List)
+            .cast<Map<String, dynamic>>();
+    if (owner == null ||
+        !rows.every((r) => ExperimentContract.valid(r, owner)) ||
+        rows.map((r) => r['id']).toSet().length != rows.length) {
+      throw const FormatException('Invalid owned experiments');
+    }
+    return rows;
+  }
+
   @override
   Future<Map<String, dynamic>> write(
     String path,
     Map<String, dynamic> payload,
-  ) async =>
-      await ApiService.instance.experimentRequest(
-            path,
-            method: 'POST',
-            payload: payload,
-          )
-          as Map<String, dynamic>;
+  ) => writeChecked(path, payload);
+  Future<Map<String, dynamic>> writeChecked(
+    String path,
+    Map<String, dynamic> payload, {
+    String method = 'POST',
+    Map<String, dynamic>? expected,
+  }) async {
+    final generation = api.sessionGeneration, owner = api.observationOwner!;
+    if (path.isEmpty && !ExperimentContract.draft(payload) ||
+        method == 'PATCH' &&
+            (!ExperimentContract.draft(
+              payload['definition'] as Map<String, dynamic>,
+            ))) {
+      throw const FormatException('Invalid draft');
+    }
+    if (path.isNotEmpty) {
+      final id = path.split('/').first;
+      final current =
+          await api.patientResource('experiments/$id', generation)
+              as Map<String, dynamic>;
+      if (!ExperimentContract.valid(current, owner) ||
+          current['id'] != id ||
+          current['engine_version'] != 2 ||
+          expected == null ||
+          expected['user_id'] != owner ||
+          ![
+            'status',
+            'intervention',
+            'routine_entry_id',
+            'product_id',
+            'start_date',
+            'target_days',
+            'goal',
+            'notes',
+            'definition_snapshot',
+          ].every((k) => RoutineController.sameWire(current[k], expected[k]))) {
+        throw const FormatException(
+          'Experiment changed or read-only. Reopen it.',
+        );
+      }
+    }
+    final receipt =
+        await api.patientResource(
+              path.isEmpty ? 'experiments' : 'experiments/$path',
+              generation,
+              method: method,
+              payload: payload,
+            )
+            as Map<String, dynamic>;
+    final evaluating = path.endsWith('/evaluate');
+    final id =
+        (evaluating ? receipt['experiment_id'] : receipt['id']) as String;
+    if (evaluating
+        ? !ExperimentContract.result(receipt, id)
+        : !ExperimentContract.valid(receipt, owner)) {
+      throw const FormatException('Unconfirmed experiment receipt');
+    }
+    if (path.isNotEmpty && id != path.split('/').first ||
+        path.isEmpty &&
+            !ExperimentContract.definitionMatches(receipt, payload) ||
+        method == 'PATCH' &&
+            (!ExperimentContract.definitionMatches(
+                  receipt,
+                  payload['definition'] as Map<String, dynamic>,
+                ) ||
+                receipt['notes'] != payload['notes'])) {
+      throw const FormatException('Wrong mutation confirmation');
+    }
+    final verified =
+        await api.patientResource('experiments/$id', generation)
+            as Map<String, dynamic>;
+    if (!ExperimentContract.valid(verified, owner) ||
+        verified['id'] != id ||
+        (evaluating
+            ? !RoutineController.sameWire(verified['result'], receipt)
+            : ![
+                'status',
+                'intervention',
+                'routine_entry_id',
+                'product_id',
+                'start_date',
+                'target_days',
+                'goal',
+                'notes',
+                'definition_snapshot',
+              ].every(
+                (k) => RoutineController.sameWire(verified[k], receipt[k]),
+              ))) {
+      throw const FormatException('Experiment readback failed');
+    }
+    return evaluating ? verified['result'] as Map<String, dynamic> : verified;
+  }
 }
 
 class ExperimentController extends ChangeNotifier {
-  ExperimentController(this.repository);
+  ExperimentController(this.repository) {
+    if (remote) {
+      session = ApiService.instance.sessionGeneration;
+      ApiService.instance.addListener(sessionChanged);
+    }
+  }
+  bool get remote => repository is RemoteExperimentRepository;
+  int session = 0;
+  bool stale = false, loadingMore = false, hasMore = false;
+  final Set<String> uncertain = {};
+  void sessionChanged() {
+    if (!_disposed &&
+        (session != ApiService.instance.sessionGeneration ||
+            !ApiService.instance.canReadPatientClinicalStatus)) {
+      session = ApiService.instance.sessionGeneration;
+      clear();
+    }
+  }
+
   final ExperimentRepository repository;
   List<Map<String, dynamic>>? rows;
   bool loading = false;
@@ -79,10 +200,10 @@ class ExperimentController extends ChangeNotifier {
       (row['result'] == null || validResult(row['result']));
 
   Future<bool> refresh() async {
+    if (_disposed || saving || loadingMore) return false;
     final generation = ++_generation;
     loading = true;
     error = null;
-    rows = null;
     notifyListeners();
     try {
       final response = await repository.read();
@@ -91,25 +212,45 @@ class ExperimentController extends ChangeNotifier {
       }
       if (generation != _generation || _disposed) return false;
       rows = response;
+      stale = false;
+      hasMore = response.length == 100;
     } catch (_) {
       if (generation != _generation || _disposed) return false;
+      stale = true;
       error = 'Experiments unavailable. Refresh to retry.';
     }
     if (generation != _generation || _disposed) return false;
     loading = false;
     notifyListeners();
-    return rows != null;
+    return rows != null && error == null;
   }
 
-  Future<bool> write(String path, Map<String, dynamic> payload) async {
-    if (saving || loading) return false;
+  Future<bool> write(
+    String path,
+    Map<String, dynamic> payload, {
+    String method = 'POST',
+    Map<String, dynamic>? expected,
+  }) async {
+    if (_disposed ||
+        saving ||
+        loading ||
+        (remote && (stale || rows == null || uncertain.contains(path)))) {
+      return false;
+    }
     final generation = _generation;
     var operationGeneration = generation;
     saving = true;
     error = null;
     notifyListeners();
     try {
-      final response = await repository.write(path, payload);
+      final response = remote
+          ? await (repository as RemoteExperimentRepository).writeChecked(
+              path,
+              payload,
+              method: method,
+              expected: expected,
+            )
+          : await repository.write(path, payload);
       final evaluating = path.endsWith('/evaluate');
       if (evaluating ? !validResult(response) : !valid(response)) {
         throw const FormatException('Unconfirmed write');
@@ -120,7 +261,14 @@ class ExperimentController extends ChangeNotifier {
         throw const FormatException('Wrong experiment confirmation');
       }
       if (path.isEmpty &&
-          (!payload.entries.every((e) => matches(response[e.key], e.value)) ||
+          (!payload.entries.every(
+                (e) => e.key == 'start_date'
+                    ? response[e.key] is String &&
+                          (response[e.key] as String).startsWith(
+                            e.value as String,
+                          )
+                    : matches(response[e.key], e.value),
+              ) ||
               response['status'] != 'draft')) {
         throw const FormatException('Draft not confirmed');
       }
@@ -133,6 +281,11 @@ class ExperimentController extends ChangeNotifier {
       operationGeneration = generation + 1;
       final refreshed = await refresh();
       if (!refreshed || operationGeneration != _generation || _disposed) {
+        if (remote && !_disposed && operationGeneration == _generation) {
+          uncertain.add(path);
+          stale = true;
+          notifyListeners();
+        }
         return false;
       }
       final confirmedId = evaluating
@@ -153,6 +306,10 @@ class ExperimentController extends ChangeNotifier {
       if (operationGeneration != _generation || _disposed) {
         return false;
       }
+      if (remote) {
+        uncertain.add(path);
+        stale = true;
+      }
       error = 'Save unconfirmed. Refresh before retrying.';
       saving = false;
       notifyListeners();
@@ -160,8 +317,49 @@ class ExperimentController extends ChangeNotifier {
     }
   }
 
+  Future<void> loadMore() async {
+    if (!remote ||
+        _disposed ||
+        loading ||
+        saving ||
+        loadingMore ||
+        stale ||
+        !hasMore ||
+        rows == null) {
+      return;
+    }
+    final generation = _generation;
+    loadingMore = true;
+    notifyListeners();
+    try {
+      final page = await (repository as RemoteExperimentRepository).readPage(
+        rows!.length,
+      );
+      if (_disposed || generation != _generation) return;
+      final ids = rows!.map((r) => r['id']).toSet();
+      if (!page.every((r) => ids.add(r['id']))) {
+        throw const FormatException('Experiment history changed');
+      }
+      rows = [...rows!, ...page];
+      hasMore = page.length == 100;
+    } catch (_) {
+      if (_disposed || generation != _generation) return;
+      stale = true;
+      error = 'History unavailable or changed. Refresh before making changes.';
+    } finally {
+      if (!_disposed && generation == _generation) {
+        loadingMore = false;
+        notifyListeners();
+      }
+    }
+  }
+
   void clear() {
     _generation++;
+    stale = false;
+    loadingMore = false;
+    hasMore = false;
+    uncertain.clear();
     rows = null;
     error = null;
     loading = saving = false;
@@ -170,6 +368,7 @@ class ExperimentController extends ChangeNotifier {
 
   @override
   void dispose() {
+    if (remote) ApiService.instance.removeListener(sessionChanged);
     _disposed = true;
     _generation++;
     super.dispose();

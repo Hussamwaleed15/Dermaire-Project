@@ -7,11 +7,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+import 'product_authority_test.dart' as p;
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:dermaire_app/services/api_service.dart';
 
 Map<String, dynamic> evaluation([String label = 'insufficient_evidence']) => {
   'id': 'evaluation',
   'experiment_id': 'experiment',
+  'created_at': '2026-10-02T12:00:00',
   'result': {
+    'engine_version': 2,
+    'comparison': {},
+    'adherence': {},
+    'confounders': {},
+    'observed_change': {},
     'label': label,
     'evidence_summary': 'Server evidence only. Association is not causality.',
     'provenance': {'source': 'server_derived'},
@@ -23,6 +32,14 @@ Map<String, dynamic> evaluation([String label = 'insufficient_evidence']) => {
 };
 Map<String, dynamic> experiment([String status = 'draft', String? label]) => {
   'id': 'experiment',
+  'user_id': 'patient-1',
+  'product_id': 'product',
+  'current_day': 1,
+  'primary_concern': 'texture',
+  'activated_at': status == 'draft' ? null : '2026-10-02T12:00:00',
+  'definition_snapshot': status == 'draft'
+      ? null
+      : {'source': 'user_configured'},
   'engine_version': 2,
   'source': 'user_configured',
   'created_at': '2026-10-02T12:00:00',
@@ -34,6 +51,7 @@ Map<String, dynamic> experiment([String status = 'draft', String? label]) => {
   'goal': null,
   'notes': null,
   'coverage': {
+    'checkins': 5,
     'elapsed_days': 7,
     'observed_days': 5,
     'adherence_coverage': .8,
@@ -77,6 +95,11 @@ class Repository implements ExperimentRepository {
 }
 
 void main() {
+  setUp(() async {
+    SharedPreferences.setMockInitialValues({});
+    await ApiService.instance.init();
+  });
+  tearDown(() => ApiService.instance.init());
   test('writes require server confirmation and persistent readback', () async {
     final repo = Repository();
     final c = ExperimentController(repo);
@@ -116,13 +139,14 @@ void main() {
     expect(c.error, contains('unconfirmed'));
     c.dispose();
   });
-  test('failed refresh removes stale experiments', () async {
+  test('failed refresh retains explicitly stale experiments', () async {
     final repo = Repository()..rows = [experiment('active')];
     final c = ExperimentController(repo);
     expect(await c.refresh(), true);
     repo.fail = true;
     expect(await c.refresh(), false);
-    expect(c.rows, null);
+    expect(c.rows!.single['id'], 'experiment');
+    expect(c.stale, true);
     c.dispose();
   });
   test('malformed response is not canonical state', () async {
@@ -188,6 +212,7 @@ void main() {
       var status = 200;
       await http.runWithClient(
         () async {
+          await p.login();
           final repo = RemoteExperimentRepository();
           expect((await repo.read()).single['id'], 'experiment');
           for (final code in [401, 403, 409, 422, 500, 503]) {
@@ -196,6 +221,13 @@ void main() {
           }
         },
         () => MockClient((request) async {
+          if (request.url.path.endsWith('/auth/login')) return p.auth();
+          if (request.url.path.endsWith('/users/me')) {
+            return http.Response(
+              '{"id":"patient-1","role":"patient","safety_accepted":true}',
+              200,
+            );
+          }
           expect(request.url.path, '/api/v1/experiments');
           return http.Response(jsonEncode([experiment()]), status);
         }),
