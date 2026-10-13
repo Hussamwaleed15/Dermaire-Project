@@ -12,6 +12,7 @@ import 'dermaire_widgets.dart';
 import 'products/products_ui.dart';
 import 'services/api_service.dart';
 import 'psm/psm_screen.dart';
+import 'notifications/notification_availability.dart';
 
 class AppShell extends StatelessWidget {
   const AppShell({super.key, required this.state});
@@ -353,10 +354,10 @@ class ProfileTab extends StatelessWidget {
             openPage(context, SkinProfileScreen(state: state, editing: true)),
       ),
       ActionCard(
-        icon: '🔔',
-        title: 'Notifications',
-        subtitle: 'Check-in and experiment reminders',
-        onTap: () => openPage(context, NotificationsScreen()),
+        icon: 'ⓘ',
+        title: 'Notification availability',
+        subtitle: 'Notifications and reminders are unavailable',
+        onTap: () => openPage(context, const NotificationAvailabilityScreen()),
       ),
       ActionCard(
         icon: '🔒',
@@ -470,45 +471,6 @@ class ProfileTab extends StatelessWidget {
         ),
       ],
     ),
-  );
-}
-
-class NotificationsScreen extends StatelessWidget {
-  const NotificationsScreen({super.key});
-  static const templates = [
-    (
-      '☀️',
-      'Your daily skin check-in is ready',
-      "It's usually a good time for your check-in.",
-    ),
-    (
-      '🕒',
-      "You missed yesterday's check-in",
-      'Consistency helps, but you can continue anytime.',
-    ),
-    (
-      '⏳',
-      'Your experiment ends tomorrow',
-      'One more check-in to complete this round.',
-    ),
-    ('🎉', 'Your results are ready', 'Open the app to see your report.'),
-    (
-      '🔒',
-      'Your doctor access expires tomorrow',
-      'Generate a new link if they still need it.',
-    ),
-    ('⚠️', 'Interaction check required', 'Review before adding this product.'),
-  ];
-  @override
-  Widget build(BuildContext context) => DermairePage(
-    eyebrow: 'Notifications',
-    title: 'Templates',
-    children: templates
-        .map(
-          (item) =>
-              ActionCard(icon: item.$1, title: item.$2, subtitle: item.$3),
-        )
-        .toList(),
   );
 }
 
