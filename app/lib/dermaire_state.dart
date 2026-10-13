@@ -50,6 +50,8 @@ class DermaireState extends ChangeNotifier {
       ..addListener(_accountChanged);
     experiments = ExperimentController(
       experimentRepository ?? RemoteExperimentRepository(),
+      onConfirmed: (generation) =>
+          refreshRoutineContext(generation: generation, experiments: false),
     )..addListener(notifyListeners);
     home = HomeController(homeRepository ?? RemoteHomeRepository())
       ..addListener(notifyListeners);
@@ -62,6 +64,8 @@ class DermaireState extends ChangeNotifier {
     ApiService.instance.addListener(clearAccountData);
     productController = ProductsController(
       productRepository ?? RemoteProductRepository(),
+      onConfirmed: (generation) =>
+          refreshRoutineContext(generation: generation, products: false),
     )..addListener(notifyListeners);
   }
 
@@ -195,6 +199,24 @@ class DermaireState extends ChangeNotifier {
       observations.loadHistory(generation: generation),
       clinical.refresh(expectedGeneration: generation),
       if (refreshProfile) account.hydrate(reuseConsent: false),
+    ]);
+  }
+
+  /// Read affected projections; never manufacture completion or inject PSM facts.
+  Future<void> refreshRoutineContext({
+    required int generation,
+    bool products = true,
+    bool experiments = true,
+  }) async {
+    final api = ApiService.instance;
+    if (!api.isCurrentSession(generation) || !api.canReadPatientClinicalStatus) {
+      return;
+    }
+    await Future.wait([
+      if (products) productController.load(),
+      if (experiments) this.experiments.refresh(),
+      home.refresh(),
+      clinical.refresh(expectedGeneration: generation),
     ]);
   }
 

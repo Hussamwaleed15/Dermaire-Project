@@ -1228,6 +1228,7 @@ void main() {
           f.requests.where((r) => r.url.path.endsWith('/personal-skin-model')),
           isEmpty,
         );
+        await scrollTo(t, find.byKey(const Key('openPersonalSkinModel')));
         await t.tap(find.byKey(const Key('openPersonalSkinModel')));
         await t.pumpAndSettle();
         expect(find.text('Personal Skin Model'), findsOneWidget);

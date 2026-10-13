@@ -84,12 +84,24 @@ void main() {
           fail = true;
           await state.productController.load();
           await tester.pumpAndSettle();
+          await tester.scrollUntilVisible(
+            find.text('Retry refresh'),
+            200,
+            scrollable: find.byType(Scrollable).first,
+          );
           expect(
             find.textContaining('Displayed data may be stale'),
             findsOneWidget,
           );
-          expect(find.text('Backend serum'), findsOneWidget);
           expect(find.text('Retry refresh'), findsOneWidget);
+          await tester.scrollUntilVisible(
+            find.text('Backend serum'),
+            200,
+            scrollable: find.byType(Scrollable).first,
+          );
+          expect(find.text('Backend serum'), findsOneWidget);
+          await tester.ensureVisible(find.text('Retry refresh'));
+          await tester.pumpAndSettle();
           fail = false;
           await tester.tap(find.text('Retry refresh'));
           await tester.pumpAndSettle();

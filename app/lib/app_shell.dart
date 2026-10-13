@@ -50,7 +50,7 @@ class AppShell extends StatelessWidget {
         body: IndexedStack(index: state.selectedTab, children: pages),
         floatingActionButton: FloatingActionButton.small(
           tooltip: 'Open Dermaire guide',
-          onPressed: () => openPage(context, SkinAssistantScreen(state:state)),
+          onPressed: () => openPage(context, SkinAssistantScreen(state: state)),
           child: const Icon(Icons.chat_bubble_outline_rounded),
         ),
         bottomNavigationBar: BottomNavigationBar(
@@ -110,16 +110,39 @@ class ExperimentTab extends StatelessWidget {
   const ExperimentTab({super.key, required this.state});
   final DermaireState state;
   @override
-  Widget build(BuildContext context) => ExperimentsView(controller: state.experiments, header: Padding(padding: const EdgeInsets.all(12), child: Column(children: [
-      Text('${state.baseline.completedDays ?? 'Unknown'} of 5 days'),
-      if (state.baseline.error != null) Text(state.baseline.error!),
-      OutlinedButton(onPressed: state.baseline.loading ? null : state.baseline.refresh, child: const Text('Refresh baseline')),
-      ExpansionTile(title: const Text('Personal baseline'), children: [
-        const Text('The baseline feature uses five confirmed UTC days. Each experiment freezes its own recent comparison window.'),
-        for (final metric in state.baseline.metrics.entries) Text('${metric.key}: mean ${metric.value['mean']}, standard deviation ${metric.value['standard_deviation']}'),
-        TextButton(onPressed: () => openPage(context, CameraScreen(state: state)), child: const Text('Record a check-in')),
-      ]),
-    ])));
+  Widget build(BuildContext context) => ExperimentsView(
+    controller: state.experiments,
+    state: state,
+    header: Padding(
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        children: [
+          Text('${state.baseline.completedDays ?? 'Unknown'} of 5 days'),
+          if (state.baseline.error != null) Text(state.baseline.error!),
+          OutlinedButton(
+            onPressed: state.baseline.loading ? null : state.baseline.refresh,
+            child: const Text('Refresh baseline'),
+          ),
+          ExpansionTile(
+            title: const Text('Personal baseline'),
+            children: [
+              const Text(
+                'The baseline feature uses five confirmed UTC days. Each experiment freezes its own recent comparison window.',
+              ),
+              for (final metric in state.baseline.metrics.entries)
+                Text(
+                  '${metric.key}: mean ${metric.value['mean']}, standard deviation ${metric.value['standard_deviation']}',
+                ),
+              TextButton(
+                onPressed: () => openPage(context, CameraScreen(state: state)),
+                child: const Text('Record a check-in'),
+              ),
+            ],
+          ),
+        ],
+      ),
+    ),
+  );
 }
 
 class RewardsTab extends StatelessWidget {
@@ -132,7 +155,8 @@ class RewardsTab extends StatelessWidget {
       Eyebrow('Rewards'),
       Notice(
         icon: '🪙',
-        text: 'Rewards are not available. Products and check-ins do not currently earn redeemable tokens.',
+        text:
+            'Rewards are not available. Products and check-ins do not currently earn redeemable tokens.',
       ),
     ],
   );
@@ -142,11 +166,19 @@ class ReportsTab extends StatelessWidget {
   const ReportsTab({super.key, required this.state});
   final DermaireState state;
   @override
-  Widget build(BuildContext context) =>
-      ExperimentsView(
-        controller: state.experiments,
-        header: PersonalSkinModelEntry(state: state),
-      );
+  Widget build(BuildContext context) => _TabPage(
+    children: [
+      ClinicalHomePanel(controller: state.clinical),
+      PersonalSkinModelEntry(state: state),
+      OutlinedButton(
+        onPressed: () => state.selectTab(1),
+        child: const Text('Open experiment history'),
+      ),
+      const Text(
+        'Experiment definitions and saved evaluations are available in the Experiment tab.',
+      ),
+    ],
+  );
 }
 
 class ResultsScreen extends StatelessWidget {
@@ -155,7 +187,7 @@ class ResultsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(title: const Text('Experiment results')),
-    body: ExperimentsView(controller: state.experiments),
+    body: ExperimentsView(controller: state.experiments, state: state),
   );
 }
 
@@ -306,12 +338,19 @@ class ProfileTab extends StatelessWidget {
         ),
       ),
       AccountSummary(account: state.account),
-      OutlinedButton(onPressed: () => openPage(context, ClinicalStatusScreen(controller: state.clinical)), child: const Text('Safety & clinician guidance')),
+      OutlinedButton(
+        onPressed: () =>
+            openPage(context, ClinicalStatusScreen(controller: state.clinical)),
+        child: const Text('Safety & clinician guidance'),
+      ),
       ActionCard(
         icon: '👤',
         title: 'Account and skin profile',
-        subtitle: state.userEmail.isEmpty ? 'Account profile unavailable' : '${state.userName} · ${state.userEmail}',
-        onTap: () => openPage(context, SkinProfileScreen(state: state, editing: true)),
+        subtitle: state.userEmail.isEmpty
+            ? 'Account profile unavailable'
+            : '${state.userName} · ${state.userEmail}',
+        onTap: () =>
+            openPage(context, SkinProfileScreen(state: state, editing: true)),
       ),
       ActionCard(
         icon: '🔔',
@@ -344,7 +383,7 @@ class ProfileTab extends StatelessWidget {
         icon: '💬',
         title: 'Dermaire guide',
         subtitle: 'App help, measurement explanations and safety escalation',
-        onTap: () => openPage(context, SkinAssistantScreen(state:state)),
+        onTap: () => openPage(context, SkinAssistantScreen(state: state)),
       ),
       TextButton(
         onPressed: () async {
@@ -400,19 +439,30 @@ class ProfileTab extends StatelessWidget {
           child: const Text('Cancel'),
         ),
         FilledButton(
-          style: FilledButton.styleFrom(backgroundColor: DermaireColors.conflict, foregroundColor: Colors.white),
+          style: FilledButton.styleFrom(
+            backgroundColor: DermaireColors.conflict,
+            foregroundColor: Colors.white,
+          ),
           onPressed: () async {
             Navigator.pop(dialogContext);
-            showDermaireSnack(context, 'Deleting your account from Azure cloud…');
+            showDermaireSnack(
+              context,
+              'Deleting your account from Azure cloud…',
+            );
             final deleted = await ApiService.instance.deleteAccount();
             if (!context.mounted) return;
             if (!deleted) {
-              showDermaireSnack(context, 'Account deletion failed. Please retry.');
+              showDermaireSnack(
+                context,
+                'Account deletion failed. Please retry.',
+              );
               return;
             }
             state.clearAccountData();
             Navigator.of(context).pushAndRemoveUntil(
-              MaterialPageRoute<void>(builder: (_) => WelcomeScreen(state: state)),
+              MaterialPageRoute<void>(
+                builder: (_) => WelcomeScreen(state: state),
+              ),
               (_) => false,
             );
           },
@@ -472,7 +522,11 @@ class HowItWorksScreen extends StatelessWidget {
       'Compare',
       'Measurements are compared against your personal baseline.',
     ),
-    ('4', 'Control', 'You can log daily context. Weather is not measured and scores are not adjusted.'),
+    (
+      '4',
+      'Control',
+      'You can log daily context. Weather is not measured and scores are not adjusted.',
+    ),
     (
       '5',
       'Report',
@@ -530,19 +584,26 @@ class HowItWorksScreen extends StatelessWidget {
 
 /// Existing navigation names delegate to the observation journey/history.
 class TimelineScreen extends StatelessWidget {
-  const TimelineScreen({super.key,required this.state});
+  const TimelineScreen({super.key, required this.state});
   final DermaireState state;
   @override
-  Widget build(BuildContext context)=>ObservationHistoryScreen(state:state,onRecord:()async{await openPage(context,CameraScreen(state:state));});
+  Widget build(BuildContext context) => ObservationHistoryScreen(
+    state: state,
+    onRecord: () async {
+      await openPage(context, CameraScreen(state: state));
+    },
+  );
 }
 
 class CameraScreen extends StatelessWidget {
-  const CameraScreen({super.key,required this.state});
+  const CameraScreen({super.key, required this.state});
   final DermaireState state;
   @override
-  Widget build(BuildContext context)=>ObservationScreen(state:state,
-    onHistory:()=>openPage(context,TimelineScreen(state:state)),
-    onContext:()=>openPage(context,ContextScreen(state:state)));
+  Widget build(BuildContext context) => ObservationScreen(
+    state: state,
+    onHistory: () => openPage(context, TimelineScreen(state: state)),
+    onContext: () => openPage(context, ContextScreen(state: state)),
+  );
 }
 
 class ContextScreen extends StatefulWidget {
@@ -564,9 +625,13 @@ class _ContextScreenState extends State<ContextScreen> {
     super.initState();
     generation = ApiService.instance.sessionGeneration;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted || generation != ApiService.instance.sessionGeneration) return;
+      if (!mounted || generation != ApiService.instance.sessionGeneration) {
+        return;
+      }
       widget.state.dailyContext.refresh().then((_) {
-        if (!mounted || generation != ApiService.instance.sessionGeneration) return;
+        if (!mounted || generation != ApiService.instance.sessionGeneration) {
+          return;
+        }
         final value = widget.state.dailyContext.current;
         setState(() {
           unusual = value?['unusual_conditions'] as bool?;
@@ -588,49 +653,94 @@ class _ContextScreenState extends State<ContextScreen> {
     animation: widget.state.dailyContext,
     builder: (context, _) {
       if (generation != ApiService.instance.sessionGeneration) {
-        return const DermairePage(title: 'Session ended', children: [Text('Reopen context from your current account.')]);
+        return const DermairePage(
+          title: 'Session ended',
+          children: [Text('Reopen context from your current account.')],
+        );
       }
       final controller = widget.state.dailyContext;
       return DermairePage(
         eyebrow: "Today's context (UTC)",
         title: 'Your reported context',
         children: [
-          const Notice(icon: '🌤', text: 'Weather is not measured. These optional reports do not currently adjust skin scores.'),
-          if (controller.error != null) Notice(icon: '!', text: controller.error!),
+          const Notice(
+            icon: '🌤',
+            text:
+                'Weather is not measured. These optional reports do not currently adjust skin scores.',
+          ),
+          if (controller.error != null)
+            Notice(icon: '!', text: controller.error!),
           if (controller.loading) const LinearProgressIndicator(),
           if (controller.current != null)
-            Text(controller.current!['recorded'] == true ? 'Server-confirmed context: unusual conditions ${controller.current!['unusual_conditions'] ?? 'not reported'}; cycle day ${controller.current!['cycle_day'] ?? 'not reported'}' : 'No context recorded for today'),
+            Text(
+              controller.current!['recorded'] == true
+                  ? 'Server-confirmed context: unusual conditions ${controller.current!['unusual_conditions'] ?? 'not reported'}; cycle day ${controller.current!['cycle_day'] ?? 'not reported'}'
+                  : 'No context recorded for today',
+            ),
           DropdownButtonFormField<bool>(
             key: ValueKey(initialized),
             initialValue: unusual,
-            decoration: const InputDecoration(labelText: 'Unusual conditions (optional)'),
+            decoration: const InputDecoration(
+              labelText: 'Unusual conditions (optional)',
+            ),
             items: const [
               DropdownMenuItem(value: null, child: Text('Not reported')),
-              DropdownMenuItem(value: false, child: Text('No unusual conditions reported')),
-              DropdownMenuItem(value: true, child: Text('Unusual conditions reported')),
+              DropdownMenuItem(
+                value: false,
+                child: Text('No unusual conditions reported'),
+              ),
+              DropdownMenuItem(
+                value: true,
+                child: Text('Unusual conditions reported'),
+              ),
             ],
-            onChanged: controller.loading ? null : (value) => setState(() => unusual = value),
+            onChanged: controller.loading
+                ? null
+                : (value) => setState(() => unusual = value),
           ),
-          TextField(controller: cycle, enabled: !controller.loading,
+          TextField(
+            controller: cycle,
+            enabled: !controller.loading,
             keyboardType: TextInputType.number,
-            decoration: const InputDecoration(labelText: 'Cycle day (optional, 1–60)')),
-          const Text('Edits are an unsaved draft until the server confirms them.'),
-          OutlinedButton(onPressed: controller.loading ? null : controller.refresh,
-            child: const Text('Refresh server context')),
+            decoration: const InputDecoration(
+              labelText: 'Cycle day (optional, 1–60)',
+            ),
+          ),
+          const Text(
+            'Edits are an unsaved draft until the server confirms them.',
+          ),
+          OutlinedButton(
+            onPressed: controller.loading ? null : controller.refresh,
+            child: const Text('Refresh server context'),
+          ),
           FilledButton(
-            onPressed: !initialized || controller.loading ? null : () async {
-              if (generation != ApiService.instance.sessionGeneration) return;
-              final text = cycle.text.trim();
-              final day = text.isEmpty ? null : int.tryParse(text);
-              if (text.isNotEmpty && (day == null || day < 1 || day > 60)) {
-                showDermaireSnack(context, 'Enter a cycle day between 1 and 60, or leave it blank.');
-                return;
-              }
-              final saved = await controller.save(unusual, day);
-              if (!context.mounted || !saved || generation != ApiService.instance.sessionGeneration) return;
-              showDermaireSnack(context, 'Context saved on server');
-              Navigator.pop(context);
-            }, child: const Text('Save context')),
+            onPressed: !initialized || controller.loading
+                ? null
+                : () async {
+                    if (generation != ApiService.instance.sessionGeneration) {
+                      return;
+                    }
+                    final text = cycle.text.trim();
+                    final day = text.isEmpty ? null : int.tryParse(text);
+                    if (text.isNotEmpty &&
+                        (day == null || day < 1 || day > 60)) {
+                      showDermaireSnack(
+                        context,
+                        'Enter a cycle day between 1 and 60, or leave it blank.',
+                      );
+                      return;
+                    }
+                    final saved = await controller.save(unusual, day);
+                    if (!context.mounted ||
+                        !saved ||
+                        generation != ApiService.instance.sessionGeneration) {
+                      return;
+                    }
+                    showDermaireSnack(context, 'Context saved on server');
+                    Navigator.pop(context);
+                  },
+            child: const Text('Save context'),
+          ),
         ],
       );
     },

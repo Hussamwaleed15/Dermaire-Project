@@ -2,9 +2,23 @@ import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import 'routine_controller.dart';
 import '../products/product_repository.dart';
+import '../products/products_ui.dart';
+import '../dermaire_state.dart';
+import '../clinical/clinical_ui.dart';
+import '../experiments/experiment_ui.dart';
+import '../psm/psm_screen.dart';
+import '../entry/entry_motion.dart';
 
 class RoutineScreen extends StatefulWidget {
-  const RoutineScreen({super.key, this.repository, this.stopEntryId});
+  const RoutineScreen({
+    super.key,
+    this.repository,
+    this.stopEntryId,
+    this.state,
+    this.productId,
+  });
+  final DermaireState? state;
+  final String? productId;
   final RoutineRepository? repository;
   // Passed from a server-confirmed active stop experiment; the API verifies it.
   final String? stopEntryId;
@@ -59,7 +73,10 @@ class _RoutineScreenState extends State<RoutineScreen> {
       method: method,
       expectedUpdatedAt: entry?['updated_at'] as String?,
     );
-    if (mounted && success) {
+    if (success && current) {
+      await widget.state?.refreshRoutineContext(generation: generation);
+    }
+    if (mounted && current && success) {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('Saved on server')));
@@ -139,6 +156,7 @@ class _RoutineScreenState extends State<RoutineScreen> {
                     children: [
                       if (entry == null)
                         DropdownButtonFormField<String>(
+                          isExpanded: true,
                           initialValue: productId,
                           decoration: const InputDecoration(
                             labelText: 'Saved product',
@@ -154,6 +172,7 @@ class _RoutineScreenState extends State<RoutineScreen> {
                           onChanged: (v) => setState(() => productId = v!),
                         ),
                       DropdownButtonFormField<String>(
+                        isExpanded: true,
                         initialValue: schedule,
                         decoration: const InputDecoration(
                           labelText: 'Daily schedule',
@@ -247,6 +266,10 @@ class _RoutineScreenState extends State<RoutineScreen> {
                           if (!dialogContext.mounted || !current) return;
                           pending = false;
                           if (success) {
+                            await widget.state?.refreshRoutineContext(
+                              generation: generation,
+                            );
+                            if (!dialogContext.mounted || !current) return;
                             Navigator.pop(dialogContext);
                             if (mounted) {
                               ScaffoldMessenger.of(this.context).showSnackBar(
@@ -282,6 +305,49 @@ class _RoutineScreenState extends State<RoutineScreen> {
     pmOrder.dispose();
   }
 
+  Future<void> _product(Map<String, dynamic> entry) async {
+    if (!current || widget.state == null) return;
+    final state = widget.state!;
+    await state.productController.load();
+    if (!mounted || !current) return;
+    if (state.productController.byId(entry['product_id'] as String) == null ||
+        state.productController.isStale) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Associated product unavailable. Refresh and retry.'),
+        ),
+      );
+      return;
+    }
+    await openEntry(
+      context,
+      ProductFeatureDetailScreen(
+        state: state,
+        productId: entry['product_id'] as String,
+      ),
+    );
+    if (mounted && current) await controller.refresh();
+  }
+
+  Future<void> _experiments(Map<String, dynamic> entry) async {
+    if (!current || widget.state == null) return;
+    final state = widget.state!;
+    await state.experiments.refresh();
+    if (!mounted || !current) return;
+    await openEntry(
+      context,
+      Scaffold(
+        appBar: AppBar(title: const Text('Related experiments')),
+        body: ExperimentsView(
+          controller: state.experiments,
+          state: state,
+          routineEntryId: entry['id'] as String,
+        ),
+      ),
+    );
+    if (mounted && current) await controller.refresh();
+  }
+
   Future<void> _chooseReportDay() async {
     final selected = await showDatePicker(
       context: context,
@@ -296,6 +362,10 @@ class _RoutineScreenState extends State<RoutineScreen> {
 
   Iterable<Map<String, dynamic>> _group(String slot) {
     final rows = controller.entries!
+        .where(
+          (e) =>
+              widget.productId == null || e['product_id'] == widget.productId,
+        )
         .where(
           (e) => slot == 'Stopped'
               ? e['active'] == false
@@ -364,6 +434,8 @@ class _RoutineScreenState extends State<RoutineScreen> {
           : ListView(
               padding: const EdgeInsets.all(20),
               children: [
+                if (widget.state != null)
+                  ClinicalHomePanel(controller: widget.state!.clinical),
                 const Text(
                   'Cosmetic preferences, not clinician-directed treatment. Daily user-configured routine. Days and reports use UTC. Missing reports mean unknown adherence.',
                 ),
@@ -386,6 +458,11 @@ class _RoutineScreenState extends State<RoutineScreen> {
                     const LinearProgressIndicator(
                       semanticsLabel: 'Waiting for server confirmation',
                     ),
+                  if (widget.productId != null &&
+                      !controller.entries!.any(
+                        (e) => e['product_id'] == widget.productId,
+                      ))
+                    const Text('No linked routine steps for this product.'),
                   if (controller.entries!.isEmpty)
                     const Text('No routine configured'),
                   FilledButton(
@@ -423,6 +500,21 @@ class _RoutineScreenState extends State<RoutineScreen> {
                               Text(
                                 '${entry['active'] == true ? 'Active' : 'Stopped'} · Start ${entry['start_date']}',
                               ),
+                              if (widget.state != null)
+                                Wrap(
+                                  children: [
+                                    TextButton(
+                                      onPressed: () => _product(entry),
+                                      child: const Text(
+                                        'View associated product',
+                                      ),
+                                    ),
+                                    TextButton(
+                                      onPressed: () => _experiments(entry),
+                                      child: const Text('Related experiments'),
+                                    ),
+                                  ],
+                                ),
                               if (entry['instructions'] != null)
                                 Text(entry['instructions'] as String),
                               if (entry['active'] == true ||
@@ -512,6 +604,8 @@ class _RoutineScreenState extends State<RoutineScreen> {
                         ),
                       ),
                   ],
+                  if (widget.state != null)
+                    PersonalSkinModelEntry(state: widget.state!),
                   Text(
                     'Reported history · ${controller.history!.length} loaded records (UTC). No overall adherence or clinical progress inferred.',
                   ),

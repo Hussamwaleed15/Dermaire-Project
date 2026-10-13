@@ -4,6 +4,10 @@ import '../services/api_service.dart';
 import '../routine/routine_ui.dart';
 import '../routine/routine_controller.dart';
 import 'experiment_contract.dart';
+import '../dermaire_state.dart';
+import '../clinical/clinical_ui.dart';
+import '../psm/psm_screen.dart';
+import '../entry/entry_motion.dart';
 
 class ExperimentsView extends StatefulWidget {
   const ExperimentsView({
@@ -11,23 +15,34 @@ class ExperimentsView extends StatefulWidget {
     required this.controller,
     this.autoLoad = true,
     this.header,
+    this.state,
+    this.routineEntryId,
   });
   final ExperimentController controller;
   final bool autoLoad;
   final Widget? header;
+  final DermaireState? state;
+  final String? routineEntryId;
   @override
   State<ExperimentsView> createState() => _ExperimentsViewState();
 }
 
 class _ExperimentsViewState extends State<ExperimentsView> {
+  late final int generation;
+  bool get current =>
+      !widget.controller.remote ||
+      ApiService.instance.isCurrentSession(generation) &&
+          ApiService.instance.canReadPatientClinicalStatus;
   @override
   void initState() {
     super.initState();
+    generation = ApiService.instance.sessionGeneration;
     if (widget.autoLoad &&
         widget.controller.rows == null &&
         !widget.controller.loading) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted &&
+            current &&
             !widget.controller.loading &&
             widget.controller.rows == null) {
           widget.controller.refresh();
@@ -40,11 +55,22 @@ class _ExperimentsViewState extends State<ExperimentsView> {
   Widget build(BuildContext context) => AnimatedBuilder(
     animation: widget.controller,
     builder: (context, _) {
+      if (!current) {
+        return const SafeArea(
+          child: Center(
+            child: Text(
+              'Session ended. Reopen experiments from your current account.',
+            ),
+          ),
+        );
+      }
       final c = widget.controller;
       return SafeArea(
         child: ListView(
           padding: const EdgeInsets.all(20),
           children: [
+            if (widget.state != null)
+              ClinicalHomePanel(controller: widget.state!.clinical),
             if (widget.header != null) widget.header!,
             Text(
               'Controlled experiments',
@@ -65,9 +91,7 @@ class _ExperimentsViewState extends State<ExperimentsView> {
                   c.loading || c.saving || c.stale || c.uncertain.contains('')
                   ? null
                   : () => Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (_) => _DraftForm(controller: c),
-                      ),
+                      entryRoute<void>(context, _DraftForm(controller: c)),
                     ),
               child: const Text('Plan one change'),
             ),
@@ -84,7 +108,21 @@ class _ExperimentsViewState extends State<ExperimentsView> {
                   c.loadingMore ? 'Loading history…' : 'Load older experiments',
                 ),
               ),
-            for (final row in c.rows ?? <Map<String, dynamic>>[])
+            if (widget.routineEntryId != null &&
+                c.rows != null &&
+                !c.loading &&
+                !c.stale &&
+                !c.rows!.any(
+                  (r) => r['routine_entry_id'] == widget.routineEntryId,
+                ))
+              const Text(
+                'No related experiment in loaded records. Load older history if available.',
+              ),
+            for (final row in (c.rows ?? <Map<String, dynamic>>[]).where(
+              (r) =>
+                  widget.routineEntryId == null ||
+                  r['routine_entry_id'] == widget.routineEntryId,
+            ))
               Card(
                 child: Padding(
                   padding: const EdgeInsets.all(14),
@@ -110,8 +148,10 @@ class _ExperimentsViewState extends State<ExperimentsView> {
                           row['status'] == 'active')
                         TextButton(
                           onPressed: () => Navigator.of(context).push(
-                            MaterialPageRoute<void>(
-                              builder: (_) => RoutineScreen(
+                            entryRoute<void>(
+                              context,
+                              RoutineScreen(
+                                state: widget.state,
                                 stopEntryId:
                                     row['intervention']['type'] == 'stop_entry'
                                     ? row['routine_entry_id'] as String
@@ -139,11 +179,9 @@ class _ExperimentsViewState extends State<ExperimentsView> {
                           onPressed: c.saving || c.stale
                               ? null
                               : () => Navigator.of(context).push(
-                                  MaterialPageRoute<void>(
-                                    builder: (_) => _DraftForm(
-                                      controller: c,
-                                      original: row,
-                                    ),
+                                  entryRoute<void>(
+                                    context,
+                                    _DraftForm(controller: c, original: row),
                                   ),
                                 ),
                           child: const Text('Edit draft'),
@@ -256,6 +294,8 @@ class _ExperimentsViewState extends State<ExperimentsView> {
                   ),
                 ),
               ),
+            if (widget.state != null)
+              PersonalSkinModelEntry(state: widget.state!),
           ],
         ),
       );

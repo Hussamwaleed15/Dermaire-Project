@@ -9,15 +9,19 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'experiment_authority_test.dart' as experiment;
 
 Map<String, dynamic> snapshot(int days) => {
-  'completed_days': days, 'required_days': 5,
+  'completed_days': days,
+  'required_days': 5,
   'status': days == 5 ? 'ready' : 'collecting',
   'today_checked_in': days > 0,
-  'metrics': days == 5 ? {
-    for (final name in ['hydration', 'redness', 'texture'])
-      name: {'mean': 50, 'standard_deviation': 1},
-  } : <String, dynamic>{},
+  'metrics': days == 5
+      ? {
+          for (final name in ['hydration', 'redness', 'texture'])
+            name: {'mean': 50, 'standard_deviation': 1},
+        }
+      : <String, dynamic>{},
 };
 
 class FakeBaseline implements BaselineRepository {
@@ -86,62 +90,115 @@ void main() {
     controller.dispose();
   });
 
-  test('state refresh never counts local completion or journal entries', () async {
-    final repo = FakeBaseline()..data = snapshot(2);
-    final state = DermaireState(baselineRepository: repo);
-    await state.markTodayCheckedIn();
-    expect(state.baselineCheckIns, 2);
-    state.addJournalEntry();
-    await state.markTodayCheckedIn();
-    expect(state.baselineCheckIns, 2);
-    repo.fail = true;
-    await state.markTodayCheckedIn();
-    expect(state.baselineCheckIns, isNull);
-    state.clearAccountData();
-    expect(state.baselineCheckIns, isNull);
-    state.dispose();
-  });
+  test(
+    'state refresh never counts local completion or journal entries',
+    () async {
+      final repo = FakeBaseline()..data = snapshot(2);
+      final state = DermaireState(
+        baselineRepository: repo,
+        experimentRepository: experiment.Repository(),
+      );
+      await state.markTodayCheckedIn();
+      expect(state.baselineCheckIns, 2);
+      state.addJournalEntry();
+      await state.markTodayCheckedIn();
+      expect(state.baselineCheckIns, 2);
+      repo.fail = true;
+      await state.markTodayCheckedIn();
+      expect(state.baselineCheckIns, isNull);
+      state.clearAccountData();
+      expect(state.baselineCheckIns, isNull);
+      state.dispose();
+    },
+  );
 
-  test('HTTP failures throw and photo writes send no hardcoded scores', () async {
-    var fail = false;
-    await http.runWithClient(() async {
-      await ApiService.instance.login(email: 'test@example.com', password: 'test');
-      final repo = RemoteBaselineRepository();
-      expect((await repo.read())['completed_days'], 0);
-      fail = true;
-      expect(repo.read(), throwsA(isA<ApiException>()));
-      expect(ApiService.instance.submitCheckIn(timeOfDay: 'Morning',
-          photoBytes: [1, 2], photoFilename: 'skin.jpg'), throwsA(isA<ApiException>()));
-      await ApiService.instance.logout();
-    }, () => MockClient((request) async {
-      if (request.url.path.endsWith('/auth/login')) {
-        return http.Response(jsonEncode({'access_token': 'baseline-test',
-          'expires_in': 3600, 'user_id': 'patient', 'role': 'patient'}), 200);
-      }
-      if (request.url.path.endsWith('/checkins')) {
-        expect(request.body, isNot(contains('hydration_score')));
-        expect(request.body, isNot(contains('texture_score')));
-        expect(request.body, isNot(contains('redness_score')));
-        return http.Response('{"message":"Measurement unavailable"}', 503);
-      }
-      return http.Response(jsonEncode(fail ? {'message': 'Unavailable'} : snapshot(0)), fail ? 503 : 200);
-    }));
-  });
+  test(
+    'HTTP failures throw and photo writes send no hardcoded scores',
+    () async {
+      var fail = false;
+      await http.runWithClient(
+        () async {
+          await ApiService.instance.login(
+            email: 'test@example.com',
+            password: 'test',
+          );
+          final repo = RemoteBaselineRepository();
+          expect((await repo.read())['completed_days'], 0);
+          fail = true;
+          expect(repo.read(), throwsA(isA<ApiException>()));
+          expect(
+            ApiService.instance.submitCheckIn(
+              timeOfDay: 'Morning',
+              photoBytes: [1, 2],
+              photoFilename: 'skin.jpg',
+            ),
+            throwsA(isA<ApiException>()),
+          );
+          await ApiService.instance.logout();
+        },
+        () => MockClient((request) async {
+          if (request.url.path.endsWith('/auth/login')) {
+            return http.Response(
+              jsonEncode({
+                'access_token': 'baseline-test',
+                'expires_in': 3600,
+                'user_id': 'patient',
+                'role': 'patient',
+              }),
+              200,
+            );
+          }
+          if (request.url.path.endsWith('/checkins')) {
+            expect(request.body, isNot(contains('hydration_score')));
+            expect(request.body, isNot(contains('texture_score')));
+            expect(request.body, isNot(contains('redness_score')));
+            return http.Response('{"message":"Measurement unavailable"}', 503);
+          }
+          return http.Response(
+            jsonEncode(fail ? {'message': 'Unavailable'} : snapshot(0)),
+            fail ? 503 : 200,
+          );
+        }),
+      );
+    },
+  );
 
-  test('malformed HTTP write confirmation cannot complete a check-in', () async {
-    await http.runWithClient(() async {
-      expect(ApiService.instance.submitCheckIn(timeOfDay: 'Morning',
-          hydration: 80, texture: 60, redness: 20), throwsA(isA<ApiException>()));
-    }, () => MockClient((_) async => http.Response('{}', 201)));
-  });
+  test(
+    'malformed HTTP write confirmation cannot complete a check-in',
+    () async {
+      await http.runWithClient(() async {
+        expect(
+          ApiService.instance.submitCheckIn(
+            timeOfDay: 'Morning',
+            hydration: 80,
+            texture: 60,
+            redness: 20,
+          ),
+          throwsA(isA<ApiException>()),
+        );
+      }, () => MockClient((_) async => http.Response('{}', 201)));
+    },
+  );
 
-  testWidgets('stale baseline screen shows unknown and lets user retry', (tester) async {
+  testWidgets('stale baseline screen shows unknown and lets user retry', (
+    tester,
+  ) async {
     final repo = FakeBaseline()..data = snapshot(3);
-    final state = DermaireState(baselineRepository: repo);
+    final state = DermaireState(
+      baselineRepository: repo,
+      experimentRepository: experiment.Repository(),
+    );
     await state.baseline.refresh();
-    await tester.pumpWidget(MaterialApp(home: Scaffold(body: AnimatedBuilder(
-      animation: state, builder: (_, _) => ExperimentTab(state: state),
-    ))));
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: AnimatedBuilder(
+            animation: state,
+            builder: (_, _) => ExperimentTab(state: state),
+          ),
+        ),
+      ),
+    );
     expect(find.text('3 of 5 days'), findsOneWidget);
     repo.fail = true;
     await tester.tap(find.text('Refresh baseline'));

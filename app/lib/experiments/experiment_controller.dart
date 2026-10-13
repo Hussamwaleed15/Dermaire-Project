@@ -128,7 +128,7 @@ class RemoteExperimentRepository implements ExperimentRepository {
 }
 
 class ExperimentController extends ChangeNotifier {
-  ExperimentController(this.repository) {
+  ExperimentController(this.repository, {this.onConfirmed}) {
     if (remote) {
       session = ApiService.instance.sessionGeneration;
       ApiService.instance.addListener(sessionChanged);
@@ -148,6 +148,7 @@ class ExperimentController extends ChangeNotifier {
   }
 
   final ExperimentRepository repository;
+  final Future<void> Function(int generation)? onConfirmed;
   List<Map<String, dynamic>>? rows;
   bool loading = false;
   bool saving = false;
@@ -238,6 +239,7 @@ class ExperimentController extends ChangeNotifier {
       return false;
     }
     final generation = _generation;
+    final sessionGeneration = ApiService.instance.sessionGeneration;
     var operationGeneration = generation;
     saving = true;
     error = null;
@@ -301,7 +303,8 @@ class ExperimentController extends ChangeNotifier {
               : persisted['status'] != response['status'])) {
         throw const FormatException('Readback did not confirm write');
       }
-      return true;
+      await onConfirmed?.call(sessionGeneration);
+      return !_disposed && operationGeneration == _generation;
     } catch (_) {
       if (operationGeneration != _generation || _disposed) {
         return false;

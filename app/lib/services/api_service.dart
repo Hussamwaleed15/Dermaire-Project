@@ -691,6 +691,7 @@ class ApiService extends ChangeNotifier {
 
   /// Patient entry receipt. Only an owner-matched GET establishes acceptance.
   Future<bool> readSafetyAcceptance() async {
+    final wasAccepted = _confirmedSafetyAcceptance == true;
     final revision = ++_profileRevision;
     _consentUser = null;
     final generation = _sessionGeneration;
@@ -727,8 +728,10 @@ class ApiService extends ChangeNotifier {
     _consentUser = jsonDecode(jsonEncode(decoded)) as Map<String, dynamic>;
     _consentProfileRevision = revision;
     _consentGeneration = generation;
-    _confirmedSafetyAcceptance = decoded['safety_accepted'] as bool;
-    return _confirmedSafetyAcceptance!;
+    final accepted = decoded['safety_accepted'] as bool;
+    _confirmedSafetyAcceptance = accepted;
+    if (!accepted && wasAccepted) notifyListeners();
+    return accepted;
   }
 
   /// Acknowledges the write only. Call readSafetyAcceptance before entry.

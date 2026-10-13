@@ -17,6 +17,7 @@ class Wire {
   bool failReadback = false, failPost = false;
   Completer<http.Response>? pending;
   Future<http.Response> call(http.Request request) async {
+    expect(request.url.host, 'flutter-tests.invalid');
     final path = request.url.path;
     if (path.endsWith('/auth/login')) return p.auth();
     if (path.endsWith('/users/me')) {

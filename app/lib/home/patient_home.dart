@@ -10,6 +10,7 @@ import '../observations/observation_controller.dart';
 import '../observations/observation_models.dart';
 import '../services/api_service.dart';
 import 'home_policy.dart';
+import '../routine/routine_ui.dart';
 
 class PatientHome extends StatefulWidget {
   const PatientHome({super.key, required this.state});
@@ -188,6 +189,13 @@ class _PatientHomeState extends State<PatientHome> {
                         if (current) s.selectTab(2);
                       },
                       child: const Text('Products & routines'),
+                    ),
+                    OutlinedButton(
+                      key: const Key('homeRoutine'),
+                      onPressed: current
+                          ? () => openEntry(context, RoutineScreen(state: s))
+                          : null,
+                      child: const Text('My routine & reports'),
                     ),
                     OutlinedButton(
                       key: const Key('homeContext'),

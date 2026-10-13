@@ -146,6 +146,7 @@ void main() {
           c.dispose();
         },
         () => MockClient((req) async {
+          expect(req.url.host, 'flutter-tests.invalid');
           if (req.url.path.endsWith('/auth/login')) return p.auth();
           if (req.url.path.endsWith('/users/me')) {
             return http.Response(

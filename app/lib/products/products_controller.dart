@@ -14,7 +14,7 @@ class ProductOperationResult {
 }
 
 class ProductsController extends ChangeNotifier {
-  ProductsController(this._repository) {
+  ProductsController(this._repository, {this.onConfirmed}) {
     if (requiresServerSession) {
       _session = ApiService.instance.sessionGeneration;
       ApiService.instance.addListener(_sessionChanged);
@@ -22,13 +22,16 @@ class ProductsController extends ChangeNotifier {
   }
   int _session = 0;
   void _sessionChanged() {
-    if (!_disposed && _session != ApiService.instance.sessionGeneration) {
+    if (!_disposed &&
+        (_session != ApiService.instance.sessionGeneration ||
+            !ApiService.instance.canReadPatientClinicalStatus)) {
       _session = ApiService.instance.sessionGeneration;
       clear();
     }
   }
 
   final ProductRepository _repository;
+  final Future<void> Function(int generation)? onConfirmed;
 
   bool _disposed = false;
   bool get requiresServerSession => _repository is RemoteProductRepository;
@@ -285,6 +288,7 @@ class ProductsController extends ChangeNotifier {
       );
     }
     final generation = _generation;
+    final session = ApiService.instance.sessionGeneration;
     isSaving = true;
     errorMessage = null;
     notifyListeners();
@@ -296,6 +300,12 @@ class ProductsController extends ChangeNotifier {
         );
       }
       _products = next;
+      await onConfirmed?.call(session);
+      if (_disposed || generation != _generation) {
+        return const ProductOperationResult.failure(
+          'Session changed. Reopen products.',
+        );
+      }
       return ProductOperationResult.success(success);
     } on Object {
       if (_disposed || generation != _generation) {

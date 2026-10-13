@@ -6,6 +6,7 @@ import '../dermaire_widgets.dart';
 import '../routine/routine_ui.dart';
 import '../services/api_service.dart';
 import '../clinical/clinical_ui.dart';
+import '../entry/entry_motion.dart';
 import 'product.dart';
 import 'product_validation.dart';
 import 'products_controller.dart';
@@ -71,6 +72,7 @@ class ProductsFeatureTab extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   child: Column(
                     children: [
+                      ClinicalHomePanel(controller: state.clinical),
                       const Text(
                         'Personal, user-entered records — not a verified catalog or proof of use.',
                       ),
@@ -80,7 +82,7 @@ class ProductsFeatureTab extends StatelessWidget {
                       ),
                       OutlinedButton(
                         onPressed: () =>
-                            openPage(context, const RoutineScreen()),
+                            openEntry(context, RoutineScreen(state: state)),
                         child: const Text('Manage my routine'),
                       ),
                     ],
@@ -166,7 +168,6 @@ class ProductsFeatureTab extends StatelessWidget {
                               ),
                             ),
                       ],
-                      ClinicalHomePanel(controller: state.clinical),
                       const SizedBox(height: 4),
                       FilledButton(
                         onPressed: () => openPage(
@@ -343,9 +344,28 @@ class ProductsSearchScreen extends StatefulWidget {
 class _ProductsSearchScreenState extends State<ProductsSearchScreen> {
   late final ProductsController controller = widget.state.productController;
   final search = TextEditingController();
+  late final int generation;
+  bool get current =>
+      !controller.requiresServerSession ||
+      ApiService.instance.isCurrentSession(generation) &&
+          ApiService.instance.canReadPatientClinicalStatus;
+  @override
+  void initState() {
+    super.initState();
+    generation = ApiService.instance.sessionGeneration;
+    ApiService.instance.addListener(sessionChanged);
+  }
+
+  void sessionChanged() {
+    if (!current && mounted) {
+      search.clear();
+      setState(() {});
+    }
+  }
 
   @override
   void dispose() {
+    ApiService.instance.removeListener(sessionChanged);
     search.dispose();
     super.dispose();
   }
@@ -353,100 +373,106 @@ class _ProductsSearchScreenState extends State<ProductsSearchScreen> {
   @override
   Widget build(BuildContext context) => AnimatedBuilder(
     animation: controller,
-    builder: (context, _) => DermairePage(
-      eyebrow: 'Product library',
-      title: 'Search products',
-      actions: [
-        IconButton(
-          tooltip: 'Filters',
-          onPressed: () => _showFilters(context),
-          icon: const Icon(Icons.tune_rounded),
-        ),
-      ],
-      children: [
-        SearchBar(
-          key: const Key('productSearch'),
-          controller: search,
-          autoFocus: true,
-          hintText: 'Name, brand or ingredient',
-          leading: const Icon(Icons.search_rounded),
-          trailing: [
-            if (search.text.isNotEmpty)
+    builder: (context, _) => !current
+        ? const DermairePage(
+            title: 'Session ended',
+            children: [Text('Search cleared. Reopen products.')],
+          )
+        : DermairePage(
+            eyebrow: 'Product library',
+            title: 'Search products',
+            actions: [
               IconButton(
-                tooltip: 'Clear search',
-                onPressed: () {
-                  search.clear();
-                  controller.setQuery('');
-                },
-                icon: const Icon(Icons.close_rounded),
+                tooltip: 'Filters',
+                onPressed: () => _showFilters(context),
+                icon: const Icon(Icons.tune_rounded),
               ),
-          ],
-          onChanged: (value) {
-            controller.setQuery(value);
-            setState(() {});
-          },
-        ),
-        const SizedBox(height: 12),
-        DropdownButtonFormField<ProductSort>(
-          initialValue: controller.sort,
-          decoration: const InputDecoration(labelText: 'Sort by'),
-          items: ProductSort.values
-              .map(
-                (value) => DropdownMenuItem(
-                  value: value,
-                  child: Text(_sortLabel(value)),
-                ),
-              )
-              .toList(),
-          onChanged: (value) {
-            if (value != null) controller.setSort(value);
-          },
-        ),
-        const SizedBox(height: 14),
-        if (controller.visibleProducts.isEmpty)
-          DermaireCard(
-            child: Column(
-              children: [
-                const Icon(Icons.search_off_rounded, size: 42),
-                const SizedBox(height: 8),
-                const Text(
-                  'No matching products',
-                  style: TextStyle(fontWeight: FontWeight.w800),
-                ),
-                const SizedBox(height: 4),
-                const Text(
-                  'Try another spelling or add the product manually.',
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 12),
-                OutlinedButton(
-                  onPressed: () => openPage(
-                    context,
-                    ProductEditorScreen(
-                      state: widget.state,
-                      initialName: ProductValidation.clean(search.text),
+            ],
+            children: [
+              SearchBar(
+                key: const Key('productSearch'),
+                controller: search,
+                autoFocus: true,
+                hintText: 'Name, brand or ingredient',
+                leading: const Icon(Icons.search_rounded),
+                trailing: [
+                  if (search.text.isNotEmpty)
+                    IconButton(
+                      tooltip: 'Clear search',
+                      onPressed: () {
+                        search.clear();
+                        controller.setQuery('');
+                      },
+                      icon: const Icon(Icons.close_rounded),
+                    ),
+                ],
+                onChanged: (value) {
+                  controller.setQuery(value);
+                  setState(() {});
+                },
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<ProductSort>(
+                isExpanded: true,
+                initialValue: controller.sort,
+                decoration: const InputDecoration(labelText: 'Sort by'),
+                items: ProductSort.values
+                    .map(
+                      (value) => DropdownMenuItem(
+                        value: value,
+                        child: Text(_sortLabel(value)),
+                      ),
+                    )
+                    .toList(),
+                onChanged: (value) {
+                  if (value != null) controller.setSort(value);
+                },
+              ),
+              const SizedBox(height: 14),
+              if (controller.visibleProducts.isEmpty)
+                DermaireCard(
+                  child: Column(
+                    children: [
+                      const Icon(Icons.search_off_rounded, size: 42),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'No matching products',
+                        style: TextStyle(fontWeight: FontWeight.w800),
+                      ),
+                      const SizedBox(height: 4),
+                      const Text(
+                        'Try another spelling or add the product manually.',
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 12),
+                      OutlinedButton(
+                        onPressed: () => openPage(
+                          context,
+                          ProductEditorScreen(
+                            state: widget.state,
+                            initialName: ProductValidation.clean(search.text),
+                          ),
+                        ),
+                        child: const Text('Enter manually'),
+                      ),
+                    ],
+                  ),
+                )
+              else
+                ...controller.visibleProducts.map(
+                  (product) => ProductCard(
+                    product: product,
+                    onTap: () => openPage(
+                      context,
+                      ProductFeatureDetailScreen(
+                        state: widget.state,
+                        productId: product.id,
+                      ),
                     ),
                   ),
-                  child: const Text('Enter manually'),
                 ),
-              ],
-            ),
-          )
-        else
-          ...controller.visibleProducts.map(
-            (product) => ProductCard(
-              product: product,
-              onTap: () => openPage(
-                context,
-                ProductFeatureDetailScreen(
-                  state: widget.state,
-                  productId: product.id,
-                ),
-              ),
-            ),
+            ],
           ),
-      ],
-    ),
   );
 
   String _sortLabel(ProductSort value) => switch (value) {
@@ -918,7 +944,7 @@ class _ProductInteractionScreenState extends State<ProductInteractionScreen> {
   }
 }
 
-class ProductFeatureDetailScreen extends StatelessWidget {
+class ProductFeatureDetailScreen extends StatefulWidget {
   const ProductFeatureDetailScreen({
     super.key,
     required this.state,
@@ -928,9 +954,34 @@ class ProductFeatureDetailScreen extends StatelessWidget {
   final String productId;
 
   @override
+  State<ProductFeatureDetailScreen> createState() =>
+      _ProductFeatureDetailState();
+}
+
+class _ProductFeatureDetailState extends State<ProductFeatureDetailScreen> {
+  DermaireState get state => widget.state;
+  String get productId => widget.productId;
+  late final int generation;
+  bool get current =>
+      !state.productController.requiresServerSession ||
+      ApiService.instance.isCurrentSession(generation) &&
+          ApiService.instance.canReadPatientClinicalStatus;
+  @override
+  void initState() {
+    super.initState();
+    generation = ApiService.instance.sessionGeneration;
+  }
+
+  @override
   Widget build(BuildContext context) => AnimatedBuilder(
-    animation: state.productController,
+    animation: Listenable.merge([state.productController, ApiService.instance]),
     builder: (context, _) {
+      if (!current) {
+        return const DermairePage(
+          title: 'Session ended',
+          children: [Text('Reopen products from your current account.')],
+        );
+      }
       final product = state.productController.byId(productId);
       if (product == null) {
         return Scaffold(
@@ -968,6 +1019,7 @@ class ProductFeatureDetailScreen extends StatelessWidget {
           ),
         ],
         children: [
+          ClinicalHomePanel(controller: state.clinical),
           Container(
             height: 170,
             margin: const EdgeInsets.only(bottom: 16),
@@ -1018,6 +1070,13 @@ class ProductFeatureDetailScreen extends StatelessWidget {
                 : product.usageInstructions,
           ),
           if (product.notes != null) _DetailValue('Notes', product.notes!),
+          OutlinedButton(
+            onPressed: () => openPage(
+              context,
+              RoutineScreen(state: state, productId: product.id),
+            ),
+            child: const Text('View linked routine steps'),
+          ),
           ProductIntelligencePanel(
             key: ValueKey('intelligence-${product.id}-${product.updatedAt}'),
             productId: product.id,
@@ -1052,6 +1111,7 @@ class ProductFeatureDetailScreen extends StatelessWidget {
     Product product,
     String value,
   ) async {
+    if (!current) return;
     if (value == 'edit') {
       await openPage(
         context,
@@ -1073,9 +1133,9 @@ class ProductFeatureDetailScreen extends StatelessWidget {
         confirm: 'Archive',
         enabled: !product.inExperiment,
       );
-      if (confirmed && context.mounted) {
+      if (confirmed && context.mounted && current) {
         final result = await state.productController.archive(product.id);
-        if (!context.mounted) return;
+        if (!context.mounted || !current) return;
         showDermaireSnack(context, result.message);
         if (result.success) Navigator.pop(context);
       }
@@ -1092,12 +1152,12 @@ class ProductFeatureDetailScreen extends StatelessWidget {
       confirm: 'Delete',
       enabled: !product.inExperiment,
     );
-    if (confirmed && context.mounted) {
+    if (confirmed && context.mounted && current) {
       final result = await state.productController.delete(
         product.id,
         endExperiment: product.inExperiment,
       );
-      if (!context.mounted) return;
+      if (!context.mounted || !current) return;
       showDermaireSnack(context, result.message);
       if (result.success) Navigator.pop(context);
     }
@@ -1139,7 +1199,7 @@ class ProductFeatureDetailScreen extends StatelessWidget {
     Future<ProductOperationResult> operation,
   ) async {
     final result = await operation;
-    if (context.mounted) showDermaireSnack(context, result.message);
+    if (context.mounted && current) showDermaireSnack(context, result.message);
   }
 }
 
