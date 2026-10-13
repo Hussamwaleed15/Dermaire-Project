@@ -9,6 +9,7 @@ import '../clinical/clinical_models.dart';
 import '../observations/observation_ui.dart';
 import '../capture/capture_history_screen.dart';
 import 'psm_controller.dart';
+import '../assistance/assistance_ui.dart';
 import 'psm_models.dart';
 
 class PersonalSkinModelEntry extends StatelessWidget {
@@ -160,6 +161,11 @@ class _PersonalSkinModelScreenState extends State<PersonalSkinModelScreen> {
                 onPressed: () =>
                     open(CaptureHistoryScreen(state: widget.state)),
                 child: const Text('View private image history'),
+              ),
+              TextButton(
+                onPressed: () =>
+                    open(ContextualAssistanceScreen(state: widget.state)),
+                child: const Text('Ask about my evidence'),
               ),
               TextButton(
                 key: const Key('psmClinicalGuidance'),

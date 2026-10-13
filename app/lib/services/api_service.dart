@@ -8,6 +8,8 @@ import '../capture/photo_preparation.dart';
 import '../capture/guided_capture_models.dart';
 import '../capture/capture_history_models.dart';
 import '../psm/psm_models.dart';
+import '../assistance/assistance_models.dart';
+import '../assistance/assistance_controller.dart' show AssistanceReadException;
 import '../psm/psm_controller.dart' show PsmReadException;
 import 'package:http_parser/http_parser.dart';
 import 'package:flutter/foundation.dart';
@@ -785,6 +787,22 @@ class ApiService extends ChangeNotifier {
       data['message']?.toString() ?? 'Failed to update skin profile',
       data,
     );
+  }
+
+  Future<AssistanceResponse> requestPatientAssistance(String message, int generation) async {
+    final data = await patientInformationalPost('assistance',message,generation);
+    return AssistanceResponse.fromApi(data,owner:_sessionUserId!);
+  }
+
+  Future<Map<String,dynamic>> patientInformationalPost(String route,String message,int generation) async {
+    void guard() { if(!isCurrentSession(generation)||!canReadPatientClinicalStatus) throw ApiException('Session changed. Reopen assistance after sign-in.'); }
+    guard();
+    if(!['assistance','chat'].contains(route)||message.trim().isEmpty||message.trim().runes.length>1000) throw ArgumentError('Invalid assistance request');
+    final request=http.Request('POST',Uri.parse('$baseUrl/$route'));
+    request.followRedirects=false;request.headers.addAll(_headers());request.body=jsonEncode({'message':message.trim()});
+    final response=await _client.send(request).then(http.Response.fromStream).timeout(const Duration(seconds:60));
+    guard();if(response.statusCode!=200) throw AssistanceReadException(response.statusCode);
+    return jsonDecode(response.body) as Map<String,dynamic>;
   }
 
   Future<Map<String, dynamic>> requestAssistance(String message) async {
