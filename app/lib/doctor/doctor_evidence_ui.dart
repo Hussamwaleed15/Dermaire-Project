@@ -7,6 +7,7 @@ import '../entry/entry_motion.dart';
 import 'doctor_connection.dart';
 import 'doctor_evidence_models.dart';
 import 'doctor_records_controller.dart';
+import 'doctor_view_lifecycle.dart';
 
 class DoctorSafetySnapshot extends StatelessWidget {
   const DoctorSafetySnapshot({
@@ -156,22 +157,59 @@ class DoctorEvidenceScreen extends StatefulWidget {
   State<DoctorEvidenceScreen> createState() => _DoctorEvidenceScreenState();
 }
 
-class _DoctorEvidenceScreenState extends State<DoctorEvidenceScreen> {
-  late final records = DoctorRecordsController(widget.connection);
-  late final images = PrivateCaptureImages(
-    widget.connection.parent.api,
-    reader: records.readImage,
-    authorization: (generation) =>
-        records.confirmed && widget.connection.parent.generation == generation,
-    scope: records,
-  );
+class _DoctorEvidenceScreenState extends State<DoctorEvidenceScreen>
+    with DoctorViewLifecycle<DoctorEvidenceScreen> {
+  @override
+  void pauseDoctorView({required bool background}) {
+    records.invalidate();
+    if (background) widget.connection.invalidate();
+  }
+
+  @override
+  Future<void> resumeDoctorView() async {
+    if (await widget.connection.resumeAccess(
+          active: () => mounted && doctorViewVisible,
+        ) &&
+        mounted &&
+        doctorViewVisible) {
+      await records.refresh();
+    }
+  }
+
+  late DoctorRecordsController records;
+  late PrivateCaptureImages images;
+  void bindRecords() {
+    records = DoctorRecordsController(widget.connection)..addListener(changed);
+    images = PrivateCaptureImages(
+      widget.connection.parent.api,
+      reader: records.readImage,
+      authorization: (generation) =>
+          doctorViewVisible &&
+          records.confirmed &&
+          widget.connection.parent.generation == generation,
+      scope: records,
+    );
+    records.refresh();
+  }
+
+  @override
+  void didUpdateWidget(covariant DoctorEvidenceScreen old) {
+    super.didUpdateWidget(old);
+    if (old.connection != widget.connection) {
+      records.removeListener(changed);
+      images.dispose();
+      records.dispose();
+      openedImage = null;
+      bindRecords();
+    }
+  }
+
   String? openedImage;
   bool ended = false;
   @override
   void initState() {
     super.initState();
-    records.addListener(changed);
-    records.refresh();
+    bindRecords();
   }
 
   void changed() {
@@ -191,6 +229,7 @@ class _DoctorEvidenceScreenState extends State<DoctorEvidenceScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (!doctorViewVisible) return pausedDoctorView();
     if (!widget.connection.confirmed) {
       return Scaffold(
         appBar: AppBar(),

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/scheduler.dart';
 import '../access_control.dart';
 import '../services/api_service.dart';
 import '../services/request_failure.dart';
@@ -28,7 +29,16 @@ class DoctorWorkspaceController extends ChangeNotifier {
   int selectPatient(String id) {
     selectionRevision++;
     activePatient = allows(id) ? id : null;
-    notifyListeners();
+    // Identity changes immediately; sibling route UI notifications must wait
+    // when a new detail is mounted during an existing Navigator frame.
+    if (SchedulerBinding.instance.schedulerPhase ==
+        SchedulerPhase.persistentCallbacks) {
+      SchedulerBinding.instance.addPostFrameCallback((_) {
+        if (!_disposed) notifyListeners();
+      });
+    } else {
+      notifyListeners();
+    }
     return selectionRevision;
   }
 
@@ -73,6 +83,8 @@ class DoctorWorkspaceController extends ChangeNotifier {
   void clear() {
     if (_disposed) return;
     _revision++;
+    selectionRevision++;
+    activePatient = null;
     _grantTimer?.cancel();
     patients.clear();
     notes.clear();

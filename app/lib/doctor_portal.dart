@@ -11,6 +11,7 @@ import 'doctor/doctor_controller.dart';
 import 'doctor/doctor_connection.dart';
 import 'doctor/doctor_evidence_ui.dart';
 import 'doctor/doctor_clinical_ui.dart';
+import 'doctor/doctor_view_lifecycle.dart';
 import 'clinical/clinical_models.dart' show object;
 export 'doctor/doctor_models.dart';
 export 'doctor/doctor_controller.dart';
@@ -155,7 +156,18 @@ class DoctorPortalScreen extends StatefulWidget {
   State<DoctorPortalScreen> createState() => _DoctorPortalScreenState();
 }
 
-class _DoctorPortalScreenState extends State<DoctorPortalScreen> {
+class _DoctorPortalScreenState extends State<DoctorPortalScreen>
+    with DoctorViewLifecycle<DoctorPortalScreen> {
+  @override
+  void pauseDoctorView({required bool background}) {
+    if (background) controller.clear();
+  }
+
+  @override
+  Future<void> resumeDoctorView() async {
+    await controller.refresh();
+  }
+
   late final controller = DoctorWorkspaceController(widget.session);
   @override
   void initState() {
@@ -173,6 +185,7 @@ class _DoctorPortalScreenState extends State<DoctorPortalScreen> {
   Widget build(BuildContext context) => AnimatedBuilder(
     animation: controller,
     builder: (context, _) {
+      if (!doctorViewVisible) return pausedDoctorView();
       if (!controller.current && controller.authenticatedCurrent) {
         return DermairePage(
           eyebrow: 'Doctor workspace',
@@ -290,9 +303,18 @@ class PatientDetailScreen extends StatefulWidget {
   State<PatientDetailScreen> createState() => _PatientDetailScreenState();
 }
 
-class _PatientDetailScreenState extends State<PatientDetailScreen> {
-  final note = TextEditingController();
-  String? error;
+class _PatientDetailScreenState extends State<PatientDetailScreen>
+    with DoctorViewLifecycle<PatientDetailScreen> {
+  @override
+  void pauseDoctorView({required bool background}) {
+    if (background) connection.invalidate();
+  }
+
+  @override
+  Future<void> resumeDoctorView() async {
+    await connection.resumeAccess(active: () => mounted && doctorViewVisible);
+  }
+
   late DoctorConnectionController connection;
   @override
   void initState() {
@@ -304,15 +326,8 @@ class _PatientDetailScreenState extends State<PatientDetailScreen> {
     connection = DoctorConnectionController(
       widget.controller,
       widget.patient.id,
-    )..addListener(_accessChanged);
+    );
     connection.refresh();
-  }
-
-  void _accessChanged() {
-    if (!connection.confirmed) {
-      note.clear();
-      error = null;
-    }
   }
 
   @override
@@ -320,19 +335,14 @@ class _PatientDetailScreenState extends State<PatientDetailScreen> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.patient.id != widget.patient.id ||
         oldWidget.controller != widget.controller) {
-      connection.removeListener(_accessChanged);
       connection.dispose();
-      note.clear();
-      error = null;
       _bind();
     }
   }
 
   @override
   void dispose() {
-    connection.removeListener(_accessChanged);
     connection.dispose();
-    note.dispose();
     super.dispose();
   }
 
@@ -341,8 +351,8 @@ class _PatientDetailScreenState extends State<PatientDetailScreen> {
     animation: Listenable.merge([widget.controller, connection]),
     builder: (context, _) {
       final c = widget.controller;
+      if (!doctorViewVisible) return pausedDoctorView();
       if (!c.allows(widget.patient.id)) {
-        note.clear();
         return Scaffold(
           appBar: AppBar(),
           body: const Center(
@@ -392,7 +402,12 @@ class _PatientDetailScreenState extends State<PatientDetailScreen> {
             ),
             child: const Text('Review clinical evidence'),
           ),
-          Text('Server priority: ${widget.patient.priority.name}'),
+          Text(
+            'Connection list retrieved: ${c.retrievedAt?.toUtc().toIso8601String() ?? "Unknown"} (snapshot)',
+          ),
+          Text(
+            'Priority in that list snapshot: ${widget.patient.priority.name}',
+          ),
           Text(widget.patient.experiment),
           Text('Last check-in: ${widget.patient.lastCheckIn}'),
           const Text(

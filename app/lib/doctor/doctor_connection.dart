@@ -14,7 +14,7 @@ class DoctorConnectionController extends ChangeNotifier {
   }
   final DoctorWorkspaceController parent;
   final String patientId;
-  late final int selection;
+  late int selection;
   Map<String, dynamic>? _record;
   DoctorGrant? _grant;
   bool loading = false, _disposed = false;
@@ -105,6 +105,17 @@ class DoctorConnectionController extends ChangeNotifier {
     return confirmed;
   }
 
+  Future<bool> resumeAccess({bool Function()? active}) async {
+    bool valid() =>
+        !_disposed && parent.authenticatedCurrent && (active?.call() ?? true);
+    if (!valid()) return false;
+    invalidate();
+    if (!parent.allows(patientId)) await parent.refresh();
+    if (!valid() || !parent.allows(patientId)) return false;
+    if (!current) selection = parent.selectPatient(patientId);
+    return refresh();
+  }
+
   Future<bool> verifyForRead() async {
     if (!confirmed) return false;
     try {
@@ -141,6 +152,7 @@ class DoctorConnectionController extends ChangeNotifier {
     parent.removeListener(_parentChanged);
     _record = null;
     _grant = null;
+    notifyListeners();
     super.dispose();
   }
 }

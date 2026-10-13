@@ -5,6 +5,7 @@ import '../entry/entry_motion.dart';
 import 'doctor_connection.dart';
 import 'doctor_clinical_controller.dart';
 import 'doctor_evidence_ui.dart';
+import 'doctor_view_lifecycle.dart';
 
 class DoctorClinicalScreen extends StatefulWidget {
   const DoctorClinicalScreen({super.key, required this.connection});
@@ -13,20 +14,56 @@ class DoctorClinicalScreen extends StatefulWidget {
   State<DoctorClinicalScreen> createState() => _DoctorClinicalScreenState();
 }
 
-class _DoctorClinicalScreenState extends State<DoctorClinicalScreen> {
-  late final clinical = DoctorClinicalController(widget.connection);
+class _DoctorClinicalScreenState extends State<DoctorClinicalScreen>
+    with DoctorViewLifecycle<DoctorClinicalScreen> {
+  @override
+  void pauseDoctorView({required bool background}) {
+    clearDrafts();
+    clinical.clear();
+    if (background) widget.connection.invalidate();
+  }
+
+  @override
+  Future<void> resumeDoctorView() async {
+    if (await widget.connection.resumeAccess(
+          active: () => mounted && doctorViewVisible,
+        ) &&
+        mounted &&
+        doctorViewVisible) {
+      await clinical.refresh();
+    }
+  }
+
+  late DoctorClinicalController clinical;
   final note = TextEditingController(),
       follow = TextEditingController(),
       category = TextEditingController(),
       rationale = TextEditingController();
   String priority = 'routine', state = 'in_review', recommendation = 'none';
   bool noteVisible = false, reviewVisible = false, ended = false;
+  bool attached = true, clearOnActivate = false;
   String? validation;
   @override
   void initState() {
     super.initState();
-    clinical.addListener(changed);
+    bindClinical();
+  }
+
+  void bindClinical() {
+    clinical = DoctorClinicalController(widget.connection)
+      ..addListener(changed);
     clinical.refresh();
+  }
+
+  @override
+  void didUpdateWidget(covariant DoctorClinicalScreen old) {
+    super.didUpdateWidget(old);
+    if (old.connection != widget.connection) {
+      clinical.removeListener(changed);
+      clinical.dispose();
+      clearDrafts();
+      bindClinical();
+    }
   }
 
   void clearDrafts() {
@@ -40,12 +77,36 @@ class _DoctorClinicalScreenState extends State<DoctorClinicalScreen> {
 
   void changed() {
     if (ended) return;
-    if (!widget.connection.confirmed) clearDrafts();
+    if (!attached) {
+      clearOnActivate = true;
+      return;
+    }
+    if (!clinical.connection.confirmed) clearDrafts();
     if (mounted) setState(() {});
+  }
+
+  @override
+  void deactivate() {
+    attached = false;
+    super.deactivate();
+  }
+
+  @override
+  void activate() {
+    super.activate();
+    attached = true;
+    if (clearOnActivate) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted || !attached || ended) return;
+        clearDrafts();
+        setState(() => clearOnActivate = false);
+      });
+    }
   }
 
   bool get current =>
       mounted &&
+      doctorViewVisible &&
       !ended &&
       widget.connection.confirmed &&
       ModalRoute.of(context)?.isCurrent == true;
@@ -105,19 +166,17 @@ class _DoctorClinicalScreenState extends State<DoctorClinicalScreen> {
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
       Text(label),
-      DropdownButton<String>(
-        isExpanded: true,
-        value: value,
-        onChanged: clinical.saving
-            ? null
-            : (v) {
-                if (v != null) setState(() => change(v));
-              },
-        items: options
+      Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: options
             .map(
-              (v) => DropdownMenuItem(
-                value: v,
-                child: Text(v.replaceAll('_', ' ')),
+              (v) => ChoiceChip(
+                label: Text(v.replaceAll('_', ' ')),
+                selected: value == v,
+                onSelected: clinical.saving
+                    ? null
+                    : (_) => setState(() => change(v)),
               ),
             )
             .toList(),
@@ -138,6 +197,7 @@ class _DoctorClinicalScreenState extends State<DoctorClinicalScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (!doctorViewVisible || clearOnActivate) return pausedDoctorView();
     if (!widget.connection.confirmed) {
       return Scaffold(
         appBar: AppBar(),
