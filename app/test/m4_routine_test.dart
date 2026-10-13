@@ -171,11 +171,12 @@ void main() {
       );
       await t.pumpAndSettle();
       expect(find.text('Morning'), findsOneWidget);
-      expect(find.text('Evening'), findsOneWidget);
       expect(
         find.textContaining('clinician-directed treatment'),
         findsOneWidget,
       );
+      await t.scrollUntilVisible(find.text('Evening'), 150);
+      expect(find.text('Evening'), findsOneWidget);
       expect(find.text('Inventory · BOTH · daily'), findsWidgets);
       expect(t.takeException(), isNull);
       await t.pumpWidget(const SizedBox());

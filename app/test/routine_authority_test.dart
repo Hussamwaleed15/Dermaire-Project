@@ -75,6 +75,8 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('AM completed today'), findsNothing);
       expect(find.text('Edit'), findsNothing);
+      await tester.ensureVisible(find.text('AM skipped today'));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('AM skipped today'));
       await tester.pump();
       expect(find.text('Saved on server'), findsNothing);

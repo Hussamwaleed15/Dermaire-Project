@@ -439,6 +439,12 @@ class _RoutineScreenState extends State<RoutineScreen> {
                 const Text(
                   'Cosmetic preferences, not clinician-directed treatment. Daily user-configured routine. Days and reports use UTC. Missing reports mean unknown adherence.',
                 ),
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 12),
+                  child: Text(
+                    'Morning and Evening group your routine steps; they do not set a clock time. No reminders are scheduled by this app. Follow-up and photo comparison dates require confirmed clinical guidance.',
+                  ),
+                ),
                 if (controller.error != null) ...[
                   Text(controller.error!),
                   TextButton(
