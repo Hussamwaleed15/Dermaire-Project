@@ -39,3 +39,19 @@ flutter build web
 ```
 
 See `docs/READINESS_AUDIT.md` for the current readiness score, evidence, known limitations, and required production work.
+
+## iOS simulator development
+
+The current native dependency set requires **iOS 14 or later** because
+`file_picker_darwin` 2.0.0 requires 14.0. Runner's Debug/Release/Profile settings
+and regenerated Flutter SwiftPM package use that deployment floor. Native
+plugins use SwiftPM; all four application-owned Xcode project/workspace
+`Package.resolved` files are tracked. Generated packages/build caches are ignored.
+
+From `app/`, run `flutter pub get`, then
+`flutter build ios --simulator --debug --target lib/main.dart`. Use
+`flutter devices` to select an installed iPhone simulator and
+`flutter run -d <simulator-UUID> --debug --target lib/main.dart` to install/launch.
+Use a local checkout outside File Provider-managed folders to avoid observed
+Finder-metadata signing contamination. See the verified environment, lockfile
+inventory and startup evidence in [iOS launch repair](docs/IOS_SIMULATOR_LAUNCH_REPAIR.md).
