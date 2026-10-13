@@ -8,6 +8,7 @@ import 'dermaire_state.dart';
 import 'dermaire_theme.dart';
 import 'dermaire_widgets.dart';
 import 'doctor_portal.dart';
+import 'access_control.dart';
 import 'entry/safety_consent_controller.dart';
 import 'entry/entry_copy.dart';
 import 'entry/entry_motion.dart';
@@ -38,7 +39,9 @@ class PatientEntryGate extends StatefulWidget {
     super.key,
     required this.state,
     this.onboarding = false,
+    this.onExit,
   });
+  final VoidCallback? onExit;
   final DermaireState state;
   final bool onboarding;
 
@@ -72,7 +75,8 @@ class _PatientEntryGateState extends State<PatientEntryGate> {
         widget.state.account.ready &&
         !widget.onboarding &&
         _enteredShell &&
-        !_loadedShell) {
+        !_loadedShell &&
+        ApiService.instance.canReadPatientClinicalStatus) {
       _loadedShell = true;
       unawaited(widget.state.productController.load());
       unawaited(widget.state.baseline.refresh());
@@ -94,6 +98,11 @@ class _PatientEntryGateState extends State<PatientEntryGate> {
   Future<void> _signOut() async {
     // Invalidate immediately; server revocation is bounded and best effort.
     final logout = ApiService.instance.logout();
+    if (mounted && widget.onExit != null) {
+      widget.onExit!();
+      await logout;
+      return;
+    }
     if (mounted) {
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(builder: (_) => WelcomeScreen(state: widget.state)),
@@ -114,6 +123,20 @@ class _PatientEntryGateState extends State<PatientEntryGate> {
   Widget build(BuildContext context) {
     final c = EntryCopy.english;
     if (consent.confirmed && widget.state.account.ready) {
+      if (ApiService.instance.canReadDoctorWorkspace) {
+        return DoctorPortalScreen(
+          session: AccessSession(
+            userId: ApiService.instance.doctorOwner!,
+            role: UserRole.doctor,
+          ),
+        );
+      }
+      if (widget.state.account.value?.role != 'patient') {
+        return EntryStatusPage(
+          message: 'This account role is unavailable in the mobile workspace.',
+          onSignOut: _signOut,
+        );
+      }
       if (widget.onboarding) return AccountCreatedScreen(state: widget.state);
       if (_enteredShell) return AppShell(state: widget.state);
       return EntryStatusPage(
@@ -365,7 +388,8 @@ class _SignInScreenState extends State<SignInScreen> {
           child: Text(c.create),
         ),
         TextButton.icon(
-          onPressed: () => openEntry(context, const DoctorSignInScreen()),
+          onPressed: () =>
+              openEntry(context, DoctorSignInScreen(state: widget.state)),
           icon: const Icon(Icons.medical_services_outlined),
           label: Text('Clinician sign in'),
         ),

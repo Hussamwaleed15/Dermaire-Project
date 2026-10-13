@@ -286,6 +286,59 @@ class ApiService extends ChangeNotifier {
       hasConfirmedSafetyAcceptance &&
       _sessionRole == 'patient';
 
+  /// Profile receipt and token identity must agree. This is account role, not
+  /// proof of a medical license. The backend still authorizes each operation.
+  bool get canReadDoctorWorkspace =>
+      isAuthenticated &&
+      hasConfirmedSafetyAcceptance &&
+      _sessionRole == 'doctor' &&
+      _consentUser?['role'] == 'doctor' &&
+      _consentUser?['id'] == _sessionUserId;
+  String? get doctorOwner => canReadDoctorWorkspace ? _sessionUserId : null;
+  String? get authenticatedOwner => isAuthenticated ? _sessionUserId : null;
+  String? get authenticatedRole => isAuthenticated ? _sessionRole : null;
+  final Set<String> uncertainDoctorWrites = {};
+
+  Future<Object?> doctorResource(
+    String path,
+    int generation, {
+    String method = 'GET',
+    Map<String, dynamic>? payload,
+  }) async {
+    void guard() {
+      if (!isCurrentSession(generation) || !canReadDoctorWorkspace) {
+        throw ApiException(
+          'Doctor session changed. Sign in and verify your account again.',
+        );
+      }
+    }
+
+    guard();
+    if (!RegExp(
+          r'^patients(/[A-Za-z0-9_-]+)?(/(notes|reviews|timeline))?(\?offset=[0-9]+&limit=[0-9]+)?$',
+        ).hasMatch(path) ||
+        !(method == 'GET' ||
+            method == 'POST' &&
+                RegExp(
+                  r'^patients/[A-Za-z0-9_-]+/(notes|reviews)$',
+                ).hasMatch(path))) {
+      throw ArgumentError('Invalid doctor resource');
+    }
+    final request = http.Request(method, Uri.parse('$baseUrl/doctor/$path'))
+      ..followRedirects = false;
+    request.headers.addAll(_headers(payload != null));
+    if (payload != null) request.body = jsonEncode(payload);
+    final response = await _client
+        .send(request)
+        .then(http.Response.fromStream)
+        .timeout(const Duration(seconds: 20));
+    guard();
+    if (response.statusCode != (method == 'POST' ? 201 : 200)) {
+      throw RequestFailure.http(response.statusCode);
+    }
+    return jsonDecode(response.body);
+  }
+
   Future<Map<String, dynamic>> _readClinical(
     String path,
     int generation,
@@ -637,6 +690,7 @@ class ApiService extends ChangeNotifier {
   Future<void> _clearSession() async {
     final hadSession = _authToken != null;
     _sessionGeneration++;
+    uncertainDoctorWrites.clear();
     _sessionUserId = null;
     _sessionRole = null;
     _consentUser = null;
@@ -695,6 +749,7 @@ class ApiService extends ChangeNotifier {
   /// Patient entry receipt. Only an owner-matched GET establishes acceptance.
   Future<bool> readSafetyAcceptance() async {
     final wasAccepted = _confirmedSafetyAcceptance == true;
+    final wasDoctor = canReadDoctorWorkspace;
     final revision = ++_profileRevision;
     _consentUser = null;
     final generation = _sessionGeneration;
@@ -733,7 +788,10 @@ class ApiService extends ChangeNotifier {
     _consentGeneration = generation;
     final accepted = decoded['safety_accepted'] as bool;
     _confirmedSafetyAcceptance = accepted;
-    if (!accepted && wasAccepted) notifyListeners();
+    if ((!accepted && wasAccepted) ||
+        (wasDoctor && decoded['role'] != 'doctor')) {
+      notifyListeners();
+    }
     return accepted;
   }
 
@@ -1417,17 +1475,9 @@ class ApiService extends ChangeNotifier {
     return res.statusCode == 200;
   }
 
-  Future<List<Map<String, dynamic>>> getDoctorPatients() async {
-    final res = await _client.get(
-      Uri.parse('$baseUrl/doctor/patients'),
-      headers: _headers(false),
-    );
-    if (res.statusCode == 200) {
-      final list = jsonDecode(res.body) as List<dynamic>;
-      return list.cast<Map<String, dynamic>>();
-    }
-    throw ApiException('Could not load authorized patients');
-  }
+  Future<List<Map<String, dynamic>>> getDoctorPatients() async =>
+      (await doctorResource('patients', sessionGeneration) as List)
+          .cast<Map<String, dynamic>>();
 
   Future<Map<String, dynamic>> addClinicalNote({
     required String patientId,
@@ -1435,19 +1485,18 @@ class ApiService extends ChangeNotifier {
     String priority = 'routine',
     String? followUp,
   }) async {
-    final res = await _client.post(
-      Uri.parse('$baseUrl/doctor/patients/$patientId/notes'),
-      headers: _headers(),
-      body: jsonEncode({
-        'content': content,
-        'priority': priority,
-        'follow_up': followUp,
-      }),
-    );
-    if (res.statusCode != 201) {
-      throw ApiException('Clinical note could not be saved');
-    }
-    final data = jsonDecode(res.body) as Map<String, dynamic>;
+    final data =
+        await doctorResource(
+              'patients/$patientId/notes',
+              sessionGeneration,
+              method: 'POST',
+              payload: {
+                'content': content,
+                'priority': priority,
+                'follow_up': followUp,
+              },
+            )
+            as Map<String, dynamic>;
     if (data['id'] is! String ||
         (data['id'] as String).isEmpty ||
         data['patient_id'] != patientId ||

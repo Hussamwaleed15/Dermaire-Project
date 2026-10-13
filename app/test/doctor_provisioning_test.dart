@@ -8,6 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'm6_doctor_fixture.dart' as f;
 
 void main() {
   tearDown(() => ApiService.instance.init());
@@ -81,7 +82,11 @@ void main() {
           await tester.pump();
           await tester.pump(const Duration(seconds: 1));
           await tester.pumpAndSettle();
-          final succeeds = entry.key == 'doctor';
+          final succeeds = [
+            'doctor',
+            'patients failure',
+            'malformed patients',
+          ].contains(entry.key);
           expect(
             find.byType(DoctorPortalScreen),
             succeeds ? findsOneWidget : findsNothing,
@@ -106,7 +111,11 @@ void main() {
             expect(portal.session.userId, 'doctor-1');
             expect(portal.session.role, UserRole.doctor);
             expect(portal.session.authorizedPatientIds, isEmpty);
-            expect(portal.session.expiresAt, isNotNull);
+            expect(
+              ApiService.instance.hasConfirmedSafetyAcceptance,
+              isFalse,
+            ); // init above invalidated the receipt.
+            expect(portal.session.role, UserRole.doctor);
           }
           await tester.pumpWidget(const SizedBox());
         },
@@ -116,7 +125,12 @@ void main() {
             submittedPassword = jsonDecode(request.body)['password'] as String;
             return pending.future;
           }
-          if (request.url.path.endsWith('/auth/logout')) return http.Response('', 204);
+          if (request.url.path.endsWith('/auth/logout')) {
+            return http.Response('', 204);
+          }
+          if (request.url.path.endsWith('/users/me')) {
+            return f.json(f.DoctorWire().profile);
+          }
           patientPath = request.url.path;
           if (entry.key == 'patients failure') return http.Response('{}', 403);
           if (entry.key == 'malformed patients') {
@@ -128,32 +142,24 @@ void main() {
     });
   }
 
-  test('Workspace uses real server patient IDs and notes', () {
-    const session = AccessSession(
-      userId: 'doctor-1',
-      role: UserRole.doctor,
-      authorizedPatientIds: {'real-patient'},
-    );
-    final controller = DoctorWorkspaceController(
-      session,
-      patientData: [
-        {
-          'patient_id': 'real-patient',
-          'full_name': 'Real Patient',
-          'last_check_in': '2026-10-01',
-          'active_experiment': 'Baseline',
-          'priority': 'routine',
-          'active_products_count': 0,
-          'notes': [
-            {'content': 'Confirmed existing note.'},
-          ],
-        },
-      ],
-    );
-    expect(controller.visible.single.id, 'real-patient');
-    expect(controller.notes['real-patient'], ['Confirmed existing note.']);
-    expect(controller.audit, isEmpty);
-    controller.dispose();
+  test('Workspace uses real server patient IDs and notes', () async {
+    final wire = f.DoctorWire()..patient = 'real-patient';
+    wire.saved.add(wire.note('Confirmed existing note.'));
+    await wire.run(() async {
+      await wire.login();
+      const session = AccessSession(
+        userId: 'doctor-1',
+        role: UserRole.doctor,
+        authorizedPatientIds: {'real-patient'},
+      );
+      final controller = DoctorWorkspaceController(session);
+      expect(controller.visible, isEmpty);
+      await controller.refresh();
+      expect(controller.visible.single.id, 'real-patient');
+      expect(controller.notes['real-patient'], ['Confirmed existing note.']);
+      expect(controller.audit, isEmpty);
+      controller.dispose();
+    });
   });
 
   for (final kind in ['success', 'failure', 'network', 'malformed']) {
@@ -163,35 +169,27 @@ void main() {
         role: UserRole.doctor,
         authorizedPatientIds: {'patient-1'},
       );
-      final controller = DoctorWorkspaceController(session);
-      const patient = DoctorPatient(
-        id: 'patient-1',
-        name: 'Patient',
-        lastCheckIn: 'Today',
-        experiment: 'Baseline',
-        priority: PatientPriority.routine,
-        activeProducts: 0,
-      );
-      final saved = await http.runWithClient(
-        () => controller.addNote(patient, 'A real clinical note.'),
-        () => MockClient((_) async {
-          if (kind == 'network') throw http.ClientException('Offline');
-          return http.Response(
-            jsonEncode({
-              'id': 'note-1',
-              'patient_id': 'patient-1',
-              'content': 'A real clinical note.',
-              'created_at': kind == 'malformed'
-                  ? 'invalid'
-                  : '2026-10-01T10:00:00Z',
-            }),
-            kind == 'failure' ? 403 : 201,
-          );
-        }),
-      );
+      final wire = f.DoctorWire()..noteMode = kind;
+      late DoctorWorkspaceController controller;
+      final saved = await wire.run(() async {
+        await wire.login();
+        controller = DoctorWorkspaceController(session);
+        await controller.refresh();
+        return controller.addNote(
+          controller.visible.single,
+          'A real clinical note.',
+        );
+      });
       expect(saved, kind == 'success');
-      expect(controller.notes.isNotEmpty, kind == 'success');
+      expect(
+        controller.notes.values.expand((v) => v).isNotEmpty,
+        kind == 'success',
+      );
       expect(controller.audit.isNotEmpty, kind == 'success');
+      expect(
+        ApiService.instance.uncertainDoctorWrites.contains('patient-1:notes'),
+        ['network', 'malformed'].contains(kind),
+      );
       expect(controller.loading, isFalse);
       controller.dispose();
     });

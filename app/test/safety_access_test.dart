@@ -1,12 +1,17 @@
-import 'dart:convert';
-import 'package:http/http.dart' as http;
-import 'package:http/testing.dart';
+import 'm6_doctor_fixture.dart' as f;
+import 'package:dermaire_app/services/api_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:dermaire_app/access_control.dart';
 import 'package:dermaire_app/chatbot.dart';
 import 'package:dermaire_app/doctor_portal.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  setUp(() async {
+    SharedPreferences.setMockInitialValues({});
+    await ApiService.instance.init();
+  });
+  tearDown(() => ApiService.instance.init());
   test('doctor access is limited to authorized and consented patients', () {
     final session = AccessSession(
       userId: 'doctor-1',
@@ -68,7 +73,8 @@ void main() {
         role: UserRole.doctor,
         authorizedPatientIds: {'patient-1'},
       );
-      final controller = DoctorWorkspaceController(session);
+      final wire = f.DoctorWire();
+      late DoctorWorkspaceController controller;
       const allowed = DoctorPatient(
         id: 'patient-1',
         name: 'Demo Patient',
@@ -86,27 +92,19 @@ void main() {
         activeProducts: 1,
         fileClosed: true,
       );
-      expect(await controller.addNote(allowed, 'short'), isFalse);
-      expect(
-        await http.runWithClient(
-          () => controller.addNote(
+      await wire.run(() async {
+        await wire.login();
+        controller = DoctorWorkspaceController(session);
+        await controller.refresh();
+        expect(await controller.addNote(allowed, 'short'), isFalse);
+        expect(
+          await controller.addNote(
             allowed,
             'Reviewed trend and requested follow-up.',
           ),
-          () => MockClient(
-            (_) async => http.Response(
-              jsonEncode({
-                'id': 'note-1',
-                'patient_id': 'patient-1',
-                'content': 'Reviewed trend and requested follow-up.',
-                'created_at': '2026-10-01T10:00:00Z',
-              }),
-              201,
-            ),
-          ),
-        ),
-        isTrue,
-      );
+          isTrue,
+        );
+      });
       expect(controller.audit['patient-1'], hasLength(1));
       expect(
         await controller.addNote(
@@ -115,6 +113,7 @@ void main() {
         ),
         isFalse,
       );
+      controller.dispose();
     },
   );
 
