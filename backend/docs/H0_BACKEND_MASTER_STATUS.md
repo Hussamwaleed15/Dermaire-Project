@@ -4,7 +4,7 @@ Audit date: 2026-10-14 (Cairo). Source baseline: `ff1dd1359f7126a550cad67c7f9904
 
 ## Evidence and interpretation
 
-Registered API inventory is `app/api/v1/router.py`; paths below are relative to backend and API paths have `/api/v1` prefix. DTOs: `app/schemas/__init__.py`, plus `schemas/{routine,experiments,doctor_loop,personal_skin_model,contextual_ai}.py`. Persistence/constraints: `app/models/__init__.py`; frozen migration `migrations/versions/20261006_01_initial_frozen_schema_baseline.py`, index adoption `20261008_01_preserve_experiment_routine_index.py`. Sessions/roles: `api/deps.py`, `core/security.py`, `api/v1/auth.py`; doctor account provisioning is not license verification.
+Registered API inventory is `app/api/v1/router.py`; detailed `H0_REGISTERED_ROUTES.md` resolves 70 registered operations / 53 paths (also locally confirmed from OpenAPI). Paths below are relative to backend and API paths have `/api/v1` prefix. DTOs: `app/schemas/__init__.py`, plus `schemas/{routine,experiments,doctor_loop,personal_skin_model,contextual_ai}.py`. Persistence/constraints: `app/models/__init__.py`; frozen migration `migrations/versions/20261006_01_initial_frozen_schema_baseline.py`, index adoption `20261008_01_preserve_experiment_routine_index.py`. Sessions/roles: `api/deps.py`, `core/security.py`, `api/v1/auth.py`; doctor account provisioning is not license verification.
 
 Reviewed M1–M3 Hussam handoffs and M4/M5/M6 consolidated handoffs in `app/docs` at repository root. Those are historical Flutter/source observations, not proof of today's deployment. M5 references bcbd402; M6 started at 65c3c754. Current source confirms their QR/B1/B2/core revision gaps. `backend/README.md` claims SAS image delivery, automatic live-provider transition and mock fallback; these are stale versus authenticated `services/image_access.py`, explicit provider settings and measured-source boundaries. Historical `docs/READINESS_AUDIT.md` demo-only claims also must not override current server implementation. October operational reports are historical evidence, not revalidated environment state.
 
@@ -37,6 +37,8 @@ DONE means implemented source and relevant isolated coverage, not production sig
 ### H1-A delivered source update
 
 Baseline rows above intentionally describe the fetched source before changes. H1-A fixes QR implicit export and default, introduces explicit scoped receipt/doctor intent and single-use conditional claim; see `H1_DOCTOR_CONTRACT_HANDOFF.md`. Existing capture idempotency, adherence uniqueness, clinical notes/reviews and view/revoke APIs remain. H1-A full suite 722 passed; no DDL or live migration. PostgreSQL race/release validation remains an environment gate; source fix is not a deployed-production verification or Flutter linking enablement.
+
+H1-B added independent grant/revoke/auth/privacy/multiple-scope tests: focused 93 passed, full 736 passed; see `H1_GRANT_VALIDATION.md`. Current QR scope contract is DONE in tested source, doctor grant hardening is DONE locally with PostgreSQL release verification BLOCKED. Other baseline OPEN/PARTIAL/DEFERRED rows remain unchanged; H2 is only a proposal and was not started.
 
 1. H0-A: baseline suite, this inventory, source-reviewed documentation commit.
 2. H1-A: fix confirmed QR consent; strict compatibility and patient/doctor/session bindings; scoped receipts; test safety before push. No Flutter linking enablement.
