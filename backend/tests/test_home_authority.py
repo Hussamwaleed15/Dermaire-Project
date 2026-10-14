@@ -84,3 +84,31 @@ def test_missing_or_zero_reference_and_database_failure(deletion_context, monkey
     monkeypatch.setattr(db, "query", Mock(side_effect=RuntimeError("Unavailable")))
     with pytest.raises(RuntimeError):
         client.get("/api/v1/home", headers=auth)
+
+
+def test_report_only_completion_is_separate_and_owned(deletion_context):
+    import json
+    client, db, auth = deletion_context
+    before = client.get("/api/v1/baseline", headers=auth).json()
+    response = client.post("/api/v1/checkins", headers=auth,
+        data={"report": json.dumps({"overall_change": "same", "symptoms": []})})
+    assert response.status_code == 201
+    identifier = response.json()["id"]
+    home = client.get("/api/v1/home", headers=auth).json()
+    assert home["today_checked_in"] is False and home["journal"] == []
+    observation = home["observation_status"]
+    assert observation["today_completed"] is True
+    assert observation["day_basis"] == "UTC"
+    assert observation["recent"][0]["id"] == identifier
+    assert observation["recent"][0]["kind"] == "report_only"
+    assert observation["recent"][0]["measurement_available"] is False
+    assert client.get("/api/v1/baseline", headers=auth).json() == before
+    other = {"Authorization": "Bearer " + create_access_token("delete-doctor", "doctor", hashed_password="unused")}
+    assert client.get("/api/v1/home", headers=other).json()["observation_status"]["recent"] == []
+    row = db.get(CheckIn, identifier)
+    row.created_at = datetime.now(timezone.utc) - timedelta(days=1)
+    db.commit()
+    assert client.get("/api/v1/home", headers=auth).json()["observation_status"]["today_completed"] is False
+    db.delete(row)
+    db.commit()
+    assert client.get("/api/v1/home", headers=auth).json()["observation_status"]["recent"] == []

@@ -30,7 +30,7 @@ def baseline_snapshot(db, user_id, before=None):
             continue
         if not confirmed_measurement(row):
             continue  # Legacy/default/simulated measurements are quarantined.
-        day = row.created_at.date()
+        day = recorded.date()
         if day not in days and len(selected) < 5:
             days.add(day)
             selected.append(row)

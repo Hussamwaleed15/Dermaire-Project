@@ -6,6 +6,7 @@ from app.api.deps import get_current_user
 from app.core.database import get_db
 from app.models import User, Experiment, Product, CheckIn
 from app.services.baseline import confirmed_measurement
+from app.schemas.home import ObservationStatus
 from app.api.v1.experiments import experiment_projection
 
 router = APIRouter(prefix="/home", tags=["Home"])
@@ -30,9 +31,21 @@ def get_home(current_user: User = Depends(get_current_user), db: Session = Depen
     rows = db.query(CheckIn).filter(CheckIn.user_id == current_user.id).order_by(
         CheckIn.created_at.desc(), CheckIn.id.desc()).all()
     confirmed = [row for row in rows if confirmed_measurement(row)]
+    observations = [row for row in rows if isinstance(row.observation, dict)
+        and row.observation.get("schema_version") == 1
+        and isinstance(row.observation.get("user_reported"), dict)]
+    def utc(recorded):
+        return recorded.replace(tzinfo=timezone.utc) if recorded.tzinfo is None else recorded.astimezone(timezone.utc)
     return {"as_of": now.isoformat(), "date": now.date().isoformat(),
         "experiment": summary,
-        "today_checked_in": any(row.created_at.date() == now.date() for row in confirmed),
+        "observation_status": ObservationStatus.model_validate({
+            "schema_version": 1, "day_basis": "UTC",
+            "today_completed": any(utc(row.created_at).date() == now.date() for row in observations),
+            "recent": [{"id": row.id, "created_at": utc(row.created_at).isoformat(),
+                "time_of_day": row.time_of_day,
+                "kind": "report_and_measurement" if confirmed_measurement(row) else "report_only",
+                "measurement_available": confirmed_measurement(row)} for row in observations[:2]]}).model_dump(mode="json"),
+        "today_checked_in": any(utc(row.created_at).date() == now.date() for row in confirmed),
         "journal": [{"id": row.id, "created_at": row.created_at.isoformat(),
             "time_of_day": row.time_of_day,
             "measurement_source": row.ai_vision_analysis["measurement_source"],
