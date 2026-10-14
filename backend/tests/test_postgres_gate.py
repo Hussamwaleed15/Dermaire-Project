@@ -5,6 +5,8 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from threading import Barrier
+from threading import Event
+import time
 import pytest
 import psycopg
 from sqlalchemy import create_engine, text
@@ -47,6 +49,17 @@ def seed(engine):
         db.add_all([User(id=i, email=i+"@synthetic.test", full_name="Synthetic", hashed_password="test-only", role="patient" if i == "owner" else "doctor") for i in ("owner", "doctor0", "doctor1")])
         db.commit()
     return factory
+
+
+def observe_lock_wait(engine):
+    deadline=time.monotonic()+2
+    while time.monotonic() < deadline:
+        with engine.connect() as c:
+            count=c.execute(text("SELECT count(*) FROM pg_stat_activity WHERE datname=current_database() AND wait_event_type='Lock'")).scalar()
+            if count:
+                return
+        time.sleep(0.02)
+    raise AssertionError("Expected real PostgreSQL lock wait was not observed")
 
 
 def test_pg_seeded_migrations_and_protected_downgrade(pg_engine, monkeypatch):
@@ -148,6 +161,7 @@ def test_pg_revoke_expiry_before_waiting_claim(pg_engine, change):
                     except (HTTPException, DermaireException) as exc:
                         db.rollback(); return exc.status_code
             pending = pool.submit(claim)
+            observe_lock_wait(pg_engine)
             if change == "revoke":
                 revoke_one(qr.access["id"], blocker.get(User,"owner"), blocker)
             else:
@@ -221,3 +235,96 @@ def test_pg_checkin_ttl_isolation_lost_response(pg_engine):
         with pytest.raises(HTTPException) as expired:
             submit(fresh)
         assert expired.value.status_code == 410
+
+
+@pytest.mark.parametrize("operation",["note","review"])
+@pytest.mark.parametrize("ordering",["clinical_first","revoke_first"])
+def test_pg_clinical_revoke_lock_order(pg_engine,monkeypatch,operation,ordering):
+    from app.api.v1 import doctor as api
+    from app.schemas import ClinicalNoteCreate
+    from app.schemas.doctor_loop import ReviewActionCreate
+    from app.models import ClinicalNote,DoctorReviewAction
+    factory=seed(pg_engine)
+    with factory() as db:
+        qr=generate_doctor_qr_access(GenerateQrRequest(view_consent=True),60,db.get(User,"owner"),{"jti":"synthetic"},db)
+        claim_patient_access(ClaimAccessRequest(access_token=qr.access_token),db.get(User,"doctor0"),db)
+    model=ClinicalNote if operation=="note" else DoctorReviewAction
+    def clinical():
+        with factory() as db:
+            actor=db.get(User,"doctor0")
+            if operation=="note":api.add_clinical_note("owner",ClinicalNoteCreate(content="Synthetic clinical note"),actor,db)
+            else:api.add_review("owner",ReviewActionCreate(state="reviewed",expected_sequence=0),actor,db)
+    def revoke():
+        with factory() as db:revoke_one(qr.access["id"],db.get(User,"owner"),db)
+    if ordering=="revoke_first":
+        revoke()
+        with pytest.raises(HTTPException) as denied:clinical()
+        assert denied.value.status_code == 403
+        with factory() as db:assert db.query(model).count() == 0
+        return
+    reached,resume=Event(),Event()
+    original=api.authorize
+    def pause_after_authorization(*args,**kwargs):
+        result=original(*args,**kwargs);reached.set()
+        assert resume.wait(timeout=5)
+        return result
+    monkeypatch.setattr(api,"authorize",pause_after_authorization)
+    with ThreadPoolExecutor(2) as pool:
+        first=pool.submit(clinical);assert reached.wait(timeout=5)
+        second=pool.submit(revoke)
+        try:observe_lock_wait(pg_engine)
+        finally:resume.set()
+        first.result(timeout=8);second.result(timeout=8)
+    with factory() as db:
+        assert db.query(model).count() == 1
+        assert db.get(DoctorPatientAccess,qr.access["id"]).status == "revoked"
+
+
+def test_pg_product_api_if_match_and_parallel_cas(pg_engine):
+    from app.api.v1.products import update_product
+    from app.schemas import ProductUpdate
+    factory=seed(pg_engine)
+    with factory() as db:db.add(Product(id="product",user_id="owner",name="Synthetic"));db.commit()
+    barrier=Barrier(2)
+    def write(index):
+        with factory() as db:
+            actor=db.get(User,"owner");barrier.wait(timeout=5)
+            try:
+                update_product("product",ProductUpdate(notes=str(index)),if_match='"1"',current_user=actor,db=db);return 200
+            except HTTPException as exc:db.rollback();return exc.status_code
+    with ThreadPoolExecutor(2) as pool:assert sorted(pool.map(write,range(2))) == [200,412]
+    with factory() as db:
+        for value,code in [(None,428),('"1"',412)]:
+            with pytest.raises(HTTPException) as denied:update_product("product",ProductUpdate(notes="Denied"),if_match=value,current_user=db.get(User,"owner"),db=db)
+            assert denied.value.status_code == code
+            db.rollback()
+
+
+def test_pg_deadlock_detection_is_bounded(pg_engine):
+    factory=seed(pg_engine);barrier=Barrier(2)
+    def opposing(index):
+        with factory() as db:
+            first,second=("owner","doctor0") if index else ("doctor0","owner")
+            db.query(User).filter_by(id=first).with_for_update().one()
+            barrier.wait(timeout=5)
+            try:
+                db.query(User).filter_by(id=second).with_for_update().one();db.commit();return "committed"
+            except OperationalError as exc:
+                state=exc.orig.sqlstate;db.rollback();return state
+    with ThreadPoolExecutor(2) as pool:assert sorted(pool.map(opposing,range(2))) == ["40P01","committed"]
+    # This deliberately reversed test-only order validates detector/rollback,
+    # not a claim that all possible application deadlocks have been enumerated.
+
+
+def test_pg_product_update_delete_cas(pg_engine):
+    factory=seed(pg_engine)
+    with factory() as db:db.add(Product(id="product",user_id="owner",name="Synthetic"));db.commit()
+    barrier=Barrier(2)
+    def mutate(index):
+        with factory() as db:
+            row=db.get(Product,"product");barrier.wait(timeout=5)
+            if index:db.delete(row)
+            else:row.notes="Updated"
+            try:db.commit();return "committed"
+            except StaleDataError:db.rollback();return "stale"
+    with ThreadPoolExecutor(2) as pool:assert sorted(pool.map(mutate,range(2))) == ["committed","stale"]

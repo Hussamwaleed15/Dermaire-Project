@@ -1,5 +1,7 @@
 # PG-01 local H1/H2 security and migration evidence
 
+Current verdict (2026-10-15 Cairo): DONE for the requested isolated local PG matrix. The initial PARTIAL evidence below is historical and superseded by the completion section. Not a production rollout verdict.
+
 Repository baseline: d60dcb35eefd820262053a1844ff6b45fcd166de. Rechecked fetch/push origin and clean main before edits. No teammate changes after fetch.
 
 Docker Desktop startup reproduced the inaccessible sailor-ingest.sock error; desktop-linux engine pipe is absent. No socket deletion, factory reset, daemon repair, installation, privileged operation or settings change was attempted.
@@ -13,3 +15,14 @@ Verified cases: upgrade seeded 20261008_01 through 20261014_01 and current head;
 Limits: no production/Azure latency, collation, least-privilege role, DR or rollout certification. Synthetic loopback trust differs from a managed TLS deployment. Tests do not prove universal deadlock absence or every clinical note/review/revoke ordering. Those clinical CAS protections remain under regression tests; further lock-order fault injection is listed as remaining verification. PG-01 is PARTIAL against the entire requested security/concurrency matrix, although the earlier unavailable-engine blocker is resolved and the listed PostgreSQL tests really ran. Do not claim deployment readiness.
 
 Initial test repair: direct doctor API calls raise application DermaireException as well as HTTPException; fixture now captures both. No H1 source security change was needed. The default Windows pytest temp directory denied access; tests now use workspace --basetemp. Focused combined PG/routine/product/experiment suite: 123 passed, 48 warnings, 20.22s, zero failed/skipped. Full-suite evidence recorded in completion ledger after finish.
+
+
+## Completion evidence — 2026-10-15
+
+Added observed PostgreSQL lock waits (pg_stat_activity) before revoke/expiry releases a blocked claim; actual product API If-Match owner-lock race with one200/one412, protected missing428 and stale412; product update/delete independent-connection CAS; clinical note/review versus revoke in both orderings, with real grant-lock waits and bounded futures; deliberately reversed test-only user locks generate one SQLSTATE40P01 and one commit, demonstrating deadlock detection and rollback. No application deadlock was observed in the tested claim/revoke/clinical orderings. Universal deadlock absence is not claimed.
+
+PG-only fixture cases now19; routine4, experiment4, adherence3 and current schema rehearsal1 make31 actual PG cases in the final entire suite. All use disposable gate databases, independent connections for transaction/race cases, UTC/READ COMMITTED,3s lock timeout/10s statement timeout. Driver/server18.6/psycopg3.3.6 unchanged. Current seeded migration/rehearsal includes20261014_01 through20261014_04, zero schema drift, old consent not broadened, old check-in reconciliation preserved. Product/routine/experiment/adherence protected downgrade guards and plain rollback/re-upgrade tested separately on PG and SQLite.
+
+Final combined focused:84 passed/45 dependency warnings/27.92s. Full:851 passed/150 dependency warnings/144.67s, zero failed/skipped;31 PG cases explicitly enabled, remaining regression includes SQLite/pure/mocked tests and is not relabeled PG. compileall/diff --check pass. No configured linter found. This closes the former unavailable-engine gate for the tested source; managed privileges/TLS/collation/performance/DR and live rollout remain outside verification. No real DB migrations, live HTTP, Azure/provider changes or deployment.
+
+Docker remains broken at sailor-ingest.sock; it was unnecessary once the existing portable PostgreSQL binary ran. No reset/socket removal/privileged repair was performed. Safe device follow-up if Docker is needed separately: close its displayed error using Quit; preserve existing data; repair only under a separate user-authorized device action. Do not select factory reset as part of this task. The disposable PostgreSQL cluster is stopped at the end of the completion run.
