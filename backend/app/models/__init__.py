@@ -335,3 +335,9 @@ class RoutineAdherence(Base):
     source = Column(String(30), nullable=False, default="user_reported")
     created_at = Column(DateTime, nullable=False, default=utc_now)
     configuration_snapshot = Column(JSON, nullable=False)
+    attempt_metadata = Column(JSON, nullable=True)
+
+    @property
+    def receipt(self):
+        from app.services.adherence_attempts import receipt
+        return receipt(self)

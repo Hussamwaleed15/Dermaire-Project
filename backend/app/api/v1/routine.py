@@ -2,12 +2,14 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from sqlalchemy.orm import Session
 from app.api.deps import get_current_user
 from app.core.database import get_db
-from app.models import User, Product, RoutineEntry, RoutineAdherence
+from app.models import User, Product, RoutineEntry, RoutineAdherence, AuditLog
 from app.services.routine import today, lock_owner, owned_entry, slot_keys, commit, deactivate
 from app.services.experiments import guard_routine_write, stopped_experiment
-from app.schemas.routine import RoutineCreate, RoutineUpdate, RoutineOut, AdherenceCreate, AdherenceOut
+from app.schemas.routine import RoutineCreate, RoutineUpdate, RoutineOut, AdherenceCreate, AdherenceOut, AdherenceAttemptLookup
 
 from app.services import resource_revisions as revisions
+from app.services import adherence_attempts as attempts
+from sqlalchemy.exc import IntegrityError
 
 router = APIRouter(prefix="/routine", tags=["Routine"])
 
@@ -86,9 +88,20 @@ def logs(routine_entry_id: str | None = None, limit: int = Query(100, ge=1, le=5
         query = query.filter_by(routine_entry_id=routine_entry_id)
     return query.order_by(RoutineAdherence.date.desc(), RoutineAdherence.created_at.desc(), RoutineAdherence.id).offset(offset).limit(limit).all()
 
+@router.get("/adherence/attempts/{key}", response_model=AdherenceAttemptLookup)
+def adherence_attempt(key: str, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    return attempts.lookup(db, user.id, key)
+
 @router.post("/adherence", response_model=AdherenceOut, status_code=201)
-def log(payload: AdherenceCreate, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+def log(payload: AdherenceCreate, request: Request, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    key = revisions.header(request, "Idempotency-Key")
+    identifier = attempts.identity(user.id, key) if key is not None else None
+    digest = attempts.fingerprint(payload) if key is not None else None
     lock_owner(db, user)
+    if identifier is not None:
+        existing = attempts.replay(db, user.id, identifier, digest)
+        if existing is not None:
+            return existing
     entry = owned_entry(db, user, payload.routine_entry_id)
     stopping = stopped_experiment(db, user.id, entry.id)
     if not entry.active and (not stopping or payload.status != "skipped"):
@@ -105,7 +118,25 @@ def log(payload: AdherenceCreate, user: User = Depends(get_current_user), db: Se
         raise HTTPException(409, "Product is no longer active")
     snapshot["product_name"] = product.name
     row = RoutineAdherence(user_id=user.id, configuration_snapshot=snapshot, **payload.model_dump())
+    if identifier is not None:
+        row.id = identifier
+        row.attempt_metadata = {"schema_version":1, "payload_hash":digest}
+        db.add(AuditLog(actor_id=user.id, action="ROUTINE_ADHERENCE_REPORTED", target_resource="routine_adherence",
+            details={"adherence_id":identifier,"configuration_revision":entry.revision}))
     db.add(row)
-    commit(db)
+    if identifier is None:
+        commit(db)
+    else:
+        try:
+            db.commit()
+        except IntegrityError:
+            db.rollback()
+            existing = attempts.replay(db, user.id, identifier, digest)
+            if existing is not None:
+                return existing
+            raise HTTPException(409, "Adherence slot already reported; this attempt is not committed")
+        except Exception:
+            db.rollback()
+            raise HTTPException(503, "Adherence outcome unavailable; reconcile the same attempt")
     db.refresh(row)
     return row

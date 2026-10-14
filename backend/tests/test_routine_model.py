@@ -178,6 +178,7 @@ def test_manual_sqlite_upgrade_preserves_inventory(tmp_path):
     with engine.begin() as connection:
         connection.execute(text("ALTER TABLE routine_entries ADD COLUMN revision INTEGER NOT NULL DEFAULT 1"))
         connection.execute(text("ALTER TABLE routine_entries ADD COLUMN revision_protected BOOLEAN NOT NULL DEFAULT 0"))
+        connection.execute(text("ALTER TABLE routine_adherence ADD COLUMN attempt_metadata JSON"))
     with Session(engine) as db:
         assert db.query(Product).one().name == 'Inventory'
         assert db.execute(__import__("sqlalchemy").text("SELECT count(*) FROM routine_entries")).scalar() == db.query(RoutineAdherence).count() == 0

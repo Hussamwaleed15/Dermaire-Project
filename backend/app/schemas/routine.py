@@ -1,6 +1,6 @@
 from datetime import date, datetime
 from typing import Literal
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 class RoutineCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -48,9 +48,62 @@ class AdherenceCreate(BaseModel):
     status: Literal["completed", "skipped"]
     note: str | None = Field(default=None, max_length=2000)
 
+class AdherenceReceipt(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    schema_version: Literal[1] = 1
+    operation: Literal["routine_adherence"]
+    attempt_id: str
+    owner_id: str
+    actor_id: str
+    resource_id: str
+    configuration_revision: int = Field(ge=1)
+    status: Literal["committed", "expired"]
+    committed_at: datetime
+    expires_at: datetime
+
+    @model_validator(mode="after")
+    def scope(self):
+        if self.owner_id != self.actor_id or self.resource_id != self.attempt_id or self.expires_at <= self.committed_at:
+            raise ValueError("Inconsistent adherence receipt scope")
+        return self
+
+
 class AdherenceOut(AdherenceCreate):
+    receipt: AdherenceReceipt | None = None
     model_config = ConfigDict(from_attributes=True)
     id: str
     source: Literal["user_reported"]
     created_at: datetime
     configuration_snapshot: dict
+
+
+class AdherenceAttemptLookup(BaseModel):
+    schema_version: Literal[1] = 1
+    operation: Literal["routine_adherence"]
+    attempt_id: str
+    owner_id: str
+    actor_id: str
+    status: Literal["unknown", "committed", "expired"]
+    resource_id: str | None = None
+    configuration_revision: int | None = None
+    committed_at: datetime | None = None
+    expires_at: datetime | None = None
+    result: AdherenceOut | None = None
+
+    @model_validator(mode="after")
+    def scope(self):
+        if self.owner_id != self.actor_id:
+            raise ValueError("Adherence actor must be owner")
+        if self.status == "unknown":
+            if any(value is not None for value in (self.result,self.resource_id,self.configuration_revision,self.committed_at,self.expires_at)):
+                raise ValueError("Unknown cannot assert commitment")
+        else:
+            if self.resource_id != self.attempt_id or self.committed_at is None or self.expires_at is None or self.configuration_revision is None or self.configuration_revision < 1:
+                raise ValueError("Incomplete adherence receipt")
+            if self.status == "expired" and self.result is not None:
+                raise ValueError("Expired must reconcile history")
+            if self.status == "committed":
+                result=self.result
+                if result is None or result.id != self.resource_id or result.receipt is None or result.receipt.owner_id != self.owner_id or result.receipt.attempt_id != self.attempt_id or result.receipt.status != "committed" or result.receipt.configuration_revision != self.configuration_revision:
+                    raise ValueError("Result differs from committed attempt")
+        return self
