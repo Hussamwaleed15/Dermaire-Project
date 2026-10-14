@@ -8,6 +8,7 @@ class UserRegister(BaseModel):
     email: EmailStr
     password: str = Field(..., min_length=8, description="Password must be at least 8 characters with letters and numbers")
     full_name: str = Field(..., min_length=2, max_length=100)
+    policy_version: str = Field("1.0", max_length=20, pattern=r"^[0-9]+\.[0-9]+$")
     accept_safety: bool = Field(..., description="User must accept medical safety & responsibility terms")
 
     model_config = ConfigDict(extra="forbid")
@@ -25,8 +26,18 @@ class TokenResponse(BaseModel):
     full_name: str
 
 class AcceptSafetyRequest(BaseModel):
-    accepted: bool = Field(True)
-    policy_version: str = Field("1.0")
+    model_config = ConfigDict(extra="forbid")
+    accepted: Literal[True] = True
+    policy_version: str = Field("1.0", max_length=20, pattern=r"^[0-9]+\.[0-9]+$")
+
+class SafetyConsentOut(BaseModel):
+    schema_version: Literal[1] = 1
+    state: Literal["missing", "current", "outdated", "unknown"]
+    required_version: str
+    accepted_version: str | None
+    accepted_at: datetime | None
+    acceptance_required: bool
+    enforcement_enabled: bool
 
 ProfileText = Annotated[str, Field(min_length=1, max_length=200, pattern=r'\S')]
 
@@ -55,6 +66,7 @@ class UserOut(BaseModel):
     full_name: str
     role: str
     safety_accepted: bool
+    safety_consent: SafetyConsentOut | None = None
     safety_accepted_at: Optional[datetime] = None
     skin_type: Optional[str] = None
     profile_context: Optional[SkinContext] = None

@@ -26,6 +26,18 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24  # 24 hours
     REFRESH_TOKEN_EXPIRE_DAYS: int = 30
 
+    # Enable only after version-aware clients are available (staged rollout).
+    SAFETY_POLICY_REQUIRED_VERSION: str = "1.0"
+    SAFETY_POLICY_ENFORCE: bool = False
+
+    @field_validator("SAFETY_POLICY_REQUIRED_VERSION")
+    @classmethod
+    def policy_version_format(cls, value):
+        import re
+        if len(value) > 20 or not re.fullmatch(r"[0-9]+\.[0-9]+", value):
+            raise ValueError("Policy version must be major.minor, at most 20 characters")
+        return value
+
     # Google Sign-In (OAuth 2.0)
     # This must be the "Web application" client ID from Google Cloud Console —
     # it's the audience the Flutter app's google_sign_in requests via

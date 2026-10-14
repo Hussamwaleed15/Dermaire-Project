@@ -1,5 +1,5 @@
 ﻿from typing import List, Optional
-from fastapi import Depends, Header
+from fastapi import Depends, Header, Request, HTTPException
 from sqlalchemy.orm import Session
 import jwt
 import secrets
@@ -45,6 +45,7 @@ def get_token_subject(payload: dict = Depends(get_token_payload), db: Session = 
 
 
 def get_current_user(
+    request: Request,
     user_id: str = Depends(get_token_subject),
     db: Session = Depends(get_db)
 ) -> User:
@@ -52,6 +53,11 @@ def get_current_user(
     user = db.query(User).filter(User.id == user_id).with_for_update().first()
     if not user:
         raise InvalidCredentialsException("User no longer exists")
+    if settings.SAFETY_POLICY_ENFORCE and request.method in ("POST", "PATCH", "PUT", "DELETE"):
+        path = request.url.path
+        recovery = path in (settings.API_V1_STR + "/auth/accept-safety", settings.API_V1_STR + "/auth/logout", settings.API_V1_STR + "/users/me") or path.startswith(settings.API_V1_STR + "/doctor/access/") or path.startswith(settings.API_V1_STR + "/doctor/revoke/")
+        if not recovery and user.safety_consent["acceptance_required"]:
+            raise HTTPException(403, "Current safety policy acceptance required; read /users/me")
     return user
 
 def require_role(allowed_roles: List[str]):

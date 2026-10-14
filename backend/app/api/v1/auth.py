@@ -70,6 +70,9 @@ def register_user(payload: UserRegister, db: Session = Depends(get_db)):
             status_code=status.HTTP_400_BAD_REQUEST
         )
 
+    if payload.policy_version != settings.SAFETY_POLICY_REQUIRED_VERSION:
+        raise DermaireException("Policy changed; review the required policy", error_code="SAFETY_POLICY_CHANGED", status_code=409)
+
     existing = db.query(User).filter(User.email == payload.email).first()
     if existing:
         raise DermaireException(
@@ -85,7 +88,7 @@ def register_user(payload: UserRegister, db: Session = Depends(get_db)):
         role="patient",
         safety_accepted=True,
         safety_accepted_at=datetime.now(timezone.utc),
-        safety_policy_version="1.0",
+        safety_policy_version=payload.policy_version,
         tokens_balance=0,
         baseline_checkins_count=0
     )
@@ -297,11 +300,5 @@ def accept_safety_terms(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    current_user.safety_accepted = payload.accepted
-    current_user.safety_accepted_at = datetime.now(timezone.utc)
-    current_user.safety_policy_version = payload.policy_version
-    db.commit()
-    db.refresh(current_user)
-
-    record_audit(db, current_user.id, "SAFETY_TERMS_ACCEPTED", "users", {"version": payload.policy_version})
-    return current_user
+    from app.services.policy_consent import accept_policy
+    return accept_policy(db, current_user, payload)

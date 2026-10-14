@@ -61,6 +61,11 @@ class User(Base):
     safety_accepted_at = Column(DateTime, nullable=True)
     safety_policy_version = Column(String(20), default="1.0")
 
+    @property
+    def safety_consent(self):
+        from app.services.policy_consent import consent_snapshot
+        return consent_snapshot(self)
+
     # Skin Profile
     skin_type = Column(String(50), nullable=True)
     selected_goal = Column(String(100), nullable=True)
