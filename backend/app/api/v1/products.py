@@ -1,13 +1,15 @@
 from typing import List, Optional
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, Query, status, Header, HTTPException, Response
 from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.exceptions import EntityNotFoundException, DermaireException
 from app.api.deps import get_current_user, record_audit
-from app.models import User, Product, RoutineEntry, Experiment, ProductIntelligence
+from app.models import User, Product, RoutineEntry, Experiment, ProductIntelligence, AuditLog
 from app.services.deletion_journal import deletion_journal
 from app.services.experiments import guard_routine_write
 from app.services.routine import lock_owner, deactivate
+from app.services import product_revisions
+from sqlalchemy.orm.exc import StaleDataError
 from app.schemas import (
     ProductCreate, ProductUpdate, ProductOut,
     ProductInteractionCheckRequest
@@ -38,6 +40,7 @@ def list_products(
 @router.post("", response_model=ProductOut, status_code=status.HTTP_201_CREATED)
 def create_product(
     payload: ProductCreate,
+    response: Response = None,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -76,11 +79,14 @@ def create_product(
     db.refresh(product)
 
     record_audit(db, current_user.id, "PRODUCT_CREATED", "products", {"product_id": product.id, "name": product.name})
+    if response is not None:
+        response.headers["ETag"] = f'"{product.revision}"'
     return product
 
 @router.get("/{product_id}", response_model=ProductOut)
 def get_product(
     product_id: str,
+    response: Response = None,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -90,12 +96,16 @@ def get_product(
     ).first()
     if not product:
         raise EntityNotFoundException("Product", product_id)
+    if response is not None:
+        response.headers["ETag"] = f'"{product.revision}"'
     return product
 
 @router.patch("/{product_id}", response_model=ProductOut)
 def update_product(
     product_id: str,
     payload: ProductUpdate,
+    response: Response = None,
+    if_match: str | None = Header(None, alias="If-Match", max_length=64),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -107,6 +117,7 @@ def update_product(
     if not product:
         raise EntityNotFoundException("Product", product_id)
 
+    product_revisions.enforce(product, if_match)
     guard_routine_write(db, current_user.id)
     data = payload.model_dump(exclude_unset=True)
     required_fields = {"name", "category", "active_ingredients", "skin_concerns",
@@ -124,20 +135,26 @@ def update_product(
             raise DermaireException(message="A product with this name already exists.", error_code="PRODUCT_DUPLICATE_NAME", status_code=409)
     if product.in_experiment and data.get("status") == "archived":
         raise DermaireException(message="Finish the experiment before archiving this product.", error_code="PRODUCT_IN_ACTIVE_EXPERIMENT", status_code=409)
+    if if_match is not None:
+        product.revision_protected = True
     for key, value in data.items():
         setattr(product, key, value)
 
     if product.status != "active":
         for entry in db.query(RoutineEntry).filter_by(product_id=product.id, user_id=current_user.id, active=True):
             deactivate(entry)
-    db.commit()
+    db.add(AuditLog(actor_id=current_user.id, action="PRODUCT_UPDATED", target_resource="products",
+        details={"product_id": product.id}))
+    product_revisions.commit(db)
     db.refresh(product)
-    record_audit(db, current_user.id, "PRODUCT_UPDATED", "products", {"product_id": product.id})
+    if response is not None:
+        response.headers["ETag"] = f'"{product.revision}"'
     return product
 
 @router.delete("/{product_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_product(
     product_id: str,
+    if_match: str | None = Header(None, alias="If-Match", max_length=64),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -148,6 +165,8 @@ def delete_product(
     ).first()
     if not product:
         raise EntityNotFoundException("Product", product_id)
+
+    product_revisions.enforce(product, if_match)
 
     if db.query(Experiment).filter_by(product_id=product.id).first():
         raise DermaireException(message="Archive this product to preserve experiment history.", error_code="PRODUCT_HAS_EXPERIMENT_HISTORY", status_code=409)
@@ -166,6 +185,14 @@ def delete_product(
             ProductIntelligence.user_id != current_user.id).first():
         raise DermaireException(message="Product links require repair before deletion.",
                                error_code="PRODUCT_INVALID_OWNERSHIP", status_code=409)
+    # Reserve the revision before independent deletion journal intent. A stale
+    # delete must not journal a product whose competing update already won.
+    product.revision += 1
+    try:
+        db.flush()
+    except StaleDataError:
+        db.rollback()
+        raise HTTPException(412, "Product changed or was deleted")
     try:
         deletion_journal.record_product(current_user.id, product.id)
     except Exception:
@@ -175,8 +202,9 @@ def delete_product(
     db.query(ProductIntelligence).filter_by(product_id=product.id,
         user_id=current_user.id).delete(synchronize_session=False)
     db.delete(product)
-    db.commit()
-    record_audit(db, current_user.id, "PRODUCT_DELETED", "products", {"product_id": product_id})
+    db.add(AuditLog(actor_id=current_user.id, action="PRODUCT_DELETED", target_resource="products",
+        details={"product_id": product_id}))
+    product_revisions.commit(db)
 
 @router.post("/check-interactions", deprecated=True)
 def check_interactions_endpoint(payload: ProductInteractionCheckRequest, current_user: User = Depends(get_current_user)):

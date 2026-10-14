@@ -109,6 +109,8 @@ class ProductUpdate(BaseModel):
     end_date: Optional[datetime] = None
 
 class ProductOut(BaseModel):
+    revision: int
+    revision_protected: bool
     id: str
     user_id: str
     name: str

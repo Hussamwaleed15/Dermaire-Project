@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime, timezone
 from sqlalchemy import (
     Column, String, Integer, Float, Boolean, DateTime, Date,
-    ForeignKey, Text, JSON, UniqueConstraint, CheckConstraint, Enum as SQLEnum
+    ForeignKey, Text, JSON, UniqueConstraint, CheckConstraint, false, Enum as SQLEnum
 )
 from sqlalchemy.orm import relationship
 from app.core.database import Base
@@ -86,6 +86,9 @@ class User(Base):
 
 class Product(Base):
     __tablename__ = "products"
+    revision = Column(Integer, nullable=False, default=1, server_default="1")
+    revision_protected = Column(Boolean, nullable=False, default=False, server_default=false())
+    __mapper_args__ = {"version_id_col": revision}
 
     id = Column(String(36), primary_key=True, default=gen_uuid)
     user_id = Column(String(36), ForeignKey("users.id"), nullable=False, index=True)
