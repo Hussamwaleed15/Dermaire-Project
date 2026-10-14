@@ -73,8 +73,10 @@ def evidence_row(row):
             "report": (row.observation or {}).get("user_reported")}
 
 
-def activate(db, user, row, routine_if_match=None):
+def activate(db, user, row, routine_if_match=None, experiment_if_match=None):
     from app.schemas.experiments import ExperimentCreate
+    from app.services.resource_revisions import enforce, reserve
+    enforce(row, experiment_if_match)
     versioned(row)
     if row.status != "draft":
         raise HTTPException(409, "Only drafts can activate")
@@ -90,9 +92,10 @@ def activate(db, user, row, routine_if_match=None):
         raise HTTPException(422, "Start expectation must match the new entry schedule")
     from app.services.resource_revisions import enforce, reserve
     enforce(entry, routine_if_match)
+    previous = configuration(entry)
+    reserve(db, row, experiment_if_match)
     if row.intervention["type"] != "start_entry" or routine_if_match is not None:
         reserve(db, entry, routine_if_match)
-    previous = configuration(entry)
     baseline_start = row.start_date - timedelta(days=28)
     baseline = db.query(CheckIn).filter(CheckIn.user_id == user.id,
         CheckIn.created_at >= baseline_start, CheckIn.created_at < row.start_date).order_by(CheckIn.created_at, CheckIn.id).all()

@@ -131,6 +131,10 @@ class Experiment(Base):
         CheckConstraint("engine_version IS NULL OR ((status = 'active' AND active_owner IS NOT NULL AND active_owner = user_id AND activated_at IS NOT NULL AND definition_snapshot IS NOT NULL) OR (status <> 'active' AND active_owner IS NULL))", name="ck_experiment_v2_owner"),
     )
 
+    revision = Column(Integer, nullable=False, default=1, server_default="1")
+    revision_protected = Column(Boolean, nullable=False, default=False, server_default=false())
+    __mapper_args__ = {"version_id_col": revision}
+
     id = Column(String(36), primary_key=True, default=gen_uuid)
     user_id = Column(String(36), ForeignKey("users.id"), nullable=False, index=True)
     product_id = Column(String(36), ForeignKey("products.id"), nullable=True)

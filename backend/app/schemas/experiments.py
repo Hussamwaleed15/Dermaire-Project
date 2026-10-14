@@ -63,6 +63,8 @@ class EvaluationOut(BaseModel):
 
 
 class ExperimentOut(BaseModel):
+    revision: int
+    revision_protected: bool
     model_config = ConfigDict(from_attributes=True)
     id: str
     user_id: str

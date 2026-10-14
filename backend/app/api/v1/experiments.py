@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from app.core.database import get_db
@@ -7,6 +7,8 @@ from app.models import User, Experiment, ExperimentEvaluation, Product
 from app.schemas.experiments import ExperimentCreate, ExperimentUpdate, ExperimentOut, FinishInput, EvaluationOut
 from app.services import experiments as service
 from app.services.routine import lock_owner
+
+from app.services import resource_revisions as revisions
 
 router = APIRouter(prefix="/experiments", tags=["Controlled experiments v2"])
 
@@ -32,8 +34,10 @@ def experiment_projection(db, user_id, row):
     return ExperimentOut.model_validate(data)
 
 @router.get("/current", response_model=ExperimentOut | None)
-def current(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+def current(response: Response, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     row = db.query(Experiment).filter(Experiment.user_id == user.id, Experiment.status.in_(["active", "paused", "baseline"])).order_by(Experiment.created_at.desc(), Experiment.id.desc()).first()
+    if row is not None:
+        revisions.etag(response, row)
     return experiment_projection(db, user.id, row)
 
 @router.get("", response_model=list[ExperimentOut])
@@ -42,7 +46,7 @@ def listing(limit: int = Query(100, ge=1, le=200), offset: int = Query(0, ge=0),
     return [experiment_projection(db, user.id, row) for row in rows]
 
 @router.post("", response_model=ExperimentOut, status_code=201)
-def create(payload: ExperimentCreate, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+def create(payload: ExperimentCreate, response: Response, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     lock_owner(db, user)
     if payload.start_date < service.today():
         raise HTTPException(422, "Draft start date cannot be in the past")
@@ -52,16 +56,21 @@ def create(payload: ExperimentCreate, user: User = Depends(get_current_user), db
     db.add(row)
     service.commit(db)
     db.refresh(row)
+    revisions.etag(response, row)
     return experiment_projection(db, user.id, row)
 
 @router.get("/{identifier}", response_model=ExperimentOut)
-def read(identifier: str, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    return experiment_projection(db, user.id, service.owned(db, user, identifier))
+def read(identifier: str, response: Response, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    row = service.owned(db, user, identifier)
+    revisions.etag(response, row)
+    revisions.etag(response, row)
+    return experiment_projection(db, user.id, row)
 
 @router.patch("/{identifier}", response_model=ExperimentOut)
-def edit(identifier: str, payload: ExperimentUpdate, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+def edit(identifier: str, payload: ExperimentUpdate, request: Request, response: Response, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     lock_owner(db, user)
     row = service.owned(db, user, identifier)
+    revisions.enforce(row, revisions.header(request))
     service.versioned(row)
     if row.status != "draft":
         raise HTTPException(409, "Activated definitions and notes are immutable; stop and create a new draft")
@@ -72,26 +81,30 @@ def edit(identifier: str, payload: ExperimentUpdate, user: User = Depends(get_cu
         service.set_definition(row, payload.definition, entry)
     if "notes" in payload.model_fields_set:
         row.notes = payload.notes
+    revisions.reserve(db, row, revisions.header(request))
     service.commit(db)
+    revisions.etag(response, row)
     return experiment_projection(db, user.id, row)
 
 @router.post("/{identifier}/activate", response_model=ExperimentOut)
-def activate(identifier: str, request: Request, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+def activate(identifier: str, request: Request, response: Response, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     lock_owner(db, user)
     row = service.owned(db, user, identifier)
     try:
         from app.services.resource_revisions import header
-        service.activate(db, user, row, header(request, "Routine-If-Match"))
+        service.activate(db, user, row, header(request, "Routine-If-Match"), header(request))
     except IntegrityError:
         db.rollback()
         raise HTTPException(409, "Conflicting experiment or routine configuration")
     service.commit(db)
+    revisions.etag(response, row)
     return experiment_projection(db, user.id, row)
 
 @router.post("/{identifier}/finish", response_model=ExperimentOut)
-def finish(identifier: str, payload: FinishInput, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+def finish(identifier: str, payload: FinishInput, request: Request, response: Response, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     lock_owner(db, user)
     row = service.owned(db, user, identifier)
+    revisions.enforce(row, revisions.header(request))
     if row.status not in ("draft", "active", "paused", "baseline"):
         raise HTTPException(409, "Experiment already finished")
     if row.status == "draft" and payload.status != "cancelled":
@@ -100,6 +113,7 @@ def finish(identifier: str, payload: FinishInput, user: User = Depends(get_curre
         raise HTTPException(409, "Use stopped for an activated experiment")
     if payload.status == "completed" and (not row.activated_at or service.coverage(db, row)["elapsed_days"] < row.target_days):
         raise HTTPException(409, "The intended complete-day window has not elapsed; stop instead")
+    revisions.reserve(db, row, revisions.header(request))
     row.status = payload.status
     row.stopped_at = row.end_date = service.now()
     row.active_owner = None
@@ -108,21 +122,25 @@ def finish(identifier: str, payload: FinishInput, user: User = Depends(get_curre
         product.in_experiment = False
         product.updated_at = row.stopped_at
     service.commit(db)
+    revisions.etag(response, row)
     return experiment_projection(db, user.id, row)
 
 @router.delete("/{identifier}", response_model=ExperimentOut)
-def cancel(identifier: str, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+def cancel(identifier: str, request: Request, response: Response, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     # Deletion is a history-preserving lifecycle transition.
     row = service.owned(db, user, identifier)
-    return finish(identifier, FinishInput(status="cancelled" if row.status == "draft" else "stopped"), user, db)
+    return finish(identifier, FinishInput(status="cancelled" if row.status == "draft" else "stopped"), request, response, user, db)
 
 @router.post("/{identifier}/evaluate", response_model=EvaluationOut, status_code=201)
-def evaluate(identifier: str, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+def evaluate(identifier: str, request: Request, response: Response, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     lock_owner(db, user)
     row = service.owned(db, user, identifier)
+    revisions.enforce(row, revisions.header(request))
     result = service.evaluate(db, row)
+    revisions.reserve(db, row, revisions.header(request))
     service.commit(db)
     db.refresh(result)
+    response.headers["Experiment-ETag"] = f'"{row.revision}"'
     return result
 
 @router.get("/{identifier}/results", response_model=list[EvaluationOut])
@@ -131,13 +149,16 @@ def results(identifier: str, user: User = Depends(get_current_user), db: Session
     return db.query(ExperimentEvaluation).filter_by(user_id=user.id, experiment_id=identifier).order_by(ExperimentEvaluation.created_at.desc(), ExperimentEvaluation.id.desc()).all()
 
 @router.patch("/{identifier}/toggle-pause")
-def retired_pause(identifier: str, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+def retired_pause(identifier: str, request: Request, response: Response, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     lock_owner(db, user)
     row = service.owned(db, user, identifier)
+    revisions.enforce(row, revisions.header(request))
     if row.engine_version == 2:
         raise HTTPException(409, "Pause is unsupported in v2; stop preserves history")
     if row.status not in ("active", "paused"):
         raise HTTPException(409, "Legacy experiment cannot pause")
+    revisions.reserve(db, row, revisions.header(request))
     row.status = "paused" if row.status == "active" else "active"
     service.commit(db)
+    revisions.etag(response, row)
     return experiment_projection(db, user.id, row)
