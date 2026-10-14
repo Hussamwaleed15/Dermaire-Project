@@ -8,6 +8,8 @@ import hashlib
 import json
 from app.services import capture_quality
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
+from app.services import checkin_attempts
 from app.core.database import get_db
 from app.api.deps import get_current_user
 from app.models import User, CheckIn, Experiment, DailyContext, AuditLog
@@ -55,9 +57,14 @@ def get_checkins_history(
             ai_vision_analysis=c.ai_vision_analysis,
             observation=c.observation,
             tokens_earned=0,
+            receipt=checkin_attempts.receipt(c),
             created_at=c.created_at
         ))
     return results
+
+@router.get("/attempts/{key}")
+def get_checkin_attempt(key: str, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    return checkin_attempts.lookup(db, current_user.id, key)
 
 @router.post("", response_model=CheckInResponse, status_code=status.HTTP_201_CREATED)
 async def submit_daily_checkin(
@@ -102,6 +109,13 @@ async def submit_daily_checkin(
 
     identifier = None
     normalized = None
+    attempt_digest = None
+    if not has_photo and idempotency_key is not None:
+        identifier = checkin_attempts.identity(current_user.id, idempotency_key)
+        attempt_digest = checkin_attempts.fingerprint(time_of_day, notes, experiment_id, user_report, scores)
+        saved = checkin_attempts.replay(db, current_user.id, identifier, attempt_digest)
+        if saved is not None:
+            return saved
     if photo and photo.filename:
         photo_bytes = await photo.read(capture_quality.RULES.max_bytes + 1)
         image, orientation = capture_quality.decode_image(photo_bytes, photo.content_type)
@@ -170,6 +184,8 @@ async def submit_daily_checkin(
             "photo": "user_uploaded" if blob_name else "not_recorded",
             "daily_context_date": "server_derived", "daily_context": "user_reported" if context else "not_recorded"},
     }
+    if attempt_digest:
+        observation["attempt"] = {"schema_version": 1, "payload_hash": attempt_digest}
     checkin = CheckIn(
         user_id=current_user.id,
         experiment_id=experiment_id,
@@ -194,8 +210,12 @@ async def submit_daily_checkin(
         db.add(AuditLog(actor_id=current_user.id, action="CHECKIN_COMPLETED", target_resource="checkins",
                         details={"checkin_id": checkin.id, "has_photo": bool(blob_name)}))
         db.commit()
-    except Exception:
+    except Exception as exc:
         db.rollback()
+        if attempt_digest and isinstance(exc, IntegrityError):
+            saved = checkin_attempts.replay(db, current_user.id, identifier, attempt_digest)
+            if saved is not None:
+                return saved
         if blob_name:
             try:
                 await run_in_threadpool(cleanup_failed_upload, db, azure_blob_service, current_user.id, blob_name)
@@ -220,6 +240,7 @@ async def submit_daily_checkin(
         ai_vision_analysis=checkin.ai_vision_analysis,
         observation=checkin.observation,
         tokens_earned=0,
+        receipt=checkin_attempts.receipt(checkin),
         created_at=checkin.created_at
     )
 

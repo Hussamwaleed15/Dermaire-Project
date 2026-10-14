@@ -193,7 +193,19 @@ class CheckInCreate(BaseModel):
     redness_score: Optional[float] = Field(None, ge=0.0, le=100.0)
     notes: Optional[str] = Field(None, max_length=1500)
 
+class CheckInReceipt(BaseModel):
+    schema_version: Literal[1] = 1
+    attempt_id: str
+    operation: Literal["checkin_report_manual"]
+    owner_id: str
+    actor_id: str
+    resource_id: str
+    status: Literal["committed", "expired"]
+    committed_at: datetime
+    expires_at: datetime
+
 class CheckInResponse(BaseModel):
+    receipt: Optional[CheckInReceipt] = None
     id: str
     user_id: str
     experiment_id: Optional[str] = None
