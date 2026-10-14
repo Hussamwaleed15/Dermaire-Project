@@ -6,6 +6,7 @@ import 'dart:ui' as ui;
 import 'package:dermaire_app/app_shell.dart';
 import 'package:dermaire_app/dermaire_state.dart';
 import 'package:dermaire_app/dermaire_theme.dart';
+import 'package:dermaire_app/dermaire_logo.dart';
 import 'package:dermaire_app/entry/entry_motion.dart';
 import 'package:dermaire_app/onboarding_screens.dart';
 import 'package:dermaire_app/services/api_service.dart';
@@ -141,7 +142,9 @@ void main() {
               if (const bool.fromEnvironment('ENTRY_PREVIEWS')) {
                 await tester.runAsync(
                   () => precacheImage(
-                    const AssetImage('assets/images/dermaire-logo.webp'),
+                    AssetImage(
+                      dark ? DermaireLogo.darkAsset : DermaireLogo.lightAsset,
+                    ),
                     tester.element(find.byType(Scaffold).first),
                   ),
                 );

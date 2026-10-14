@@ -27,7 +27,8 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
-    - assets/images/dermaire-logo.webp
+    - assets/images/dermaire-logo-light.png
+    - assets/images/dermaire-logo-dark.png
   fonts:
     - family: Karla
       fonts:

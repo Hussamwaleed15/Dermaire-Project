@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'app_shell.dart';
 import 'account/account_controller.dart';
 import 'dermaire_state.dart';
+import 'dermaire_logo.dart';
 import 'dermaire_theme.dart';
 import 'dermaire_widgets.dart';
 import 'doctor_portal.dart';
@@ -225,12 +226,7 @@ class WelcomeScreen extends StatelessWidget {
         EntryCard(
           child: Column(
             children: [
-              Image.asset(
-                'assets/images/dermaire-logo.webp',
-                width: 112,
-                height: 112,
-                semanticLabel: 'Dermaire logo',
-              ),
+              const DermaireLogo(size: 112, semanticLabel: 'Dermaire logo'),
               const SizedBox(height: 20),
               ...[
                 (Icons.visibility_outlined, 'Observe'),

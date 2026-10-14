@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../dermaire_theme.dart';
+import '../dermaire_logo.dart';
 import 'entry_copy.dart';
 import 'entry_motion.dart';
 
@@ -109,10 +110,8 @@ class EntryPage extends StatelessWidget {
                                           Navigator.of(context).maybePop(),
                                       icon: const Icon(Icons.arrow_back),
                                     ),
-                                  Image.asset(
-                                    'assets/images/dermaire-logo.webp',
-                                    width: 42,
-                                    height: 42,
+                                  const DermaireLogo(
+                                    size: 42,
                                     excludeFromSemantics: true,
                                   ),
                                   const SizedBox(width: 8),
@@ -258,12 +257,7 @@ class EntryStatusPage extends StatelessWidget {
                       ),
                     )
                   else
-                    Image.asset(
-                      'assets/images/dermaire-logo.webp',
-                      width: 96,
-                      height: 96,
-                      semanticLabel: 'Dermaire',
-                    ),
+                    const DermaireLogo(size: 96, semanticLabel: 'Dermaire'),
                   const SizedBox(height: 28),
                   Semantics(
                     liveRegion: true,
