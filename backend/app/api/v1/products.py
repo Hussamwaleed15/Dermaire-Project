@@ -1,5 +1,5 @@
 from typing import List, Optional
-from fastapi import APIRouter, Depends, Query, status, Header, HTTPException, Response
+from fastapi import APIRouter, Depends, Query, status, Header, HTTPException, Response, Request
 from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.exceptions import EntityNotFoundException, DermaireException
@@ -107,7 +107,8 @@ def update_product(
     response: Response = None,
     if_match: str | None = Header(None, alias="If-Match", max_length=64),
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    request: Request = None
 ):
     lock_owner(db, current_user)
     product = db.query(Product).filter(
@@ -117,6 +118,9 @@ def update_product(
     if not product:
         raise EntityNotFoundException("Product", product_id)
 
+    if request is not None:
+        from app.services.resource_revisions import header
+        header(request)  # Reject duplicate preconditions instead of selecting one.
     product_revisions.enforce(product, if_match)
     guard_routine_write(db, current_user.id)
     data = payload.model_dump(exclude_unset=True)
@@ -159,7 +163,8 @@ def delete_product(
     product_id: str,
     if_match: str | None = Header(None, alias="If-Match", max_length=64),
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    request: Request = None
 ):
     lock_owner(db, current_user)
     product = db.query(Product).filter(
@@ -169,6 +174,9 @@ def delete_product(
     if not product:
         raise EntityNotFoundException("Product", product_id)
 
+    if request is not None:
+        from app.services.resource_revisions import header
+        header(request)  # Reject duplicate preconditions instead of selecting one.
     product_revisions.enforce(product, if_match)
 
     if db.query(Experiment).filter_by(product_id=product.id).first():

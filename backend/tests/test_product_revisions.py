@@ -47,6 +47,15 @@ def test_invalid_precondition_never_mutates(deletion_context, etag):
     assert client.patch(URL, headers={**auth, "If-Match": etag}, json={"notes": "bad"}).status_code == 422
     assert client.get(URL, headers=auth).json()["revision"] == 1
 
+
+@pytest.mark.parametrize("method",["patch","delete"])
+def test_duplicate_product_revision_headers_rejected(deletion_context,method):
+    client,db,auth=deletion_context
+    headers=[*auth.items(),("If-Match",'"1"'),("If-Match",'"1"')]
+    result=client.patch(URL,headers=headers,json={"notes":"Denied"}) if method=="patch" else client.delete(URL,headers=headers)
+    assert result.status_code == 422
+    assert client.get(URL,headers=auth).json()["revision"] == 1
+
 def test_legacy_keeps_behavior_and_all_orm_writers_increment(deletion_context):
     client, db, auth = deletion_context
     assert client.patch(URL, headers=auth, json={"notes": "legacy"}).json()["revision"] == 2
