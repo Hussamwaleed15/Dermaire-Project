@@ -1,5 +1,31 @@
 # H1-PG and H2 execution ledger
 
+## Current completion status — 2026-10-15 (Cairo)
+
+This table supersedes the historical H0/H1/H2 ledger below. Backend only; no deployment, Flutter/native/Tester/Azure/provider changes or live DB/HTTP. Original main d60dcb35eefd820262053a1844ff6b45fcd166de. Current contracts: H2_COMPLETION_AMR_API_HANDOFF.md; migration head20261014_04.
+
+| Gate/resource | Status | Verified scope / remaining |
+|---|---|---|
+| PG-01 H1/H2 local security/migration | DONE | PG18.6/psycopg3.3.6, UTC/READ COMMITTED,31 final PG cases, observed locks/deadlock rollback/seeded migrations; no managed rollout certification |
+| H1 QR scopes/grant security | DONE in local tested source | view/export consent, actor isolation, replay/revoke/expiry, clinical locks; no new export endpoint/linking |
+| H2-F1 Home observation vs measurement | DONE in tested source | previous additive contract preserved |
+| H2-F2 check-in attempts | PARTIAL | committed/unknown/expired replay+lookup now PG verified; persisted reservation/rejection registry absent |
+| H2-F3 products | DONE opt-in revision subset | current If-Match/ETag/protection, duplicate422, PG CAS; durable attempt receipts absent |
+| H2-F3b routine | DONE opt-in revision subset | all-writer CAS, history, headers, guarded product archive/experiment intervention, SQLite/PG seeded migration |
+| H2-F3b experiment | DONE opt-in revision subset | draft/lifecycle/evaluation/legacy writers, immutable evidence, SQLite/PG CAS/migration |
+| H2-F4b adherence receipts | DONE bounded committed subset; F4 overall PARTIAL | owner+actor+payload-bound attempt,30-day replay/history/erasure, typed lookup, SQLite/PG; no durable in-flight/rejected |
+| Other operation receipts | OPEN | product create/edit/delete; routine configuration; experiment lifecycle/evaluate; clinical/grant attempt-specific registry/tombstones |
+| H2-F5 current schema rehearsal | DONE isolated current-schema subset |16 business tables,8 synthetic rows, all original columns preserved on SQLite3.49.1/PG18.6; historical production index-adoption tool retired, no live adoption/DR claim |
+| Safety currency/onboarding; histories/PSM completeness; notifications/messaging; typed scheduling; AI memory/tool execution | PARTIAL/OPEN/DEFERRED as historical inventory | unchanged; no H3 started |
+| Production/Staging rollout/managed deployment/DR | OPEN separate authorization/verification | no live calls/migrations; no deployment-readiness claim |
+
+Full verification gates: PG initial793 passed/112 warnings/120.40s; routine797/122/126.70s; experiment815/132/130.38s; adherence830/144/134.20s; final851/150/144.67s. All final runs zero failed/skipped. Final31 cases use real PG; remaining suite includes SQLite, pure and mocked tests. Dependency deprecations only; no configured linter; compileall, Alembic check/seeded migration and git diff --check passed. Details and failed preliminary fixture repairs are in milestone docs/report.
+
+Independent normal-push commits verified with ls-remote: d9529f529f72b6ee4dfbe58963866dd1995c8076 PG initial;25415f73d24837e1424c68f6d9dea2f0434f7f78 routine;f2c875484f4fdf790c1b96709f51e9b51a03a4de experiment;f61ba1500246554af84d0b389f9e72150e0e6c9f adherence;df2ce500416b3c838eb25000aacb0f14999c98b7 product duplicate preconditions;8c38fb33dac8c2dedaae8b9a4ec88f2af4100646 PG completion. Final rehearsal/docs commit and remote/worktree verification are recorded in the Codex Arabic report after push. No concurrent teammate advancement was observed at fetches; no force push or history rewrite.
+
+## Historical ledger (superseded where noted above)
+
+
 
 
 Authorized repository: Hussamwaleed15/Dermaire-Project; baseline main bf5379be2dca9e130a0d342a9d5bf2a2ee31f8b3, clean after fetch. Backend only. No deployment, Azure, provider settings, live DB or production HTTP.

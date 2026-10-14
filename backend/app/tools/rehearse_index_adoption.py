@@ -14,6 +14,7 @@ import psycopg
 
 
 def main():
+    raise RuntimeError("Historical index adoption rehearsal is retired for current H1/H2 schema; use app.tools.rehearse_current_schema on a fresh disposable database")
     repo = pathlib.Path(__file__).resolve().parents[3]
     url = make_url(os.environ["DATABASE_URL"])
     if (

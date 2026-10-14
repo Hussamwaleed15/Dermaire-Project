@@ -1,5 +1,16 @@
 # H2-F3/F4 implementation contract and uncovered writes
 
+Current2026-10-15 implementation supersedes the historical design below: products/routine/experiments have opt-in persistent revision protection and all-writer ORM CAS; routine intervention and product archive guards are implemented. Bounded report/manual and adherence receipts have typed durable committed/unknown/expired lookup. No expected_version body field or cross-domain generic receipt table was added. Exact shipped endpoints/headers/errors/retention/rollout: H2_COMPLETION_AMR_API_HANDOFF.md; resource evidence: H2_F3B_ROUTINE.md, H2_F3B_EXPERIMENT.md, H2_F4B_ADHERENCE.md, PG_01_LOCAL_GATE.md, H2_F5_REHEARSAL.md.
+
+Still OPEN: product create/update/delete durable attempts (including deletion tombstones and atomic create audit); routine configuration attempts; experiment draft/lifecycle/evaluate attempts; actor/patient/grant-bound clinical and selected/bulk grant attempts. Keep immutable clinical notes, review expected_sequence409 and adherence UNIQUE as separate existing contracts. F4 remains PARTIAL across domains. GET current resource/version is not an attempt-specific receipt.
+
+Implementation-ready next increments: durable unique(owner,actor,operation,key_digest) identity; normalized payload/hash/version and expected/committed revision; allowlisted stable result/tombstone and server times; business write/receipt/audit in one transaction; replay before current stale precondition; current reauthorization for patient/grant access; rollback, lost-response/restart, parallel same/different payload, TTL/erasure/restore proofs. Do not cache revoked clinical content. Unknown never means failed; in_flight requires fenced durable lease/reservation, rejected requires durable non-mutation proof; otherwise do not expose those states. Declare per-domain replay/tombstone retention and deletion-journal replay before restoring receipt visibility. No exactly-once external effects without outbox/reconciliation evidence.
+
+## Historical pre-completion design and source inventory
+
+The remaining text is retained as design history, not a claim that routine/experiment revisions are still absent. Current status/contract above is authoritative.
+
+
 Status: implemented subsets and design/audit boundaries are listed in H2_NEXT_WAVE_STATUS.md. Products now have the tested opt-in revision subset described in H2_NEXT_WAVE_STATUS.md. No routine/experiment expected_version field or generalized receipt table is shipped.
 
 ## F3 source and compatibility gate — PARTIAL (Products opt-in subset implemented)
