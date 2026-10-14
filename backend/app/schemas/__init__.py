@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import List, Optional, Any, Dict, Literal, Annotated
-from pydantic import BaseModel, EmailStr, Field, ConfigDict, field_validator
+from pydantic import BaseModel, EmailStr, Field, ConfigDict, field_validator, model_validator
 
 # ==================== User & Auth Schemas ====================
 
@@ -227,6 +227,38 @@ class CheckInResponse(BaseModel):
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+class CheckInAttemptLookup(BaseModel):
+    schema_version: Literal[1] = 1
+    attempt_id: str
+    operation: Literal["checkin_report_manual"]
+    owner_id: str
+    actor_id: str
+    status: Literal["committed", "expired", "unknown"]
+    resource_id: Optional[str] = None
+    committed_at: Optional[datetime] = None
+    expires_at: Optional[datetime] = None
+    result: Optional[CheckInResponse] = None
+
+    @model_validator(mode="after")
+    def consistent_scope(self):
+        if self.owner_id != self.actor_id:
+            raise ValueError("Check-in attempt actor must be the owner")
+        if self.status == "unknown":
+            if any(value is not None for value in (self.result, self.resource_id, self.committed_at, self.expires_at)):
+                raise ValueError("Unknown is not a committed result")
+        else:
+            if self.resource_id != self.attempt_id or self.committed_at is None or self.expires_at is None:
+                raise ValueError("Incomplete committed identity")
+            if self.status == "expired" and self.result is not None:
+                raise ValueError("Expired attempt must be reconciled by resource")
+            if self.status == "committed" and (self.result is None or self.result.id != self.resource_id
+                    or self.result.user_id != self.owner_id or self.result.receipt is None
+                    or self.result.receipt.attempt_id != self.attempt_id
+                    or self.result.receipt.owner_id != self.owner_id
+                    or self.result.receipt.status != "committed"):
+                raise ValueError("Result scope differs from committed attempt")
+        return self
 
 # ==================== Doctor & Consent Schemas ====================
 

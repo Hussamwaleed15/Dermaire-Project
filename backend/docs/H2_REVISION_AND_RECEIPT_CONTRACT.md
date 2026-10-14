@@ -1,6 +1,6 @@
 # H2-F3/F4 implementation contract and uncovered writes
 
-Status: design/audit only unless explicitly listed as implemented in H2_NEXT_WAVE_STATUS.md. Products now have the tested opt-in revision subset described in H2_NEXT_WAVE_STATUS.md. No routine/experiment expected_version field or generalized receipt table is shipped.
+Status: implemented subsets and design/audit boundaries are listed in H2_NEXT_WAVE_STATUS.md. Products now have the tested opt-in revision subset described in H2_NEXT_WAVE_STATUS.md. No routine/experiment expected_version field or generalized receipt table is shipped.
 
 ## F3 source and compatibility gate — PARTIAL (Products opt-in subset implemented)
 
@@ -24,7 +24,7 @@ Required isolated acceptance: two sessions read same version, simultaneous same/
 
 | Family | Current receipt/reconciliation | Remaining |
 |---|---|---|
-| Report/manual checkins | See F2 ledger for implemented owner/key-bound subset | explicit rejected/in-flight durable states and PG gate if not listed passed |
+| Report/manual checkins | See F2 ledger for implemented owner/key-bound subset | explicit rejected/in-flight durable states and PG gate; GET attempts typed and exact record GET are implemented |
 | Photo checkins and captures | Existing deterministic owner/upload fingerprint and resource readback | generalized attempt lookup, expiry and rejected state; do not replace capture behavior |
 | Product create/update/delete | Resource GET/revision and AuditLog; PATCH/DELETE now commit audit atomically, create audit remains separate | durable attempt+receipt, atomic create audit; create duplicate names are not attempt identity |
 | Routine create/update/deactivate | Resource GET, history preserved | attempt receipt and revision lifecycle |

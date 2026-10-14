@@ -30,7 +30,12 @@ def utc(value):
     return value.replace(tzinfo=timezone.utc) if value.tzinfo is None else value.astimezone(timezone.utc)
 
 def metadata(row):
-    return (row.observation or {}).get("attempt")
+    observation = row.observation
+    data = observation.get("attempt") if isinstance(observation, dict) else None
+    if not isinstance(data, dict) or data.get("schema_version") != 1:
+        return None
+    digest = data.get("payload_hash")
+    return data if isinstance(digest, str) and re.fullmatch(r"[0-9a-f]{64}", digest) else None
 
 def receipt(row):
     data = metadata(row)
@@ -43,7 +48,8 @@ def receipt(row):
 
 def response(row):
     result = CheckInResponse.model_validate(row)
-    result.receipt = CheckInReceipt.model_validate(receipt(row))
+    info = receipt(row)
+    result.receipt = CheckInReceipt.model_validate(info) if info else None
     return result
 
 def replay(db, owner, identifier, digest):

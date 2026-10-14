@@ -13,7 +13,7 @@ from app.services import checkin_attempts
 from app.core.database import get_db
 from app.api.deps import get_current_user
 from app.models import User, CheckIn, Experiment, DailyContext, AuditLog
-from app.schemas import CheckInResponse, CheckInReport
+from app.schemas import CheckInResponse, CheckInReport, CheckInAttemptLookup
 from pydantic import ValidationError
 from app.core.exceptions import DermaireException, EntityNotFoundException
 from app.services.baseline import baseline_snapshot, confirmed_measurement
@@ -62,7 +62,7 @@ def get_checkins_history(
         ))
     return results
 
-@router.get("/attempts/{key}")
+@router.get("/attempts/{key}", response_model=CheckInAttemptLookup)
 def get_checkin_attempt(key: str, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     return checkin_attempts.lookup(db, current_user.id, key)
 
@@ -243,6 +243,19 @@ async def submit_daily_checkin(
         receipt=checkin_attempts.receipt(checkin),
         created_at=checkin.created_at
     )
+
+
+@router.get("/{checkin_id}", response_model=CheckInResponse)
+def get_checkin_record(checkin_id: str, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    row = db.query(CheckIn).filter_by(id=checkin_id, user_id=current_user.id).first()
+    if row is None or (not row.observation and not confirmed_measurement(row)):
+        raise HTTPException(404, "Check-in not found")
+    result = checkin_attempts.response(row)
+    result.image_reference = safe_reference(row.image_blob_name)
+    result.image_endpoint = f"/api/v1/checkins/{row.id}/image" if result.image_reference else None
+    result.storage = ("azure_blob" if (row.ai_vision_analysis or {}).get("image_storage") == "azure_blob"
+        else "legacy_unverified") if row.image_blob_name else "not_persisted"
+    return result
 
 
 @router.get("/{checkin_id}/image")

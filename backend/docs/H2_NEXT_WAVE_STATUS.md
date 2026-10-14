@@ -34,7 +34,7 @@ python -m alembic check
 
 
 
-These commands prepare an isolated DB only; existing pytest fixtures hardcode SQLite and must be replaced by an explicit loopback-only PostgreSQL fixture before a PG coverage claim. Required gate: real independent sessions, row-lock wait/timeout, two claims one winner, replay, revoke/expiry versus claim, notes/reviews versus revoke/deletion, rollback, bounded lock order/deadlock outcomes, current actor and scoped consent evidence. Do not infer PG coverage from running today's SQLite suite with DATABASE_URL changed.
+These commands prepare an isolated DB only; existing pytest fixtures hardcode SQLite and must be replaced by an explicit loopback-only PostgreSQL fixture before a PG coverage claim. Required gate: real independent sessions, row-lock wait/timeout, explicit SHOW TimeZone and UTC day-boundary storage/readback verification, two claims one winner, replay, revoke/expiry versus claim, notes/reviews versus revoke/deletion, rollback, bounded lock order/deadlock outcomes, current actor and scoped consent evidence. Do not infer PG coverage from running today's SQLite suite with DATABASE_URL changed.
 
 
 
@@ -92,3 +92,29 @@ F3 focused final: 74 passed / 20 dependency warnings / 12.48s, including 13 new 
 Amr: consume revision and revision_protected; derive/store the quoted ETag from a successful entity read. Opt in only when the client supports all subsequent direct product edit/delete preconditions. On 412 reload and surface conflict; on 428 request a revision-aware edit flow. Handle 409 business conflicts separately. Routine/experiment schemas are unchanged. Flutter remains untouched.
 
 F3 final gate: full 762 passed / 106 dependency deprecation warnings / 205.14s; compileall and diff --check passed; fresh SQLite upgrade/check at 20261014_01 passes, no drift. Populated upgrade/downgrade and protected downgrade rejection are focused acceptance tests. Security review retained authenticated owner checks and journal/audit boundaries; no arbitrary revision/protection update field exposed. PG coverage zero/current gate BLOCKED. F2 commit/push verified: 6587c71e57deb1fd1a33f522c63af86c29e86069.
+
+## F4 — PARTIAL: typed check-in receipts and exact owned GET; cross-domain contract
+
+GET /api/v1/checkins/attempts/{key} now publishes CheckInAttemptLookup in OpenAPI. It enforces coherent actor=owner, attempt/resource/result identity and committed receipt binding. Unknown always has resource_id/committed_at/expires_at/result:null. Committed includes the original owned result. Expired carries identity/times but result:null. Stored attempt metadata must have supported schema and canonical 64-character hash; corrupt/unsupported metadata cannot assert committed and returns unknown, while ordinary owned resource readback remains available without a claimed receipt.
+
+New GET /api/v1/checkins/{checkin_id} returns CheckInResponse for authenticated owner only (foreign/missing/quarantined legacy row 404; absent/invalid/deleted identity 401). It returns existing saved report/metrics/image metadata with no new measurement or SAS token; photos retain the existing authenticated image route. Expired attempt can be reconciled by its original resource_id via this GET; it is not permission to re-create the observation. No patient selector, doctor grant proxy or export execution is introduced.
+
+No new F4 table/DDL or generalized sensitive-mutation decorator. Implemented stable receipts are the F2 non-photo report/manual subset only; existing H1 revoke/consent evidence and capture/review/adherence contracts remain separate. Products/routines/experiments/adherence/clinical notes/reviews/bulk revoke/safety consent still lack generalized client-attempt lookup. Exact inventory and lease/rejection/retention/erasure/grant-safe design are in H2_REVISION_AND_RECEIPT_CONTRACT.md. Rejected and in_flight states require new durable storage/fencing and are not falsely inferred here. F4 is PARTIAL, not COMPLETE.
+
+F4 focused: 36 passed / 2 dependency warnings / 6.81s (3 new typed readback/expiry/ownership/corrupt-proof cases plus attempt, vision and account-erasure regressions). No SQLite/PG substitution; all current runtime fixtures are SQLite. Full final gate follows. F3 commit/push verified: e249940a955be65daacf7f79ce9f758d5796e6d1.
+
+Amr: unknown null fields are uncertainty, not a failed/committed check-in; GET-by-ID is current resource readback and cannot prove a different unrelated mutation attempt. Use committed receipt for the exact saved check-in. Resource readback remains owner-only even for clinicians with unrelated grants. Do not cache one account's receipt across account switches; erase the queued key/draft/result after account deletion. No Flutter files changed.
+
+## Final requested scope matrix
+
+| Milestone | Status | Delivered / remaining |
+|---|---|---|
+| H1-PG | BLOCKED | existing Docker installation failed startup on inaccessible ingest socket; no PG runtime/migration/row-lock gate passed |
+| H2-F1 | COMPLETE (tested source) | additive typed report completion on UTC Home, independent confirmed baseline |
+| H2-F2 | PARTIAL | durable owner/payload-bound committed replay and lookup, races/rollback/expiry/erasure on SQLite; PG and explicit durable reservations/rejection registry absent |
+| H2-F3 | PARTIAL | opt-in protected Products revision CAS and isolated SQLite migration; Routine/Experiment resource revisions and PG migration gate remain |
+| H2-F4 | PARTIAL | typed report/manual receipt and exact owned GET, complete endpoint gap inventory/design; other mutation families and reservation states deferred |
+
+No production readiness verdict. No H3 started. Next wave stays H1/H2: restore local Docker engine or provide existing isolated local PG; build guarded PG fixtures rather than changing DATABASE_URL under SQLite fixtures; close H1 concurrency/migration gates; modernize historical index adoption rehearsal for revision schema; finish Routine/Experiment all-writer revisions with explicit client compatibility; add durable rejected/reservation/tombstone receipts per domain. Notifications, live provider changes, clinical messaging and H3 remain outside this execution.
+
+F4 final gate: full 765 passed / 106 dependency deprecation warnings / 203.18s; no failed/skipped tests in final run. compileall and diff --check pass; fresh isolated SQLite migration upgrade/check at 20261014_01 passes with no drift. Security/privacy review: owner-only exact reads, nullable unknown semantics, internal payload hash stripped, typed actor/resource receipt checks and corrupt-proof fail-closed behavior, account erasure denial, existing capture/clinical/revoke regression suite retained. No PostgreSQL runtime gate passed. All changes since baseline are under backend/ only.
