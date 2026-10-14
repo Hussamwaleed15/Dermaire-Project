@@ -199,7 +199,7 @@ class DoctorPatientAccess(Base):
     claimed_at = Column(DateTime, nullable=True)
     revoked_at = Column(DateTime, nullable=True)
     revoked_by = Column(String(36), nullable=True)
-    export_consent = Column(Boolean, default=True)
+    export_consent = Column(Boolean, default=False)
     expires_at = Column(DateTime, nullable=False)
     created_at = Column(DateTime, default=utc_now)
 

@@ -1,19 +1,20 @@
 ﻿from datetime import datetime, timedelta, timezone
 from typing import List, Optional
-from fastapi import APIRouter, Depends, Query, status, HTTPException
+from fastapi import APIRouter, Body, Depends, Query, status, HTTPException
 from sqlalchemy.orm import Session
 from app.core.database import get_db
-from app.core.security import create_doctor_access_token, decode_token
+from app.core.security import create_doctor_access_token, decode_token, credential_stamp
 from app.core.exceptions import (
     PermissionDeniedException, DermaireException
 )
-from app.api.deps import require_role
-from app.models import User, DoctorPatientAccess, ClinicalNote, CheckIn, Experiment, Product, DoctorReviewAction, gen_uuid
+from app.api.deps import require_role, get_token_payload
+from app.models import User, DoctorPatientAccess, ClinicalNote, CheckIn, Experiment, Product, DoctorReviewAction, AuditLog, gen_uuid
+from app.services.doctor_consent import consent_of
 from app.services.doctor_loop import authorize, save, access_out, timeline, review_status, reviews, review_out
 from app.schemas.doctor_loop import ReviewActionCreate
 from app.services.safety import evaluate_safety
 from app.schemas import (
-    GenerateQrResponse, ClaimAccessRequest, DoctorPatientOut,
+    GenerateQrRequest, GenerateQrResponse, ClaimAccessRequest, DoctorPatientOut,
     ClinicalNoteCreate, ClinicalNoteOut
 )
 
@@ -21,19 +22,35 @@ router = APIRouter(prefix="/doctor", tags=["Doctor Portal, QR Access & Audit"])
 
 @router.post("/generate-qr", response_model=GenerateQrResponse)
 def generate_doctor_qr_access(
+    payload: GenerateQrRequest | None = Body(None),
     minutes_valid: int = Query(60, ge=15, le=1440),
     current_user: User = Depends(require_role(["patient"])),
+    session: dict = Depends(get_token_payload),
     db: Session = Depends(get_db)
 ):
-    token = create_doctor_access_token(current_user.id, minutes_valid=minutes_valid)
-    expires_at = datetime.now(timezone.utc) + timedelta(minutes=minutes_valid)
+    # Old clients retain view-only generation; export always needs separate intent
+    # and a selected real clinician. Neither query strings nor claims can expand it.
+    export = payload.export_consent if payload else False
+    doctor_id = payload.doctor_id if payload else None
+    if export and not doctor_id:
+        raise HTTPException(422, "Export consent requires a selected clinician")
+    if doctor_id and not db.query(User).filter_by(id=doctor_id, role="doctor").first():
+        raise HTTPException(404, "Selected clinician unavailable")
+    access_id = gen_uuid()
+    scopes = ["VIEW", "EXPORT"] if export else ["VIEW"]
+    # Keep QR within the existing VARCHAR(512); private purpose/session intent
+    # is an atomic server audit receipt, not additional bearer-token content.
+    token = create_doctor_access_token(current_user.id, minutes_valid=minutes_valid,
+        consent={"version": 2, "access_id": access_id})
+    expires_at = datetime.fromtimestamp(decode_token(token)["exp"], timezone.utc)
 
     access_record = DoctorPatientAccess(
-        id=gen_uuid(),
+        id=access_id,
+        doctor_id=doctor_id,
         patient_id=current_user.id,
         access_token=token,
         status="pending",
-        export_consent=True,
+        export_consent=export,
         granted_by=current_user.id,
         expires_at=expires_at
     )
@@ -41,14 +58,17 @@ def generate_doctor_qr_access(
     save(db, current_user.id, "DOCTOR_QR_GENERATED", "doctor_patient_access", {
         "access_id": access_record.id,
         "expires_at": expires_at.isoformat(),
-        "patient_id": current_user.id
+        "patient_id": current_user.id,
+        "doctor_id": doctor_id, "scopes": scopes, "consent_version": 2,
+        "credential": credential_stamp(current_user.hashed_password), "session_jti": session["jti"]
     })
 
     return GenerateQrResponse(
         access_token=token,
         qr_payload=f"dermaire://doctor-access?token={token}",
         expires_at=expires_at,
-        instructions="Present this QR code to your clinician. Access is temporary, encrypted, and can be revoked at any moment."
+        instructions="Present this single-use code to your clinician. Access is temporary and revocable; export requires separate explicit consent.",
+        access=access_out(access_record, db)
     )
 
 @router.post("/claim", status_code=status.HTTP_200_OK)
@@ -81,15 +101,32 @@ def claim_patient_access(
     if access_record.doctor_id and access_record.doctor_id != current_doctor.id:
         raise PermissionDeniedException("This access code is already assigned to another clinician.")
 
-    access_record.doctor_id = current_doctor.id
-    access_record.status = "active"
-    access_record.claimed_at = access_record.claimed_at or datetime.now(timezone.utc)
+    if access_record.status != "pending" or access_record.claimed_at is not None:
+        raise HTTPException(409, "Access code already claimed; refresh current access")
+    intent = consent_of(access_record)
+    if (not intent or intent.get("credential") != credential_stamp(patient.hashed_password)
+            or not intent.get("session_jti") or db.query(AuditLog).filter_by(
+                actor_id=patient_id, action="SESSION_REVOKED", target_resource=intent["session_jti"]).first()):
+        raise PermissionDeniedException("Patient consent is no longer available; request a new code")
+    # A conditional transition prevents replay even on DBs without row locks.
+    claimed_at = datetime.now(timezone.utc)
+    changed = db.query(DoctorPatientAccess).filter(
+        DoctorPatientAccess.id == access_record.id,
+        DoctorPatientAccess.status == "pending",
+        DoctorPatientAccess.claimed_at.is_(None),
+        DoctorPatientAccess.revoked_at.is_(None),
+        DoctorPatientAccess.expires_at > claimed_at,
+    ).update({"doctor_id": current_doctor.id, "status": "active", "claimed_at": claimed_at}, synchronize_session=False)
+    if changed != 1:
+        db.rollback()
+        raise HTTPException(409, "Access changed; request current access")
     save(db, current_doctor.id, "PATIENT_ACCESS_CLAIMED", "doctor_patient_access", {
         "patient_id": patient_id,
         "doctor_id": current_doctor.id,
         "access_id": access_record.id
     })
-    return {"success": True, "message": f"Access granted to patient record ({patient_id})."}
+    db.refresh(access_record)
+    return {"success": True, "message": "Patient access granted.", "access": access_out(access_record, db)}
 
 @router.delete("/revoke/{patient_id}", status_code=status.HTTP_200_OK)
 def revoke_patient_access(
@@ -149,7 +186,7 @@ def list_authorized_patients(
             patient_id=p.id,
             safety=review["safety"],
             review_state=review["state"],
-            access=[access_out(g) for g in access_links if g.patient_id == p.id],
+            access=[access_out(g, db) for g in access_links if g.patient_id == p.id],
             full_name=p.full_name,
             email=p.email,
             skin_type=p.skin_type,
@@ -202,7 +239,7 @@ def add_clinical_note(
 
 @router.get("/access")
 def patient_access(current_user: User = Depends(require_role(["patient"])), db: Session = Depends(get_db)):
-    return [access_out(g) for g in db.query(DoctorPatientAccess).filter_by(patient_id=current_user.id).order_by(DoctorPatientAccess.created_at, DoctorPatientAccess.id)]
+    return [access_out(g, db) for g in db.query(DoctorPatientAccess).filter_by(patient_id=current_user.id).order_by(DoctorPatientAccess.created_at, DoctorPatientAccess.id)]
 
 
 @router.delete("/access/{access_id}")
@@ -215,7 +252,7 @@ def revoke_one(access_id: str, current_user: User = Depends(require_role(["patie
         grant.revoked_at = datetime.now(timezone.utc)
         grant.revoked_by = current_user.id
         save(db, current_user.id, "PATIENT_ACCESS_REVOKED", "doctor_patient_access", {"patient_id": current_user.id, "access_id": grant.id})
-    return access_out(grant)
+    return access_out(grant, db)
 
 
 @router.get("/review-status")
@@ -226,7 +263,7 @@ def patient_review_status(current_user: User = Depends(require_role(["patient"])
 @router.get("/patients/{patient_id}")
 def patient_detail(patient_id: str, current_doctor: User = Depends(require_role(["doctor"])), db: Session = Depends(get_db)):
     patient, grant = authorize(db, current_doctor, patient_id)
-    return {"patient_id": patient.id, "full_name": patient.full_name, "access": access_out(grant),
+    return {"patient_id": patient.id, "full_name": patient.full_name, "access": access_out(grant, db),
         "review": review_status(db, patient)}
 
 

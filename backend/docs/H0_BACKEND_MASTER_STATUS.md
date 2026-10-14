@@ -34,6 +34,10 @@ DONE means implemented source and relevant isolated coverage, not production sig
 
 ## Dependency order and wave boundaries
 
+### H1-A delivered source update
+
+Baseline rows above intentionally describe the fetched source before changes. H1-A fixes QR implicit export and default, introduces explicit scoped receipt/doctor intent and single-use conditional claim; see `H1_DOCTOR_CONTRACT_HANDOFF.md`. Existing capture idempotency, adherence uniqueness, clinical notes/reviews and view/revoke APIs remain. H1-A full suite 722 passed; no DDL or live migration. PostgreSQL race/release validation remains an environment gate; source fix is not a deployed-production verification or Flutter linking enablement.
+
 1. H0-A: baseline suite, this inventory, source-reviewed documentation commit.
 2. H1-A: fix confirmed QR consent; strict compatibility and patient/doctor/session bindings; scoped receipts; test safety before push. No Flutter linking enablement.
 3. H1-B: additional grant/revoke negative and concurrency contracts, preserve existing clinician evidence permissions; independently verify tests/docs. Do not invent routes.

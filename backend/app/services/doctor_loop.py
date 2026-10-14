@@ -10,18 +10,20 @@ from app.services.context_builder import build_context
 from app.services.personal_skin_model import utc, report_of, measurement_of
 from app.services.safety import evaluate_safety
 from app.services.product_intelligence import read_intelligence
+from app.services.doctor_consent import consent_of, granted_scopes
 
 RANK = {"track": 0, "low_risk_self_care": 1, "doctor_review": 2, "urgent": 3}
 
-def authorize(db, doctor, patient_id):
+def authorize(db, doctor, patient_id, *, scope="VIEW"):
     # Same patient lock serializes clinician writes, revocations and account deletion.
     patient = db.query(User).filter_by(id=patient_id, role="patient").with_for_update().first()
-    grant = db.query(DoctorPatientAccess).filter(
+    grants = db.query(DoctorPatientAccess).filter(
         DoctorPatientAccess.patient_id == patient_id,
         DoctorPatientAccess.doctor_id == doctor.id,
         DoctorPatientAccess.status == "active",
         DoctorPatientAccess.expires_at > datetime.now(timezone.utc),
-    ).order_by(DoctorPatientAccess.created_at.desc(), DoctorPatientAccess.id.desc()).with_for_update().first()
+    ).order_by(DoctorPatientAccess.created_at.desc(), DoctorPatientAccess.id.desc()).with_for_update().all()
+    grant = next((g for g in grants if scope in granted_scopes(g)), None)
     if not patient or not grant:
         raise HTTPException(403, "No current access to this patient")
     return patient, grant
@@ -36,12 +38,21 @@ def save(db, actor_id, action, target, details):
         raise HTTPException(503, "Clinician action could not be confirmed; retry after refreshing")
 
 
-def access_out(row):
+def access_out(row, db=None):
     expired = utc(row.expires_at) <= datetime.now(timezone.utc)
+    scopes = granted_scopes(row)
+    intent = consent_of(row)
+    doctor = db.get(User, row.doctor_id) if db is not None and row.doctor_id else None
     return {"id": row.id, "patient_id": row.patient_id, "doctor_id": row.doctor_id,
         "granted_by": row.granted_by, "status": "expired" if expired and row.status in ("active", "pending") else row.status,
         "created_at": row.created_at, "expires_at": row.expires_at, "claimed_at": row.claimed_at,
-        "revoked_at": row.revoked_at, "revoked_by": row.revoked_by}
+        "revoked_at": row.revoked_at, "revoked_by": row.revoked_by,
+        "doctor_name": doctor.full_name if doctor and doctor.role == "doctor" else None,
+        "consent_version": 2 if intent else None,
+        "consent_source": "explicit_patient_intent" if intent else "legacy_view_only",
+        "view_consent": "VIEW" in scopes, "export_consent": "EXPORT" in scopes,
+        "scopes": scopes,
+        "effective_scopes": scopes if row.status == "active" and not expired else []}
 
 
 def review_out(row, safety):

@@ -269,6 +269,10 @@ def test_logged_out_doctor_session_denied(loop):
 @pytest.mark.parametrize("kind", ["notes","reviews","generate-qr","claim","revoke"])
 def test_commit_failure_rolls_back_clinician_and_audit(loop,monkeypatch,kind):
     client,db,patient,_,doctors=loop;access=grant(loop)
+    if kind == "claim":
+        access.status = "pending"
+        access.claimed_at = None
+        db.commit()
     count=db.query(AuditLog).count()
     monkeypatch.setattr(db,"commit",Mock(side_effect=RuntimeError("Database unavailable")))
     if kind=="notes":
@@ -280,7 +284,7 @@ def test_commit_failure_rolls_back_clinician_and_audit(loop,monkeypatch,kind):
     assert response.status_code==503
     assert db.query(ClinicalNote).count()==db.query(DoctorReviewAction).count()==0
     assert db.query(AuditLog).count()==count and db.query(DoctorPatientAccess).count()==1
-    assert db.get(DoctorPatientAccess,access.id).status=="active"
+    assert db.get(DoctorPatientAccess,access.id).status == ("pending" if kind == "claim" else "active")
 
 
 @pytest.mark.parametrize("values", [{"patient_visible":"false"}, {"patient_visible":1}, {"doctor_id":"foreign"}])

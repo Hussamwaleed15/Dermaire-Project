@@ -216,11 +216,25 @@ class CheckInResponse(BaseModel):
 
 # ==================== Doctor & Consent Schemas ====================
 
+class GenerateQrRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
+    view_consent: Literal[True]
+    export_consent: bool = False
+    doctor_id: Optional[str] = Field(None, min_length=1, max_length=36)
+
+    @field_validator("view_consent", mode="before")
+    @classmethod
+    def explicit_view(cls, value):
+        if value is not True:
+            raise ValueError("Explicit view consent must be true")
+        return value
+
 class GenerateQrResponse(BaseModel):
     access_token: str
     qr_payload: str
     expires_at: datetime
     instructions: str
+    access: Dict[str, Any]
 
 class ClaimAccessRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)

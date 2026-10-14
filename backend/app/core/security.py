@@ -58,7 +58,7 @@ def create_refresh_token(subject: Union[str, Any]) -> str:
     encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
     return encoded_jwt
 
-def create_doctor_access_token(patient_id: str, minutes_valid: int = 60) -> str:
+def create_doctor_access_token(patient_id: str, minutes_valid: int = 60, *, consent: Optional[Dict[str, Any]] = None) -> str:
     expire = datetime.now(timezone.utc) + timedelta(minutes=minutes_valid)
     to_encode = {
         "exp": expire,
@@ -67,6 +67,8 @@ def create_doctor_access_token(patient_id: str, minutes_valid: int = 60) -> str:
         "jti": str(uuid.uuid4()),
         "iat": datetime.now(timezone.utc)
     }
+    if consent is not None:
+        to_encode["consent"] = consent
     return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
 
 def decode_token(token: str) -> Dict[str, Any]:
