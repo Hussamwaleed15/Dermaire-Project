@@ -4,6 +4,7 @@ from statistics import mean, pstdev
 from math import ceil
 from fastapi import HTTPException
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm.exc import StaleDataError
 from app.models import (Experiment, ExperimentEvaluation, RoutineEntry, RoutineAdherence,
                         Product, CheckIn, DailyContext)
 from app.services.baseline import confirmed_measurement
@@ -29,6 +30,9 @@ def versioned(row):
 def commit(db):
     try:
         db.commit()
+    except StaleDataError:
+        db.rollback()
+        raise HTTPException(412, "Resource changed; reload before retrying")
     except IntegrityError:
         db.rollback()
         raise HTTPException(409, "Conflicting experiment or routine configuration")
@@ -69,7 +73,7 @@ def evidence_row(row):
             "report": (row.observation or {}).get("user_reported")}
 
 
-def activate(db, user, row):
+def activate(db, user, row, routine_if_match=None):
     from app.schemas.experiments import ExperimentCreate
     versioned(row)
     if row.status != "draft":
@@ -82,9 +86,13 @@ def activate(db, user, row):
     payload = ExperimentCreate(routine_entry_id=row.routine_entry_id, intervention=row.intervention,
         start_date=row.start_date.date(), target_days=row.target_days, primary_concern=row.primary_concern)
     entry, product = reference(db, user, payload)
-    previous = configuration(entry)
     if row.intervention["type"] == "start_entry" and entry.schedule != row.intervention["schedule"]:
         raise HTTPException(422, "Start expectation must match the new entry schedule")
+    from app.services.resource_revisions import enforce, reserve
+    enforce(entry, routine_if_match)
+    if row.intervention["type"] != "start_entry" or routine_if_match is not None:
+        reserve(db, entry, routine_if_match)
+    previous = configuration(entry)
     baseline_start = row.start_date - timedelta(days=28)
     baseline = db.query(CheckIn).filter(CheckIn.user_id == user.id,
         CheckIn.created_at >= baseline_start, CheckIn.created_at < row.start_date).order_by(CheckIn.created_at, CheckIn.id).all()

@@ -286,6 +286,10 @@ class RoutineEntry(Base):
         UniqueConstraint("active_am_product", name="uq_routine_active_am"),
         UniqueConstraint("active_pm_product", name="uq_routine_active_pm"),
     )
+    revision = Column(Integer, nullable=False, default=1, server_default="1")
+    revision_protected = Column(Boolean, nullable=False, default=False, server_default=false())
+    __mapper_args__ = {"version_id_col": revision}
+
     id = Column(String(36), primary_key=True, default=gen_uuid)
     user_id = Column(String(36), ForeignKey("users.id"), nullable=False, index=True)
     product_id = Column(String(36), ForeignKey("products.id"), nullable=False, index=True)

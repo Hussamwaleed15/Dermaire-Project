@@ -23,6 +23,8 @@ class RoutineUpdate(BaseModel):
 
 class RoutineOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
+    revision: int
+    revision_protected: bool
     id: str
     product_id: str
     product_name: str

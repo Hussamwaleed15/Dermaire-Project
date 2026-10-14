@@ -140,7 +140,7 @@ def test_account_cleanup_and_session(deletion_context, monkeypatch):
     monkeypatch.setattr(azure_blob_service, 'delete_image', Mock())
     monkeypatch.setattr(azure_blob_service, 'delete_owned_images', Mock())
     assert client.delete('/api/v1/users/me', headers=auth).status_code == 204
-    assert db.query(RoutineEntry).count() == db.query(RoutineAdherence).count() == 0
+    assert db.execute(__import__("sqlalchemy").text("SELECT count(*) FROM routine_entries")).scalar() == db.query(RoutineAdherence).count() == 0
     assert client.get(ROOT+'/entries', headers=auth).status_code == 401
     assert client.get(ROOT+'/adherence', headers=auth).status_code == 401
 
@@ -172,9 +172,15 @@ def test_manual_sqlite_upgrade_preserves_inventory(tmp_path):
         raw.driver_connection.executescript(sql)
     finally:
         raw.close()
+    # Historical manual DDL remains frozen. Apply the new additive revision DDL
+    # before using current ORM against that historical schema.
+    from sqlalchemy import text
+    with engine.begin() as connection:
+        connection.execute(text("ALTER TABLE routine_entries ADD COLUMN revision INTEGER NOT NULL DEFAULT 1"))
+        connection.execute(text("ALTER TABLE routine_entries ADD COLUMN revision_protected BOOLEAN NOT NULL DEFAULT 0"))
     with Session(engine) as db:
         assert db.query(Product).one().name == 'Inventory'
-        assert db.query(RoutineEntry).count() == db.query(RoutineAdherence).count() == 0
+        assert db.execute(__import__("sqlalchemy").text("SELECT count(*) FROM routine_entries")).scalar() == db.query(RoutineAdherence).count() == 0
         db.add(RoutineEntry(user_id='upgrade', product_id='existing', schedule='BOTH', frequency='daily', start_date=datetime.now(timezone.utc).date(), active_am_product='existing', active_pm_product='existing'))
         db.commit()
         assert db.query(RoutineEntry).one().product_name == 'Inventory'

@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 from fastapi import HTTPException
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm.exc import StaleDataError
 from app.models import User, RoutineEntry
 
 def today():
@@ -23,6 +24,9 @@ def slot_keys(entry):
 def commit(db):
     try:
         db.commit()
+    except StaleDataError:
+        db.rollback()
+        raise HTTPException(412, "Resource changed; reload before retrying")
     except IntegrityError:
         db.rollback()
         raise HTTPException(409, "Conflicting routine slot or adherence already reported")

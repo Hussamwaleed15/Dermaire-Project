@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response
 from sqlalchemy.orm import Session
 from app.api.deps import get_current_user
 from app.core.database import get_db
@@ -6,6 +6,8 @@ from app.models import User, Product, RoutineEntry, RoutineAdherence
 from app.services.routine import today, lock_owner, owned_entry, slot_keys, commit, deactivate
 from app.services.experiments import guard_routine_write, stopped_experiment
 from app.schemas.routine import RoutineCreate, RoutineUpdate, RoutineOut, AdherenceCreate, AdherenceOut
+
+from app.services import resource_revisions as revisions
 
 router = APIRouter(prefix="/routine", tags=["Routine"])
 
@@ -17,7 +19,7 @@ def entries(active: bool | None = None, user: User = Depends(get_current_user), 
     return query.order_by(RoutineEntry.am_order, RoutineEntry.pm_order, RoutineEntry.created_at, RoutineEntry.id).all()
 
 @router.post("/entries", response_model=RoutineOut, status_code=201)
-def create(payload: RoutineCreate, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+def create(payload: RoutineCreate, response: Response, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     lock_owner(db, user)
     guard_routine_write(db, user.id)
     product = db.query(Product).filter_by(id=payload.product_id, user_id=user.id).first()
@@ -33,22 +35,27 @@ def create(payload: RoutineCreate, user: User = Depends(get_current_user), db: S
     db.add(entry)
     commit(db)
     db.refresh(entry)
+    revisions.etag(response, entry)
     return entry
 
 @router.get("/entries/{entry_id}", response_model=RoutineOut)
-def read(entry_id: str, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    return owned_entry(db, user, entry_id)
+def read(entry_id: str, response: Response, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    entry = owned_entry(db, user, entry_id)
+    revisions.etag(response, entry)
+    return entry
 
 @router.patch("/entries/{entry_id}", response_model=RoutineOut)
-def update(entry_id: str, payload: RoutineUpdate, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+def update(entry_id: str, payload: RoutineUpdate, request: Request, response: Response, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     lock_owner(db, user)
     entry = owned_entry(db, user, entry_id)
+    revisions.enforce(entry, revisions.header(request))
     guard_routine_write(db, user.id)
     data = payload.model_dump(exclude_unset=True)
     if any(value is None for key, value in data.items() if key != "instructions"):
         raise HTTPException(422, "Required configuration fields cannot be null")
     if not entry.active:
         raise HTTPException(409, "Stopped entries are immutable; create a new entry to resume")
+    revisions.reserve(db, entry, revisions.header(request))
     for key, value in data.items():
         setattr(entry, key, value)
     if not entry.active:
@@ -56,16 +63,20 @@ def update(entry_id: str, payload: RoutineUpdate, user: User = Depends(get_curre
     slot_keys(entry)
     commit(db)
     db.refresh(entry)
+    revisions.etag(response, entry)
     return entry
 
 @router.delete("/entries/{entry_id}", status_code=204)
-def remove(entry_id: str, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+def remove(entry_id: str, request: Request, response: Response, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     lock_owner(db, user)
     entry = owned_entry(db, user, entry_id)
+    revisions.enforce(entry, revisions.header(request))
     guard_routine_write(db, user.id)
     if entry.active:
+        revisions.reserve(db, entry, revisions.header(request))
         deactivate(entry)
         commit(db)
+    revisions.etag(response, entry)
 
 @router.get("/adherence", response_model=list[AdherenceOut])
 def logs(routine_entry_id: str | None = None, limit: int = Query(100, ge=1, le=500), offset: int = Query(0, ge=0), user: User = Depends(get_current_user), db: Session = Depends(get_db)):

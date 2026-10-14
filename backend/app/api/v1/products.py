@@ -135,6 +135,9 @@ def update_product(
             raise DermaireException(message="A product with this name already exists.", error_code="PRODUCT_DUPLICATE_NAME", status_code=409)
     if product.in_experiment and data.get("status") == "archived":
         raise DermaireException(message="Finish the experiment before archiving this product.", error_code="PRODUCT_IN_ACTIVE_EXPERIMENT", status_code=409)
+    if data.get("status") is not None and data["status"] != "active" and db.query(RoutineEntry).filter_by(
+            product_id=product.id, user_id=current_user.id, active=True, revision_protected=True).first():
+        raise HTTPException(409, "Stop protected routine entries with their current If-Match before archiving the product")
     if if_match is not None:
         product.revision_protected = True
     for key, value in data.items():

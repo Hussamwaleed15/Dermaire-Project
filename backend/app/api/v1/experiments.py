@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from app.core.database import get_db
@@ -76,11 +76,12 @@ def edit(identifier: str, payload: ExperimentUpdate, user: User = Depends(get_cu
     return experiment_projection(db, user.id, row)
 
 @router.post("/{identifier}/activate", response_model=ExperimentOut)
-def activate(identifier: str, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+def activate(identifier: str, request: Request, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     lock_owner(db, user)
     row = service.owned(db, user, identifier)
     try:
-        service.activate(db, user, row)
+        from app.services.resource_revisions import header
+        service.activate(db, user, row, header(request, "Routine-If-Match"))
     except IntegrityError:
         db.rollback()
         raise HTTPException(409, "Conflicting experiment or routine configuration")
