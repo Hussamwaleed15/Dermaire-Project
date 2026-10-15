@@ -367,3 +367,4 @@ from app.models.product_attempts import ProductCreateAttempt
 from app.models.messaging import MessageThread, ThreadMessage
 from app.models.notifications import NotificationPreference, NotificationDevice, Notification, NotificationJob
 from app.models.clinical_plans import ClinicalPlan, ClinicalPlanEvent, ClinicalPlanAttempt
+from app.models.agent_platform import AgentSession, AgentTurn, AgentAction

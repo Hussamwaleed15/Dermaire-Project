@@ -36,6 +36,11 @@ def delete_account(db, user_id, *, journal=None):
     notice_ids = [row.id for row in db.query(Notification).filter(notice_filter)]
     device_ids = [row.id for row in db.query(NotificationDevice).filter_by(user_id=user_id)]
     identifiers.update(notice_ids); identifiers.update(device_ids)
+    from app.models.agent_platform import AgentSession, AgentTurn, AgentAction
+    agent_ids = [row.id for row in db.query(AgentSession).filter_by(user_id=user_id)]
+    identifiers.update(agent_ids)
+    identifiers.update(row.id for row in db.query(AgentTurn).filter(AgentTurn.session_id.in_(agent_ids)))
+    identifiers.update(row.id for row in db.query(AgentAction).filter_by(user_id=user_id))
     for model in owned_models:
         identifiers.update(row.id for row in db.query(model).filter(model.user_id == user_id))
     related = or_(DoctorPatientAccess.patient_id == user_id, DoctorPatientAccess.doctor_id == user_id)
@@ -128,6 +133,9 @@ def delete_account(db, user_id, *, journal=None):
     db.query(ClinicalPlanAttempt).filter(ClinicalPlanAttempt.plan_id.in_(plan_ids)).delete(synchronize_session=False)
     db.query(ClinicalPlanEvent).filter(ClinicalPlanEvent.plan_id.in_(plan_ids)).delete(synchronize_session=False)
     db.query(ClinicalPlan).filter(ClinicalPlan.id.in_(plan_ids)).delete(synchronize_session=False)
+    db.query(AgentAction).filter_by(user_id=user_id).delete(synchronize_session=False)
+    db.query(AgentTurn).filter(AgentTurn.session_id.in_(agent_ids)).delete(synchronize_session=False)
+    db.query(AgentSession).filter_by(user_id=user_id).delete(synchronize_session=False)
     db.query(ThreadMessage).filter(ThreadMessage.thread_id.in_(thread_ids)).delete(synchronize_session=False)
     db.query(MessageThread).filter(thread_filter).delete(synchronize_session=False)
     db.query(ClinicalNote).filter(notes).delete(synchronize_session=False)
