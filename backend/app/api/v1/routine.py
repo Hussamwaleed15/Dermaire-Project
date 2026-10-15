@@ -13,6 +13,7 @@ from sqlalchemy.exc import IntegrityError
 from app.services.temporal import utc_day
 from app.schemas.history import AdherenceHistoryPage
 from app.services import adherence_history
+from app.services import configuration_attempts as configuration
 
 router = APIRouter(prefix="/routine", tags=["Routine"])
 
@@ -24,8 +25,10 @@ def entries(active: bool | None = None, user: User = Depends(get_current_user), 
     return query.order_by(RoutineEntry.am_order, RoutineEntry.pm_order, RoutineEntry.created_at, RoutineEntry.id).all()
 
 @router.post("/entries", response_model=RoutineOut, status_code=201)
-def create(payload: RoutineCreate, response: Response, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+def create(payload: RoutineCreate, response: Response, user: User = Depends(get_current_user), db: Session = Depends(get_db), request: Request = None):
     lock_owner(db, user)
+    attempt=configuration.begin(db,user.id,"routine","create","",payload,request,response)
+    if attempt and attempt.previous is not None:return attempt.previous
     guard_routine_write(db, user.id)
     product = db.query(Product).filter_by(id=payload.product_id, user_id=user.id).first()
     if product is None:
@@ -38,10 +41,18 @@ def create(payload: RoutineCreate, response: Response, user: User = Depends(get_
     entry.active = True
     slot_keys(entry)
     db.add(entry)
+    if attempt:return configuration.commit(db,attempt,entry,lambda:RoutineOut.model_validate(entry),commit,response,"routine")
     commit(db)
     db.refresh(entry)
     revisions.etag(response, entry)
     return entry
+
+
+@router.get("/configuration-attempts/{operation}/{key}")
+def configuration_attempt(operation: str,key: str,response: Response,resource_id: str="",
+                          user: User=Depends(get_current_user),db: Session=Depends(get_db)):
+    response.headers["Cache-Control"]="no-store"
+    return configuration.lookup(db,user.id,"routine",operation,resource_id,key)
 
 @router.get("/entries/{entry_id}", response_model=RoutineOut)
 def read(entry_id: str, response: Response, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
@@ -52,6 +63,8 @@ def read(entry_id: str, response: Response, user: User = Depends(get_current_use
 @router.patch("/entries/{entry_id}", response_model=RoutineOut)
 def update(entry_id: str, payload: RoutineUpdate, request: Request, response: Response, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     lock_owner(db, user)
+    attempt=configuration.begin(db,user.id,"routine","update",entry_id,payload,request,response)
+    if attempt and attempt.previous is not None:return attempt.previous
     entry = owned_entry(db, user, entry_id)
     revisions.enforce(entry, revisions.header(request))
     guard_routine_write(db, user.id)
@@ -66,6 +79,7 @@ def update(entry_id: str, payload: RoutineUpdate, request: Request, response: Re
     if not entry.active:
         deactivate(entry)
     slot_keys(entry)
+    if attempt:return configuration.commit(db,attempt,entry,lambda:RoutineOut.model_validate(entry),commit,response,"routine")
     commit(db)
     db.refresh(entry)
     revisions.etag(response, entry)
@@ -74,13 +88,21 @@ def update(entry_id: str, payload: RoutineUpdate, request: Request, response: Re
 @router.delete("/entries/{entry_id}", status_code=204)
 def remove(entry_id: str, request: Request, response: Response, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     lock_owner(db, user)
+    attempt=configuration.begin(db,user.id,"routine","stop",entry_id,None,request,response)
+    if attempt and attempt.previous is not None:return
     entry = owned_entry(db, user, entry_id)
     revisions.enforce(entry, revisions.header(request))
     guard_routine_write(db, user.id)
     if entry.active:
         revisions.reserve(db, entry, revisions.header(request))
         deactivate(entry)
+        if attempt:
+            configuration.commit(db,attempt,entry,lambda:RoutineOut.model_validate(entry),commit,response,"routine")
+            return
         commit(db)
+    elif attempt:
+        configuration.commit(db,attempt,entry,lambda:RoutineOut.model_validate(entry),commit,response,"routine")
+        return
     revisions.etag(response, entry)
 
 @router.get("/adherence", response_model=list[AdherenceOut])

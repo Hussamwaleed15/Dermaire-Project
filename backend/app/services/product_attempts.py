@@ -69,6 +69,9 @@ def headers(response, identifier, revision):
 
 
 def erase_results(db, owner, resource):
+    from app.models.configuration_attempts import ConfigurationAttempt
+    db.query(ConfigurationAttempt).filter_by(user_id=owner, source_product_id=resource).update(
+        {'result_snapshot': None}, synchronize_session='fetch')
     from app.models.product_mutations import ProductMutationAttempt
     db.query(ProductMutationAttempt).filter_by(user_id=owner, resource_id=resource, operation="patch").update(
         {'result_snapshot': None}, synchronize_session='fetch')

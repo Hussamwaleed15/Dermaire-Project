@@ -369,3 +369,4 @@ from app.models.notifications import NotificationPreference, NotificationDevice,
 from app.models.clinical_plans import ClinicalPlan, ClinicalPlanEvent, ClinicalPlanAttempt
 from app.models.agent_platform import AgentSession, AgentTurn, AgentAction
 from app.models.product_mutations import ProductMutationAttempt
+from app.models.configuration_attempts import ConfigurationAttempt

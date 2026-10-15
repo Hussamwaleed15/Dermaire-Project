@@ -17,7 +17,8 @@ def delete_account(db, user_id, *, journal=None):
     if user is None:
         return  # A valid access token can retry after the response was lost.
     from app.models.product_mutations import ProductMutationAttempt
-    owned_models = (ProductMutationAttempt, ProductCreateAttempt, CaptureObservation, ProductIntelligence, Measurement, Capture, ExperimentEvaluation, RoutineAdherence, DailyContext, CheckIn, Experiment, RoutineEntry, Product, RewardRedemption)
+    from app.models.configuration_attempts import ConfigurationAttempt
+    owned_models = (ConfigurationAttempt, ProductMutationAttempt, ProductCreateAttempt, CaptureObservation, ProductIntelligence, Measurement, Capture, ExperimentEvaluation, RoutineAdherence, DailyContext, CheckIn, Experiment, RoutineEntry, Product, RewardRedemption)
     # Names are neither unique nor stable references. Never match serialized
     # JSON keys: e.g. a name "id" otherwise scrubs every unrelated *_id field.
     identifiers = {user_id}
@@ -46,6 +47,8 @@ def delete_account(db, user_id, *, journal=None):
         identifiers.update(row.id for row in db.query(model).filter(model.user_id == user_id))
         if hasattr(model, "resource_id"):
             identifiers.update(row.resource_id for row in db.query(model).filter(model.user_id == user_id))
+        if hasattr(model, "source_product_id"):
+            identifiers.update(row.source_product_id for row in db.query(model).filter(model.user_id == user_id) if row.source_product_id)
     related = or_(DoctorPatientAccess.patient_id == user_id, DoctorPatientAccess.doctor_id == user_id)
     identifiers.update(row.id for row in db.query(DoctorPatientAccess).filter(related))
     actions = or_(DoctorReviewAction.patient_id == user_id, DoctorReviewAction.doctor_id == user_id)

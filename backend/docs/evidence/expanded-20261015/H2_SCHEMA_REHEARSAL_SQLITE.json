@@ -1,0 +1,17 @@
+{
+  "synthetic_only": true,
+  "live_calls": false,
+  "driver": "sqlite",
+  "database_version": "3.49.1",
+  "revision": "20261015_09",
+  "seed_revision": "20261008_01",
+  "data_preserved": true,
+  "tables_checked": 16,
+  "seeded_rows": 8,
+  "original_columns_digest": "4a0286a2ecd987b3a9c1bd23c3320505414bd1201d06a54addd8bbf034a751d9",
+  "legacy_export_not_broadened": true,
+  "checkin_reconciliation_preserved": true,
+  "default_revisions_verified": true,
+  "alembic_check": "no new upgrade operations",
+  "limits": "No managed deployment, index adoption, latency, collation, roles or DR certification"
+}

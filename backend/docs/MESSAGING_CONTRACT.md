@@ -41,5 +41,7 @@ decision; no regulatory retention certification is claimed.
 Migration 20261015_04 follows 03. Populated downgrade refuses data loss.
 Amr: preserve key/body across uncertain responses; do not cache private content
 after logout or revoked grant; show the emergency-service limitation in the UI.
-M1 identity/session, M2 check-in/captures, M3 routine/CAS, M4 experiment/CAS,
-M5 doctor consent and M6 AI/safety contracts remain unchanged. No Flutter edits.
+M1 entry/profile/Home authority, M2 capture/comparison plans, M3 agent boundaries,
+M4 product/routine/experiment CAS, M5 notifications and M6 doctor/grants retain
+their existing authority contracts. New backend surfaces require Amr's separate
+client integration and verification. No Flutter edits.

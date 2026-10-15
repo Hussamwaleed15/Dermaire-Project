@@ -161,6 +161,7 @@ class DeletionJournal:
         images = {i for r in records for i in r.get("images", [])}
         from app.models import User, Product, ProductIntelligence, Experiment, RoutineEntry, ProductCreateAttempt
         from app.models.product_mutations import ProductMutationAttempt
+        from app.models.configuration_attempts import ConfigurationAttempt
         user_ids = [u.id for u in db.query(User) if self.token("owner", u.id) in owners]
         product_records = [r for r in records if r["schema"] == 3]
         product_targets = []
@@ -184,10 +185,11 @@ class DeletionJournal:
         if product_records:
             # Photo/account-only intents must not inspect or mutate product
             # receipts. Keep the product journal domain explicitly bounded.
-            receipt_candidates = list(db.query(ProductCreateAttempt)) + list(db.query(ProductMutationAttempt).filter_by(operation="patch"))
+            receipt_candidates = (list(db.query(ProductCreateAttempt)) + list(db.query(ProductMutationAttempt).filter_by(operation="patch"))
+                + list(db.query(ConfigurationAttempt).filter(ConfigurationAttempt.source_product_id.isnot(None))))
         receipt_targets = [a for a in receipt_candidates if any(
             r["owner"] == self.token("product-owner", a.user_id)
-            and self.token("product", a.resource_id) in r["products"] for r in product_records)]
+            and self.token("product", a.source_product_id if isinstance(a, ConfigurationAttempt) else a.resource_id) in r["products"] for r in product_records)]
         # All signed inputs and restored product links verified before mutation.
         for attempt in receipt_targets:
             attempt.result_snapshot = None
