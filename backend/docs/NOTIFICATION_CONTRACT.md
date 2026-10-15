@@ -26,9 +26,11 @@ replaced; old jobs recheck session validity before dispatch.
 Message commit atomically enqueues the recipient's opted-in inbox item and current
 device jobs. Event identity deduplicates owner/kind/source/revision. No opt-in means
 no inbox item and no replay backfill after enabling. Device registration creates
-future-event subscriptions only. No guaranteed catch-up of historical events.
-Follow-up/comparison/routine kinds are reserved typed hooks, not a claim that all
-their schedulers are implemented in this milestone.
+future-event subscriptions and jobs for still-authorized future plan reminders.
+No guaranteed catch-up of historical/overdue events.
+Follow-up/comparison plan acknowledgment creates fixed-UTC due reminders and
+reschedule/cancel invalidates them. Routine kind has a current-entry/revision gate,
+but recurring routine enqueue generation remains OPEN.
 
 Internal `dispatch_one` uses PostgreSQL SKIP LOCKED claims, 60-second lease tokens,
 lease-expiry fencing, bounded exponential retry delay (up to one hour), cancellation

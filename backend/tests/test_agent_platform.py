@@ -170,3 +170,35 @@ def test_account_erasure_removes_agent_memory_and_requests(loop,monkeypatch):
     monkeypatch.setattr(deletion_journal,"record",Mock());monkeypatch.setattr(azure_blob_service,"delete_owned_images",Mock())
     delete_account(db,patient.id)
     assert db.query(AgentSession).count()==db.query(AgentAction).count()==db.query(AgentTurn).count()==0
+
+
+def test_new_login_does_not_revive_logged_out_agent_authority(loop):
+    client,_,patient,_,_=loop
+    session,headers=opened(loop)
+    assert client.post("/api/v1/auth/logout",headers=headers).status_code==204
+    assert client.get(ROOT+"/sessions/"+session["id"],headers=auth(patient)).status_code==403
+
+
+def test_active_session_limit_is_bounded(loop):
+    client,db,patient,_,_=loop
+    headers=auth(patient)
+    for index in range(5):
+        response=client.post(ROOT+"/sessions",headers={**headers,"Idempotency-Key":KEY+str(index)},json={"longitudinal_read_consent":True,"proposal_actions_consent":False})
+        assert response.status_code==201,response.text
+    assert client.post(ROOT+"/sessions",headers={**headers,"Idempotency-Key":KEY+"6"},json={"longitudinal_read_consent":True}).status_code==409
+
+
+def test_routine_proposal_is_revision_bound_and_does_not_modify_treatment(loop):
+    client,db,patient,_,_=loop
+    from app.models import RoutineEntry
+    db.add(Product(id="product",user_id=patient.id,name="Synthetic"));db.commit()
+    db.add(RoutineEntry(id="routine",user_id=patient.id,product_id="product",schedule="AM",frequency="daily",start_date=datetime.now(timezone.utc).date(),active=True,instructions="Original"));db.commit()
+    session,headers=opened(loop);base=ROOT+"/sessions/"+session["id"]
+    payload=action_body(kind="propose_routine_adjustment",routine_id="routine",routine_revision=2)
+    assert client.post(base+"/actions/preview",headers=headers,json=payload).status_code==409
+    payload["routine_revision"]=1
+    preview=client.post(base+"/actions/preview",headers=headers,json=payload)
+    assert preview.status_code==201,preview.text
+    confirmed=client.post(base+"/actions/"+preview.json()["id"]+"/confirm",headers=headers,json={"expected_revision":1,"confirm":True})
+    assert confirmed.status_code==200 and confirmed.json()["result"]["status"]=="pending_clinician_review"
+    assert db.get(RoutineEntry,"routine").instructions=="Original" and db.get(RoutineEntry,"routine").revision==1

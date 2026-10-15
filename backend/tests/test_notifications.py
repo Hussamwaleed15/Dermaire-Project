@@ -194,3 +194,14 @@ def test_pg_worker_claim_has_one_lease(pg_engine):
         with factory() as db: barrier.wait(timeout=5); return service.claim(db)
     with ThreadPoolExecutor(2) as pool: results=list(pool.map(run,range(2)))
     assert sum(bool(r and "id" in r) for r in results)==1
+
+
+def test_new_device_attaches_to_existing_future_consented_plan_reminder(loop):
+    client,db,patient,_,_=loop
+    from tests.test_clinical_plans import create
+    service.change_preferences(db,patient,PreferencesIn(expected_revision=0,enabled_kinds=["follow_up"],push_enabled=True,timezone="UTC",quiet_start=0,quiet_end=0))
+    plan,_,_=create(loop)
+    result=client.post("/api/v1/clinical-plans/"+plan["id"]+"/acknowledge",headers={**auth(patient),"Idempotency-Key":KEY},json={"expected_revision":1,"consent":True})
+    assert result.status_code==200 and db.query(Notification).count()==1 and db.query(NotificationJob).count()==0
+    service.register(db,patient,{"jti":"synthetic","exp":(datetime.now(timezone.utc)+timedelta(days=30)).timestamp()},DeviceIn(installation_id="synthetic-installation",token=TOKEN,platform="ios",push_consent=True))
+    assert db.query(NotificationJob).count()==1 and service.claim(db) is None

@@ -13,6 +13,7 @@ from sqlalchemy.orm.exc import StaleDataError
 from sqlalchemy.exc import IntegrityError
 from datetime import datetime, timezone
 from app.services import product_attempts
+from app.services import product_mutations
 from app.services.resource_revisions import header
 from app.schemas.product_attempts import ProductCreateAttemptOut
 from app.schemas import (
@@ -120,6 +121,13 @@ def product_create_attempt(key: str, response: Response,
     return product_attempts.lookup(db, current_user.id, key)
 
 
+@router.get("/{product_id}/operation-attempts/{operation}/{key}")
+def product_mutation_attempt(product_id: str, operation: str, key: str, response: Response,
+    current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    response.headers['Cache-Control'] = 'no-store'
+    return product_mutations.lookup(db, current_user.id, product_id, operation, key)
+
+
 @router.get("/{product_id}", response_model=ProductOut)
 def get_product(
     product_id: str,
@@ -148,6 +156,15 @@ def update_product(
     request: Request = None
 ):
     lock_owner(db, current_user)
+    key = header(request, "Idempotency-Key") if request is not None else None
+    identifier = product_mutations.identity(current_user.id, product_id, "patch", key) if key is not None else None
+    digest = product_mutations.fingerprint(product_id, "patch", payload, if_match) if identifier else None
+    if request is not None:
+        header(request)  # Duplicate preconditions are invalid even on replay.
+    if identifier:
+        replay = product_mutations.replay(db, current_user.id, identifier, digest, response)
+        if replay is not None:
+            return replay
     product = db.query(Product).filter(
         Product.id == product_id,
         Product.user_id == current_user.id
@@ -156,7 +173,6 @@ def update_product(
         raise EntityNotFoundException("Product", product_id)
 
     if request is not None:
-        from app.services.resource_revisions import header
         header(request)  # Reject duplicate preconditions instead of selecting one.
     product_revisions.enforce(product, if_match)
     guard_routine_write(db, current_user.id)
@@ -189,7 +205,15 @@ def update_product(
             deactivate(entry)
     db.add(AuditLog(actor_id=current_user.id, action="PRODUCT_UPDATED", target_resource="products",
         details={"product_id": product.id}))
+    result = None
+    if identifier:
+        product_mutations.flush(db)  # Freeze resulting product and routine revisions in the same transaction.
+        result = ProductOut.model_validate(product).model_dump(mode="json")
+        product_mutations.stage(db, current_user.id, product.id, "patch", identifier, digest, product.revision, result)
     product_revisions.commit(db)
+    if identifier:
+        product_attempts.headers(response, identifier, result["revision"])
+        return result
     db.refresh(product)
     if response is not None:
         response.headers["ETag"] = f'"{product.revision}"'
@@ -201,9 +225,19 @@ def delete_product(
     if_match: str | None = Header(None, alias="If-Match", max_length=64),
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
-    request: Request = None
+    request: Request = None,
+    response: Response = None
 ):
     lock_owner(db, current_user)
+    key = header(request, "Idempotency-Key") if request is not None else None
+    identifier = product_mutations.identity(current_user.id, product_id, "delete", key) if key is not None else None
+    digest = product_mutations.fingerprint(product_id, "delete", None, if_match) if identifier else None
+    if request is not None:
+        header(request)
+    if identifier:
+        replay = product_mutations.replay(db, current_user.id, identifier, digest, response)
+        if replay is not None:
+            return
     product = db.query(Product).filter(
         Product.id == product_id,
         Product.user_id == current_user.id
@@ -212,7 +246,6 @@ def delete_product(
         raise EntityNotFoundException("Product", product_id)
 
     if request is not None:
-        from app.services.resource_revisions import header
         header(request)  # Reject duplicate preconditions instead of selecting one.
     product_revisions.enforce(product, if_match)
 
@@ -253,6 +286,10 @@ def delete_product(
     db.delete(product)
     db.add(AuditLog(actor_id=current_user.id, action="PRODUCT_DELETED", target_resource="products",
         details={"product_id": product_id}))
+    if identifier:
+        product_mutations.stage(db, current_user.id, product_id, "delete", identifier, digest, product.revision,
+            {"deleted": True, "id": product_id, "revision": product.revision})
+        product_attempts.headers(response, identifier, product.revision)
     product_revisions.commit(db)
 
 @router.post("/check-interactions", deprecated=True)

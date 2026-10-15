@@ -196,3 +196,35 @@ def test_messaging_populated_downgrade_refused(loop, tmp_path, monkeypatch):
     with pytest.raises(RuntimeError,match="consented clinical"):
         command.downgrade(config,"20261015_03")
     engine.dispose()
+
+
+def test_pg_revocation_fences_a_waiting_send(pg_engine):
+    from tests.test_postgres_gate import observe_lock_wait
+    factory=seed(pg_engine)
+    with factory() as db:
+        db.add(DoctorPatientAccess(id="access",patient_id="owner",doctor_id="doctor0",status="active",
+            access_token="synthetic",expires_at=datetime.now(timezone.utc)+timedelta(days=1)));db.commit()
+        thread=service.open_thread(db,db.get(User,"owner"),OpenThread(access_id="access",messaging_consent=True))["id"]
+    def send():
+        with factory() as db:
+            try:service.send(db,db.get(User,"owner"),thread,SendMessage(body="Private"),KEY)
+            except HTTPException as error:db.rollback();return error.status_code
+    with factory() as blocker:
+        blocker.query(User).filter_by(id="owner").with_for_update().one()
+        blocker.get(DoctorPatientAccess,"access").status="revoked";blocker.flush()
+        with ThreadPoolExecutor(1) as pool:
+            pending=pool.submit(send)
+            observe_lock_wait(pg_engine)
+            blocker.commit()
+            assert pending.result(timeout=5)==403
+    with factory() as db:assert db.query(ThreadMessage).count()==0
+
+
+def test_thread_list_pagination_is_owner_scoped(loop):
+    client,_,patient,foreign,_=loop
+    ids=[opened(loop)[0] for _ in range(3)]
+    first=client.get(ROOT+"?limit=2",headers=auth(patient)).json()
+    second=client.get(ROOT+"?limit=2&after="+first["next_after"],headers=auth(patient)).json()
+    assert {r["id"] for r in first["items"]+second["items"]}==set(ids)
+    assert second["next_after"] is None
+    assert client.get(ROOT+"?after="+ids[0],headers=auth(foreign)).status_code==422

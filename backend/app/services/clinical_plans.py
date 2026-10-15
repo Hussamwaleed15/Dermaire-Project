@@ -79,8 +79,11 @@ def schedule(payload):
 
 
 def private_capture(db,owner,identifier):
+    from app.services.image_access import safe_reference
     capture=db.query(Capture).filter_by(id=identifier,user_id=owner,state="accepted",storage="azure_blob").first()
-    if not capture or not capture.image_blob_name or utc(capture.received_at)>now():raise HTTPException(404,"Owned persisted accepted capture required")
+    if (not capture or not safe_reference(capture.image_blob_name) or utc(capture.received_at)>now()
+        or not capture.image_blob_name.startswith(f"skin_photos/{owner}/{owner}_")):
+        raise HTTPException(404,"Owned persisted accepted capture required")
     return capture
 
 

@@ -160,6 +160,7 @@ class DeletionJournal:
         owners = {r["owner"] for r in records if r["schema"] != 3}
         images = {i for r in records for i in r.get("images", [])}
         from app.models import User, Product, ProductIntelligence, Experiment, RoutineEntry, ProductCreateAttempt
+        from app.models.product_mutations import ProductMutationAttempt
         user_ids = [u.id for u in db.query(User) if self.token("owner", u.id) in owners]
         product_records = [r for r in records if r["schema"] == 3]
         product_targets = []
@@ -179,7 +180,12 @@ class DeletionJournal:
                     raise RuntimeError("Restored product dependencies require offline repair")
                 product_targets.append(product)
         # Restore can contain receipt content even when the product row is absent.
-        receipt_targets = [a for a in db.query(ProductCreateAttempt) if any(
+        receipt_candidates = []
+        if product_records:
+            # Photo/account-only intents must not inspect or mutate product
+            # receipts. Keep the product journal domain explicitly bounded.
+            receipt_candidates = list(db.query(ProductCreateAttempt)) + list(db.query(ProductMutationAttempt).filter_by(operation="patch"))
+        receipt_targets = [a for a in receipt_candidates if any(
             r["owner"] == self.token("product-owner", a.user_id)
             and self.token("product", a.resource_id) in r["products"] for r in product_records)]
         # All signed inputs and restored product links verified before mutation.

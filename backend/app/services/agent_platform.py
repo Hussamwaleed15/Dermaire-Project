@@ -79,6 +79,8 @@ def create(db,actor,claims,payload,key):
         if existing.scopes!=scopes or existing.auth_session_id!=claims["jti"]:raise HTTPException(409,"Session key is bound to different consent/session")
         return session_out(existing)
     at=now()
+    if db.query(AgentSession).filter(AgentSession.user_id==actor.id,AgentSession.revoked_at.is_(None),AgentSession.expires_at>at).count()>=5:
+        raise HTTPException(409,"Active agent session limit reached; revoke an existing session")
     row=AgentSession(id=identifier,user_id=actor.id,auth_session_id=claims["jti"],credential=credential_stamp(actor.hashed_password),
         expires_at=min(at+timedelta(hours=1),datetime.fromtimestamp(claims["exp"],timezone.utc)),revision=1,scopes=scopes,
         context=build_context(db,actor,now=at).model_dump(mode="json"),context_digest=evidence_digest(db,actor),context_at=at,tool_calls=1)

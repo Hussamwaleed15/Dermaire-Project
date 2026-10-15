@@ -54,7 +54,7 @@ via action-attempts or action list. Same-key different input409; confirm false40
 unknown is not a durable rejection/in-flight reservation. Confirm replay returns
 the previously recorded request and never executes another effect.
 
-Session create replay returns the same resource with its current snapshot, not an
+At most five active sessions per account. Session create replay returns the same resource with its current snapshot, not an
 immutable original-context receipt. Refresh timeout needs GET/revision
 reconciliation, not blind retry. Expired memory is inaccessible but retained until
 explicit session revoke/account erasure; automatic TTL purge and broader memory

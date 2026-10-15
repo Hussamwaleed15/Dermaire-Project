@@ -183,3 +183,11 @@ def test_populated_plan_migration_downgrade_is_refused(tmp_path,monkeypatch):
         c.execute(text("INSERT INTO clinical_plans(id,user_id,doctor_id,access_id,kind,revision,state,purpose,due_at,schedule_provenance,source_snapshot,created_at) VALUES ('p','u','d','a','follow_up',1,'proposed','Synthetic',CURRENT_TIMESTAMP,'{}','{}',CURRENT_TIMESTAMP)"))
     with pytest.raises(RuntimeError,match="clinical plans"):command.downgrade(config,"20261015_05")
     engine.dispose()
+
+
+def test_forged_private_capture_namespace_is_rejected(loop):
+    _,db,patient,foreign,_=loop
+    row=capture(db,patient,"forged")
+    row.image_blob_name=f"skin_photos/{foreign.id}/{foreign.id}_private";db.commit()
+    with pytest.raises(HTTPException) as error:service.private_capture(db,patient.id,row.id)
+    assert error.value.status_code==404

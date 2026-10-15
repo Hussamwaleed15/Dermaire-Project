@@ -79,7 +79,16 @@ def register(db, actor, claims, payload):
     row.session_expires_at=datetime.fromtimestamp(claims["exp"],timezone.utc)
     row.token_hash=digest; row.token_encrypted=cipher().encrypt(payload.token.encode()).decode()
     row.platform=payload.platform; row.revoked_at=None
-    try: db.commit()
+    try:
+        db.flush()
+        at=datetime.now(timezone.utc)
+        for notice in db.query(Notification).filter(Notification.user_id==actor.id,Notification.cancelled_at.is_(None),Notification.due_at>at):
+            if notice.kind not in pref.enabled_kinds or not source_active(db,notice,at):continue
+            job=db.query(NotificationJob).filter_by(notification_id=notice.id,device_id=row.id).first()
+            if job is None:db.add(NotificationJob(notification_id=notice.id,device_id=row.id,available_at=notice.due_at))
+            elif job.state=="cancelled":
+                job.state="queued";job.available_at=notice.due_at;job.lease_token=None;job.lease_until=None
+        db.commit()
     except IntegrityError:
         db.rollback()
         raise HTTPException(409,"Device registration changed concurrently; refresh and retry") from None

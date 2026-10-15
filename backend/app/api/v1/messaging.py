@@ -24,17 +24,25 @@ def open_thread(payload: OpenThread, response: Response,
 
 
 @router.get("/threads")
-def list_threads(response: Response, actor: User = Depends(participant), db: Session = Depends(get_db)):
+def list_threads(response: Response, after: str | None = None, limit: int = Query(50, ge=1, le=100),
+                 actor: User = Depends(participant), db: Session = Depends(get_db)):
     private(response)
     column = MessageThread.patient_id if actor.role == "patient" else MessageThread.doctor_id
-    rows = db.query(MessageThread).filter(column == actor.id).order_by(MessageThread.created_at, MessageThread.id).all()
+    query = db.query(MessageThread).filter(column == actor.id)
+    if after:
+        anchor = db.query(MessageThread).filter(column == actor.id, MessageThread.id == after).first()
+        if anchor is None: raise HTTPException(422, "Invalid thread cursor")
+        from sqlalchemy import or_, and_
+        query = query.filter(or_(MessageThread.created_at > anchor.created_at,
+            and_(MessageThread.created_at == anchor.created_at, MessageThread.id > anchor.id)))
+    rows = query.order_by(MessageThread.created_at, MessageThread.id).limit(limit + 1).all()
     result = []
-    for row in rows:
+    for row in rows[:limit]:
         try:
             result.append(service.thread_out(service.authorize(db, actor, row.id)))
         except HTTPException as error:
             if error.status_code not in (403, 404): raise
-    return {"items": result}
+    return {"items": result, "next_after": rows[limit-1].id if len(rows) > limit else None}
 
 
 @router.post("/threads/{thread_id}/messages", status_code=201)

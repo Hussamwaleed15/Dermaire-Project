@@ -58,3 +58,5 @@ from app.api.v1.clinical_plans import router as clinical_plans_router
 api_v1_router.include_router(clinical_plans_router)
 from app.api.v1.agent_platform import router as agent_platform_router
 api_v1_router.include_router(agent_platform_router)
+from app.api.v1.doctor_snapshot import router as doctor_snapshot_router
+api_v1_router.include_router(doctor_snapshot_router)

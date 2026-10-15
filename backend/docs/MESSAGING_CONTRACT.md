@@ -5,7 +5,7 @@ Registered `/api/v1/messaging` endpoints:
 | Method/path | Input | Result |
 |---|---|---|
 | POST /threads | `{ "access_id": "grant-id", "messaging_consent": true }` | 201 thread; replay enrollment returns same thread |
-| GET /threads | current authenticated patient or doctor | active consented original-grant threads only |
+| GET /threads | current authenticated patient or doctor, limit 1..100, after=owned thread id | active consented original-grant threads, next_after cursor |
 | POST /threads/{id}/messages | `{ "body": "Please review my progress" }`, one Idempotency-Key | 201 immutable message, Operation-Attempt-Id |
 | GET /threads/{id}/attempts/{key} | original sending actor | committed/unknown/expired, original result only within 30 days |
 | GET /threads/{id}/messages | after=0, limit=50, optional as_of=sequence | ordered items, as_of_sequence, next_after, read watermarks |

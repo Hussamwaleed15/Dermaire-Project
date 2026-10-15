@@ -3,11 +3,17 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker, Session
 from app.core.config import settings
 
-connect_args = {}
-if settings.DATABASE_URL.startswith("sqlite"):
-    connect_args["check_same_thread"] = False
-elif settings.DATABASE_URL.startswith("postgresql"):
-    connect_args.update(connect_timeout=5, options="-c statement_timeout=5000")
+def connection_options(url):
+    if url.startswith("sqlite"):
+        return {"check_same_thread": False}
+    if url.startswith("postgresql"):
+        # Existing naive timestamp columns carry server-UTC values. Pin the
+        # connection's cast semantics instead of inheriting a host timezone.
+        return {"connect_timeout": 5, "options": "-c statement_timeout=5000 -c timezone=UTC"}
+    return {}
+
+
+connect_args = connection_options(settings.DATABASE_URL)
 
 engine = create_engine(
     settings.DATABASE_URL,
