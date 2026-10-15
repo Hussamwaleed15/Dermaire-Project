@@ -1,0 +1,30 @@
+{
+  "exitstatus": 0,
+  "real_pg_case_count": 24,
+  "case_ids": [
+    "tests/test_h4_integration.py::test_pg_association_read_waits_for_current_revoke",
+    "tests/test_h3_integrated.py::test_pg_serialized_h3_commands_and_atomic_audits[accept-accept]",
+    "tests/test_h3_integrated.py::test_pg_serialized_h3_commands_and_atomic_audits[review-review]",
+    "tests/test_h3_integrated.py::test_pg_serialized_h3_commands_and_atomic_audits[accept-review]",
+    "tests/test_current_schema_rehearsal.py::test_current_schema_seeded_pg",
+    "tests/test_postgres_gate.py::test_pg_seeded_migrations_and_protected_downgrade",
+    "tests/test_postgres_gate.py::test_pg_checkin_independent_connections[False]",
+    "tests/test_postgres_gate.py::test_pg_checkin_independent_connections[True]",
+    "tests/test_postgres_gate.py::test_pg_product_cas_independent_connections[False]",
+    "tests/test_postgres_gate.py::test_pg_product_cas_independent_connections[True]",
+    "tests/test_postgres_gate.py::test_pg_claim_replay_scopes_and_revoke",
+    "tests/test_postgres_gate.py::test_pg_revoke_expiry_before_waiting_claim[revoke]",
+    "tests/test_postgres_gate.py::test_pg_revoke_expiry_before_waiting_claim[expiry]",
+    "tests/test_postgres_gate.py::test_pg_row_lock_timeout_and_rollback",
+    "tests/test_postgres_gate.py::test_pg_explicit_export_actor_isolation",
+    "tests/test_postgres_gate.py::test_pg_view_never_implies_export",
+    "tests/test_postgres_gate.py::test_pg_checkin_ttl_isolation_lost_response",
+    "tests/test_postgres_gate.py::test_pg_clinical_revoke_lock_order[clinical_first-note]",
+    "tests/test_postgres_gate.py::test_pg_clinical_revoke_lock_order[clinical_first-review]",
+    "tests/test_postgres_gate.py::test_pg_clinical_revoke_lock_order[revoke_first-note]",
+    "tests/test_postgres_gate.py::test_pg_clinical_revoke_lock_order[revoke_first-review]",
+    "tests/test_postgres_gate.py::test_pg_product_api_if_match_and_parallel_cas",
+    "tests/test_postgres_gate.py::test_pg_deadlock_detection_is_bounded",
+    "tests/test_postgres_gate.py::test_pg_product_update_delete_cas"
+  ]
+}

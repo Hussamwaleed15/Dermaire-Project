@@ -1,0 +1,64 @@
+{
+  "source_baseline_sha": "b42cba049558f19a3dc3ac4221b23371974dc4dd",
+  "synthetic_only": true,
+  "no_deployment": true,
+  "phases": {
+    "C1": {
+      "focused_passed": 106,
+      "full_passed": 920,
+      "real_pg_cases": 42,
+      "warnings": 189,
+      "seconds": 159.7
+    },
+    "C2": {
+      "focused_passed": 77,
+      "full_passed": 929,
+      "real_pg_cases": 43,
+      "warnings": 189,
+      "seconds": 168.59
+    },
+    "C3_product_create": {
+      "focused_passed": 74,
+      "full_passed": 940,
+      "real_pg_cases": 46,
+      "warnings": 203,
+      "seconds": 171.18
+    },
+    "C4_final": {
+      "focused_contract_passed": 91,
+      "focused_clock_passed": 90,
+      "full_passed": 947,
+      "real_pg_cases": 51,
+      "warnings": 203,
+      "seconds": 175.95
+    },
+    "C5": {
+      "focused_passed": 37,
+      "real_pg_cases": 24,
+      "warnings": 13,
+      "seconds": 21.85,
+      "supplemental_pg_http_smoke": "passed; not added to pytest count"
+    }
+  },
+  "final_failed": 0,
+  "final_skipped": 0,
+  "migration_head": "20261015_03",
+  "compileall": "passed",
+  "git_diff_check": "passed",
+  "configured_linter": "none found",
+  "pg_version": "18.6",
+  "sqlite_version": "3.49.1",
+  "default_pg_timezone": "UTC",
+  "default_pg_isolation": "READ COMMITTED; snapshot endpoint explicitly REPEATABLE READ",
+  "new_cluster": "work/pg-foundation-new",
+  "cluster_state": "stopped; directory retained; only postgres/template0/template1 before stop",
+  "old_pg_h4": "identity read only; not reused, mutated, reset or deleted",
+  "limits": [
+    "No full local-calendar cutover or routine revision history",
+    "No all-domain history reconstruction",
+    "Product CREATE receipt only; other domains OPEN",
+    "No durable rejected/in-flight registry",
+    "Patient DB snapshot only; no standalone/external/doctor snapshot guarantee",
+    "No managed rollout or H5"
+  ]
+}

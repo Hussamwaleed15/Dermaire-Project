@@ -1,0 +1,28 @@
+# Foundation closure master status — 2026-10-15 Cairo
+
+Canonical origin verified at start b42cba049558f19a3dc3ac4221b23371974dc4dd; fresh isolated main checkout. This ledger supersedes H4/H3/H2 completion wording only for changes below. DONE means source and isolated tests, never deployment. H5 has not started.
+
+| Milestone/domain | Status | Source-backed closure and residual |
+|---|---|---|
+| C0 inventory | DONE | FOUNDATION_C0_MATRIX.md traces routes/services/models/tests and historical reports. Prior H4 outputs were available and read |
+| C1 temporal | PARTIAL | Typed server-UTC provenance, latest configuration record time/report-day boundary, frozen new adherence snapshots, UTC normalization. No local-day cutover, user timezone preference, DST wall-time scheduling or full revision event history. Product policy required for travel/cutover/overlap/gap and historical uniqueness |
+| C2 freshness/history | PARTIAL | Typed sufficiency elapsed freshness, earliest/latest reference range, precise latest-reference freshness basis, cursor lifetime/position validation and PG deletion/backdated-commit proof. All-domain stable histories and mutable historical source reconstruction remain OPEN |
+| C3 product creation | DONE bounded committed subset | Atomic product+audit+owner/actor/key/payload-bound receipt; original result replay/lookup,30d access window, erased result tombstone, product/account erase and offline restore scrubbing. Migration20261015_03; no durable rejected/in-flight or scheduled TTL purge |
+| C3 product PATCH/DELETE | OPEN receipts; existing CAS retained | Deletion's independent journal and update's routine side effects need their own transaction/receipt contract. CREATE proof is not DELETE proof |
+| C3 routine configuration | OPEN receipts | All-writer CAS/adherence snapshots retained; create/edit/deactivate and experiment intervention writers require domain attempt/result binding |
+| C3 experiments | OPEN receipts | Draft/lifecycle/evaluate plus multi-resource revisions/frozen evidence retained; repeated evaluation still needs attempt-specific durable result identity |
+| C3 clinical notes/reviews | OPEN receipts | Immutable notes and review expected_sequence retained. Future receipt must bind doctor/patient/original grant, reauthorize on lookup and scrub both actor/patient deletion; no cached revoked private content |
+| C3 grants/consent/onboarding | OPEN operation receipts | H1 scoped VIEW/explicit EXPORT, grant revoke/expiry and H3 versioned policy/onboarding retained. General selected/bulk grant and policy-attempt identity absent |
+| Existing check-in/adherence/capture | PARTIAL wider receipt goal | Existing bounded committed/unknown/expired subsets preserved. No universal durable reservation/rejection registry or exactly-once external effect guarantee |
+| C4 clinical consistency | PARTIAL overall; DONE patient DB bundle | New GET /clinical-snapshot uses true PostgreSQL repeatable-read transaction for DB rows, one Safety and clock, separate current auth gate. Patient-only, no durable/replay token; standalone endpoints, doctor bundle, historical/external/AI/time-varying sources remain outside guarantee |
+| C5 local gate/handoff | DONE isolated scope | Final947 passed,51 real PG cases,zero failures/skips;203 dependency deprecations. Seeded SQLite3.49.1/PG18.6 migration20261008_01→20261015_03 preserves16 old tables/8 rows; schema drift/compile/diff checks clean. Separate Flutter HTTP handoff and synthetic examples. No mobile/managed-environment certification |
+| Managed rollout/backup/restore/DR | OPEN separate authorization and environment evidence | No Azure/live DB/config/migration/deployment. Isolated mocked deletion-journal replay is not a managed restore rehearsal |
+| H5 | NOT STARTED / dependency gate NOT CLEARED | Complete required outstanding foundation domain receipts and temporal/history policy, define remaining clinical consistency scope and separately verify managed rollout gates before approving any H5 implementation |
+
+No fake universal receipts layer was introduced: the only new receipt domain is product CREATE. Other domains remain explicitly OPEN because existing audit/commit/side-effect boundaries and actor/grant erasure differ; they cannot safely inherit the product contract. No claim that this wave closes all H2/H4 gaps. No changes to default consent enforcement, QR authority, experiment algorithms or clinical clearance.
+
+New migration20261015_03 after20261015_02, table product_create_attempts only; no historical backfill. Populated downgrade refuses data loss. Source readiness expects03 before future separately authorized deployment. Receipt retention:30-day read-result/replay access; retained product result under account lifetime retention, scrubbed on product erase, including restored orphan receipts; minimal tombstone/hash until account erase; no scheduler/automatic purge promise.
+
+Source contracts: FOUNDATION_C1_TEMPORAL.md,FOUNDATION_C2_FRESHNESS.md,FOUNDATION_C3_PRODUCT_ATTEMPTS.md,FOUNDATION_C4_CLINICAL_SNAPSHOT.md,FOUNDATION_FLUTTER_HANDOFF.md. Executed evidence in evidence/foundation-closure-20261015. Existing H1–H4/M1–M6 contracts preserved by backend regressions; Flutter/device behavior requires Amr's separate verification.
+
+Commit ledger (normal push, remote SHA checked after each): C0 49d175c6206080d41072cbb51daea20d0abb92a2; C1 7858ab96052de43d7ddb0503b4d29043f310e906; C2 180ee51e2286d8cf4c3bf0b5aa6bb43416b03908; C3 d4a82f742e0380a273dfa9e6c4ca744cf0ff23a5; C4 733a1ea557df4864a252af8df46d324fbd25b8ea. Final docs/evidence commit is recorded in the external Arabic report after its push to avoid a self-referential commit hash.

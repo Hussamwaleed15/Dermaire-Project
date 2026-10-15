@@ -1,3 +1,5 @@
+> Foundation closure update2026-10-15: see FOUNDATION_MASTER_STATUS.md for the current ledger. Product CREATE now has bounded durable committed receipts (migration20261015_03); other domain attempt gaps remain OPEN. Patient-only GET /clinical-snapshot provides PostgreSQL transaction consistency; standalone endpoints remain non-atomic. H4 temporal/all-domain history and broad H2 receipts remain PARTIAL. The text below is the historical checkpoint and is superseded only for these delivered subsets. No H5 or managed rollout.
+
 # Backend master status after H4 — 2026-10-15 Cairo
 
 Current source ledger; supersedes H3_BACKEND_MASTER_STATUS only for work delivered by H4. DONE means local source/test verification, not deployment. Historical H0/H2/H3 reports remain evidence of their own checkpoints, not current rollout approval. H5 has not started.

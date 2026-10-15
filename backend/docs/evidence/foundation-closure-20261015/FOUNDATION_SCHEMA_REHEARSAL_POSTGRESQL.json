@@ -1,0 +1,17 @@
+{
+  "synthetic_only": true,
+  "live_calls": false,
+  "driver": "postgresql+psycopg",
+  "database_version": "PostgreSQL 18.6 on x86_64-windows, compiled by msvc-19.44.35229, 64-bit",
+  "revision": "20261015_03",
+  "seed_revision": "20261008_01",
+  "data_preserved": true,
+  "tables_checked": 16,
+  "seeded_rows": 8,
+  "original_columns_digest": "e256f61a892aaa05d584b9dd941e111229e90f642143ef7070e015ed15bd765c",
+  "legacy_export_not_broadened": true,
+  "checkin_reconciliation_preserved": true,
+  "default_revisions_verified": true,
+  "alembic_check": "no new upgrade operations",
+  "limits": "No managed deployment, index adoption, latency, collation, roles or DR certification"
+}

@@ -1,0 +1,866 @@
+{
+  "synthetic_only": true,
+  "product_create": {
+    "status": 201,
+    "request": {
+      "name": "Synthetic moisturizer",
+      "in_routine": false
+    },
+    "headers": {
+      "etag": "\"1\"",
+      "operation-attempt-id": "96e9d593-5cf1-5b21-bd56-d8436ee6ef10",
+      "cache-control": "no-store"
+    },
+    "response": {
+      "revision": 1,
+      "revision_protected": false,
+      "id": "5f0c871f-2f18-4107-8a9c-65dddcad5b29",
+      "user_id": "owner",
+      "name": "Synthetic moisturizer",
+      "brand": null,
+      "category": "treatment",
+      "product_type": null,
+      "active_ingredients": [],
+      "skin_concerns": [],
+      "usage_instructions": "",
+      "frequency_per_week": 7,
+      "time_of_use": "evening",
+      "status": "active",
+      "rating": null,
+      "in_routine": false,
+      "in_experiment": false,
+      "tags": [],
+      "notes": null,
+      "image_url": null,
+      "start_date": null,
+      "end_date": null,
+      "created_at": "2026-10-15T15:32:03.471373Z",
+      "updated_at": "2026-10-15T15:32:03.471373Z"
+    }
+  },
+  "product_attempt_committed": {
+    "schema_version": 1,
+    "operation": "product_create",
+    "attempt_id": "96e9d593-5cf1-5b21-bd56-d8436ee6ef10",
+    "owner_id": "owner",
+    "actor_id": "owner",
+    "status": "committed",
+    "result_availability": "retained",
+    "resource_id": "5f0c871f-2f18-4107-8a9c-65dddcad5b29",
+    "resource_revision": 1,
+    "recorded_at": "2026-10-15T15:32:03.472371Z",
+    "expires_at": "2026-11-14T15:32:03.472371Z",
+    "result": {
+      "revision": 1,
+      "revision_protected": false,
+      "id": "5f0c871f-2f18-4107-8a9c-65dddcad5b29",
+      "user_id": "owner",
+      "name": "Synthetic moisturizer",
+      "brand": null,
+      "category": "treatment",
+      "product_type": null,
+      "active_ingredients": [],
+      "skin_concerns": [],
+      "usage_instructions": "",
+      "frequency_per_week": 7,
+      "time_of_use": "evening",
+      "status": "active",
+      "rating": null,
+      "in_routine": false,
+      "in_experiment": false,
+      "tags": [],
+      "notes": null,
+      "image_url": null,
+      "start_date": null,
+      "end_date": null,
+      "created_at": "2026-10-15T15:32:03.471373Z",
+      "updated_at": "2026-10-15T15:32:03.471373Z"
+    }
+  },
+  "product_attempt_unknown": {
+    "schema_version": 1,
+    "operation": "product_create",
+    "attempt_id": "f21dd396-f2bb-5c8a-a470-3ebff6abfc37",
+    "owner_id": "owner",
+    "actor_id": "owner",
+    "status": "unknown",
+    "result_availability": "unknown",
+    "resource_id": null,
+    "resource_revision": null,
+    "recorded_at": null,
+    "expires_at": null,
+    "result": null
+  },
+  "product_attempt_after_product_erasure": {
+    "schema_version": 1,
+    "operation": "product_create",
+    "attempt_id": "96e9d593-5cf1-5b21-bd56-d8436ee6ef10",
+    "owner_id": "owner",
+    "actor_id": "owner",
+    "status": "committed",
+    "result_availability": "erased",
+    "resource_id": "5f0c871f-2f18-4107-8a9c-65dddcad5b29",
+    "resource_revision": 1,
+    "recorded_at": "2026-10-15T15:32:03.472371Z",
+    "expires_at": "2026-11-14T15:32:03.472371Z",
+    "result": null
+  },
+  "clinical_snapshot": {
+    "schema_version": 1,
+    "snapshot_id": "cdea189d-5529-4fcd-9552-ae528ed94b17",
+    "patient_id": "owner",
+    "evaluated_at": "2026-10-15T15:32:03.538372Z",
+    "consistency": "postgresql_repeatable_read_transaction",
+    "atomic_scope": "database_rows_visible_in_one_transaction",
+    "external_sources": "not_fetched_not_atomic",
+    "replayable": false,
+    "clinical_clearance": false,
+    "safety": {
+      "provenance": {
+        "schema_version": 1,
+        "evaluation_id": "f9da7875-d633-4c2f-8a02-3f913e7aa2f9",
+        "source": "deterministic_safety_engine",
+        "mode": "dynamic_current",
+        "as_of": "2026-10-15T15:32:03.538372Z",
+        "source_revision": "731d1950024591ce332f8947e63c7a1a2a8c6cf75c91f194f12c4a6bb56890ac",
+        "consistency": "postgresql_repeatable_read_transaction",
+        "report_freshness": "missing",
+        "latest_report_at": null,
+        "evidence_completeness": "partial",
+        "clinical_clearance": false
+      },
+      "status": "track",
+      "engine_version": "safety-1.0",
+      "evaluated_at": "2026-10-15T15:32:03.538372Z",
+      "reasons": [
+        {
+          "code": "monitoring_or_insufficient_evidence",
+          "state": "track",
+          "summary": "Continue monitoring; this evaluation does not rule out health risks.",
+          "evidence": []
+        }
+      ],
+      "evidence_status": {
+        "current_report_count": 0,
+        "risk_screen_complete": false,
+        "stale_or_absent": true,
+        "unknown_product_ids": [],
+        "visual_evidence": "unavailable_for_triage",
+        "capture_ids": [],
+        "measurement_ids": [],
+        "baseline": "descriptive_scores_not_clinical_clearance",
+        "daily_context_ids": [],
+        "adherence_ids": [],
+        "experiment_ids": [],
+        "context_adherence": "context_only_no_causal_or_sensitive_trait_inference"
+      },
+      "guidance": "Continue recording changes. Missing information does not establish safety. Seek care if you are concerned.",
+      "limitations": [
+        "Not a diagnosis or a replacement for a doctor.",
+        "Escalation uses structured user reports and documented ingredient evidence; no cause is inferred.",
+        "Missing flags are unknown. Scores, photos, prose and AI conclusions cannot rule out risk.",
+        "72-hour current and 14-day history windows are product rules, not validated clinical thresholds.",
+        "Reports older than 14 days do not establish current status; seek care whenever concerned."
+      ]
+    },
+    "review": {
+      "schema_version": "doctor-loop-2.0",
+      "patient_id": "owner",
+      "state": "reviewed",
+      "latest_sequence": 1,
+      "changed_at": "2026-10-14T15:32:03.344374Z",
+      "changed_by": "doctor0",
+      "as_of": "2026-10-15T15:32:03.538372Z",
+      "consistency": "postgresql_repeatable_read_transaction",
+      "current_decision_visibility": "available",
+      "safety": {
+        "provenance": {
+          "schema_version": 1,
+          "evaluation_id": "f9da7875-d633-4c2f-8a02-3f913e7aa2f9",
+          "source": "deterministic_safety_engine",
+          "mode": "dynamic_current",
+          "as_of": "2026-10-15T15:32:03.538372Z",
+          "source_revision": "731d1950024591ce332f8947e63c7a1a2a8c6cf75c91f194f12c4a6bb56890ac",
+          "consistency": "postgresql_repeatable_read_transaction",
+          "report_freshness": "missing",
+          "latest_report_at": null,
+          "evidence_completeness": "partial",
+          "clinical_clearance": false
+        },
+        "status": "track",
+        "engine_version": "safety-1.0",
+        "evaluated_at": "2026-10-15T15:32:03.538372Z",
+        "reasons": [
+          {
+            "code": "monitoring_or_insufficient_evidence",
+            "state": "track",
+            "summary": "Continue monitoring; this evaluation does not rule out health risks.",
+            "evidence": []
+          }
+        ],
+        "evidence_status": {
+          "current_report_count": 0,
+          "risk_screen_complete": false,
+          "stale_or_absent": true,
+          "unknown_product_ids": [],
+          "visual_evidence": "unavailable_for_triage",
+          "capture_ids": [],
+          "measurement_ids": [],
+          "baseline": "descriptive_scores_not_clinical_clearance",
+          "daily_context_ids": [],
+          "adherence_ids": [],
+          "experiment_ids": [],
+          "context_adherence": "context_only_no_causal_or_sensitive_trait_inference"
+        },
+        "guidance": "Continue recording changes. Missing information does not establish safety. Seek care if you are concerned.",
+        "limitations": [
+          "Not a diagnosis or a replacement for a doctor.",
+          "Escalation uses structured user reports and documented ingredient evidence; no cause is inferred.",
+          "Missing flags are unknown. Scores, photos, prose and AI conclusions cannot rule out risk.",
+          "72-hour current and 14-day history windows are product rules, not validated clinical thresholds.",
+          "Reports older than 14 days do not establish current status; seek care whenever concerned."
+        ]
+      },
+      "current_decision": {
+        "schema_version": "clinical-review-1.0",
+        "id": "public-review",
+        "sequence": 1,
+        "patient_id": "owner",
+        "doctor_id": "doctor0",
+        "access_id": "grant",
+        "state": "reviewed",
+        "recommendation": "track",
+        "rationale": "Synthetic public history",
+        "patient_visible": true,
+        "created_at": "2026-10-14T15:32:03.344374Z",
+        "provenance": "clinician_authored",
+        "safety_at_review": {
+          "provenance": {
+            "schema_version": 1,
+            "evaluation_id": "43db81fb-ffba-41b6-bbfc-1016a693d627",
+            "source": "deterministic_safety_engine",
+            "mode": "dynamic_current",
+            "as_of": "2026-10-15T15:32:03.276375Z",
+            "source_revision": "731d1950024591ce332f8947e63c7a1a2a8c6cf75c91f194f12c4a6bb56890ac",
+            "consistency": "multiple_reads_not_atomic_snapshot",
+            "report_freshness": "missing",
+            "latest_report_at": null,
+            "evidence_completeness": "partial",
+            "clinical_clearance": false
+          },
+          "status": "track",
+          "engine_version": "safety-1.0",
+          "evaluated_at": "2026-10-15T15:32:03.276375Z",
+          "reasons": [
+            {
+              "code": "monitoring_or_insufficient_evidence",
+              "state": "track",
+              "summary": "Continue monitoring; this evaluation does not rule out health risks.",
+              "evidence": []
+            }
+          ],
+          "evidence_status": {
+            "current_report_count": 0,
+            "risk_screen_complete": false,
+            "stale_or_absent": true,
+            "unknown_product_ids": [],
+            "visual_evidence": "unavailable_for_triage",
+            "capture_ids": [],
+            "measurement_ids": [],
+            "baseline": "descriptive_scores_not_clinical_clearance",
+            "daily_context_ids": [],
+            "adherence_ids": [],
+            "experiment_ids": [],
+            "context_adherence": "context_only_no_causal_or_sensitive_trait_inference"
+          },
+          "guidance": "Continue recording changes. Missing information does not establish safety. Seek care if you are concerned.",
+          "limitations": [
+            "Not a diagnosis or a replacement for a doctor.",
+            "Escalation uses structured user reports and documented ingredient evidence; no cause is inferred.",
+            "Missing flags are unknown. Scores, photos, prose and AI conclusions cannot rule out risk.",
+            "72-hour current and 14-day history windows are product rules, not validated clinical thresholds.",
+            "Reports older than 14 days do not establish current status; seek care whenever concerned."
+          ]
+        },
+        "diverges_from_current_safety": false,
+        "lower_than_current_safety": false,
+        "urgent_safety_preserved": false,
+        "is_current": true,
+        "resource_revision": 1,
+        "safety_at_review_kind": "historical_saved",
+        "current_safety_evaluation_id": "f9da7875-d633-4c2f-8a02-3f913e7aa2f9",
+        "clinical_clearance": false
+      },
+      "history": [
+        {
+          "schema_version": "clinical-review-1.0",
+          "id": "public-review",
+          "sequence": 1,
+          "patient_id": "owner",
+          "doctor_id": "doctor0",
+          "access_id": "grant",
+          "state": "reviewed",
+          "recommendation": "track",
+          "rationale": "Synthetic public history",
+          "patient_visible": true,
+          "created_at": "2026-10-14T15:32:03.344374Z",
+          "provenance": "clinician_authored",
+          "safety_at_review": {
+            "provenance": {
+              "schema_version": 1,
+              "evaluation_id": "43db81fb-ffba-41b6-bbfc-1016a693d627",
+              "source": "deterministic_safety_engine",
+              "mode": "dynamic_current",
+              "as_of": "2026-10-15T15:32:03.276375Z",
+              "source_revision": "731d1950024591ce332f8947e63c7a1a2a8c6cf75c91f194f12c4a6bb56890ac",
+              "consistency": "multiple_reads_not_atomic_snapshot",
+              "report_freshness": "missing",
+              "latest_report_at": null,
+              "evidence_completeness": "partial",
+              "clinical_clearance": false
+            },
+            "status": "track",
+            "engine_version": "safety-1.0",
+            "evaluated_at": "2026-10-15T15:32:03.276375Z",
+            "reasons": [
+              {
+                "code": "monitoring_or_insufficient_evidence",
+                "state": "track",
+                "summary": "Continue monitoring; this evaluation does not rule out health risks.",
+                "evidence": []
+              }
+            ],
+            "evidence_status": {
+              "current_report_count": 0,
+              "risk_screen_complete": false,
+              "stale_or_absent": true,
+              "unknown_product_ids": [],
+              "visual_evidence": "unavailable_for_triage",
+              "capture_ids": [],
+              "measurement_ids": [],
+              "baseline": "descriptive_scores_not_clinical_clearance",
+              "daily_context_ids": [],
+              "adherence_ids": [],
+              "experiment_ids": [],
+              "context_adherence": "context_only_no_causal_or_sensitive_trait_inference"
+            },
+            "guidance": "Continue recording changes. Missing information does not establish safety. Seek care if you are concerned.",
+            "limitations": [
+              "Not a diagnosis or a replacement for a doctor.",
+              "Escalation uses structured user reports and documented ingredient evidence; no cause is inferred.",
+              "Missing flags are unknown. Scores, photos, prose and AI conclusions cannot rule out risk.",
+              "72-hour current and 14-day history windows are product rules, not validated clinical thresholds.",
+              "Reports older than 14 days do not establish current status; seek care whenever concerned."
+            ]
+          },
+          "diverges_from_current_safety": false,
+          "lower_than_current_safety": false,
+          "urgent_safety_preserved": false,
+          "is_current": true,
+          "resource_revision": 1,
+          "safety_at_review_kind": "historical_saved",
+          "current_safety_evaluation_id": "f9da7875-d633-4c2f-8a02-3f913e7aa2f9",
+          "clinical_clearance": false
+        }
+      ],
+      "notes": [],
+      "access": [
+        {
+          "id": "grant",
+          "patient_id": "owner",
+          "doctor_id": "doctor0",
+          "granted_by": null,
+          "status": "active",
+          "created_at": "2026-10-14T15:32:03.344374Z",
+          "expires_at": "2026-10-16T15:32:03.344374Z",
+          "claimed_at": null,
+          "revoked_at": null,
+          "revoked_by": null,
+          "doctor_name": null,
+          "consent_version": null,
+          "consent_source": "legacy_view_only",
+          "view_consent": true,
+          "export_consent": false,
+          "scopes": [
+            "VIEW"
+          ],
+          "effective_scopes": [
+            "VIEW"
+          ]
+        }
+      ]
+    },
+    "home": {
+      "as_of": "2026-10-15T15:32:03.538372Z",
+      "date": "2026-10-15",
+      "consistency": "postgresql_repeatable_read_transaction",
+      "safety": {
+        "provenance": {
+          "schema_version": 1,
+          "evaluation_id": "f9da7875-d633-4c2f-8a02-3f913e7aa2f9",
+          "source": "deterministic_safety_engine",
+          "mode": "dynamic_current",
+          "as_of": "2026-10-15T15:32:03.538372Z",
+          "source_revision": "731d1950024591ce332f8947e63c7a1a2a8c6cf75c91f194f12c4a6bb56890ac",
+          "consistency": "postgresql_repeatable_read_transaction",
+          "report_freshness": "missing",
+          "latest_report_at": null,
+          "evidence_completeness": "partial",
+          "clinical_clearance": false
+        },
+        "status": "track",
+        "engine_version": "safety-1.0",
+        "evaluated_at": "2026-10-15T15:32:03.538372Z",
+        "reasons": [
+          {
+            "code": "monitoring_or_insufficient_evidence",
+            "state": "track",
+            "summary": "Continue monitoring; this evaluation does not rule out health risks.",
+            "evidence": []
+          }
+        ],
+        "evidence_status": {
+          "current_report_count": 0,
+          "risk_screen_complete": false,
+          "stale_or_absent": true,
+          "unknown_product_ids": [],
+          "visual_evidence": "unavailable_for_triage",
+          "capture_ids": [],
+          "measurement_ids": [],
+          "baseline": "descriptive_scores_not_clinical_clearance",
+          "daily_context_ids": [],
+          "adherence_ids": [],
+          "experiment_ids": [],
+          "context_adherence": "context_only_no_causal_or_sensitive_trait_inference"
+        },
+        "guidance": "Continue recording changes. Missing information does not establish safety. Seek care if you are concerned.",
+        "limitations": [
+          "Not a diagnosis or a replacement for a doctor.",
+          "Escalation uses structured user reports and documented ingredient evidence; no cause is inferred.",
+          "Missing flags are unknown. Scores, photos, prose and AI conclusions cannot rule out risk.",
+          "72-hour current and 14-day history windows are product rules, not validated clinical thresholds.",
+          "Reports older than 14 days do not establish current status; seek care whenever concerned."
+        ]
+      },
+      "experiment": null,
+      "observation_status": {
+        "schema_version": 1,
+        "day_basis": "UTC",
+        "today_completed": false,
+        "recent": []
+      },
+      "today_checked_in": false,
+      "journal": []
+    },
+    "personal_skin_model": {
+      "source_read_consistency": "postgresql_repeatable_read_transaction",
+      "schema_version": 2,
+      "contract_version": "personal-skin-model-2.0",
+      "derivation_version": "psm-v2.0",
+      "generated_at": "2026-10-15T15:32:03.538372Z",
+      "status": "no_data",
+      "statement": "No authoritative skin observations yet; start tracking.",
+      "strength": "none",
+      "changing": [],
+      "stable": [],
+      "associations": [],
+      "sufficiency": {
+        "freshness": {
+          "schema_version": 1,
+          "as_of": "2026-10-15T15:32:03.538372Z",
+          "basis": "elapsed_UTC_duration",
+          "age_days_basis": "UTC_calendar_difference",
+          "threshold_days": 14,
+          "latest_at": null,
+          "age_days": null,
+          "state": "missing"
+        },
+        "proxy_measurement_days": 0,
+        "latest_proxy_measurement_at": null,
+        "confirmed_days": 0,
+        "report_days": 0,
+        "measurement_days": 0,
+        "excluded_checkins": 0,
+        "latest_evidence_at": null,
+        "age_days": null,
+        "recency": "missing",
+        "baseline_ready": false,
+        "reasons": [
+          "Five eligible baseline days are required for measurement comparison.",
+          "Need six distinct report days in 28 days, including three in 14 days, for a report trend.",
+          "Context association requires three paired report days with and three without explicitly reported unusual conditions."
+        ]
+      },
+      "profile": {
+        "available": false,
+        "primary_goals": [],
+        "evidence": []
+      },
+      "products": [
+        {
+          "id": "5f0c871f-2f18-4107-8a9c-65dddcad5b29",
+          "status": "active",
+          "evidence": {
+            "source": "product",
+            "id": "5f0c871f-2f18-4107-8a9c-65dddcad5b29",
+            "fields": [
+              "status"
+            ],
+            "recorded_at": "2026-10-15T15:32:03.471373Z",
+            "kind": "user_reported",
+            "category": "patient_reported"
+          }
+        }
+      ],
+      "limitations": [
+        "Not diagnosis or medical certainty; tracking thresholds are engineering rules.",
+        "Configured routine and self-reported adherence are distinct; neither verifies application.",
+        "Products describe current inventory, not verified exposure or product effects.",
+        "Profile goals supply orientation only; sensitive profile attributes and cycle day are excluded from derivation and output.",
+        "Context is mutable user-reported state joined by owner and UTC date, not a historical snapshot.",
+        "Image-property proxies are not clinical measurements; sources are never mixed for comparison.",
+        "Report symptoms record presence, not severity; free text and photos are not interpreted."
+      ],
+      "safety": {
+        "provenance": {
+          "schema_version": 1,
+          "evaluation_id": "f9da7875-d633-4c2f-8a02-3f913e7aa2f9",
+          "source": "deterministic_safety_engine",
+          "mode": "dynamic_current",
+          "as_of": "2026-10-15T15:32:03.538372Z",
+          "source_revision": "731d1950024591ce332f8947e63c7a1a2a8c6cf75c91f194f12c4a6bb56890ac",
+          "consistency": "postgresql_repeatable_read_transaction",
+          "report_freshness": "missing",
+          "latest_report_at": null,
+          "evidence_completeness": "partial",
+          "clinical_clearance": false
+        },
+        "status": "track",
+        "engine_version": "safety-1.0",
+        "evaluated_at": "2026-10-15T15:32:03.538372Z",
+        "reasons": [
+          {
+            "code": "monitoring_or_insufficient_evidence",
+            "state": "track",
+            "summary": "Continue monitoring; this evaluation does not rule out health risks.",
+            "evidence": []
+          }
+        ],
+        "evidence_status": {
+          "current_report_count": 0,
+          "risk_screen_complete": false,
+          "stale_or_absent": true,
+          "unknown_product_ids": [],
+          "visual_evidence": "unavailable_for_triage",
+          "capture_ids": [],
+          "measurement_ids": [],
+          "baseline": "descriptive_scores_not_clinical_clearance",
+          "daily_context_ids": [],
+          "adherence_ids": [],
+          "experiment_ids": [],
+          "context_adherence": "context_only_no_causal_or_sensitive_trait_inference"
+        },
+        "guidance": "Continue recording changes. Missing information does not establish safety. Seek care if you are concerned.",
+        "limitations": [
+          "Not a diagnosis or a replacement for a doctor.",
+          "Escalation uses structured user reports and documented ingredient evidence; no cause is inferred.",
+          "Missing flags are unknown. Scores, photos, prose and AI conclusions cannot rule out risk.",
+          "72-hour current and 14-day history windows are product rules, not validated clinical thresholds.",
+          "Reports older than 14 days do not establish current status; seek care whenever concerned."
+        ]
+      },
+      "sources": {
+        "profile": {
+          "category": "patient_reported",
+          "skin_type": null,
+          "skin_concerns": [],
+          "freshness": {
+            "schema_version": 1,
+            "as_of": "2026-10-15T15:32:03.538372Z",
+            "basis": "elapsed_UTC_duration",
+            "age_days_basis": "UTC_calendar_difference",
+            "threshold_days": 14,
+            "latest_at": "2026-10-15T15:32:03.256372Z",
+            "age_days": 0,
+            "state": "fresh"
+          }
+        },
+        "history": {
+          "category": "patient_reported",
+          "freshness": {
+            "schema_version": 1,
+            "as_of": "2026-10-15T15:32:03.538372Z",
+            "basis": "elapsed_UTC_duration",
+            "age_days_basis": "UTC_calendar_difference",
+            "threshold_days": 14,
+            "latest_at": null,
+            "age_days": null,
+            "state": "missing"
+          },
+          "recent_reports": []
+        },
+        "baseline": {
+          "category": "deterministic_derived",
+          "snapshot": {
+            "status": "collecting",
+            "required_days": 5,
+            "completed_days": 0,
+            "checkin_ids": [],
+            "metrics": {},
+            "today_checked_in": false
+          },
+          "caveats": [
+            "Personal historical reference, never clinical clearance."
+          ]
+        },
+        "daily_context": {
+          "category": "patient_reported",
+          "days": [],
+          "caveats": [
+            "Mutable current snapshots; sensitive cycle context excluded."
+          ]
+        },
+        "routine": {
+          "category": "patient_reported",
+          "configured": [],
+          "adherence": {
+            "window_days": 14,
+            "expected_known_slots": 0,
+            "reported_slots": 0,
+            "completed_slots": 0,
+            "unknown_slots": 0,
+            "completed_fraction": null,
+            "category": "deterministic_derived",
+            "source": "user_reported",
+            "freshness": {
+              "schema_version": 1,
+              "as_of": "2026-10-15T15:32:03.538372Z",
+              "basis": "elapsed_UTC_duration",
+              "age_days_basis": "UTC_calendar_difference",
+              "threshold_days": 14,
+              "latest_at": null,
+              "age_days": null,
+              "state": "missing"
+            },
+            "caveats": [
+              "Self-reported application is not verified exposure.",
+              "Before latest configuration edit, expectations are unknown; current day excluded."
+            ]
+          },
+          "historical_snapshots": []
+        },
+        "experiments": [],
+        "measurements": {
+          "category": "deterministic_derived",
+          "latest": null,
+          "freshness": {
+            "schema_version": 1,
+            "as_of": "2026-10-15T15:32:03.538372Z",
+            "basis": "elapsed_UTC_duration",
+            "age_days_basis": "UTC_calendar_difference",
+            "threshold_days": 14,
+            "latest_at": null,
+            "age_days": null,
+            "state": "missing"
+          },
+          "trend_status": "unknown",
+          "latest_measured": null
+        },
+        "product_intelligence": {
+          "version": "product-intelligence-1.0",
+          "products": [],
+          "warnings": [],
+          "data_completeness": "incomplete",
+          "limitations": [
+            "Informational only; no diagnosis, treatment or compatibility assessment.",
+            "Unknown concentrations, formulation, exposure and individual response limit interpretation.",
+            "No warning does not establish safety; only the documented v1 rules are checked."
+          ],
+          "category": "deterministic_derived"
+        },
+        "safety": {
+          "provenance": {
+            "schema_version": 1,
+            "evaluation_id": "f9da7875-d633-4c2f-8a02-3f913e7aa2f9",
+            "source": "deterministic_safety_engine",
+            "mode": "dynamic_current",
+            "as_of": "2026-10-15T15:32:03.538372Z",
+            "source_revision": "731d1950024591ce332f8947e63c7a1a2a8c6cf75c91f194f12c4a6bb56890ac",
+            "consistency": "postgresql_repeatable_read_transaction",
+            "report_freshness": "missing",
+            "latest_report_at": null,
+            "evidence_completeness": "partial",
+            "clinical_clearance": false
+          },
+          "status": "track",
+          "engine_version": "safety-1.0",
+          "evaluated_at": "2026-10-15T15:32:03.538372Z",
+          "reasons": [
+            {
+              "code": "monitoring_or_insufficient_evidence",
+              "state": "track",
+              "summary": "Continue monitoring; this evaluation does not rule out health risks.",
+              "evidence": []
+            }
+          ],
+          "evidence_status": {
+            "current_report_count": 0,
+            "risk_screen_complete": false,
+            "stale_or_absent": true,
+            "unknown_product_ids": [],
+            "visual_evidence": "unavailable_for_triage",
+            "capture_ids": [],
+            "measurement_ids": [],
+            "baseline": "descriptive_scores_not_clinical_clearance",
+            "daily_context_ids": [],
+            "adherence_ids": [],
+            "experiment_ids": [],
+            "context_adherence": "context_only_no_causal_or_sensitive_trait_inference"
+          },
+          "guidance": "Continue recording changes. Missing information does not establish safety. Seek care if you are concerned.",
+          "limitations": [
+            "Not a diagnosis or a replacement for a doctor.",
+            "Escalation uses structured user reports and documented ingredient evidence; no cause is inferred.",
+            "Missing flags are unknown. Scores, photos, prose and AI conclusions cannot rule out risk.",
+            "72-hour current and 14-day history windows are product rules, not validated clinical thresholds.",
+            "Reports older than 14 days do not establish current status; seek care whenever concerned."
+          ],
+          "category": "deterministic_derived"
+        },
+        "doctor": {
+          "category": "clinician_authored",
+          "as_of": "2026-10-15T15:32:03.538372Z",
+          "consistency": "postgresql_repeatable_read_transaction",
+          "current_decision_visibility": "available",
+          "state": "reviewed",
+          "freshness": {
+            "schema_version": 1,
+            "as_of": "2026-10-15T15:32:03.538372Z",
+            "basis": "elapsed_UTC_duration",
+            "age_days_basis": "UTC_calendar_difference",
+            "threshold_days": 14,
+            "latest_at": "2026-10-14T15:32:03.344374Z",
+            "age_days": 1,
+            "state": "fresh"
+          },
+          "current_decision": {
+            "id": "public-review",
+            "category": "clinician_authored",
+            "state": "reviewed",
+            "recommendation": "track",
+            "rationale": "Synthetic public history",
+            "recorded_at": "2026-10-14T15:32:03.344374Z",
+            "resource_revision": 1,
+            "is_current": true,
+            "clinical_clearance": false,
+            "freshness": {
+              "schema_version": 1,
+              "as_of": "2026-10-15T15:32:03.538372Z",
+              "basis": "elapsed_UTC_duration",
+              "age_days_basis": "UTC_calendar_difference",
+              "threshold_days": 14,
+              "latest_at": "2026-10-14T15:32:03.344374Z",
+              "age_days": 1,
+              "state": "fresh"
+            },
+            "diverges_from_current_safety": false,
+            "lower_than_current_safety": false
+          },
+          "history": [
+            {
+              "id": "public-review",
+              "category": "clinician_authored",
+              "state": "reviewed",
+              "recommendation": "track",
+              "rationale": "Synthetic public history",
+              "recorded_at": "2026-10-14T15:32:03.344374Z",
+              "resource_revision": 1,
+              "is_current": true,
+              "clinical_clearance": false,
+              "freshness": {
+                "schema_version": 1,
+                "as_of": "2026-10-15T15:32:03.538372Z",
+                "basis": "elapsed_UTC_duration",
+                "age_days_basis": "UTC_calendar_difference",
+                "threshold_days": 14,
+                "latest_at": "2026-10-14T15:32:03.344374Z",
+                "age_days": 1,
+                "state": "fresh"
+              },
+              "diverges_from_current_safety": false,
+              "lower_than_current_safety": false
+            }
+          ],
+          "notes": [],
+          "safety_precedence": "Safety Engine is preserved independently of clinician recommendations."
+        }
+      },
+      "summaries": {
+        "current_skin_state": "No authoritative skin observations yet; start tracking.",
+        "recent_changes": [],
+        "routine_consistency": {
+          "window_days": 14,
+          "expected_known_slots": 0,
+          "reported_slots": 0,
+          "completed_slots": 0,
+          "unknown_slots": 0,
+          "completed_fraction": null,
+          "category": "deterministic_derived",
+          "source": "user_reported",
+          "freshness": {
+            "schema_version": 1,
+            "as_of": "2026-10-15T15:32:03.538372Z",
+            "basis": "elapsed_UTC_duration",
+            "age_days_basis": "UTC_calendar_difference",
+            "threshold_days": 14,
+            "latest_at": null,
+            "age_days": null,
+            "state": "missing"
+          },
+          "caveats": [
+            "Self-reported application is not verified exposure.",
+            "Before latest configuration edit, expectations are unknown; current day excluded."
+          ]
+        },
+        "relevant_factors": {
+          "products": [],
+          "warnings": []
+        },
+        "experiment_learnings": [],
+        "measurement_trend_status": "unknown",
+        "safety_status": "track",
+        "safety_guidance": "Continue recording changes. Missing information does not establish safety. Seek care if you are concerned.",
+        "doctor_review_status": "reviewed",
+        "remaining_unknowns": [
+          "Five eligible baseline days are required for measurement comparison.",
+          "Need six distinct report days in 28 days, including three in 14 days, for a report trend.",
+          "Context association requires three paired report days with and three without explicitly reported unusual conditions.",
+          "Actual exposure and causation are unknown.",
+          "Unreported sensitive disclosures remain omitted.",
+          "Measurement trend is unknown or non-comparable; missing capture dimensions prohibit deltas.",
+          "Incomplete ingredients and unknown concentrations do not establish safety."
+        ]
+      },
+      "unknowns": [
+        "Five eligible baseline days are required for measurement comparison.",
+        "Need six distinct report days in 28 days, including three in 14 days, for a report trend.",
+        "Context association requires three paired report days with and three without explicitly reported unusual conditions.",
+        "Actual exposure and causation are unknown.",
+        "Unreported sensitive disclosures remain omitted.",
+        "Measurement trend is unknown or non-comparable; missing capture dimensions prohibit deltas.",
+        "Incomplete ingredients and unknown concentrations do not establish safety."
+      ],
+      "assistant_layer": {
+        "category": "ai_inferred",
+        "authoritative": false,
+        "included": false
+      }
+    },
+    "limitations": [
+      "Evaluated_at is the shared evaluation clock, not an exact database commit watermark.",
+      "The bundle is current at its transaction snapshot; later writes require a new read.",
+      "No external service, image bytes, AI inference, future clock or standalone endpoint is included in this atomicity claim.",
+      "The identifier is correlation only, not a reusable token or clinical clearance."
+    ]
+  }
+}
