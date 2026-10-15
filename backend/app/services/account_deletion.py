@@ -9,14 +9,14 @@ from app.models import (User, Product, Experiment, ExperimentEvaluation, CheckIn
                         ClinicalNote, RewardRedemption, AuditLog, DailyContext, RoutineEntry, RoutineAdherence)
 from app.services.azure_blob import azure_blob_service
 from app.services.deletion_journal import deletion_journal
-from app.models import Capture, Measurement, ProductIntelligence, DoctorReviewAction
+from app.models import Capture, Measurement, ProductIntelligence, DoctorReviewAction, CaptureObservation
 
 
 def delete_account(db, user_id, *, journal=None):
     user = db.query(User).filter(User.id == user_id).with_for_update().first()
     if user is None:
         return  # A valid access token can retry after the response was lost.
-    owned_models = (ProductIntelligence, Measurement, Capture, ExperimentEvaluation, RoutineAdherence, DailyContext, CheckIn, Experiment, RoutineEntry, Product, RewardRedemption)
+    owned_models = (CaptureObservation, ProductIntelligence, Measurement, Capture, ExperimentEvaluation, RoutineAdherence, DailyContext, CheckIn, Experiment, RoutineEntry, Product, RewardRedemption)
     # Names are neither unique nor stable references. Never match serialized
     # JSON keys: e.g. a name "id" otherwise scrubs every unrelated *_id field.
     identifiers = {user_id}
@@ -46,7 +46,10 @@ def delete_account(db, user_id, *, journal=None):
         Measurement.user_id != user_id, Measurement.capture_id.in_(capture_ids)).first()
     foreign_intelligence = db.query(ProductIntelligence.id).filter(
         ProductIntelligence.user_id != user_id, ProductIntelligence.product_id.in_(product_ids)).first()
-    if foreign_checkin or foreign_experiment or foreign_entry_experiment or foreign_measurement or foreign_intelligence:
+    checkin_ids = db.query(CheckIn.id).filter_by(user_id=user_id).scalar_subquery()
+    foreign_association = db.query(CaptureObservation.id).filter(CaptureObservation.user_id != user_id,
+        or_(CaptureObservation.capture_id.in_(capture_ids), CaptureObservation.checkin_id.in_(checkin_ids))).first()
+    if foreign_checkin or foreign_experiment or foreign_entry_experiment or foreign_measurement or foreign_intelligence or foreign_association:
         raise RuntimeError("Inconsistent cross-account links require repair before deletion")
     # Refuse a namespaced image reference pointing to another owner before deleting anything.
     for model in (Capture, CheckIn):

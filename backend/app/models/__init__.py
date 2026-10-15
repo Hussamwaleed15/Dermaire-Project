@@ -353,3 +353,6 @@ class RoutineAdherence(Base):
     def receipt(self):
         from app.services.adherence_attempts import receipt
         return receipt(self)
+
+
+from app.models.capture_observations import CaptureObservation

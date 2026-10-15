@@ -22,6 +22,8 @@ api_v1_router = APIRouter()
 api_v1_router.include_router(product_intelligence_router)
 from app.api.v1.captures import router as captures_router
 api_v1_router.include_router(captures_router)
+from app.api.v1.capture_observations import router as capture_observations_router
+api_v1_router.include_router(capture_observations_router)
 api_v1_router.include_router(home_router)
 api_v1_router.include_router(context_router)
 api_v1_router.include_router(baseline_router)
