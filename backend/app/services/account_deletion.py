@@ -20,6 +20,11 @@ def delete_account(db, user_id, *, journal=None):
     # Names are neither unique nor stable references. Never match serialized
     # JSON keys: e.g. a name "id" otherwise scrubs every unrelated *_id field.
     identifiers = {user_id}
+    from app.models.messaging import MessageThread, ThreadMessage
+    thread_filter = or_(MessageThread.patient_id == user_id, MessageThread.doctor_id == user_id)
+    thread_ids = [row.id for row in db.query(MessageThread).filter(thread_filter)]
+    identifiers.update(thread_ids)
+    identifiers.update(row.id for row in db.query(ThreadMessage).filter(ThreadMessage.thread_id.in_(thread_ids)))
     for model in owned_models:
         identifiers.update(row.id for row in db.query(model).filter(model.user_id == user_id))
     related = or_(DoctorPatientAccess.patient_id == user_id, DoctorPatientAccess.doctor_id == user_id)
@@ -105,6 +110,8 @@ def delete_account(db, user_id, *, journal=None):
                 audit.actor_id = pseudonym
             audit.details = {}
             audit.ip_address = None
+    db.query(ThreadMessage).filter(ThreadMessage.thread_id.in_(thread_ids)).delete(synchronize_session=False)
+    db.query(MessageThread).filter(thread_filter).delete(synchronize_session=False)
     db.query(ClinicalNote).filter(notes).delete(synchronize_session=False)
     db.query(DoctorReviewAction).filter(actions).delete(synchronize_session=False)
     db.query(DoctorPatientAccess).filter(related).delete(synchronize_session=False)

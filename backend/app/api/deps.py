@@ -61,6 +61,7 @@ def get_current_user(
     if settings.SAFETY_POLICY_ENFORCE and request.method in ("POST", "PATCH", "PUT", "DELETE"):
         path = request.url.path
         recovery = path in (settings.API_V1_STR + "/auth/accept-safety", settings.API_V1_STR + "/auth/logout", settings.API_V1_STR + "/users/me") or path.startswith(settings.API_V1_STR + "/doctor/access/") or path.startswith(settings.API_V1_STR + "/doctor/revoke/")
+        recovery = recovery or (request.method == "DELETE" and path.startswith(settings.API_V1_STR + "/messaging/threads/") and path.endswith("/consent"))
         if not recovery and user.safety_consent["acceptance_required"]:
             raise HTTPException(403, "Current safety policy acceptance required; read /users/me")
     return user
