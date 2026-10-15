@@ -4,6 +4,7 @@ from typing import Literal
 from pydantic import BaseModel, Field, model_validator, ConfigDict
 
 from app.schemas.safety import SafetyEvaluation
+from app.schemas.freshness import EvidenceFreshness
 
 Strength = Literal['none', 'limited', 'moderate']
 
@@ -21,6 +22,7 @@ class Evidence(BaseModel):
         return self
 
 class Finding(BaseModel):
+    freshness: EvidenceFreshness | None = None
     code: str
     subject: str
     direction: Literal['increased', 'decreased', 'stable', 'better', 'worse', 'same', 'associated']

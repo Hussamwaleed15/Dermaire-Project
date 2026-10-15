@@ -11,6 +11,8 @@ from app.services import resource_revisions as revisions
 from app.services import adherence_attempts as attempts
 from sqlalchemy.exc import IntegrityError
 from app.services.temporal import utc_day
+from app.schemas.history import AdherenceHistoryPage
+from app.services import adherence_history
 
 router = APIRouter(prefix="/routine", tags=["Routine"])
 
@@ -92,6 +94,16 @@ def logs(routine_entry_id: str | None = None, limit: int = Query(100, ge=1, le=5
 @router.get("/adherence/attempts/{key}", response_model=AdherenceAttemptLookup)
 def adherence_attempt(key: str, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     return attempts.lookup(db, user.id, key)
+
+
+@router.get('/adherence/history', response_model=AdherenceHistoryPage)
+def history(response: Response, routine_entry_id: str | None = None,
+            limit: int = Query(100, ge=1, le=500), cursor: str | None = Query(None, min_length=1, max_length=4096),
+            user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    if routine_entry_id is not None:
+        owned_entry(db, user, routine_entry_id)
+    response.headers['Cache-Control'] = 'no-store'
+    return adherence_history.page(db, user, limit, cursor, routine_entry_id)
 
 @router.post("/adherence", response_model=AdherenceOut, status_code=201)
 def log(payload: AdherenceCreate, request: Request, user: User = Depends(get_current_user), db: Session = Depends(get_db)):

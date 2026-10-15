@@ -8,14 +8,14 @@ from app.services.personal_skin_model import utc, report_of, evidence
 from app.services.product_intelligence import routine_intelligence
 from app.services.measurement import response, compare
 from app.services.baseline import baseline_snapshot
+from app.services.evidence_freshness import freshness
+from app.schemas.freshness import EvidenceFreshness
 from app.services.safety import evaluate_safety, RANK
 
 
 def enrich(db, user, model, now, reports, contexts):
     def fresh(when):
-        when = utc(when) if when else None
-        return {'latest_at': when, 'age_days': (now.date()-when.date()).days if when else None,
-                'state': 'missing' if when is None else 'stale' if now-when > timedelta(days=14) else 'fresh'}
+        return freshness(when, now)
 
     def rows(cls, timestamp, owner='user_id'):
         return db.query(cls).filter(getattr(cls, owner) == user.id, timestamp <= now).order_by(timestamp, cls.id).all()
@@ -158,6 +158,7 @@ def enrich(db, user, model, now, reports, contexts):
     for f in model.changing + model.stable + model.associations:
         f.evidence_count = len({(v.source, v.id) for v in f.evidence})
         f.latest_evidence_at = max((v.recorded_at for v in f.evidence), default=None)
+        f.freshness = EvidenceFreshness.model_validate(freshness(f.latest_evidence_at, now))
         f.confidence = f.strength
         f.caveats += ['Observational tracking only; no diagnosis or causal conclusion.']
     model.sources = {'profile': {'category': 'patient_reported', 'skin_type': user.skin_type,
@@ -184,6 +185,8 @@ def enrich(db, user, model, now, reports, contexts):
                           ('measurement', measurement['freshness']), ('doctor', doctor['freshness'])):
         if state['state'] == 'stale':
             model.unknowns.append(source+': stale input does not establish current condition.')
+        elif state['state'] == 'unknown':
+            model.unknowns.append(source+': future source timestamp cannot establish freshness.')
     model.summaries = {'current_skin_state': model.statement, 'recent_changes': [f.statement for f in model.changing],
         'routine_consistency': consistency, 'relevant_factors': {'products': [{'id': p['product_id'], 'data_completeness': p['data_completeness'], 'unknowns': p['unknowns']} for p in pi['products']], 'warnings': pi['warnings']},
         'experiment_learnings': [e['evaluation'] for e in experiments if e['evaluation'] and e['evaluation']['freshness']['state'] == 'fresh'],
