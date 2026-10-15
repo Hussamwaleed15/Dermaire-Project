@@ -107,6 +107,9 @@ def send(db, actor, thread_id, payload, key):
     thread.next_sequence += 1
     db.add(row); db.flush()
     audit(db, actor, "MESSAGE_COMMITTED", thread, message_id=row.id, sequence=row.sequence)
+    from app.services.notifications import enqueue
+    recipient = thread.doctor_id if actor.id == thread.patient_id else thread.patient_id
+    enqueue(db, recipient, "message", row.id, 1, datetime.now(timezone.utc))
     result = message_out(row)
     save(db)
     return result

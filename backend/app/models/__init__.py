@@ -365,3 +365,4 @@ from app.models.capture_observations import CaptureObservation
 
 from app.models.product_attempts import ProductCreateAttempt
 from app.models.messaging import MessageThread, ThreadMessage
+from app.models.notifications import NotificationPreference, NotificationDevice, Notification, NotificationJob

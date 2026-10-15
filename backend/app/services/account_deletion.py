@@ -25,6 +25,12 @@ def delete_account(db, user_id, *, journal=None):
     thread_ids = [row.id for row in db.query(MessageThread).filter(thread_filter)]
     identifiers.update(thread_ids)
     identifiers.update(row.id for row in db.query(ThreadMessage).filter(ThreadMessage.thread_id.in_(thread_ids)))
+    from app.models.notifications import NotificationPreference, NotificationDevice, Notification, NotificationJob
+    message_ids = [row.id for row in db.query(ThreadMessage).filter(ThreadMessage.thread_id.in_(thread_ids))]
+    notice_filter = or_(Notification.user_id == user_id, Notification.source_id.in_(message_ids))
+    notice_ids = [row.id for row in db.query(Notification).filter(notice_filter)]
+    device_ids = [row.id for row in db.query(NotificationDevice).filter_by(user_id=user_id)]
+    identifiers.update(notice_ids); identifiers.update(device_ids)
     for model in owned_models:
         identifiers.update(row.id for row in db.query(model).filter(model.user_id == user_id))
     related = or_(DoctorPatientAccess.patient_id == user_id, DoctorPatientAccess.doctor_id == user_id)
@@ -110,6 +116,10 @@ def delete_account(db, user_id, *, journal=None):
                 audit.actor_id = pseudonym
             audit.details = {}
             audit.ip_address = None
+    db.query(NotificationJob).filter(or_(NotificationJob.notification_id.in_(notice_ids), NotificationJob.device_id.in_(device_ids))).delete(synchronize_session=False)
+    db.query(Notification).filter(notice_filter).delete(synchronize_session=False)
+    db.query(NotificationDevice).filter_by(user_id=user_id).delete(synchronize_session=False)
+    db.query(NotificationPreference).filter_by(user_id=user_id).delete(synchronize_session=False)
     db.query(ThreadMessage).filter(ThreadMessage.thread_id.in_(thread_ids)).delete(synchronize_session=False)
     db.query(MessageThread).filter(thread_filter).delete(synchronize_session=False)
     db.query(ClinicalNote).filter(notes).delete(synchronize_session=False)

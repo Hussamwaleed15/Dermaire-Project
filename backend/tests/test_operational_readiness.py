@@ -45,7 +45,7 @@ def test_managed_readiness_requires_independent_journal(monkeypatch):
     from app.services.deletion_journal import deletion_journal
 
     db = Mock()
-    db.execute.return_value.scalars.return_value.all.return_value = ["20261015_04"]
+    db.execute.return_value.scalars.return_value.all.return_value = ["20261015_05"]
     monkeypatch.setattr(settings, "ENVIRONMENT", "staging")
     monkeypatch.setattr(azure_blob_service, "health", lambda: {"state": "available"})
     monkeypatch.setattr(deletion_journal, "health", lambda: "unavailable")
