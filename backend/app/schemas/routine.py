@@ -21,7 +21,20 @@ class RoutineUpdate(BaseModel):
     pm_order: int | None = Field(default=None, ge=0, le=100)
     active: Literal[False] | None = None
 
+class RoutineDayProvenance(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    schema_version: Literal[1] = 1
+    calendar_zone: Literal["UTC"] = "UTC"
+    zone_source: Literal["server_utc_contract"] = "server_utc_contract"
+    naive_timestamp_basis: Literal["UTC"] = "UTC"
+    slot_semantics: Literal["user_reported_not_wall_clock"] = "user_reported_not_wall_clock"
+    configuration_recorded_at: datetime
+    earliest_report_date: date
+    history_basis: Literal["latest_configuration_only"] = "latest_configuration_only"
+
+
 class RoutineOut(BaseModel):
+    day_provenance: RoutineDayProvenance
     day_basis: Literal["UTC"] = "UTC"
     configuration_history: Literal["current_with_adherence_snapshots"] = "current_with_adherence_snapshots"
     model_config = ConfigDict(from_attributes=True)

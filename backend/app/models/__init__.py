@@ -329,6 +329,12 @@ class RoutineEntry(Base):
     def product_name(self):
         return self.product.name
 
+    @property
+    def day_provenance(self):
+        from app.services.temporal import utc, utc_day
+        return {"configuration_recorded_at": utc(self.updated_at),
+                "earliest_report_date": max(self.start_date, utc_day(self.updated_at))}
+
 class RoutineAdherence(Base):
     __tablename__ = "routine_adherence"
     __table_args__ = (
