@@ -11,7 +11,8 @@ def review_snapshot(user):
                    any(value is not None and value != [] for value in context.values()))
     return {"schema_version": 1,
             "review_state": "not_applicable" if user.role != "patient" else "reviewed" if stamp else "never_reviewed",
-            "reviewed_at": stamp.replace(tzinfo=timezone.utc) if stamp else None,
+            "reviewed_at": (stamp.replace(tzinfo=timezone.utc) if stamp.tzinfo is None
+                            else stamp.astimezone(timezone.utc)) if stamp else None,
             "optional_data_present": present}
 
 

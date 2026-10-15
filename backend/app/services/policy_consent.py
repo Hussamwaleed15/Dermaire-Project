@@ -9,17 +9,19 @@ from app.models import AuditLog, User
 def consent_snapshot(user):
     version = user.safety_policy_version
     timestamp = user.safety_accepted_at
-    valid = isinstance(version, str) and bool(re.fullmatch(r"[0-9]+\.[0-9]+", version))
+    valid = isinstance(version, str) and len(version) <= 20 and bool(re.fullmatch(r"[0-9]+\.[0-9]+", version))
+    accepted_at = (timestamp.replace(tzinfo=timezone.utc) if timestamp.tzinfo is None
+                   else timestamp.astimezone(timezone.utc)) if timestamp else None
     if not user.safety_accepted:
         state = "missing"
-    elif not valid or timestamp is None or timestamp.replace(tzinfo=timezone.utc) > datetime.now(timezone.utc):
+    elif not valid or accepted_at is None or accepted_at > datetime.now(timezone.utc):
         state = "unknown"
     else:
         state = "current" if version == settings.SAFETY_POLICY_REQUIRED_VERSION else "outdated"
     return {"schema_version": 1, "state": state,
             "required_version": settings.SAFETY_POLICY_REQUIRED_VERSION,
             "accepted_version": version if user.safety_accepted and valid else None,
-            "accepted_at": timestamp.replace(tzinfo=timezone.utc) if timestamp else None,
+            "accepted_at": accepted_at,
             "acceptance_required": state != "current",
             "enforcement_enabled": settings.SAFETY_POLICY_ENFORCE}
 
