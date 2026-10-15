@@ -1,5 +1,7 @@
 # Backend master status after H3 — 2026-10-15 Cairo
 
+Historical H3 checkpoint. Current H4-delivered source status and remaining gaps: `H4_MASTER_STATUS.md`; H4 does not close the durable receipt or atomic clinical snapshot backlog below.
+
 This is the current status ledger. `H0_BACKEND_MASTER_STATUS.md` is a historical H0/H1/H2 audit and may describe H3 as future work; this page supersedes that part. DONE means source implemented and verified locally, not deployed. PARTIAL names a bounded capability and remaining gaps. OPEN is unsupported; BLOCKED needs separate environment authorization/verification.
 
 | Area | Status | Evidence / outstanding |
