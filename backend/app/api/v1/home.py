@@ -6,6 +6,7 @@ from app.api.deps import get_current_user
 from app.core.database import get_db
 from app.models import User, Experiment, Product, CheckIn
 from app.services.baseline import confirmed_measurement
+from app.services.safety import evaluate_safety
 from app.schemas.home import ObservationStatus
 from app.api.v1.experiments import experiment_projection
 
@@ -37,6 +38,8 @@ def get_home(current_user: User = Depends(get_current_user), db: Session = Depen
     def utc(recorded):
         return recorded.replace(tzinfo=timezone.utc) if recorded.tzinfo is None else recorded.astimezone(timezone.utc)
     return {"as_of": now.isoformat(), "date": now.date().isoformat(),
+        "consistency": "multiple_reads_not_atomic_snapshot",
+        "safety": evaluate_safety(db, current_user, now).model_dump(mode="json"),
         "experiment": summary,
         "observation_status": ObservationStatus.model_validate({
             "schema_version": 1, "day_basis": "UTC",

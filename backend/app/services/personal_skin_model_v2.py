@@ -118,12 +118,17 @@ def enrich(db, user, model, now, reports, contexts):
     reviews.sort(key=lambda r: r.sequence)
     def decision(r):
         return {'id': r.id, 'category': 'clinician_authored', 'state': r.state,
-            'recommendation': r.recommendation, 'rationale': r.rationale, 'recorded_at': r.created_at,
+            'recommendation': r.recommendation, 'rationale': r.rationale, 'recorded_at': utc(r.created_at),
+            'resource_revision': r.sequence, 'is_current': bool(reviews and r.id == reviews[-1].id),
+            'clinical_clearance': False,
             'freshness': fresh(r.created_at), 'diverges_from_current_safety': bool(r.recommendation and r.recommendation != safety.status),
             'lower_than_current_safety': bool(r.recommendation and RANK[r.recommendation] < RANK[safety.status])}
     last = reviews[-1] if reviews else None
     grants = rows(DoctorPatientAccess, DoctorPatientAccess.created_at, 'patient_id')
-    doctor = {'category': 'clinician_authored', 'state': last.state if last else 'pending' if any(
+    doctor = {'category': 'clinician_authored', 'as_of': now,
+        'consistency': 'multiple_reads_not_atomic_snapshot',
+        'current_decision_visibility': 'not_available_to_patient' if last and not last.patient_visible else 'available' if last else 'absent',
+        'state': last.state if last else 'pending' if any(
         g.status in ('active', 'pending') and utc(g.expires_at) > now for g in grants) else 'not_requested',
         'freshness': fresh(last.created_at if last else None),
         'current_decision': decision(last) if last and last.patient_visible else None,

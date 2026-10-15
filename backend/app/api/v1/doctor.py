@@ -306,4 +306,4 @@ def add_review(patient_id: str, payload: ReviewActionCreate,
     db.add(row)
     save(db, current_doctor.id, "DOCTOR_REVIEW_RECORDED", "doctor_review_actions",
         {"patient_id": patient_id, "sequence": sequence+1, "state": payload.state})
-    return review_out(row, safety)
+    return review_out(row, safety, current_sequence=row.sequence)

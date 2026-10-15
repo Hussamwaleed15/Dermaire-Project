@@ -1,5 +1,8 @@
 """Read-only structured triage. Scores, prose and AI outputs cannot reassure."""
 from datetime import datetime, timezone, timedelta
+import hashlib
+import json
+import uuid
 from app.models import CheckIn, Capture, Measurement, Experiment, ExperimentEvaluation, DailyContext, RoutineAdherence, RoutineEntry
 from app.services.personal_skin_model import report_of, utc
 from app.services.product_intelligence import routine_intelligence
@@ -123,7 +126,21 @@ def evaluate_safety(db, user, now=None):
         RoutineAdherence.date >= (now-timedelta(days=14)).date(), RoutineAdherence.date <= now.date()).all()
     reasons.sort(key=lambda r: (-RANK[r.state], r.code, str(r.evidence)))
     status = max((r.state for r in reasons), key=RANK.get)
+    # Fingerprint the fetched inputs, never a database-wide MVCC revision.
+    def packed(items):
+        return [{column.name: getattr(row, column.name) for column in row.__table__.columns}
+                for row in sorted(items, key=lambda item: item.id)]
+    inputs = {"owner_id": user.id, "profile_context": user.profile_context,
+              "checkins": packed(rows), "experiments": packed(experiments),
+              "evaluations": packed(evaluations), "product_intelligence": pi,
+              "captures": packed(captures), "measurements": packed(measurements),
+              "contexts": packed(contexts), "entries": packed(entries), "adherence": packed(adherence)}
+    revision = hashlib.sha256(json.dumps(inputs, sort_keys=True, default=str, separators=(",", ":")).encode()).hexdigest()
     return SafetyEvaluation(status=status, evaluated_at=now, reasons=reasons,
+        provenance={"evaluation_id": str(uuid.uuid4()), "as_of": now, "source_revision": revision,
+            "report_freshness": "current" if current else "stale" if reports else "missing",
+            "latest_report_at": utc(reports[-1][0].created_at) if reports else None,
+            "evidence_completeness": "screen_complete" if complete and not unknown_products else "partial"},
         evidence_status={"current_report_count": len(current), "risk_screen_complete": complete,
             "stale_or_absent": not bool(current), "unknown_product_ids": unknown_products,
             "visual_evidence": "unavailable_for_triage", "capture_ids": sorted(c.id for c in captures),

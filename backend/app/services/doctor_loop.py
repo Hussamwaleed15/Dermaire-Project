@@ -55,12 +55,17 @@ def access_out(row, db=None):
         "effective_scopes": scopes if row.status == "active" and not expired else []}
 
 
-def review_out(row, safety):
+def review_out(row, safety, *, current_sequence=None):
     return {"id": row.id, "sequence": row.sequence, "patient_id": row.patient_id,
         "doctor_id": row.doctor_id, "access_id": row.access_id, "state": row.state,
         "recommendation": row.recommendation, "rationale": row.rationale,
         "patient_visible": row.patient_visible, "created_at": row.created_at,
         "provenance": "clinician_authored", "safety_at_review": row.safety_snapshot,
+        "is_current": row.sequence == current_sequence if current_sequence is not None else None,
+        "resource_revision": row.sequence,
+        "safety_at_review_kind": "historical_saved",
+        "current_safety_evaluation_id": safety.provenance.evaluation_id if safety.provenance else None,
+        "clinical_clearance": False,
         "diverges_from_current_safety": bool(row.recommendation and row.recommendation != safety.status),
         "lower_than_current_safety": bool(row.recommendation and RANK[row.recommendation] < RANK[safety.status]),
         "urgent_safety_preserved": safety.status == "urgent"}
@@ -79,12 +84,15 @@ def review_status(db, patient, patient_view=False):
     return {"schema_version": "doctor-loop-2.0", "patient_id": patient.id,
         "state": latest.state if latest else "pending" if any(access_out(g)["status"] in ("active", "pending") for g in grants) else "not_requested",
         "latest_sequence": latest.sequence if latest else 0,
+        "as_of": safety.evaluated_at,
+        "consistency": "multiple_reads_not_atomic_snapshot",
+        "current_decision_visibility": "not_available_to_patient" if latest and patient_view and not latest.patient_visible else "available" if latest else "absent",
         "changed_at": latest.created_at if latest else None,
         "changed_by": latest.doctor_id if latest else None,
         "safety": safety.model_dump(mode="json"),
         # No fallback to an older visible decision as though it were current.
-        "current_decision": review_out(latest, safety) if latest and (not patient_view or latest.patient_visible) else None,
-        "history": [review_out(r, safety) for r in rows if not patient_view or r.patient_visible],
+        "current_decision": review_out(latest, safety, current_sequence=latest.sequence) if latest and (not patient_view or latest.patient_visible) else None,
+        "history": [review_out(r, safety, current_sequence=latest.sequence if latest else 0) for r in rows if not patient_view or r.patient_visible],
         "notes": [ClinicalNoteOut.model_validate(n).model_dump(mode="json") for n in
             db.query(ClinicalNote).filter_by(patient_id=patient.id).order_by(ClinicalNote.created_at, ClinicalNote.id)
             if not patient_view or n.patient_visible],
@@ -186,8 +194,9 @@ def timeline(db, patient):
     for note in db.query(ClinicalNote).filter_by(patient_id=patient.id):
         add("clinical_note", note.id, "clinician_authored", note.created_at,
             ClinicalNoteOut.model_validate(note).model_dump(mode="json"))
-    for row in reviews(db, patient.id):
-        add("doctor_review", row.id, "clinician_authored", row.created_at, review_out(row, context.safety))
+    review_rows = reviews(db, patient.id)
+    for row in review_rows:
+        add("doctor_review", row.id, "clinician_authored", row.created_at, review_out(row, context.safety, current_sequence=review_rows[0].sequence))
     items.sort(key=lambda i: (i["recorded_at"] or datetime.min.replace(tzinfo=timezone.utc), i["id"]))
     return {"schema_version": "doctor-timeline-2.0", "built_at": now, "items": items,
         "unknowns": context.unknowns, "derived_source_availability": {k:v.model_dump() for k,v in context.sources.items()},

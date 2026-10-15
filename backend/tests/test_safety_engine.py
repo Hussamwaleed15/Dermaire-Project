@@ -68,6 +68,7 @@ def test_quality_contract(deletion_context,capture_state,measurement_state):
     db.add(Measurement(id='bad-m',user_id='delete-patient',capture_id='bad',algorithm_version='v1',status=measurement_state,results={},quality_reference={},comparison={'comparability':'unknown'}));db.commit()
     report(db,None,['dryness'])
     a=result(db).model_dump(mode='json');b=result(db).model_dump(mode='json')
+    assert a['provenance'].pop('evaluation_id') != b['provenance'].pop('evaluation_id')
     assert a==b and a['engine_version']=='safety-1.0'
     assert a['status']=='doctor_review'
     assert a['reasons'][0]['code']=='incomplete_symptom_assessment'

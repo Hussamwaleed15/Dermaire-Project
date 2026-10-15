@@ -56,6 +56,12 @@ def test_refresh_and_restart_use_persisted_measurements(deletion_context):
     assert len(home["journal"]) == 2
     db.expire_all()
     fresh = client.get("/api/v1/home", headers=auth).json()
+    # Dynamic Safety is reevaluated; its identity/time differ, persisted inputs do not.
+    assert fresh["safety"]["provenance"]["evaluation_id"] != home["safety"]["provenance"]["evaluation_id"]
+    for projection in (fresh, home):
+        projection["safety"].pop("evaluated_at")
+        projection["safety"]["provenance"].pop("evaluation_id")
+        projection["safety"]["provenance"].pop("as_of")
     assert {k: v for k, v in fresh.items() if k != "as_of"} == {k: v for k, v in home.items() if k != "as_of"}
     assert client.patch(f"/api/v1/experiments/{exp.id}/toggle-pause", headers=auth).status_code == 200
     assert client.get("/api/v1/home", headers=auth).json()["experiment"]["status"] == "paused"
