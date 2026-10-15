@@ -22,6 +22,8 @@ class RoutineUpdate(BaseModel):
     active: Literal[False] | None = None
 
 class RoutineOut(BaseModel):
+    day_basis: Literal["UTC"] = "UTC"
+    configuration_history: Literal["current_with_adherence_snapshots"] = "current_with_adherence_snapshots"
     model_config = ConfigDict(from_attributes=True)
     revision: int
     revision_protected: bool
@@ -69,6 +71,7 @@ class AdherenceReceipt(BaseModel):
 
 
 class AdherenceOut(AdherenceCreate):
+    day_basis: Literal["UTC"] = "UTC"
     receipt: AdherenceReceipt | None = None
     model_config = ConfigDict(from_attributes=True)
     id: str

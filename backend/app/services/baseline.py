@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 from statistics import mean, pstdev
 
 from app.models import CheckIn
+from app.services.temporal import utc_day
 
 
 def confirmed_measurement(row):
@@ -43,5 +44,5 @@ def baseline_snapshot(db, user_id, before=None):
     today = datetime.now(timezone.utc).date()
     return {"status": "ready" if ready else "collecting", "required_days": 5,
             "completed_days": len(selected), "checkin_ids": [r.id for r in selected],
-            "metrics": metrics, "today_checked_in": any(r.created_at.date() == today for r in rows
+            "metrics": metrics, "today_checked_in": any(utc_day(r.created_at) == today for r in rows
                 if confirmed_measurement(r))}

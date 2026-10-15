@@ -10,6 +10,7 @@ from app.schemas.routine import RoutineCreate, RoutineUpdate, RoutineOut, Adhere
 from app.services import resource_revisions as revisions
 from app.services import adherence_attempts as attempts
 from sqlalchemy.exc import IntegrityError
+from app.services.temporal import utc_day
 
 router = APIRouter(prefix="/routine", tags=["Routine"])
 
@@ -109,7 +110,7 @@ def log(payload: AdherenceCreate, request: Request, user: User = Depends(get_cur
     if payload.slot not in (("AM", "PM") if entry.schedule == "BOTH" else (entry.schedule,)):
         raise HTTPException(422, "Slot is not configured for this entry")
     # Configuration is not versioned by day: do not project current settings into earlier days.
-    earliest = max(entry.start_date, entry.updated_at.date())
+    earliest = max(entry.start_date, utc_day(entry.updated_at))
     if not earliest <= payload.date <= today():
         raise HTTPException(422, "Report date must be between latest configuration day/start date and today (UTC)")
     snapshot = RoutineOut.model_validate(entry).model_dump(mode="json")
