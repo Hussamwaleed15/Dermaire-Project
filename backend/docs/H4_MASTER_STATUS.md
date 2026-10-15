@@ -1,3 +1,5 @@
+> Current expanded program: EXPANDED_MASTER_STATUS.md and EXPANDED_FLUTTER_HANDOFF.md supersede the historical checkpoint below. H5 and bounded H6-H8 source now exist; broad closure remains PARTIAL and no deployment occurred.
+
 > Foundation closure update2026-10-15: see FOUNDATION_MASTER_STATUS.md for the current ledger. Product CREATE now has bounded durable committed receipts (migration20261015_03); other domain attempt gaps remain OPEN. Patient-only GET /clinical-snapshot provides PostgreSQL transaction consistency; standalone endpoints remain non-atomic. H4 temporal/all-domain history and broad H2 receipts remain PARTIAL. The text below is the historical checkpoint and is superseded only for these delivered subsets. No H5 or managed rollout.
 
 # Backend master status after H4 — 2026-10-15 Cairo

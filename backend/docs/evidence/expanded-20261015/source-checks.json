@@ -1,0 +1,11 @@
+{
+  "source_head": "3ac5358295e7213c344a259911f7f2ae4c8a4a03",
+  "compileall": "passed",
+  "openapi_generation": "passed_100_registered_paths",
+  "git_diff_check": "passed",
+  "configured_python_linter": null,
+  "recognized_added_secret_patterns": 0,
+  "review_scope": "backend source/docs only; synthetic fixture tokens reviewed; no env/private key/provider credential changes",
+  "flutter_tester_native_changes": false,
+  "deployment": false
+}

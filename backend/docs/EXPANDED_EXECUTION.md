@@ -1,5 +1,8 @@
 # Expanded backend execution ledger
 
+Current delivered status and complete residual backlog: EXPANDED_MASTER_STATUS.md.
+The matrix below is the preimplementation inventory at the stated baseline.
+
 Baseline: canonical origin/main 0702773f664825b90b57c4dda53193f5672d23e0.
 User authorization supersedes the former documentary H5 sequencing gate; clinical,
 privacy, consent and deployment boundaries remain mandatory. No feature is removed

@@ -1,5 +1,7 @@
 # Foundation closure master status — 2026-10-15 Cairo
 
+> Historical foundation checkpoint. Current expanded program is in EXPANDED_MASTER_STATUS.md and EXPANDED_FLUTTER_HANDOFF.md: H5 messaging/plans, local H6, H7/H8 boundaries, product/routine/experiment receipts and a doctor DB snapshot have since been implemented and tested. The old H5 sequencing gate below is superseded by explicit user authorization; no managed rollout was authorized or performed. Broad closure remains PARTIAL.
+
 Canonical origin verified at start b42cba049558f19a3dc3ac4221b23371974dc4dd; fresh isolated main checkout. This ledger supersedes H4/H3/H2 completion wording only for changes below. DONE means source and isolated tests, never deployment. H5 has not started.
 
 | Milestone/domain | Status | Source-backed closure and residual |
