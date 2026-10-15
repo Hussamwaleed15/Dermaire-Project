@@ -69,6 +69,7 @@ def set_definition(row, payload, entry):
 def evidence_row(row):
     return {"id": row.id, "created_at": row.created_at.isoformat(),
             "source": (row.ai_vision_analysis or {}).get("measurement_source"),
+            "measurement_algorithm_version": (row.ai_vision_analysis or {}).get("measurement_algorithm_version"),
             "metrics": {m: getattr(row, m + "_score") if confirmed_measurement(row) else None for m in ("hydration", "redness", "texture")},
             "report": (row.observation or {}).get("user_reported")}
 
@@ -201,6 +202,16 @@ def evaluate(db, row):
         len(daily_measurements([evidence_row(c) for c in checks if confirmed_measurement(c)], s, metric))))
     prior = daily_measurements(baseline, source, metric)
     after = daily_measurements([evidence_row(c) for c in checks if confirmed_measurement(c)], source, metric)
+    selected_evidence = [c for c in baseline + [evidence_row(c) for c in checks if confirmed_measurement(c)]
+                         if c['source'] == source and c['metrics'][metric] is not None]
+    versions = {c.get('measurement_algorithm_version') for c in selected_evidence}
+    recorded_versions = sorted(v for v in versions if isinstance(v, str) and v)
+    missing_version = any(not isinstance(v, str) or not v for v in versions) or not versions
+    mixed_versions = len(recorded_versions) > 1 or bool(recorded_versions and missing_version)
+    metric_contract = {'metric': metric, 'source': source,
+        'direction': 'lower_is_better' if metric == 'redness' else 'higher_is_better',
+        'measurement_algorithm_versions': recorded_versions,
+        'measurement_algorithm_provenance': 'mixed' if mixed_versions else 'missing' if missing_version else 'recorded'}
     expected_status = "skipped" if row.intervention["type"] == "stop_entry" else "completed"
     expected = snap["expected"]
     slots = ("AM", "PM") if expected["schedule"] == "BOTH" else (expected["schedule"],)
@@ -243,6 +254,9 @@ def evaluate(db, row):
         and latest_prior is not None and (row.start_date.date()-latest_prior).days <= 7
         and pstdev(prior) <= 15 and pstdev(after) <= 15)
     label, strength = "insufficient_evidence", "insufficient"
+    # Different or known/unknown image algorithms cannot establish a comparable scale.
+    if source == 'image_proxy' and mixed_versions:
+        sufficient = False
     if sufficient:
         if adherence["coverage"] < .8 or adherence["followed_fraction"] < .8 or cov["context_coverage"] < .7 or major or baseline_unusual or baseline_inconsistent or changed_routine or changed_product or inconsistent:
             label, strength = "confounded_or_low_adherence", "limited"
@@ -268,7 +282,9 @@ def evaluate(db, row):
         "no_meaningful_change": "No meaningful difference was observed against your prior history within the defined descriptive threshold.",
         "likely_associated_improvement": "An improvement in the tracked score was observed during the planned change. This is an association, not evidence that the change caused it.",
         "likely_associated_worsening": "A worsening in the tracked score was observed during the planned change. This is an association, not evidence that the change caused it."}
-    result = {"engine_version": 2, "label": label, "evidence_strength": strength,
+    from app.schemas.experiments import MetricContract
+    result = {"metric_contract": MetricContract.model_validate(metric_contract).model_dump(),
+        "engine_version": 2, "label": label, "evidence_strength": strength,
         "evidence_summary": summaries[label], "comparison": {"start": snap["baseline"]["start"],
             "end_exclusive": snap["baseline"]["end_exclusive"], "strategy": "previous_28_UTC_days_frozen_at_activation",
             "baseline_days": len(prior), "experiment_days": len(after), "measurement_source": source},
@@ -282,6 +298,7 @@ def evaluate(db, row):
                 "created_at": l.created_at.isoformat(), "source": l.source, "configuration_snapshot": l.configuration_snapshot} for l in logs],
             "contexts": [context_data(c) for c in contexts]},
         "limitations": ["Observational, self-reported evidence cannot establish causality or a diagnosis.",
+            "Historical missing measurement algorithm versions remain unknown; mixed image algorithm versions cannot support directional labels.",
             "Scores and image proxies are not clinical measurements; sources are never pooled.",
             "Missing reports are unknown, not confirmed non-use. Stop adherence means reported skipped use.",
             "Unreported confounders and changes outside Dermaire cannot be ruled out.",

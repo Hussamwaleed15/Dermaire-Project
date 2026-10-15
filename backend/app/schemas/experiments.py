@@ -38,7 +38,23 @@ class FinishInput(BaseModel):
     status: Literal["completed", "stopped", "cancelled"]
 
 
+class MetricContract(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    schema_version: Literal[1] = 1
+    metric: Literal["hydration", "texture", "redness"]
+    unit: Literal["score_0_to_100"] = "score_0_to_100"
+    delta_unit: Literal["score_points"] = "score_points"
+    source: Literal["manual", "image_proxy"]
+    direction: Literal["higher_is_better", "lower_is_better"]
+    aggregation: Literal["within_UTC_day_mean_then_equal_day_mean"] = "within_UTC_day_mean_then_equal_day_mean"
+    evaluation_algorithm: Literal["experiment_v2_rules_1"] = "experiment_v2_rules_1"
+    measurement_algorithm_versions: list[str]
+    measurement_algorithm_provenance: Literal["recorded", "missing", "mixed"]
+    clinical_measurement: Literal[False] = False
+
+
 class EvaluationResult(BaseModel):
+    metric_contract: MetricContract | None = None
     model_config = ConfigDict(extra="forbid")
     engine_version: Literal[2] = 2
     label: Literal["likely_associated_improvement", "likely_associated_worsening", "no_meaningful_change", "insufficient_evidence", "confounded_or_low_adherence"]

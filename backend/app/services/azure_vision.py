@@ -34,6 +34,7 @@ class AzureVisionService:
                 "vision_provider": provider,
                 "azure_vision_status": "ANALYSIS_COMPLETE",
                 "measurement_source": "image_proxy",
+                "measurement_algorithm_version": "local-image-property-proxy-1.0",
                 "measurement_method": "Local image-property proxy; not Azure clinical analysis",
                 "image_resolution": f"{image.width}x{image.height}",
                 "erythema_redness_score": redness_score,

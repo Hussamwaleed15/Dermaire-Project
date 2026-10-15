@@ -81,7 +81,7 @@ async def submit_daily_checkin(
     db: Session = Depends(get_db)
 ):
     blob_name = None
-    ai_analysis = {"measurement_source": "manual"}
+    ai_analysis = {"measurement_source": "manual", "measurement_algorithm_version": "manual-score-input-1.0"}
     user_report = None
     if report is not None:
         try:
