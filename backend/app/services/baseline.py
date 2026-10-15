@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 from statistics import mean, pstdev
 
 from app.models import CheckIn
-from app.services.temporal import utc_day
+from app.services.temporal import utc_day, utc
 
 
 def confirmed_measurement(row):
@@ -17,16 +17,17 @@ def confirmed_measurement(row):
         v is not None and math.isfinite(v) and 0 <= v <= 100 for v in values)
 
 
-def baseline_snapshot(db, user_id, before=None):
+def baseline_snapshot(db, user_id, before=None, *, now=None):
     # Only confirmed, unlinked measurements qualify. Freeze the first five
     # distinct UTC days so later history cannot silently change the reference.
     rows = db.query(CheckIn).filter(CheckIn.user_id == user_id,
                                   CheckIn.experiment_id.is_(None)).order_by(
         CheckIn.created_at, CheckIn.id).all()
+    clock = utc(now or datetime.now(timezone.utc))
+    cutoff = utc(before) if before else clock
     days, selected = set(), []
     for row in rows:
         recorded = row.created_at.replace(tzinfo=timezone.utc) if row.created_at.tzinfo is None else row.created_at.astimezone(timezone.utc)
-        cutoff = before.replace(tzinfo=timezone.utc) if before and before.tzinfo is None else before or datetime.now(timezone.utc)
         if cutoff and recorded >= cutoff:
             continue
         if not confirmed_measurement(row):
@@ -41,7 +42,7 @@ def baseline_snapshot(db, user_id, before=None):
         for name in ("hydration", "texture", "redness"):
             values = [getattr(row, name + "_score") for row in selected]
             metrics[name] = {"mean": mean(values), "standard_deviation": pstdev(values)}
-    today = datetime.now(timezone.utc).date()
+    today = clock.date()
     return {"status": "ready" if ready else "collecting", "required_days": 5,
             "completed_days": len(selected), "checkin_ids": [r.id for r in selected],
             "metrics": metrics, "today_checked_in": any(utc_day(r.created_at) == today for r in rows

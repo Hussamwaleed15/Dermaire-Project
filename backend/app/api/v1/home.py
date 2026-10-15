@@ -15,14 +15,18 @@ router = APIRouter(prefix="/home", tags=["Home"])
 
 @router.get("")
 def get_home(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    now = datetime.now(timezone.utc)
+    return home_projection(db, current_user)
+
+
+def home_projection(db, current_user, now=None, safety=None):
+    now = now or datetime.now(timezone.utc)
     experiment = db.query(Experiment).filter(
         Experiment.user_id == current_user.id,
         Experiment.status.in_(["active", "paused", "baseline"])
     ).order_by(Experiment.created_at.desc(), Experiment.id.desc()).first()
     summary = None
     if experiment:
-        projection = experiment_projection(db, current_user.id, experiment)
+        projection = experiment_projection(db, current_user.id, experiment, as_of=now)
         product = db.query(Product).filter(Product.id == experiment.product_id,
             Product.user_id == current_user.id).first()
         summary = {key: getattr(projection, key) for key in (
@@ -39,7 +43,7 @@ def get_home(current_user: User = Depends(get_current_user), db: Session = Depen
         return recorded.replace(tzinfo=timezone.utc) if recorded.tzinfo is None else recorded.astimezone(timezone.utc)
     return {"as_of": now.isoformat(), "date": now.date().isoformat(),
         "consistency": "multiple_reads_not_atomic_snapshot",
-        "safety": evaluate_safety(db, current_user, now).model_dump(mode="json"),
+        "safety": (safety or evaluate_safety(db, current_user, now)).model_dump(mode="json"),
         "experiment": summary,
         "observation_status": ObservationStatus.model_validate({
             "schema_version": 1, "day_basis": "UTC",

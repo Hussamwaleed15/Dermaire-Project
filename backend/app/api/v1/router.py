@@ -47,3 +47,6 @@ from app.api.v1.safety import router as safety_router
 api_v1_router.include_router(safety_router)
 from app.api.v1.contextual_ai import router as contextual_ai_router
 api_v1_router.include_router(contextual_ai_router)
+
+from app.api.v1.clinical_snapshot import router as clinical_snapshot_router
+api_v1_router.include_router(clinical_snapshot_router)

@@ -52,7 +52,7 @@ def personal_skin_model(db, user, now=None):
              and (measurement_of(r) or report_of(r))]
     reports = daily_first([r for r in valid if report_of(r) and utc(r.created_at) >= now - timedelta(days=28)])
     measurements = daily_first([r for r in valid if measurement_of(r)])
-    baseline = baseline_snapshot(db, user.id, before=now)
+    baseline = baseline_snapshot(db, user.id, before=now, now=now)
     changing, stable, associations, reasons = [], [], [], []
     reference = [r for r in measurements if r.id in baseline['checkin_ids']]
     if baseline['status'] == 'ready' and len(reference) == 5:

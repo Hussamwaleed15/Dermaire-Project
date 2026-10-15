@@ -39,8 +39,8 @@ def save(db, actor_id, action, target, details):
         raise HTTPException(503, "Clinician action could not be confirmed; retry after refreshing")
 
 
-def access_out(row, db=None):
-    expired = utc(row.expires_at) <= datetime.now(timezone.utc)
+def access_out(row, db=None, *, now=None):
+    expired = utc(row.expires_at) <= (now or datetime.now(timezone.utc))
     scopes = granted_scopes(row)
     intent = consent_of(row)
     doctor = db.get(User, row.doctor_id) if db is not None and row.doctor_id else None
@@ -77,13 +77,14 @@ def reviews(db, patient_id):
         DoctorReviewAction.sequence.desc()).all()
 
 
-def review_status(db, patient, patient_view=False):
-    safety = evaluate_safety(db, patient)
+def review_status(db, patient, patient_view=False, *, now=None, safety=None):
+    safety = safety or evaluate_safety(db, patient, now)
+    now = now or safety.evaluated_at
     rows = reviews(db, patient.id)
     latest = rows[0] if rows else None
     grants = db.query(DoctorPatientAccess).filter_by(patient_id=patient.id).all()
     return {"schema_version": "doctor-loop-2.0", "patient_id": patient.id,
-        "state": latest.state if latest else "pending" if any(access_out(g)["status"] in ("active", "pending") for g in grants) else "not_requested",
+        "state": latest.state if latest else "pending" if any(access_out(g, now=now)["status"] in ("active", "pending") for g in grants) else "not_requested",
         "latest_sequence": latest.sequence if latest else 0,
         "as_of": safety.evaluated_at,
         "consistency": "multiple_reads_not_atomic_snapshot",
@@ -97,7 +98,7 @@ def review_status(db, patient, patient_view=False):
         "notes": [ClinicalNoteOut.model_validate(n).model_dump(mode="json") for n in
             db.query(ClinicalNote).filter_by(patient_id=patient.id).order_by(ClinicalNote.created_at, ClinicalNote.id)
             if not patient_view or n.patient_visible],
-        "access": [access_out(g) for g in grants] if patient_view else None}
+        "access": [access_out(g, now=now) for g in grants] if patient_view else None}
 
 
 def timeline(db, patient):

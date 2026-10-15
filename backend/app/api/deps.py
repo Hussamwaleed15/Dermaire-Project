@@ -31,7 +31,12 @@ def get_token_payload(authorization: Optional[str] = Header(None)) -> dict:
 
 
 def get_token_subject(payload: dict = Depends(get_token_payload), db: Session = Depends(get_db)) -> str:
-    user = db.query(User).filter(User.id == payload["sub"]).with_for_update().first()
+    return validate_token_subject(payload, db, lock=True)
+
+
+def validate_token_subject(payload: dict, db: Session, *, lock: bool):
+    query = db.query(User).filter(User.id == payload["sub"])
+    user = (query.with_for_update() if lock else query).first()
     if user and not secrets.compare_digest(payload["credential"], credential_stamp(user.hashed_password)):
         raise InvalidCredentialsException("Session invalidated. Please sign in again")
     revoked = db.query(AuditLog).filter(

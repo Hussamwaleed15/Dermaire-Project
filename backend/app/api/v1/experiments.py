@@ -12,7 +12,7 @@ from app.services import resource_revisions as revisions
 
 router = APIRouter(prefix="/experiments", tags=["Controlled experiments v2"])
 
-def experiment_projection(db, user_id, row):
+def experiment_projection(db, user_id, row, *, as_of=None):
     if row is None:
         return None
     data = {name: getattr(row, name) for name in ExperimentOut.model_fields if hasattr(row, name)}
@@ -28,7 +28,7 @@ def experiment_projection(db, user_id, row):
             reference = baseline["metrics"].get(metric, {}).get("mean")
             score = getattr(latest, metric+"_score") if latest and confirmed_measurement(latest) else None
             data[metric+"_delta_percent"] = round((score-reference)/reference*100, 1) if reference and score is not None else None
-    data["current_day"] = min(row.target_days, max(1, ((row.stopped_at.date() if row.stopped_at else service.today())-row.start_date.date()).days+1)) if row.activated_at else row.current_day
+    data["current_day"] = min(row.target_days, max(1, ((row.stopped_at.date() if row.stopped_at else as_of.date() if as_of is not None else service.today())-row.start_date.date()).days+1)) if row.activated_at else row.current_day
     data["coverage"] = service.coverage(db, row)
     data["result"] = db.query(ExperimentEvaluation).filter_by(user_id=user_id, experiment_id=row.id).order_by(ExperimentEvaluation.created_at.desc(), ExperimentEvaluation.id.desc()).first()
     return ExperimentOut.model_validate(data)

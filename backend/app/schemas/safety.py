@@ -16,7 +16,7 @@ class SafetyProvenance(BaseModel):
     mode: Literal["dynamic_current"] = "dynamic_current"
     as_of: datetime
     source_revision: str
-    consistency: Literal["multiple_reads_not_atomic_snapshot"] = "multiple_reads_not_atomic_snapshot"
+    consistency: Literal["multiple_reads_not_atomic_snapshot", "postgresql_repeatable_read_transaction"] = "multiple_reads_not_atomic_snapshot"
     report_freshness: Literal["current", "stale", "missing"]
     latest_report_at: datetime | None
     evidence_completeness: Literal["partial", "screen_complete"]

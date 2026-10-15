@@ -89,7 +89,7 @@ class ReviewStatusOut(BaseModel):
     changed_at: datetime | None = None
     changed_by: str | None = None
     as_of: datetime
-    consistency: Literal["multiple_reads_not_atomic_snapshot"]
+    consistency: Literal["multiple_reads_not_atomic_snapshot", "postgresql_repeatable_read_transaction"]
     current_decision_visibility: Literal["available", "absent", "not_available_to_patient"]
     safety: SafetyEvaluation
     current_decision: ReviewActionOut | None = None

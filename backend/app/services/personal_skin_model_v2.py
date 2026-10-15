@@ -167,7 +167,7 @@ def enrich(db, user, model, now, reports, contexts):
         'history': {'category': 'patient_reported', 'freshness': fresh(model.sufficiency.latest_evidence_at),
             'recent_reports': [{'id': r.id, 'recorded_at': r.created_at, 'report': {k: report_of(r).model_dump(mode='json').get(k)
                               for k in ('overall_change', 'symptoms', 'routine_status')}, 'freshness': fresh(r.created_at)} for r in reports]},
-        'baseline': {'category': 'deterministic_derived', 'snapshot': baseline_snapshot(db, user.id, before=now),
+        'baseline': {'category': 'deterministic_derived', 'snapshot': baseline_snapshot(db, user.id, before=now, now=now),
                      'caveats': ['Personal historical reference, never clinical clearance.']},
         'daily_context': {'category': 'patient_reported', 'days': [{'id': c.id, 'date': c.date,
             'unusual_conditions': c.unusual_conditions, 'freshness': fresh(c.updated_at)} for c in contexts.values() if utc(c.updated_at) <= now],
