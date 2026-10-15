@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Optional, Any, Dict, Literal, Annotated
 from pydantic import BaseModel, EmailStr, Field, ConfigDict, field_validator, model_validator
 
@@ -320,19 +320,25 @@ class ClinicalNoteCreate(BaseModel):
     follow_up: Optional[str] = Field(None, max_length=100)
 
 class ClinicalNoteOut(BaseModel):
+    schema_version: Literal["clinical-note-1.0"] = "clinical-note-1.0"
     category: Optional[str] = None
     patient_visible: bool
     timeline_item_id: Optional[str] = None
     review_action_id: Optional[str] = None
     updated_at: datetime
-    provenance: str = "clinician_authored"
+    provenance: Literal["clinician_authored"] = "clinician_authored"
     id: str
     doctor_id: str
     patient_id: str
     content: str
-    priority: str
+    priority: Literal["routine", "review", "urgent"]
     follow_up: Optional[str] = None
     created_at: datetime
+
+    @field_validator("created_at", "updated_at")
+    @classmethod
+    def utc_times(cls, value):
+        return value.replace(tzinfo=timezone.utc) if value.tzinfo is None else value.astimezone(timezone.utc)
 
     model_config = ConfigDict(from_attributes=True)
 

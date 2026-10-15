@@ -11,7 +11,8 @@ from app.api.deps import require_role, get_token_payload
 from app.models import User, DoctorPatientAccess, ClinicalNote, CheckIn, Experiment, Product, DoctorReviewAction, AuditLog, gen_uuid
 from app.services.doctor_consent import consent_of
 from app.services.doctor_loop import authorize, save, access_out, timeline, review_status, reviews, review_out
-from app.schemas.doctor_loop import ReviewActionCreate
+from app.schemas.doctor_loop import (ReviewActionCreate, ReviewActionOut, ReviewStatusOut,
+    DoctorPatientDetailOut, DoctorTimelineOut, AccessGrantOut)
 from app.services.safety import evaluate_safety
 from app.schemas import (
     GenerateQrRequest, GenerateQrResponse, ClaimAccessRequest, DoctorPatientOut,
@@ -237,12 +238,12 @@ def add_clinical_note(
     return note
 
 
-@router.get("/access")
+@router.get("/access", response_model=list[AccessGrantOut])
 def patient_access(current_user: User = Depends(require_role(["patient"])), db: Session = Depends(get_db)):
     return [access_out(g, db) for g in db.query(DoctorPatientAccess).filter_by(patient_id=current_user.id).order_by(DoctorPatientAccess.created_at, DoctorPatientAccess.id)]
 
 
-@router.delete("/access/{access_id}")
+@router.delete("/access/{access_id}", response_model=AccessGrantOut)
 def revoke_one(access_id: str, current_user: User = Depends(require_role(["patient"])), db: Session = Depends(get_db)):
     grant = db.query(DoctorPatientAccess).filter_by(id=access_id, patient_id=current_user.id).with_for_update().first()
     if not grant:
@@ -255,19 +256,19 @@ def revoke_one(access_id: str, current_user: User = Depends(require_role(["patie
     return access_out(grant, db)
 
 
-@router.get("/review-status")
+@router.get("/review-status", response_model=ReviewStatusOut)
 def patient_review_status(current_user: User = Depends(require_role(["patient"])), db: Session = Depends(get_db)):
     return review_status(db, current_user, patient_view=True)
 
 
-@router.get("/patients/{patient_id}")
+@router.get("/patients/{patient_id}", response_model=DoctorPatientDetailOut)
 def patient_detail(patient_id: str, current_doctor: User = Depends(require_role(["doctor"])), db: Session = Depends(get_db)):
     patient, grant = authorize(db, current_doctor, patient_id)
     return {"patient_id": patient.id, "full_name": patient.full_name, "access": access_out(grant, db),
         "review": review_status(db, patient)}
 
 
-@router.get("/patients/{patient_id}/timeline")
+@router.get("/patients/{patient_id}/timeline", response_model=DoctorTimelineOut)
 def patient_timeline(patient_id: str, offset: int = Query(0, ge=0), limit: int = Query(100, ge=1, le=200),
         current_doctor: User = Depends(require_role(["doctor"])), db: Session = Depends(get_db)):
     patient, _ = authorize(db, current_doctor, patient_id)
@@ -284,13 +285,13 @@ def patient_notes(patient_id: str, current_doctor: User = Depends(require_role([
     return db.query(ClinicalNote).filter_by(patient_id=patient_id).order_by(ClinicalNote.created_at, ClinicalNote.id).all()
 
 
-@router.get("/patients/{patient_id}/reviews")
+@router.get("/patients/{patient_id}/reviews", response_model=ReviewStatusOut)
 def patient_reviews(patient_id: str, current_doctor: User = Depends(require_role(["doctor"])), db: Session = Depends(get_db)):
     patient, _ = authorize(db, current_doctor, patient_id)
     return review_status(db, patient)
 
 
-@router.post("/patients/{patient_id}/reviews", status_code=201)
+@router.post("/patients/{patient_id}/reviews", response_model=ReviewActionOut, status_code=201)
 def add_review(patient_id: str, payload: ReviewActionCreate,
         current_doctor: User = Depends(require_role(["doctor"])), db: Session = Depends(get_db)):
     patient, grant = authorize(db, current_doctor, patient_id)

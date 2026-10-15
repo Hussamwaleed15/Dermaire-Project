@@ -6,6 +6,7 @@ from app.models import (User, DoctorPatientAccess, ClinicalNote, DoctorReviewAct
     CheckIn, DailyContext, RoutineEntry, RoutineAdherence, Experiment, ExperimentEvaluation,
     Capture, Measurement, Product)
 from app.schemas import ClinicalNoteOut
+from app.schemas.doctor_loop import AccessGrantOut
 from app.services.context_builder import build_context
 from app.services.personal_skin_model import utc, report_of, measurement_of
 from app.services.safety import evaluate_safety
@@ -43,7 +44,7 @@ def access_out(row, db=None):
     scopes = granted_scopes(row)
     intent = consent_of(row)
     doctor = db.get(User, row.doctor_id) if db is not None and row.doctor_id else None
-    return {"id": row.id, "patient_id": row.patient_id, "doctor_id": row.doctor_id,
+    return AccessGrantOut.model_validate({"id": row.id, "patient_id": row.patient_id, "doctor_id": row.doctor_id,
         "granted_by": row.granted_by, "status": "expired" if expired and row.status in ("active", "pending") else row.status,
         "created_at": row.created_at, "expires_at": row.expires_at, "claimed_at": row.claimed_at,
         "revoked_at": row.revoked_at, "revoked_by": row.revoked_by,
@@ -52,14 +53,14 @@ def access_out(row, db=None):
         "consent_source": "explicit_patient_intent" if intent else "legacy_view_only",
         "view_consent": "VIEW" in scopes, "export_consent": "EXPORT" in scopes,
         "scopes": scopes,
-        "effective_scopes": scopes if row.status == "active" and not expired else []}
+        "effective_scopes": scopes if row.status == "active" and not expired else []}).model_dump(mode="json")
 
 
 def review_out(row, safety, *, current_sequence=None):
-    return {"id": row.id, "sequence": row.sequence, "patient_id": row.patient_id,
+    return {"schema_version": "clinical-review-1.0", "id": row.id, "sequence": row.sequence, "patient_id": row.patient_id,
         "doctor_id": row.doctor_id, "access_id": row.access_id, "state": row.state,
         "recommendation": row.recommendation, "rationale": row.rationale,
-        "patient_visible": row.patient_visible, "created_at": row.created_at,
+        "patient_visible": row.patient_visible, "created_at": utc(row.created_at),
         "provenance": "clinician_authored", "safety_at_review": row.safety_snapshot,
         "is_current": row.sequence == current_sequence if current_sequence is not None else None,
         "resource_revision": row.sequence,
@@ -87,7 +88,7 @@ def review_status(db, patient, patient_view=False):
         "as_of": safety.evaluated_at,
         "consistency": "multiple_reads_not_atomic_snapshot",
         "current_decision_visibility": "not_available_to_patient" if latest and patient_view and not latest.patient_visible else "available" if latest else "absent",
-        "changed_at": latest.created_at if latest else None,
+        "changed_at": utc(latest.created_at) if latest else None,
         "changed_by": latest.doctor_id if latest else None,
         "safety": safety.model_dump(mode="json"),
         # No fallback to an older visible decision as though it were current.

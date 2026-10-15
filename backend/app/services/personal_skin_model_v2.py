@@ -134,7 +134,7 @@ def enrich(db, user, model, now, reports, contexts):
         'current_decision': decision(last) if last and last.patient_visible else None,
         'history': [decision(r) for r in reviews if r.patient_visible],
         'notes': [{'id': n.id, 'category': 'clinician_authored', 'content': n.content, 'priority': n.priority,
-            'follow_up': n.follow_up, 'recorded_at': n.created_at, 'freshness': fresh(n.created_at)}
+            'follow_up': n.follow_up, 'recorded_at': utc(n.created_at), 'freshness': fresh(n.created_at)}
             for n in rows(ClinicalNote, ClinicalNote.created_at, 'patient_id') if n.patient_visible],
         'safety_precedence': 'Safety Engine is preserved independently of clinician recommendations.'}
     groups = {True: [], False: []}

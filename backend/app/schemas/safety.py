@@ -1,6 +1,6 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Literal, Any
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, field_validator
 SafetyState = Literal["track", "low_risk_self_care", "doctor_review", "urgent"]
 class SafetyReason(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -32,3 +32,9 @@ class SafetyEvaluation(BaseModel):
     evidence_status: dict[str, Any]
     guidance: str
     limitations: list[str]
+
+
+    @field_validator("evaluated_at")
+    @classmethod
+    def utc_time(cls, value):
+        return value.replace(tzinfo=timezone.utc) if value.tzinfo is None else value.astimezone(timezone.utc)
