@@ -5,7 +5,7 @@ from app.api.deps import get_current_user, get_token_subject, record_audit
 from app.core.exceptions import DermaireException
 from app.services.account_deletion import delete_account
 from app.models import User
-from app.schemas import UserOut, SkinProfileUpdate
+from app.schemas import UserOut, SkinProfileUpdate, ProfileReviewRequest
 
 router = APIRouter(prefix="/users", tags=["User Profile & Skin Setup"])
 
@@ -62,3 +62,12 @@ def delete_current_account(user_id: str = Depends(get_token_subject), db: Sessio
             error_code="ACCOUNT_DELETION_FAILED", status_code=503,
         )
     return Response(status_code=204)
+
+
+@router.post("/profile-review", response_model=UserOut)
+def complete_profile_review(payload: ProfileReviewRequest,
+                            current_user: User = Depends(get_current_user),
+                            db: Session = Depends(get_db)):
+    from app.services.onboarding import complete_review
+    complete_review(db, current_user)
+    return get_current_user_profile(current_user, db)

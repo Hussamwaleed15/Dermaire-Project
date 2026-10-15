@@ -156,7 +156,7 @@ def migrate(engine,monkeypatch):
         c.execute(metadata.tables["products"].insert().values(id="product",user_id="owner",name="Synthetic",category="treatment"))
         c.execute(metadata.tables["routine_entries"].insert().values(id="entry",user_id="owner",product_id="product",schedule="AM",frequency="daily",start_date=today(),active=True,am_order=0,pm_order=0,source="user_configured",created_at=now,updated_at=now))
         c.execute(metadata.tables["routine_adherence"].insert().values(id="report",user_id="owner",routine_entry_id="entry",date=today(),slot="AM",status="completed",source="user_reported",created_at=now,configuration_snapshot={"revision":1,"instructions":"Preserved"},note="Preserved"))
-    command.upgrade(cfg,"20261014_04");command.check(cfg)
+    command.upgrade(cfg,"head");command.check(cfg)
     with Session(engine) as db:
         row=db.get(RoutineAdherence,"report")
         assert row.note == "Preserved" and row.configuration_snapshot == {"revision":1,"instructions":"Preserved"} and row.receipt is None

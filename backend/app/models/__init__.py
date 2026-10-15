@@ -66,6 +66,13 @@ class User(Base):
         from app.services.policy_consent import consent_snapshot
         return consent_snapshot(self)
 
+    profile_reviewed_at = Column(DateTime, nullable=True)
+
+    @property
+    def onboarding(self):
+        from app.services.onboarding import review_snapshot
+        return review_snapshot(self)
+
     # Skin Profile
     skin_type = Column(String(50), nullable=True)
     selected_goal = Column(String(100), nullable=True)

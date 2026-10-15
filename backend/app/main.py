@@ -108,7 +108,7 @@ def readiness(db: Session = Depends(get_db)):
         db.execute(text("SELECT 1"))
         if settings.ENVIRONMENT in {"staging", "production"}:
             revision = db.execute(text("SELECT version_num FROM alembic_version")).scalars().all()
-            if revision != ["20261014_04"]:
+            if revision != ["20261015_01"]:
                 raise RuntimeError("Schema revision unavailable")
         database = "available"
     except Exception:

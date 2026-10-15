@@ -60,11 +60,22 @@ class SkinProfileUpdate(BaseModel):
     selected_goal: Optional[str] = Field(None, max_length=100)
     skin_concerns: Optional[List[ProfileText]] = Field(None, max_length=30)
 
+class ProfileReviewRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    reviewed: Literal[True]
+
+class OnboardingOut(BaseModel):
+    schema_version: Literal[1] = 1
+    review_state: Literal["never_reviewed", "reviewed", "not_applicable"]
+    reviewed_at: datetime | None
+    optional_data_present: bool
+
 class UserOut(BaseModel):
     id: str
     email: EmailStr
     full_name: str
     role: str
+    onboarding: OnboardingOut | None = None
     safety_accepted: bool
     safety_consent: SafetyConsentOut | None = None
     safety_accepted_at: Optional[datetime] = None
