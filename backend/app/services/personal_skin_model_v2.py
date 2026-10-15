@@ -157,7 +157,8 @@ def enrich(db, user, model, now, reports, contexts):
                 caveats=['Incomplete application reporting and unreported confounding remain unknown.', 'Product effects are not inferred.']))
     for f in model.changing + model.stable + model.associations:
         f.evidence_count = len({(v.source, v.id) for v in f.evidence})
-        f.latest_evidence_at = max((v.recorded_at for v in f.evidence), default=None)
+        f.latest_evidence_at = max((utc(v.recorded_at) for v in f.evidence), default=None)
+        f.earliest_evidence_at = min((utc(v.recorded_at) for v in f.evidence), default=None)
         f.freshness = EvidenceFreshness.model_validate(freshness(f.latest_evidence_at, now))
         f.confidence = f.strength
         f.caveats += ['Observational tracking only; no diagnosis or causal conclusion.']

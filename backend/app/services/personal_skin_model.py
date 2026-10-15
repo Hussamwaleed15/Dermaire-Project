@@ -6,6 +6,7 @@ from app.models import CheckIn, DailyContext, Product
 from app.schemas import CheckInReport
 from app.schemas.personal_skin_model import Evidence, Finding, PersonalSkinModel
 from app.services.baseline import baseline_snapshot, confirmed_measurement
+from app.services.evidence_freshness import freshness
 
 
 def utc(value):
@@ -126,7 +127,7 @@ def personal_skin_model(db, user, now=None):
         reasons.append('Context association requires three paired report days with and three without explicitly reported unusual conditions.')
     latest = max((utc(r.created_at) for r in valid), default=None)
     age = (now.date() - latest.date()).days if latest else None
-    stale = age is not None and age > 14
+    stale = latest is not None and now - latest > timedelta(days=14)
     if stale:
         # Historical evidence remains discoverable through history; no stale conclusion presented as current.
         changing, stable, associations = [], [], []
@@ -139,7 +140,7 @@ def personal_skin_model(db, user, now=None):
         statement={'no_data': 'No authoritative skin observations yet; start tracking.', 'stale': 'Current trajectory is unknown; record a fresh check-in.', 'meaningful_change': 'Tracking evidence suggests change; review the structured findings.', 'no_meaningful_change': 'No meaningful change detected; continue tracking.', 'insufficient_data': 'Insufficient comparable evidence; continue tracking.'}[state],
         strength='moderate' if any(f.strength == 'moderate' for f in changing + stable) else 'limited' if changing or stable else 'none',
         changing=changing, stable=stable, associations=associations,
-        sufficiency=dict(confirmed_days=len(daily_first(valid)), report_days=len(reports), measurement_days=len(measurements), excluded_checkins=len(rows)-len(valid), latest_evidence_at=latest, age_days=age,
+        sufficiency=dict(freshness=freshness(latest, now), confirmed_days=len(daily_first(valid)), report_days=len(reports), measurement_days=len(measurements), excluded_checkins=len(rows)-len(valid), latest_evidence_at=latest, age_days=age,
             recency='missing' if latest is None else 'stale' if stale else 'fresh', baseline_ready=baseline['status']=='ready', reasons=reasons),
         profile=dict(available=user.profile_context is not None, primary_goals=goals,
             evidence=[evidence(user, ['profile_context.primary_goals'], source='profile')] if goals else []),

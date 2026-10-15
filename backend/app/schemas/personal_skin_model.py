@@ -22,6 +22,8 @@ class Evidence(BaseModel):
         return self
 
 class Finding(BaseModel):
+    freshness_basis: Literal['latest_referenced_evidence'] = 'latest_referenced_evidence'
+    earliest_evidence_at: datetime | None = None
     freshness: EvidenceFreshness | None = None
     code: str
     subject: str
@@ -40,6 +42,7 @@ class Finding(BaseModel):
     threshold: float | None = None
 
 class Sufficiency(BaseModel):
+    freshness: EvidenceFreshness | None = None
     proxy_measurement_days: int = 0
     latest_proxy_measurement_at: datetime | None = None
     confirmed_days: int
@@ -84,6 +87,7 @@ class AssistantLayer(BaseModel):
 
 
 class PersonalSkinModel(BaseModel):
+    source_read_consistency: Literal['multiple_reads_not_atomic_snapshot', 'postgresql_repeatable_read_transaction'] = 'multiple_reads_not_atomic_snapshot'
     schema_version: Literal[2] = 2
     contract_version: Literal['personal-skin-model-2.0'] = 'personal-skin-model-2.0'
     derivation_version: Literal['psm-v2.0'] = 'psm-v2.0'

@@ -28,7 +28,15 @@ def page(db, user, limit, cursor=None, routine_entry_id=None):
                 raise ValueError('Cursor scope mismatch')
             if not isinstance(state['before_id'], str) or not 1 <= len(state['before_id']) <= 36:
                 raise ValueError('Cursor position invalid')
-            if utc(datetime.fromisoformat(state['as_of'])) > now:
+            cutoff_value = datetime.fromisoformat(state['as_of'])
+            before_value = datetime.fromisoformat(state['before_at'])
+            if cutoff_value.tzinfo is None or before_value.tzinfo is None:
+                raise ValueError('Cursor timestamps require an offset')
+            if type(state['exp']) is not int or state['exp'] != int(cutoff_value.timestamp()) + 3600:
+                raise ValueError('Cursor lifetime invalid')
+            if utc(before_value) > utc(cutoff_value):
+                raise ValueError('Position exceeds cutoff')
+            if utc(cutoff_value) > now:
                 raise ValueError('Future cutoff invalid')
             before = utc(datetime.fromisoformat(state['before_at'])).replace(tzinfo=None)
         except jwt.ExpiredSignatureError:
