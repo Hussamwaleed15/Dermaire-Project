@@ -159,7 +159,7 @@ class DeletionJournal:
         records = self.inventory()
         owners = {r["owner"] for r in records if r["schema"] != 3}
         images = {i for r in records for i in r.get("images", [])}
-        from app.models import User, Product, ProductIntelligence, Experiment, RoutineEntry
+        from app.models import User, Product, ProductIntelligence, Experiment, RoutineEntry, ProductCreateAttempt
         user_ids = [u.id for u in db.query(User) if self.token("owner", u.id) in owners]
         product_records = [r for r in records if r["schema"] == 3]
         product_targets = []
@@ -178,12 +178,18 @@ class DeletionJournal:
                             ProductIntelligence.user_id != product.user_id).first()):
                     raise RuntimeError("Restored product dependencies require offline repair")
                 product_targets.append(product)
+        # Restore can contain receipt content even when the product row is absent.
+        receipt_targets = [a for a in db.query(ProductCreateAttempt) if any(
+            r["owner"] == self.token("product-owner", a.user_id)
+            and self.token("product", a.resource_id) in r["products"] for r in product_records)]
         # All signed inputs and restored product links verified before mutation.
+        for attempt in receipt_targets:
+            attempt.result_snapshot = None
         for product in product_targets:
             db.query(ProductIntelligence).filter_by(product_id=product.id,
                 user_id=product.user_id).delete(synchronize_session=False)
             db.delete(product)
-        if product_targets:
+        if product_targets or receipt_targets:
             db.commit()
         for owner_id in user_ids:
             delete_account(db, owner_id, journal=self)

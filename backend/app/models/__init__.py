@@ -362,3 +362,5 @@ class RoutineAdherence(Base):
 
 
 from app.models.capture_observations import CaptureObservation
+
+from app.models.product_attempts import ProductCreateAttempt

@@ -4,12 +4,17 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.exceptions import EntityNotFoundException, DermaireException
 from app.api.deps import get_current_user, record_audit
-from app.models import User, Product, RoutineEntry, Experiment, ProductIntelligence, AuditLog
+from app.models import User, Product, RoutineEntry, Experiment, ProductIntelligence, AuditLog, ProductCreateAttempt
 from app.services.deletion_journal import deletion_journal
 from app.services.experiments import guard_routine_write
 from app.services.routine import lock_owner, deactivate
 from app.services import product_revisions
 from sqlalchemy.orm.exc import StaleDataError
+from sqlalchemy.exc import IntegrityError
+from datetime import datetime, timezone
+from app.services import product_attempts
+from app.services.resource_revisions import header
+from app.schemas.product_attempts import ProductCreateAttemptOut
 from app.schemas import (
     ProductCreate, ProductUpdate, ProductOut,
     ProductInteractionCheckRequest
@@ -42,8 +47,17 @@ def create_product(
     payload: ProductCreate,
     response: Response = None,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    request: Request = None
 ):
+    key = header(request, "Idempotency-Key") if request is not None else None
+    identifier = product_attempts.identity(current_user.id, key) if key is not None else None
+    digest = product_attempts.fingerprint(payload) if key is not None else None
+    lock_owner(db, current_user)
+    if identifier is not None:
+        replay = product_attempts.replay(db, current_user.id, identifier, digest, response)
+        if replay is not None:
+            return replay
     existing = db.query(Product).filter(
         Product.user_id == current_user.id,
         Product.name.ilike(payload.name)
@@ -74,14 +88,37 @@ def create_product(
         start_date=payload.start_date
     )
     db.add(product)
+    try:
+        db.flush()
+        result = ProductOut.model_validate(product)
+        if identifier is not None:
+            db.add(ProductCreateAttempt(id=identifier, user_id=current_user.id,
+                resource_id=product.id, resource_revision=product.revision, payload_hash=digest,
+                recorded_at=datetime.now(timezone.utc).replace(tzinfo=None),
+                result_snapshot=result.model_dump(mode="json")))
+        db.add(AuditLog(actor_id=current_user.id, action="PRODUCT_CREATED", target_resource="products",
+            details={"product_id":product.id, "name":product.name}))
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        if identifier is not None:
+            replay = product_attempts.replay(db, current_user.id, identifier, digest, response)
+            if replay is not None:
+                return replay
+        raise HTTPException(503, "Product create outcome unavailable; reconcile the same attempt") from None
+    except Exception:
+        db.rollback()
+        raise HTTPException(503, "Product create outcome unavailable; reconcile the same attempt") from None
+    product_attempts.headers(response, identifier, result.revision)
+    return result
 
-    db.commit()
-    db.refresh(product)
 
-    record_audit(db, current_user.id, "PRODUCT_CREATED", "products", {"product_id": product.id, "name": product.name})
-    if response is not None:
-        response.headers["ETag"] = f'"{product.revision}"'
-    return product
+@router.get("/attempts/{key}", response_model=ProductCreateAttemptOut)
+def product_create_attempt(key: str, response: Response,
+    current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    response.headers['Cache-Control'] = 'no-store'
+    return product_attempts.lookup(db, current_user.id, key)
+
 
 @router.get("/{product_id}", response_model=ProductOut)
 def get_product(
@@ -212,6 +249,7 @@ def delete_product(
                                error_code="DELETION_UNAVAILABLE", status_code=503) from None
     db.query(ProductIntelligence).filter_by(product_id=product.id,
         user_id=current_user.id).delete(synchronize_session=False)
+    product_attempts.erase_results(db, current_user.id, product.id)
     db.delete(product)
     db.add(AuditLog(actor_id=current_user.id, action="PRODUCT_DELETED", target_resource="products",
         details={"product_id": product_id}))
