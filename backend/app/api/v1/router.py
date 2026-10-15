@@ -54,3 +54,5 @@ from app.api.v1.messaging import router as messaging_router
 api_v1_router.include_router(messaging_router)
 from app.api.v1.notifications import router as notifications_router
 api_v1_router.include_router(notifications_router)
+from app.api.v1.clinical_plans import router as clinical_plans_router
+api_v1_router.include_router(clinical_plans_router)

@@ -120,7 +120,17 @@ def source_active(db, notice, now):
         from app.models import RoutineEntry
         entry=db.get(RoutineEntry,notice.source_id)
         return bool(entry and entry.user_id==notice.user_id and entry.active and entry.revision==notice.source_revision)
-    if notice.kind != "message": return False  # Future plan writers must supply a current authorization gate.
+    if notice.kind in ("follow_up","comparison"):
+        from app.models.clinical_plans import ClinicalPlan
+        from app.models import DoctorPatientAccess
+        from app.services.doctor_consent import granted_scopes
+        plan=db.get(ClinicalPlan,notice.source_id)
+        grant=db.get(DoctorPatientAccess,plan.access_id) if plan else None
+        doctor=db.get(User,plan.doctor_id) if plan else None
+        return bool(plan and plan.user_id==notice.user_id and plan.state=="scheduled" and plan.revision==notice.source_revision
+            and grant and grant.status=="active" and utc(grant.expires_at)>now and "VIEW" in granted_scopes(grant)
+            and (grant.patient_id,grant.doctor_id)==(plan.user_id,plan.doctor_id) and doctor and doctor.role=="doctor")
+    if notice.kind != "message": return False
     from app.models.messaging import ThreadMessage, MessageThread
     from app.models import DoctorPatientAccess
     from app.services.doctor_consent import granted_scopes

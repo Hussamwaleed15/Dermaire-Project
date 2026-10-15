@@ -27,7 +27,12 @@ def delete_account(db, user_id, *, journal=None):
     identifiers.update(row.id for row in db.query(ThreadMessage).filter(ThreadMessage.thread_id.in_(thread_ids)))
     from app.models.notifications import NotificationPreference, NotificationDevice, Notification, NotificationJob
     message_ids = [row.id for row in db.query(ThreadMessage).filter(ThreadMessage.thread_id.in_(thread_ids))]
-    notice_filter = or_(Notification.user_id == user_id, Notification.source_id.in_(message_ids))
+    from app.models.clinical_plans import ClinicalPlan, ClinicalPlanEvent, ClinicalPlanAttempt
+    plan_ids = [row.id for row in db.query(ClinicalPlan).filter(or_(ClinicalPlan.user_id == user_id, ClinicalPlan.doctor_id == user_id))]
+    identifiers.update(plan_ids)
+    identifiers.update(row.id for row in db.query(ClinicalPlanEvent).filter(ClinicalPlanEvent.plan_id.in_(plan_ids)))
+    identifiers.update(row.id for row in db.query(ClinicalPlanAttempt).filter(ClinicalPlanAttempt.plan_id.in_(plan_ids)))
+    notice_filter = or_(Notification.user_id == user_id, Notification.source_id.in_(message_ids + plan_ids))
     notice_ids = [row.id for row in db.query(Notification).filter(notice_filter)]
     device_ids = [row.id for row in db.query(NotificationDevice).filter_by(user_id=user_id)]
     identifiers.update(notice_ids); identifiers.update(device_ids)
@@ -120,6 +125,9 @@ def delete_account(db, user_id, *, journal=None):
     db.query(Notification).filter(notice_filter).delete(synchronize_session=False)
     db.query(NotificationDevice).filter_by(user_id=user_id).delete(synchronize_session=False)
     db.query(NotificationPreference).filter_by(user_id=user_id).delete(synchronize_session=False)
+    db.query(ClinicalPlanAttempt).filter(ClinicalPlanAttempt.plan_id.in_(plan_ids)).delete(synchronize_session=False)
+    db.query(ClinicalPlanEvent).filter(ClinicalPlanEvent.plan_id.in_(plan_ids)).delete(synchronize_session=False)
+    db.query(ClinicalPlan).filter(ClinicalPlan.id.in_(plan_ids)).delete(synchronize_session=False)
     db.query(ThreadMessage).filter(ThreadMessage.thread_id.in_(thread_ids)).delete(synchronize_session=False)
     db.query(MessageThread).filter(thread_filter).delete(synchronize_session=False)
     db.query(ClinicalNote).filter(notes).delete(synchronize_session=False)

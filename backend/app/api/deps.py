@@ -64,6 +64,7 @@ def get_current_user(
         recovery = recovery or (request.method == "DELETE" and path.startswith(settings.API_V1_STR + "/messaging/threads/") and path.endswith("/consent"))
         recovery = recovery or (request.method == "DELETE" and path.startswith(settings.API_V1_STR + "/notifications/devices/"))
         recovery = recovery or (request.method == "DELETE" and path == settings.API_V1_STR + "/notifications/preferences")
+        recovery = recovery or (request.method == "POST" and path.startswith(settings.API_V1_STR + "/clinical-plans/") and path.endswith("/cancel"))
         if not recovery and user.safety_consent["acceptance_required"]:
             raise HTTPException(403, "Current safety policy acceptance required; read /users/me")
     return user
