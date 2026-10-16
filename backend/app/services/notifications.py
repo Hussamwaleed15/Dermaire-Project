@@ -12,7 +12,7 @@ from sqlalchemy import or_
 from app.core.config import settings
 from app.core.security import credential_stamp
 from app.models import User, AuditLog
-from app.models.notifications import NotificationPreference, NotificationDevice, Notification, NotificationJob
+from app.models.notifications import NotificationPreference, NotificationDevice, Notification, NotificationJob, NotificationJobAttempt
 from app.services.temporal import utc
 from app.services.wall_time import quiet_at
 
@@ -21,6 +21,17 @@ class DisabledPushProvider:
     name = "disabled"
     def send(self, *, token, payload, idempotency_key):
         return "unavailable"
+
+
+def attempt_history(db, job, now):
+    rows=db.query(NotificationJobAttempt).filter_by(job_id=job.id).order_by(NotificationJobAttempt.number,NotificationJobAttempt.id).all()
+    result=[]
+    for row in rows:
+        ambiguous=row.state=="leased" and (job.state!="leased" or not job.lease_until or utc(job.lease_until)<=now)
+        result.append({"id":row.id,"number":row.number,"state":"unknown" if ambiguous else row.state,
+            "started_at":utc(row.started_at),"finished_at":utc(row.finished_at) if row.finished_at else None,
+            "authorization_cancelled":job.state=="cancelled","delivery_confirmed":False})
+    return result
 
 
 def cipher():
@@ -40,13 +51,17 @@ def preference_out(row):
 
 def change_preferences(db, actor, payload):
     db.query(User).filter_by(id=actor.id).with_for_update().one()
-    row=preferences(db,actor.id)
+    row=db.query(NotificationPreference).filter_by(user_id=actor.id).populate_existing().first()
     if payload.expected_revision != (row.revision if row else 0):
         raise HTTPException(409,"Notification preferences changed; refresh revision")
     if row is None:
         row=NotificationPreference(user_id=actor.id,revision=0); db.add(row)
     for key,value in payload.model_dump(exclude={"expected_revision"}).items(): setattr(row,key,value)
     row.revision += 1
+    if "routine" not in row.enabled_kinds:
+        from app.models.notifications import RoutineReminderSetting
+        db.query(RoutineReminderSetting).filter_by(user_id=actor.id,enabled=True).update(
+            {"enabled":False,"revision":RoutineReminderSetting.revision+1},synchronize_session=False)
     # Revocation cancels outstanding effects atomically. Re-enabling never revives them.
     notices=db.query(Notification).filter_by(user_id=actor.id,cancelled_at=None).all()
     for notice in notices:
@@ -97,7 +112,7 @@ def register(db, actor, claims, payload):
 
 def enqueue(db, owner, kind, source, revision, due_at):
     """Call inside the domain transaction; does not commit or promise push delivery."""
-    if kind not in ("message","follow_up","comparison","routine"): raise ValueError("Unknown notification kind")
+    if kind not in ("message","follow_up","comparison","routine","agent_request"): raise ValueError("Unknown notification kind")
     pref=preferences(db,owner)
     if not pref or kind not in pref.enabled_kinds: return None
     identifier=str(uuid5(NAMESPACE_URL,json.dumps(["notification-v1",owner,kind,source,revision])))
@@ -125,10 +140,19 @@ def device_active(db, device, now):
 
 
 def source_active(db, notice, now):
+    if notice.kind == "agent_request":
+        from app.services.agent_platform import request_notice_active
+        return request_notice_active(db,notice,now)
     if notice.kind == "routine":
         from app.models import RoutineEntry
+        from app.models.notifications import RoutineReminderSetting
         entry=db.get(RoutineEntry,notice.source_id)
-        return bool(entry and entry.user_id==notice.user_id and entry.active and entry.revision==notice.source_revision)
+        valid = bool(entry and entry.user_id==notice.user_id and entry.active and entry.revision==notice.source_revision)
+        if notice.reminder_id:
+            setting=db.get(RoutineReminderSetting,notice.reminder_id)
+            valid = valid and bool(setting and setting.enabled and setting.user_id==notice.user_id
+                and setting.routine_entry_id==notice.source_id and setting.revision==notice.reminder_revision)
+        return valid
     if notice.kind in ("follow_up","comparison"):
         from app.models.clinical_plans import ClinicalPlan
         from app.models import DoctorPatientAccess
@@ -158,23 +182,29 @@ def claim(db, now=None):
     row=db.query(NotificationJob).filter(
         or_(NotificationJob.state.in_(["queued","retry","provider_unavailable"]),
             (NotificationJob.state=="leased") & (NotificationJob.lease_until<=now)),
-        NotificationJob.available_at<=now).order_by(NotificationJob.available_at,NotificationJob.id).with_for_update(skip_locked=True).first()
+        NotificationJob.available_at<=now).order_by(NotificationJob.available_at,NotificationJob.id).populate_existing().with_for_update(skip_locked=True).first()
     if row is None: return None
     notice=db.get(Notification,row.notification_id); device=db.get(NotificationDevice,row.device_id)
     pref=preferences(db,notice.user_id)
     if (notice.cancelled_at or not source_active(db,notice,now) or not pref or not pref.push_enabled or notice.kind not in pref.enabled_kinds
-            or not device_active(db,device,now)):
+            or not device_active(db,device,now)
+            or (notice.reminder_id is not None and utc(notice.due_at)+timedelta(hours=24)<=now)):
         row.state="cancelled"; row.lease_token=None; row.lease_until=None; db.commit()
         return {"state":"cancelled"}
     if quiet_at(now,pref.timezone,pref.quiet_start,pref.quiet_end):
         row.state="retry"; row.available_at=now+timedelta(minutes=5); db.commit()
         return {"state":"quiet_hours"}
+    # A crashed/expired lease cannot prove whether transport ran or was accepted.
+    db.query(NotificationJobAttempt).filter_by(job_id=row.id,state="leased").update(
+        {"state":"unknown","finished_at":now},synchronize_session=False)
     row.state="leased"; row.lease_token=str(uuid4()); row.lease_until=now+timedelta(seconds=60); row.attempts+=1
     try: token=cipher().decrypt(device.token_encrypted.encode()).decode()
     except InvalidToken:
         device.revoked_at=now; device.token_encrypted=""; row.state="cancelled"
         row.lease_token=None; row.lease_until=None; db.commit()
         return {"state":"cancelled"}
+    db.add(NotificationJobAttempt(id=str(uuid5(NAMESPACE_URL,"push-attempt:"+row.id+":"+row.lease_token)),
+        job_id=row.id,number=row.attempts,state="leased",started_at=now))
     result={"id":row.id,"lease_token":row.lease_token,"token":token,
             "payload":{"title":"Dermaire","body":"You have an update"}}
     db.commit()
@@ -184,7 +214,7 @@ def claim(db, now=None):
 def finish(db, job_id, lease_token, outcome, now=None):
     if outcome not in ("unavailable","accepted","retry"): raise ValueError("Invalid provider outcome")
     now=now or datetime.now(timezone.utc)
-    row=db.query(NotificationJob).filter_by(id=job_id,state="leased",lease_token=lease_token).with_for_update().first()
+    row=db.query(NotificationJob).filter_by(id=job_id,state="leased",lease_token=lease_token).populate_existing().with_for_update().first()
     if row is None or utc(row.lease_until)<=now: return False
     # Recheck revocation before recording an outcome. External transport cannot
     # be made atomic with DB revocation; no exactly-once delivery claim.
@@ -195,6 +225,10 @@ def finish(db, job_id, lease_token, outcome, now=None):
     else:
         row.state={"accepted":"provider_accepted","unavailable":"provider_unavailable","retry":"retry"}[outcome]
         row.available_at=now+timedelta(seconds=min(3600,30*2**min(row.attempts,7)))
+    attempt=db.get(NotificationJobAttempt,str(uuid5(NAMESPACE_URL,"push-attempt:"+row.id+":"+lease_token)))
+    if attempt:
+        attempt.state=row.state if row.state!="cancelled" else "unknown"
+        attempt.finished_at=now
     row.lease_token=None; row.lease_until=None; db.commit()
     return True
 

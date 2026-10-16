@@ -191,3 +191,151 @@ def test_forged_private_capture_namespace_is_rejected(loop):
     row.image_blob_name=f"skin_photos/{foreign.id}/{foreign.id}_private";db.commit()
     with pytest.raises(HTTPException) as error:service.private_capture(db,patient.id,row.id)
     assert error.value.status_code==404
+
+
+def evaluation_ready(loop):
+    client,db,patient,_,_=loop
+    db.add(CheckIn(id="evaluation-observation",user_id=patient.id,date_str="2026-10-15"));db.commit()
+    baseline=capture(db,patient,"evaluation-baseline",datetime.now(timezone.utc)-timedelta(days=2))
+    plan,_,_=create(loop,kind="comparison",source_type="observation",source_id="evaluation-observation",baseline_capture_id=baseline.id)
+    base=ROOT+"/"+plan["id"]
+    headers={**auth(patient),"Idempotency-Key":KEY}
+    assert client.post(base+"/acknowledge",headers=headers,json={"expected_revision":1,"consent":True}).status_code==200
+    followup=capture(db,patient,"evaluation-followup")
+    assert client.post(base+"/capture",headers=headers,json={"expected_revision":2,"capture_id":followup.id}).status_code==200
+    return plan,base,headers
+
+
+def test_durable_evaluation_queue_disabled_adapter_and_retry(loop):
+    from app.services import comparison_jobs
+    client,db,patient,foreign,doctors=loop
+    plan,base,headers=evaluation_ready(loop)
+    body={"expected_revision":3,"image_processing_consent":True}
+    assert client.post(base+"/evaluation",headers=auth(doctors[0]),json=body).status_code==403
+    assert client.post(base+"/evaluation",headers={**auth(foreign),"Idempotency-Key":KEY},json=body).status_code==404
+    queued=client.post(base+"/evaluation",headers=headers,json=body)
+    assert queued.status_code==202,queued.text
+    assert queued.json()["state"]=="queued"
+    assert client.post(base+"/evaluation",headers=headers,json=body).json()==queued.json()
+    completed=comparison_jobs.run_one(db,plan["id"])
+    assert completed["state"]=="unavailable" and completed["inference"]["result"] is None
+    assert completed["attempts"]==1
+    assert comparison_jobs.run_one(db,plan["id"])["state"]=="unavailable"
+    assert client.get(base+"/evaluation",headers=headers).json()["state"]=="unavailable"
+    retry=client.post(base+"/evaluation",headers={**headers,"Idempotency-Key":KEY+"retry"},json={**body,"expected_revision":6})
+    assert retry.status_code==202,retry.text
+    assert client.delete(base+"/evaluation?expected_revision=7",headers=headers).json()["state"]=="cancelled"
+    assert comparison_jobs.run_one(db,plan["id"])["state"]=="cancelled"
+
+
+def test_evaluation_typed_envelope_and_cancellation_fence(loop):
+    from app.services import comparison_jobs
+    from app.services.model_providers import ComparisonInference,AgentInference
+    from pydantic import ValidationError
+    client,db,_,_,_=loop
+    plan,base,headers=evaluation_ready(loop)
+    assert client.post(base+"/evaluation",headers=headers,json={"expected_revision":3,"image_processing_consent":True}).status_code==202
+    class CancellingSyntheticAdapter:
+        def evaluate(self,request):
+            # Synthetic nonclinical adapter exercises concurrent cancellation.
+            assert request.baseline_capture_id=="evaluation-baseline"
+            assert client.delete(base+"/evaluation?expected_revision=5",headers=headers).status_code==200
+            return ComparisonInference(status="unavailable",reason="synthetic_nonclinical_test")
+    result=comparison_jobs.run_one(db,plan["id"],CancellingSyntheticAdapter())
+    assert result=={"state":"superseded","result_committed":False}
+    with pytest.raises(ValidationError):ComparisonInference(status="unavailable",result={"fake":True})
+    with pytest.raises(ValidationError):ComparisonInference(status="pending_human_review",result={"synthetic":True})
+    with pytest.raises(ValidationError):AgentInference(status="unavailable",invoked=True,response="fake")
+
+
+def seed_evaluation_pg(engine):
+    from app.services import comparison_jobs
+    from app.schemas.clinical_plans import EvaluatePlan
+    factory=seed(engine)
+    with factory() as db:
+        actor=db.get(User,"owner")
+        access=DoctorPatientAccess(id="evaluation-grant",patient_id="owner",doctor_id="doctor0",status="active",access_token="synthetic",expires_at=datetime.now(timezone.utc)+timedelta(days=1))
+        db.add(access);db.commit()
+        capture(db,actor,"pg-baseline",datetime.now(timezone.utc)-timedelta(days=2))
+        capture(db,actor,"pg-followup")
+        db.add(ClinicalPlan(id="pg-plan",user_id="owner",doctor_id="doctor0",access_id=access.id,kind="comparison",revision=3,state="captured",purpose="Synthetic nonclinical PG plan",due_at=datetime.now(timezone.utc)+timedelta(days=1),schedule_provenance={},source_snapshot={},baseline_capture_id="pg-baseline",followup_capture_id="pg-followup",acknowledged_at=datetime.now(timezone.utc)-timedelta(hours=1)))
+        db.commit()
+    return factory
+
+
+def test_pg_evaluation_concurrent_queue_one_durable_receipt(pg_engine):
+    from app.services import comparison_jobs
+    from app.schemas.clinical_plans import EvaluatePlan
+    factory=seed_evaluation_pg(pg_engine)
+    barrier=Barrier(2)
+    def run(_):
+        with factory() as db:
+            actor=db.get(User,"owner");barrier.wait(timeout=5)
+            return comparison_jobs.enqueue(db,actor,"pg-plan",EvaluatePlan(expected_revision=3,image_processing_consent=True),KEY)
+    with ThreadPoolExecutor(2) as pool:results=list(pool.map(run,range(2)))
+    assert results[0]==results[1]
+    with factory() as db:
+        assert db.query(ClinicalPlanAttempt).filter_by(operation="evaluate").count()==1
+        assert db.query(ClinicalPlanEvent).filter_by(operation="evaluation").count()==1
+
+
+@pytest.mark.parametrize("mode",["cancel","grant_revoke"])
+def test_pg_evaluation_worker_return_fenced_by_concurrent_change(pg_engine,mode):
+    from app.services import comparison_jobs
+    from app.schemas.clinical_plans import EvaluatePlan
+    from app.services.model_providers import ComparisonInference
+    factory=seed_evaluation_pg(pg_engine)
+    with factory() as db:
+        comparison_jobs.enqueue(db,db.get(User,"owner"),"pg-plan",EvaluatePlan(expected_revision=3,image_processing_consent=True),KEY)
+    class SyntheticNonclinicalAdapter:
+        def evaluate(self,request):
+            with factory() as other:
+                if mode=="cancel":comparison_jobs.cancel(other,other.get(User,"owner"),"pg-plan",5)
+                else:
+                    other.get(DoctorPatientAccess,"evaluation-grant").status="revoked";other.commit()
+            return ComparisonInference(status="unavailable",reason="synthetic_nonclinical")
+    with factory() as db:
+        if mode=="cancel":assert comparison_jobs.run_one(db,"pg-plan",SyntheticNonclinicalAdapter())["state"]=="superseded"
+        else:
+            with pytest.raises(HTTPException) as error:comparison_jobs.run_one(db,"pg-plan",SyntheticNonclinicalAdapter())
+            assert error.value.status_code==403
+    with factory() as db:
+        current=comparison_jobs.latest(db,db.get(ClinicalPlan,"pg-plan"))
+        assert current["inference"] is None
+        assert current["state"]==("cancelled" if mode=="cancel" else "running")
+
+
+@pytest.mark.parametrize("withdraw",[False,True])
+def test_synthetic_nonclinical_comparison_envelope_requires_human_review(loop,withdraw):
+    from app.services import comparison_jobs
+    from app.services.model_providers import ComparisonInference,ComparisonEvidence
+    client,db,_,_,_=loop
+    plan,base,headers=evaluation_ready(loop)
+    assert client.post(base+"/evaluation",headers=headers,json={"expected_revision":3,"image_processing_consent":True}).status_code==202
+    class SyntheticNonclinicalProvider:
+        def evaluate(self,request):
+            return ComparisonInference(status="pending_human_review",model_version="synthetic-contract-test-only",
+                artifact_sha256="0"*64,result=ComparisonEvidence(baseline_capture_id=request.baseline_capture_id,
+                    followup_capture_id=request.followup_capture_id,provenance="nonclinical_image_quality_only",quality_flags=["lighting_mismatch"]))
+    result=comparison_jobs.run_one(db,plan["id"],SyntheticNonclinicalProvider())
+    assert result["state"]=="pending_human_review" and result["clinical_clearance"] is False
+    assert db.get(ClinicalPlan,plan["id"]).state=="captured"
+    assert result["inference"]["result"]["provenance"]=="nonclinical_image_quality_only"
+    from app.schemas.clinical_plans import ReviewEvaluation
+    doctor=db.get(User,db.get(ClinicalPlan,plan["id"]).doctor_id)
+    if withdraw:
+        from app.schemas.clinical_plans import CancelPlan
+        patient=db.get(User,db.get(ClinicalPlan,plan["id"]).user_id)
+        service.mutate(db,patient,plan["id"],"cancel",CancelPlan(expected_revision=6,reason="Patient withdrew plan"),KEY+"withdraw")
+        assert comparison_jobs.status(db,patient,plan["id"])["effective_state"]=="cancelled"
+        with pytest.raises(HTTPException) as error:
+            comparison_jobs.review(db,doctor,plan["id"],ReviewEvaluation(expected_revision=7,job_id=result["id"],decision="reviewed",assessment="Synthetic evidence reviewed by clinician"),KEY+"review")
+        assert error.value.status_code==409
+        assert comparison_jobs.latest(db,db.get(ClinicalPlan,plan["id"])).get("human_review") is None
+        return
+    payload=ReviewEvaluation(expected_revision=6,job_id=result["id"],decision="reviewed",assessment="Synthetic evidence reviewed by clinician")
+    reviewed=comparison_jobs.review(db,doctor,plan["id"],payload,KEY+"review")
+    assert reviewed["state"]=="reviewed"
+    assert reviewed["human_review"]["artifact_sha256"]=="0"*64
+    assert reviewed["human_review"]["clinical_accuracy_validated"] is False
+    assert comparison_jobs.review(db,doctor,plan["id"],payload,KEY+"review")==reviewed

@@ -93,6 +93,9 @@ def activate(db, user, row, routine_if_match=None, experiment_if_match=None):
         raise HTTPException(422, "Start expectation must match the new entry schedule")
     from app.services.resource_revisions import enforce, reserve
     enforce(entry, routine_if_match)
+    from app.models.routine_history import tag_writer
+    tag_writer(db, entry, user.id, 'experiment.activate_intervention', experiment_id=row.id,
+               intervention_type=row.intervention['type'])
     previous = configuration(entry)
     reserve(db, row, experiment_if_match)
     if row.intervention["type"] != "start_entry" or routine_if_match is not None:

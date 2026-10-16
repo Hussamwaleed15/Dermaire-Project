@@ -69,6 +69,9 @@ def headers(response, identifier, revision):
 
 
 def erase_results(db, owner, resource):
+    from app.models.routine_history import RoutineConfigurationEvent
+    # Privacy erasure is the only bulk-delete exception to event immutability.
+    db.query(RoutineConfigurationEvent).filter_by(user_id=owner, source_product_id=resource).delete(synchronize_session=False)
     from app.models.configuration_attempts import ConfigurationAttempt
     db.query(ConfigurationAttempt).filter_by(user_id=owner, source_product_id=resource).update(
         {'result_snapshot': None}, synchronize_session='fetch')

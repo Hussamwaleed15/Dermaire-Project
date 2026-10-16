@@ -5,7 +5,7 @@ from app.api.deps import require_role,get_token_payload
 from app.core.database import get_db
 from app.models import User
 from app.models.agent_platform import AgentSession,AgentTurn,AgentAction
-from app.schemas.agent_platform import SessionIn,RevisionIn,TurnIn,ActionIn,ConfirmAction
+from app.schemas.agent_platform import SessionIn,RevisionIn,TurnIn,ActionIn,ConfirmAction,SubmitRequest,DecideRequest
 from app.services import agent_platform as service
 from app.api.v1.clinical_plans import key_of
 
@@ -20,8 +20,9 @@ def private(response):response.headers["Cache-Control"]="no-store"
 def capabilities(response: Response,actor: User=Depends(patient)):
     private(response)
     return {"schema_version":"agent-platform-1","model":service.DisabledAgentModel().respond(context=None,message=None),
-        "actions":["request_checkin","propose_followup","propose_routine_adjustment"],
-        "action_effect":"record_user_confirmed_request_only","medical_execution_enabled":False,
+        "provider_config":service.agent_provider_state()[0].model_dump(),
+        "actions":["request_checkin","propose_followup","propose_routine_adjustment","mark_notification_read"],
+        "action_effect":"confirmed_requests_or_allowlisted_nonclinical_action","medical_execution_enabled":False,
         "autonomous_agent":False,"max_tool_calls":8,"context_freshness_seconds":300}
 
 
@@ -92,6 +93,50 @@ def revoke(session_id: str,response: Response,actor: User=Depends(patient),db: S
     if not row.revoked_at:
         row.revoked_at=datetime.now(timezone.utc);row.context=None;row.scopes=[];row.revision+=1;row.context_digest="0"*64
         db.query(AgentTurn).filter_by(session_id=row.id).delete(synchronize_session=False)
+        for action in db.query(AgentAction).filter_by(session_id=row.id):service.cancel_request_notices(db,action.id)
         db.query(AgentAction).filter_by(session_id=row.id).update({"state":"revoked","payload":{},"result":None,"payload_hash":"0"*64,"context_digest":"0"*64},synchronize_session=False)
         service.audit(db,actor,"AGENT_CONSENT_REVOKED",row);service.save(db)
+    return {"id":row.id,"state":"revoked","memory_erased":True}
+
+@router.post("/requests/{action_id}/submit")
+def submit_request(action_id: str,payload: SubmitRequest,
+                   response: Response,actor: User=Depends(patient),db: Session=Depends(get_db)):
+    private(response)
+    return service.submit_request(db,actor,action_id,payload)
+
+
+@router.get("/requests")
+def request_inbox(response: Response,actor: User=Depends(require_role(["doctor"])),db: Session=Depends(get_db)):
+    private(response)
+    # JSON extraction works on SQLite legacy and PostgreSQL; never return another
+    # doctor's request or bypass current consent on historical rows.
+    rows=db.query(AgentAction).filter(AgentAction.result["doctor_id"].as_string()==actor.id).order_by(AgentAction.previewed_at.desc(),AgentAction.id).limit(100).all()
+    authorized={}
+    # Acquire shared patient locks consistently across doctors while keeping the
+    # response in its documented newest-first order.
+    for row in sorted(rows,key=lambda item:(item.user_id,item.id)):
+        try:authorized[row.id]=service.action_out(service.request_row(db,actor,row.id))
+        except HTTPException as error:
+            if error.status_code not in (403,404):raise
+    return {"items":[authorized[row.id] for row in rows if row.id in authorized],"limit":100,"medical_execution_enabled":False,"notification_delivery":"unavailable"}
+
+
+@router.post("/requests/{action_id}/decision")
+def decide_request(action_id: str,payload: DecideRequest,
+                   response: Response,actor: User=Depends(require_role(["doctor"])),db: Session=Depends(get_db)):
+    private(response)
+    return service.decide_request(db,actor,action_id,payload)
+
+
+@router.delete("/requests/{action_id}")
+def withdraw_request(action_id: str,response: Response,actor: User=Depends(patient),db: Session=Depends(get_db)):
+    private(response)
+    row=db.query(AgentAction).filter_by(id=action_id,user_id=actor.id).with_for_update().first()
+    if not row:raise HTTPException(404,"Clinician request not found")
+    if row.state!="revoked":
+        service.cancel_request_notices(db,row.id)
+        row.state="revoked";row.payload={};row.result=None;row.revision+=1
+        row.payload_hash="0"*64;row.context_digest="0"*64
+        service.audit(db,actor,"AGENT_REQUEST_WITHDRAWN",db.get(AgentSession,row.session_id),action_id=row.id)
+        service.save(db)
     return {"id":row.id,"state":"revoked","memory_erased":True}

@@ -12,6 +12,7 @@ from app.services.wall_time import resolve_due
 from app.services.temporal import utc
 from app.services.notifications import enqueue,cancel
 from app.models.notifications import Notification
+from app.services.model_providers import ComparisonInference
 
 
 def now(): return datetime.now(timezone.utc)
@@ -35,8 +36,7 @@ def output(row):
         "baseline_capture_id":row.baseline_capture_id,"followup_capture_id":row.followup_capture_id,
         "acknowledged_at":utc(row.acknowledged_at) if row.acknowledged_at else None,"created_at":utc(row.created_at),
         "provenance":"clinician_authored","patient_visible":True,"clinical_clearance":False,
-        "image_inference":{"schema_version":"comparison-model-boundary-1","status":"unavailable",
-            "reason":"validated_model_not_integrated","model_version":None,"result":None}}
+        "image_inference":ComparisonInference(status="unavailable",reason="validated_model_not_integrated").model_dump()}
 
 
 def identity(owner,actor,operation,key,plan_id=""):

@@ -1,6 +1,6 @@
 ﻿from datetime import datetime, timedelta, timezone
 from typing import List, Optional
-from fastapi import APIRouter, Body, Depends, Query, status, HTTPException
+from fastapi import APIRouter, Body, Depends, Query, status, HTTPException, Header, Response
 from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.security import create_doctor_access_token, decode_token, credential_stamp
@@ -9,8 +9,9 @@ from app.core.exceptions import (
 )
 from app.api.deps import require_role, get_token_payload
 from app.models import User, DoctorPatientAccess, ClinicalNote, CheckIn, Experiment, Product, DoctorReviewAction, AuditLog, gen_uuid
+from app.services import clinical_attempts, grant_attempts
 from app.services.doctor_consent import consent_of
-from app.services.doctor_loop import authorize, save, access_out, timeline, review_status, reviews, review_out
+from app.services.doctor_loop import authorize, save, flush_clinical, access_out, timeline, review_status, reviews, review_out
 from app.schemas.doctor_loop import (ReviewActionCreate, ReviewActionOut, ReviewStatusOut,
     DoctorPatientDetailOut, DoctorTimelineOut, AccessGrantOut)
 from app.services.safety import evaluate_safety
@@ -27,8 +28,16 @@ def generate_doctor_qr_access(
     minutes_valid: int = Query(60, ge=15, le=1440),
     current_user: User = Depends(require_role(["patient"])),
     session: dict = Depends(get_token_payload),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    response: Response = None,
+    idempotency_key: list[str] | None = Header(None),
 ):
+    response = response or Response()
+    attempt, previous = grant_attempts.begin(db, current_user.id, 'issue', idempotency_key,
+        {"payload": payload.model_dump(mode="json") if payload else None,
+         "minutes_valid": minutes_valid, "session_jti": session["jti"]}, response)
+    if previous is not None:
+        return previous
     # Old clients retain view-only generation; export always needs separate intent
     # and a selected real clinician. Neither query strings nor claims can expand it.
     export = payload.export_consent if payload else False
@@ -56,28 +65,40 @@ def generate_doctor_qr_access(
         expires_at=expires_at
     )
     db.add(access_record)
-    save(db, current_user.id, "DOCTOR_QR_GENERATED", "doctor_patient_access", {
+    db.add(AuditLog(actor_id=current_user.id, action="DOCTOR_QR_GENERATED", target_resource="doctor_patient_access", details={
         "access_id": access_record.id,
         "expires_at": expires_at.isoformat(),
         "patient_id": current_user.id,
         "doctor_id": doctor_id, "scopes": scopes, "consent_version": 2,
         "credential": credential_stamp(current_user.hashed_password), "session_jti": session["jti"]
-    })
-
-    return GenerateQrResponse(
+    }))
+    flush_clinical(db)
+    result = GenerateQrResponse(
         access_token=token,
         qr_payload=f"dermaire://doctor-access?token={token}",
         expires_at=expires_at,
         instructions="Present this single-use code to your clinician. Access is temporary and revocable; export requires separate explicit consent.",
         access=access_out(access_record, db)
     )
+    grant_attempts.stage(db, attempt, access_record.id, result.model_dump(mode="json"), response)
+    try:
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise HTTPException(503, "Consent action unconfirmed; reconcile original attempt key") from None
+
+    return result
 
 @router.post("/claim", status_code=status.HTTP_200_OK)
 def claim_patient_access(
     payload: ClaimAccessRequest,
     current_doctor: User = Depends(require_role(["doctor"])),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    response: Response = None,
+    idempotency_key: list[str] | None = Header(None),
 ):
+    response = response or Response()
+    idempotency_key = clinical_attempts.key(idempotency_key)
     try:
         decoded = decode_token(payload.access_token)
         patient_id = decoded.get("patient_id")
@@ -102,13 +123,17 @@ def claim_patient_access(
     if access_record.doctor_id and access_record.doctor_id != current_doctor.id:
         raise PermissionDeniedException("This access code is already assigned to another clinician.")
 
-    if access_record.status != "pending" or access_record.claimed_at is not None:
-        raise HTTPException(409, "Access code already claimed; refresh current access")
     intent = consent_of(access_record)
     if (not intent or intent.get("credential") != credential_stamp(patient.hashed_password)
             or not intent.get("session_jti") or db.query(AuditLog).filter_by(
                 actor_id=patient_id, action="SESSION_REVOKED", target_resource=intent["session_jti"]).first()):
         raise PermissionDeniedException("Patient consent is no longer available; request a new code")
+    attempt, previous = clinical_attempts.begin(db, current_doctor.id, patient_id, access_record,
+        'claim', idempotency_key, payload, response)
+    if previous is not None:
+        return previous
+    if access_record.status != "pending" or access_record.claimed_at is not None:
+        raise HTTPException(409, "Access code already claimed; refresh current access")
     # A conditional transition prevents replay even on DBs without row locks.
     claimed_at = datetime.now(timezone.utc)
     changed = db.query(DoctorPatientAccess).filter(
@@ -121,24 +146,33 @@ def claim_patient_access(
     if changed != 1:
         db.rollback()
         raise HTTPException(409, "Access changed; request current access")
+    db.refresh(access_record)
+    result = {"success": True, "message": "Patient access granted.", "access": access_out(access_record, db)}
+    clinical_attempts.stage(db, attempt, access_record.id, result, response)
     save(db, current_doctor.id, "PATIENT_ACCESS_CLAIMED", "doctor_patient_access", {
         "patient_id": patient_id,
         "doctor_id": current_doctor.id,
         "access_id": access_record.id
     })
-    db.refresh(access_record)
-    return {"success": True, "message": "Patient access granted.", "access": access_out(access_record, db)}
+    return result
 
 @router.delete("/revoke/{patient_id}", status_code=status.HTTP_200_OK)
 def revoke_patient_access(
     patient_id: str,
     current_user: User = Depends(require_role(["patient"])),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    response: Response = None,
+    idempotency_key: list[str] | None = Header(None),
 ):
+    response = response or Response()
     # Patient can revoke their own access
     if current_user.id != patient_id:
         raise PermissionDeniedException("You can only revoke access for your own patient records.")
 
+    attempt, previous = grant_attempts.begin(db, current_user.id, 'revoke_all', idempotency_key,
+        {"patient_id": patient_id}, response)
+    if previous is not None:
+        return previous
     records = db.query(DoctorPatientAccess).filter(
         DoctorPatientAccess.patient_id == patient_id,
         DoctorPatientAccess.status.in_(["active", "pending"])
@@ -147,8 +181,10 @@ def revoke_patient_access(
         r.status = "revoked"
         r.revoked_at = datetime.now(timezone.utc)
         r.revoked_by = current_user.id
+    result = {"success": True, "message": "Clinician access revoked immediately."}
+    grant_attempts.stage(db, attempt, patient_id, result, response)
     save(db, current_user.id, "PATIENT_ACCESS_REVOKED", "doctor_patient_access", {"patient_id": patient_id, "access_ids": [r.id for r in records]})
-    return {"success": True, "message": "Clinician access revoked immediately."}
+    return result
 
 @router.get("/patients", response_model=List[DoctorPatientOut])
 def list_authorized_patients(
@@ -205,9 +241,16 @@ def add_clinical_note(
     patient_id: str,
     payload: ClinicalNoteCreate,
     current_doctor: User = Depends(require_role(["doctor"])),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    response: Response = None,
+    idempotency_key: list[str] | None = Header(None),
 ):
+    response = response or Response()
+    idempotency_key = clinical_attempts.key(idempotency_key)
     patient, grant = authorize(db, current_doctor, patient_id)
+    attempt, previous = clinical_attempts.begin(db, current_doctor.id, patient_id, grant, 'note', idempotency_key, payload, response)
+    if previous is not None:
+        return previous
     if payload.review_action_id and not db.query(DoctorReviewAction).filter_by(
             id=payload.review_action_id, patient_id=patient_id).first():
         raise HTTPException(422, "Review linkage is not a record for this patient")
@@ -229,6 +272,7 @@ def add_clinical_note(
         updated_at=now,
     )
     db.add(note)
+    clinical_attempts.stage(db, attempt, note.id, ClinicalNoteOut.model_validate(note).model_dump(mode="json"), response)
     save(db, current_doctor.id, "CLINICAL_NOTE_ADDED", "clinical_notes", {
         "note_id": note.id,
         "patient_id": patient_id,
@@ -244,16 +288,30 @@ def patient_access(current_user: User = Depends(require_role(["patient"])), db: 
 
 
 @router.delete("/access/{access_id}", response_model=AccessGrantOut)
-def revoke_one(access_id: str, current_user: User = Depends(require_role(["patient"])), db: Session = Depends(get_db)):
+def revoke_one(access_id: str, current_user: User = Depends(require_role(["patient"])), db: Session = Depends(get_db),
+        response: Response = None, idempotency_key: list[str] | None = Header(None)):
+    response = response or Response()
+    attempt, previous = grant_attempts.begin(db, current_user.id, 'revoke', idempotency_key,
+        {"access_id": access_id}, response)
+    if previous is not None:
+        return previous
     grant = db.query(DoctorPatientAccess).filter_by(id=access_id, patient_id=current_user.id).with_for_update().first()
     if not grant:
         raise HTTPException(404, "Access grant not found")
-    if grant.status != "revoked":
+    changed = grant.status != "revoked"
+    if changed:
         grant.status = "revoked"
         grant.revoked_at = datetime.now(timezone.utc)
         grant.revoked_by = current_user.id
+    flush_clinical(db)
+    result = access_out(grant, db)
+    grant_attempts.stage(db, attempt, grant.id, result, response)
+    if changed:
         save(db, current_user.id, "PATIENT_ACCESS_REVOKED", "doctor_patient_access", {"patient_id": current_user.id, "access_id": grant.id})
-    return access_out(grant, db)
+    elif attempt is not None:
+        save(db, current_user.id, "CONSENT_REVOCATION_RECONCILED", "doctor_patient_access",
+            {"patient_id": current_user.id, "access_id": grant.id, "attempt_id": attempt.id})
+    return result
 
 
 @router.get("/review-status", response_model=ReviewStatusOut)
@@ -293,8 +351,14 @@ def patient_reviews(patient_id: str, current_doctor: User = Depends(require_role
 
 @router.post("/patients/{patient_id}/reviews", response_model=ReviewActionOut, status_code=201)
 def add_review(patient_id: str, payload: ReviewActionCreate,
-        current_doctor: User = Depends(require_role(["doctor"])), db: Session = Depends(get_db)):
+        current_doctor: User = Depends(require_role(["doctor"])), db: Session = Depends(get_db),
+        response: Response = None, idempotency_key: list[str] | None = Header(None)):
+    response = response or Response()
+    idempotency_key = clinical_attempts.key(idempotency_key)
     patient, grant = authorize(db, current_doctor, patient_id)
+    attempt, previous = clinical_attempts.begin(db, current_doctor.id, patient_id, grant, 'review', idempotency_key, payload, response)
+    if previous is not None:
+        return previous
     history = reviews(db, patient_id)
     sequence = history[0].sequence if history else 0
     if payload.expected_sequence != sequence:
@@ -305,6 +369,33 @@ def add_review(patient_id: str, payload: ReviewActionCreate,
         rationale=payload.rationale, patient_visible=payload.patient_visible,
         safety_snapshot=safety.model_dump(mode="json"))
     db.add(row)
+    flush_clinical(db)
+    clinical_attempts.stage(db, attempt, row.id, ReviewActionOut.model_validate(review_out(row, safety, current_sequence=row.sequence)).model_dump(mode="json"), response)
     save(db, current_doctor.id, "DOCTOR_REVIEW_RECORDED", "doctor_review_actions",
         {"patient_id": patient_id, "sequence": sequence+1, "state": payload.state})
     return review_out(row, safety, current_sequence=row.sequence)
+
+
+@router.get("/patients/{patient_id}/attempts/{operation}/{key}")
+def clinical_attempt_readback(patient_id: str, operation: str, key: str, response: Response,
+        current_doctor: User = Depends(require_role(["doctor"])), db: Session = Depends(get_db)):
+    _, grant = authorize(db, current_doctor, patient_id)
+    identifier = clinical_attempts.identity(current_doctor.id, patient_id, operation, key)
+    from app.models.clinical_attempts import ClinicalAttempt
+    row = db.get(ClinicalAttempt, identifier)
+    response.headers["Cache-Control"] = "no-store"
+    if row and row.access_id != grant.id:
+        raise HTTPException(409, "Attempt belongs to a different consent grant")
+    return clinical_attempts.out(row) if row else {"schema_version": 1, "attempt_id": identifier,
+        "status": "unknown", "result": None, "retry_safe": False}
+
+
+@router.get("/consent-attempts/{operation}/{key}")
+def consent_attempt_readback(operation: str, key: str, response: Response,
+        current_user: User = Depends(require_role(["patient"])), db: Session = Depends(get_db)):
+    from app.models import GrantAttempt
+    identifier = grant_attempts.identity(current_user.id, operation, key)
+    row = db.get(GrantAttempt, identifier)
+    response.headers["Cache-Control"] = "no-store"
+    return grant_attempts.out(db, row) if row else {"schema_version": 1,
+        "attempt_id": identifier, "status": "unknown", "result": None, "retry_safe": False}

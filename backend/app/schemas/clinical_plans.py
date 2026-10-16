@@ -52,3 +52,15 @@ class ReviewPlan(BaseModel):
     model_config=ConfigDict(extra="forbid",strict=True)
     expected_revision: int=Field(ge=1)
     assessment: str=Field(min_length=10,max_length=1500)
+
+class EvaluatePlan(BaseModel):
+    model_config=ConfigDict(extra="forbid",strict=True)
+    expected_revision: int=Field(ge=1)
+    image_processing_consent: bool
+
+class ReviewEvaluation(BaseModel):
+    model_config=ConfigDict(extra="forbid",strict=True)
+    expected_revision: int=Field(ge=1)
+    job_id: str=Field(min_length=1,max_length=36)
+    decision: Literal["reviewed","rejected"]
+    assessment: str=Field(min_length=10,max_length=1500)

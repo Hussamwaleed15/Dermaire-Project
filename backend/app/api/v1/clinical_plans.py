@@ -4,7 +4,7 @@ from app.api.deps import require_role
 from app.core.database import get_db
 from app.models import User
 from app.models.clinical_plans import ClinicalPlan,ClinicalPlanEvent
-from app.schemas.clinical_plans import CreatePlan,RevisePlan,ConfirmPlan,CancelPlan,AttachCapture,ReviewPlan
+from app.schemas.clinical_plans import CreatePlan,RevisePlan,ConfirmPlan,CancelPlan,AttachCapture,ReviewPlan,EvaluatePlan,ReviewEvaluation
 from app.services import clinical_plans as service
 
 router=APIRouter(prefix="/clinical-plans",tags=["Clinician follow-up and comparison plans"])
@@ -79,7 +79,7 @@ def history(plan_id: str,response: Response,after_revision: int=Query(0,ge=0),li
 def attempt(plan_id: str,operation: str,key: str,response: Response,
             actor: User=Depends(participant),db: Session=Depends(get_db)):
     headers(response)
-    if operation not in ("create","reschedule","acknowledge","cancel","capture","review"):raise HTTPException(422,"Unknown operation")
+    if operation not in ("create","reschedule","acknowledge","cancel","capture","review","evaluate","evaluation_review"):raise HTTPException(422,"Unknown operation")
     return service.attempt(db,actor,plan_id,operation,key)
 
 
@@ -113,3 +113,36 @@ def capture(plan_id: str,payload: AttachCapture,response: Response,keys: list[st
 @router.post("/{plan_id}/review")
 def review(plan_id: str,payload: ReviewPlan,response: Response,keys: list[str] | None=Header(None,alias="Idempotency-Key"),actor: User=Depends(require_role(["doctor"])),db: Session=Depends(get_db)):
     return mutate(plan_id,"review",payload,response,keys,actor,db)
+
+
+@router.post("/{plan_id}/evaluation",status_code=202)
+def queue_evaluation(plan_id: str,payload: EvaluatePlan,response: Response,
+                     keys: list[str] | None=Header(None,alias="Idempotency-Key"),
+                     actor: User=Depends(require_role(["patient"])),db: Session=Depends(get_db)):
+    from app.services import comparison_jobs
+    headers(response)
+    return comparison_jobs.enqueue(db,actor,plan_id,payload,key_of(keys))
+
+
+@router.get("/{plan_id}/evaluation")
+def evaluation_status(plan_id: str,response: Response,actor: User=Depends(participant),db: Session=Depends(get_db)):
+    from app.services import comparison_jobs
+    headers(response)
+    return comparison_jobs.status(db,actor,plan_id)
+
+
+@router.delete("/{plan_id}/evaluation")
+def cancel_evaluation(plan_id: str,response: Response,expected_revision: int=Query(ge=1),
+                      actor: User=Depends(participant),db: Session=Depends(get_db)):
+    from app.services import comparison_jobs
+    headers(response)
+    return comparison_jobs.cancel(db,actor,plan_id,expected_revision)
+
+
+@router.post("/{plan_id}/evaluation/review")
+def review_evaluation(plan_id: str,payload: ReviewEvaluation,response: Response,
+                      keys: list[str] | None=Header(None,alias="Idempotency-Key"),
+                      actor: User=Depends(require_role(["doctor"])),db: Session=Depends(get_db)):
+    from app.services import comparison_jobs
+    headers(response)
+    return comparison_jobs.review(db,actor,plan_id,payload,key_of(keys))

@@ -18,7 +18,9 @@ def delete_account(db, user_id, *, journal=None):
         return  # A valid access token can retry after the response was lost.
     from app.models.product_mutations import ProductMutationAttempt
     from app.models.configuration_attempts import ConfigurationAttempt
-    owned_models = (ConfigurationAttempt, ProductMutationAttempt, ProductCreateAttempt, CaptureObservation, ProductIntelligence, Measurement, Capture, ExperimentEvaluation, RoutineAdherence, DailyContext, CheckIn, Experiment, RoutineEntry, Product, RewardRedemption)
+    from app.models.clinical_attempts import GrantAttempt
+    from app.models.routine_history import RoutineConfigurationEvent, UserCalendarPolicy
+    owned_models = (UserCalendarPolicy, RoutineConfigurationEvent, ConfigurationAttempt, ProductMutationAttempt, ProductCreateAttempt, CaptureObservation, ProductIntelligence, Measurement, Capture, ExperimentEvaluation, RoutineAdherence, DailyContext, CheckIn, Experiment, RoutineEntry, Product, RewardRedemption)
     # Names are neither unique nor stable references. Never match serialized
     # JSON keys: e.g. a name "id" otherwise scrubs every unrelated *_id field.
     identifiers = {user_id}
@@ -27,18 +29,25 @@ def delete_account(db, user_id, *, journal=None):
     thread_ids = [row.id for row in db.query(MessageThread).filter(thread_filter)]
     identifiers.update(thread_ids)
     identifiers.update(row.id for row in db.query(ThreadMessage).filter(ThreadMessage.thread_id.in_(thread_ids)))
-    from app.models.notifications import NotificationPreference, NotificationDevice, Notification, NotificationJob
+    from app.models.notifications import NotificationPreference, NotificationDevice, Notification, NotificationJob, RoutineReminderSetting
     message_ids = [row.id for row in db.query(ThreadMessage).filter(ThreadMessage.thread_id.in_(thread_ids))]
     from app.models.clinical_plans import ClinicalPlan, ClinicalPlanEvent, ClinicalPlanAttempt
     plan_ids = [row.id for row in db.query(ClinicalPlan).filter(or_(ClinicalPlan.user_id == user_id, ClinicalPlan.doctor_id == user_id))]
     identifiers.update(plan_ids)
     identifiers.update(row.id for row in db.query(ClinicalPlanEvent).filter(ClinicalPlanEvent.plan_id.in_(plan_ids)))
     identifiers.update(row.id for row in db.query(ClinicalPlanAttempt).filter(ClinicalPlanAttempt.plan_id.in_(plan_ids)))
-    notice_filter = or_(Notification.user_id == user_id, Notification.source_id.in_(message_ids + plan_ids))
+    from app.models.agent_platform import AgentSession, AgentTurn, AgentAction
+    directed_action_ids = [row.id for row in db.query(AgentAction).filter(AgentAction.result["doctor_id"].as_string()==user_id)]
+    owned_action_ids = [row.id for row in db.query(AgentAction).filter_by(user_id=user_id)]
+    notice_filter = or_(Notification.user_id == user_id, Notification.source_id.in_(message_ids + plan_ids + directed_action_ids + owned_action_ids))
     notice_ids = [row.id for row in db.query(Notification).filter(notice_filter)]
     device_ids = [row.id for row in db.query(NotificationDevice).filter_by(user_id=user_id)]
     identifiers.update(notice_ids); identifiers.update(device_ids)
     from app.models.agent_platform import AgentSession, AgentTurn, AgentAction
+    # Bilateral erasure: a deleting clinician must not leave directed request
+    # payloads in patient agent history. No clinical content enters tombstones.
+    directed_action_ids = [row.id for row in db.query(AgentAction).filter(AgentAction.result["doctor_id"].as_string()==user_id)]
+    identifiers.update(directed_action_ids)
     agent_ids = [row.id for row in db.query(AgentSession).filter_by(user_id=user_id)]
     identifiers.update(agent_ids)
     identifiers.update(row.id for row in db.query(AgentTurn).filter(AgentTurn.session_id.in_(agent_ids)))
@@ -50,14 +59,25 @@ def delete_account(db, user_id, *, journal=None):
         if hasattr(model, "source_product_id"):
             identifiers.update(row.source_product_id for row in db.query(model).filter(model.user_id == user_id) if row.source_product_id)
     related = or_(DoctorPatientAccess.patient_id == user_id, DoctorPatientAccess.doctor_id == user_id)
-    identifiers.update(row.id for row in db.query(DoctorPatientAccess).filter(related))
+    related_access_ids = [row.id for row in db.query(DoctorPatientAccess).filter(related)]
+    identifiers.update(related_access_ids)
+    grant_receipts = or_(GrantAttempt.user_id == user_id, GrantAttempt.access_id.in_(related_access_ids))
+    identifiers.update(row.id for row in db.query(GrantAttempt).filter(grant_receipts))
+    from app.models.clinical_attempts import ClinicalAttempt
+    clinical_receipts = or_(ClinicalAttempt.patient_id == user_id, ClinicalAttempt.doctor_id == user_id)
+    identifiers.update(row.id for row in db.query(ClinicalAttempt).filter(clinical_receipts))
     actions = or_(DoctorReviewAction.patient_id == user_id, DoctorReviewAction.doctor_id == user_id)
     action_ids = [row.id for row in db.query(DoctorReviewAction).filter(actions)]
     identifiers.update(action_ids)
     # A note by another clinician can link to an action by the deleted doctor.
     notes = or_(ClinicalNote.patient_id == user_id, ClinicalNote.doctor_id == user_id,
                 ClinicalNote.review_action_id.in_(action_ids))
-    identifiers.update(row.id for row in db.query(ClinicalNote).filter(notes))
+    note_ids = [row.id for row in db.query(ClinicalNote).filter(notes)]
+    identifiers.update(note_ids)
+    # Linked notes can be authored by a surviving clinician; erase their saved
+    # receipt copies as well when the linked review author is deleted.
+    receipt_filter = or_(clinical_receipts, ClinicalAttempt.resource_id.in_(note_ids))
+    identifiers.update(row.id for row in db.query(ClinicalAttempt).filter(receipt_filter))
     # Refuse inconsistent legacy links rather than mutate another account.
     experiment_ids = db.query(Experiment.id).filter(Experiment.user_id == user_id).scalar_subquery()
     product_ids = db.query(Product.id).filter(Product.user_id == user_id).scalar_subquery()
@@ -132,18 +152,24 @@ def delete_account(db, user_id, *, journal=None):
                 audit.actor_id = pseudonym
             audit.details = {}
             audit.ip_address = None
+    from app.models.notifications import NotificationJobAttempt
+    erased_jobs=db.query(NotificationJob.id).filter(or_(NotificationJob.notification_id.in_(notice_ids), NotificationJob.device_id.in_(device_ids))).scalar_subquery()
+    db.query(NotificationJobAttempt).filter(NotificationJobAttempt.job_id.in_(erased_jobs)).delete(synchronize_session=False)
     db.query(NotificationJob).filter(or_(NotificationJob.notification_id.in_(notice_ids), NotificationJob.device_id.in_(device_ids))).delete(synchronize_session=False)
     db.query(Notification).filter(notice_filter).delete(synchronize_session=False)
     db.query(NotificationDevice).filter_by(user_id=user_id).delete(synchronize_session=False)
     db.query(NotificationPreference).filter_by(user_id=user_id).delete(synchronize_session=False)
+    db.query(RoutineReminderSetting).filter_by(user_id=user_id).delete(synchronize_session=False)
     db.query(ClinicalPlanAttempt).filter(ClinicalPlanAttempt.plan_id.in_(plan_ids)).delete(synchronize_session=False)
     db.query(ClinicalPlanEvent).filter(ClinicalPlanEvent.plan_id.in_(plan_ids)).delete(synchronize_session=False)
     db.query(ClinicalPlan).filter(ClinicalPlan.id.in_(plan_ids)).delete(synchronize_session=False)
-    db.query(AgentAction).filter_by(user_id=user_id).delete(synchronize_session=False)
+    db.query(AgentAction).filter(or_(AgentAction.user_id==user_id,AgentAction.id.in_(directed_action_ids))).delete(synchronize_session=False)
     db.query(AgentTurn).filter(AgentTurn.session_id.in_(agent_ids)).delete(synchronize_session=False)
     db.query(AgentSession).filter_by(user_id=user_id).delete(synchronize_session=False)
     db.query(ThreadMessage).filter(ThreadMessage.thread_id.in_(thread_ids)).delete(synchronize_session=False)
     db.query(MessageThread).filter(thread_filter).delete(synchronize_session=False)
+    db.query(GrantAttempt).filter(grant_receipts).delete(synchronize_session=False)
+    db.query(ClinicalAttempt).filter(receipt_filter).delete(synchronize_session=False)
     db.query(ClinicalNote).filter(notes).delete(synchronize_session=False)
     db.query(DoctorReviewAction).filter(actions).delete(synchronize_session=False)
     db.query(DoctorPatientAccess).filter(related).delete(synchronize_session=False)

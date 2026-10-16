@@ -21,8 +21,9 @@ class TurnIn(BaseModel):
 class ActionIn(BaseModel):
     model_config=ConfigDict(extra="forbid",strict=True)
     expected_session_revision: int=Field(ge=1)
-    kind: Literal["request_checkin","propose_followup","propose_routine_adjustment"]
+    kind: Literal["request_checkin","propose_followup","propose_routine_adjustment","mark_notification_read"]
     rationale: str=Field(min_length=3,max_length=500)
+    notification_id: str | None=Field(None,min_length=1,max_length=36)
     routine_id: str | None=Field(None,min_length=1,max_length=36)
     routine_revision: int | None=Field(None,ge=1)
 
@@ -31,6 +32,7 @@ class ActionIn(BaseModel):
         linked=self.routine_id is not None and self.routine_revision is not None
         if self.kind=="propose_routine_adjustment" and not linked:raise ValueError("Routine proposal requires an explicit routine revision")
         if self.kind!="propose_routine_adjustment" and (self.routine_id is not None or self.routine_revision is not None):raise ValueError("Unexpected routine link")
+        if (self.kind=="mark_notification_read") != (self.notification_id is not None):raise ValueError("Notification action requires exactly one owned notification id")
         return self
 
 
@@ -38,3 +40,15 @@ class ConfirmAction(BaseModel):
     model_config=ConfigDict(extra="forbid",strict=True)
     expected_revision: int=Field(ge=1)
     confirm: bool
+
+class SubmitRequest(BaseModel):
+    model_config=ConfigDict(extra="forbid",strict=True)
+    expected_revision: int=Field(ge=1)
+    access_id: str=Field(min_length=1,max_length=36)
+    clinician_request_consent: bool
+
+
+class DecideRequest(BaseModel):
+    model_config=ConfigDict(extra="forbid",strict=True)
+    expected_revision: int=Field(ge=1)
+    decision: Literal["accepted","rejected","reviewed"]

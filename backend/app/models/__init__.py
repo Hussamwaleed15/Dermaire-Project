@@ -370,3 +370,7 @@ from app.models.clinical_plans import ClinicalPlan, ClinicalPlanEvent, ClinicalP
 from app.models.agent_platform import AgentSession, AgentTurn, AgentAction
 from app.models.product_mutations import ProductMutationAttempt
 from app.models.configuration_attempts import ConfigurationAttempt
+
+from app.models.clinical_attempts import ClinicalAttempt, GrantAttempt
+
+from app.models.routine_history import RoutineConfigurationEvent, UserCalendarPolicy

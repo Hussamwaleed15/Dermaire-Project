@@ -190,4 +190,4 @@ def test_pg_populated_mutation_downgrade_refused(pg_engine,monkeypatch):
     command.check(config)
     with pg_engine.connect() as connection:
         assert connection.execute(text("SELECT count(*) FROM product_mutation_attempts")).scalar()==1
-        assert connection.execute(text("SELECT version_num FROM alembic_version")).scalar()=="20261015_09"
+        assert connection.execute(text("SELECT version_num FROM alembic_version")).scalar()=="20261015_13"

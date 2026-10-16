@@ -31,7 +31,9 @@ def current_grant(db, actor, grant_id):
     # Patient lock matches existing revoke and clinician-write fencing. Reads also
     # hold it until response construction; no historical receipt bypasses this gate.
     patient = db.query(User).filter_by(id=grant.patient_id, role="patient").with_for_update().first()
-    grant = db.query(DoctorPatientAccess).filter_by(id=grant_id).populate_existing().with_for_update().one()
+    grant = db.query(DoctorPatientAccess).filter_by(id=grant_id).populate_existing().with_for_update().first()
+    if not patient or not grant:
+        raise HTTPException(403, "Conversation access is no longer active")
     doctor = db.get(User, grant.doctor_id)
     if (not patient or not doctor or doctor.role != "doctor" or actor.role not in ("patient", "doctor")
             or grant.status != "active" or utc(grant.expires_at) <= datetime.now(timezone.utc)

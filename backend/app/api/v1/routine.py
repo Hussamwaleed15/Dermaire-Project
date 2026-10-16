@@ -11,7 +11,7 @@ from app.services import resource_revisions as revisions
 from app.services import adherence_attempts as attempts
 from sqlalchemy.exc import IntegrityError
 from app.services.temporal import utc_day
-from app.schemas.history import AdherenceHistoryPage
+from app.schemas.history import AdherenceHistoryPage, ConfigurationHistoryPage, CalendarPolicyChange, CalendarPolicyOut
 from app.services import adherence_history
 from app.services import configuration_attempts as configuration
 
@@ -38,6 +38,8 @@ def create(payload: RoutineCreate, response: Response, user: User = Depends(get_
     if payload.start_date > today():
         raise HTTPException(422, "Future start dates are not supported")
     entry = RoutineEntry(user_id=user.id, **payload.model_dump())
+    from app.models.routine_history import tag_writer
+    tag_writer(db, entry, user.id, 'routine.create')
     entry.active = True
     slot_keys(entry)
     db.add(entry)
@@ -53,6 +55,32 @@ def configuration_attempt(operation: str,key: str,response: Response,resource_id
                           user: User=Depends(get_current_user),db: Session=Depends(get_db)):
     response.headers["Cache-Control"]="no-store"
     return configuration.lookup(db,user.id,"routine",operation,resource_id,key)
+
+@router.get('/calendar-policy', response_model=CalendarPolicyOut)
+def calendar_policy(response: Response, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    from app.services import local_calendar
+    response.headers['Cache-Control'] = 'no-store'
+    return local_calendar.view(local_calendar.current(db, user.id))
+
+
+@router.put('/calendar-policy', response_model=CalendarPolicyOut)
+def change_calendar_policy(payload: CalendarPolicyChange, response: Response,
+        user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    from app.services import local_calendar
+    response.headers['Cache-Control'] = 'no-store'
+    return local_calendar.view(local_calendar.change(db, user, payload.timezone, payload.expected_revision))
+
+
+@router.get('/configuration-history', response_model=ConfigurationHistoryPage)
+def configuration_history_page(response: Response, routine_entry_id: str | None = None,
+        limit: int = Query(100, ge=1, le=500), cursor: str | None = Query(None, min_length=1, max_length=4096),
+        user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    from app.services import configuration_history
+    if routine_entry_id is not None:
+        owned_entry(db, user, routine_entry_id)
+    response.headers['Cache-Control'] = 'no-store'
+    return configuration_history.page(db, user, limit, cursor, routine_entry_id)
+
 
 @router.get("/entries/{entry_id}", response_model=RoutineOut)
 def read(entry_id: str, response: Response, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
@@ -73,6 +101,8 @@ def update(entry_id: str, payload: RoutineUpdate, request: Request, response: Re
         raise HTTPException(422, "Required configuration fields cannot be null")
     if not entry.active:
         raise HTTPException(409, "Stopped entries are immutable; create a new entry to resume")
+    from app.models.routine_history import tag_writer
+    tag_writer(db, entry, user.id, 'routine.update')
     revisions.reserve(db, entry, revisions.header(request))
     for key, value in data.items():
         setattr(entry, key, value)
@@ -94,6 +124,8 @@ def remove(entry_id: str, request: Request, response: Response, user: User = Dep
     revisions.enforce(entry, revisions.header(request))
     guard_routine_write(db, user.id)
     if entry.active:
+        from app.models.routine_history import tag_writer
+        tag_writer(db, entry, user.id, 'routine.stop')
         revisions.reserve(db, entry, revisions.header(request))
         deactivate(entry)
         if attempt:

@@ -291,6 +291,17 @@ def logout_session(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
+    # Fence this session's queued/leased push effects in the logout transaction.
+    from datetime import datetime, timezone
+    from app.models.notifications import NotificationDevice, NotificationJob
+    devices = db.query(NotificationDevice).filter_by(user_id=current_user.id, session_id=payload["jti"]).all()
+    identifiers = [device.id for device in devices]
+    for device in devices:
+        device.revoked_at = datetime.now(timezone.utc)
+        device.token_encrypted = ""
+    db.query(NotificationJob).filter(NotificationJob.device_id.in_(identifiers),
+        NotificationJob.state != "provider_accepted").update(
+            {"state":"cancelled", "lease_token":None, "lease_until":None}, synchronize_session=False)
     record_audit(db, current_user.id, "SESSION_REVOKED", payload["jti"], {})
 
 

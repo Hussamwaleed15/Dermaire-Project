@@ -197,11 +197,14 @@ def update_product(
         raise HTTPException(409, "Stop protected routine entries with their current If-Match before archiving the product")
     if if_match is not None:
         product.revision_protected = True
+    from app.models.routine_history import tag_writer
+    tag_writer(db, product, current_user.id, 'product.update', product_id=product.id)
     for key, value in data.items():
         setattr(product, key, value)
 
     if product.status != "active":
         for entry in db.query(RoutineEntry).filter_by(product_id=product.id, user_id=current_user.id, active=True):
+            tag_writer(db, entry, current_user.id, 'product.deactivate_routine', product_id=product.id, product_status=product.status)
             deactivate(entry)
     db.add(AuditLog(actor_id=current_user.id, action="PRODUCT_UPDATED", target_resource="products",
         details={"product_id": product.id}))

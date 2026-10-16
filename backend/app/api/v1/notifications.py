@@ -84,3 +84,62 @@ def read(notification_id: str,response: Response,actor: User=Depends(get_current
         raise HTTPException(404,"Notification not found")
     if not row.read_at: row.read_at=now; db.commit()
     return {"id":row.id,"read_at":utc(row.read_at),"receipt":"app_read_acknowledged","delivery_confirmed":False}
+
+@router.get("/routine-reminders/{entry_id}")
+def get_routine_reminder(entry_id: str,response: Response,actor: User=Depends(get_current_user),db: Session=Depends(get_db)):
+    from app.services import routine_reminders
+    from app.models.notifications import RoutineReminderSetting
+    response.headers["Cache-Control"]="no-store"
+    routine_reminders.owned_entry(db,actor.id,entry_id)
+    return routine_reminders.output(db.query(RoutineReminderSetting).filter_by(routine_entry_id=entry_id).first())
+
+
+from app.schemas.notifications import RoutineReminderIn
+
+@router.put("/routine-reminders/{entry_id}")
+def put_routine_reminder(entry_id: str,payload: RoutineReminderIn,response: Response,
+                         actor: User=Depends(get_current_user),db: Session=Depends(get_db)):
+    from app.services import routine_reminders
+    response.headers["Cache-Control"]="no-store"
+    return routine_reminders.configure(db,actor,entry_id,payload)
+
+
+@router.put("/{notification_id}/unread")
+def unread(notification_id: str,response: Response,actor: User=Depends(get_current_user),db: Session=Depends(get_db)):
+    response.headers["Cache-Control"]="no-store"
+    row=db.query(Notification).filter_by(id=notification_id,user_id=actor.id).with_for_update().first()
+    now=datetime.now(timezone.utc)
+    if not row or row.cancelled_at or utc(row.due_at)>now or not service.source_active(db,row,now):
+        raise HTTPException(404,"Notification not found")
+    row.read_at=None; db.commit()
+    return {"id":row.id,"read_at":None,"unread":True,"delivery_confirmed":False}
+
+@router.get("/history")
+def history(response: Response,limit: int=Query(50,ge=1,le=100),before: str | None=None,
+            actor: User=Depends(get_current_user),db: Session=Depends(get_db)):
+    """Privacy-filtered bounded state readback; no promise of transport attempt history."""
+    response.headers["Cache-Control"]="no-store"
+    query=db.query(Notification).filter_by(user_id=actor.id)
+    if before:
+        anchor=query.filter(Notification.id==before).first()
+        if not anchor:raise HTTPException(422,"Invalid notification history cursor")
+        from sqlalchemy import or_,and_
+        query=query.filter(or_(Notification.created_at<anchor.created_at,
+            and_(Notification.created_at==anchor.created_at,Notification.id<anchor.id)))
+    rows=query.order_by(Notification.created_at.desc(),Notification.id.desc()).limit(limit+1).all()
+    now=datetime.now(timezone.utc)
+    items=[]
+    from app.models import RoutineEntry
+    for row in rows[:limit]:
+        active=service.source_active(db,row,now)
+        owned_routine=row.kind=="routine" and db.query(RoutineEntry).filter_by(id=row.source_id,user_id=actor.id).first() is not None
+        if not active and not owned_routine:continue
+        jobs=db.query(NotificationJob).filter_by(notification_id=row.id).all()
+        items.append({"id":row.id,"kind":row.kind,"due_at":utc(row.due_at),
+            "state":"cancelled" if row.cancelled_at or not active else "current",
+            "cancelled_at":utc(row.cancelled_at) if row.cancelled_at else None,
+            "jobs":[{"id":job.id,"state":job.state,"attempts":job.attempts,
+                     "attempt_history":service.attempt_history(db,job,now)} for job in jobs],
+            "delivery_confirmed":False})
+    return {"items":items,"next_before":rows[limit-1].id if len(rows)>limit else None,
+            "history_contract":"prospective_attempts_and_current_authority_no_delivery_proof"}

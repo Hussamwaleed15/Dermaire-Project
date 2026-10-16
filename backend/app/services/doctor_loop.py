@@ -30,6 +30,14 @@ def authorize(db, doctor, patient_id, *, scope="VIEW"):
     return patient, grant
 
 
+def flush_clinical(db):
+    try:
+        db.flush()
+    except Exception:
+        db.rollback()
+        raise HTTPException(503, "Clinical action unconfirmed; reconcile original attempt key") from None
+
+
 def save(db, actor_id, action, target, details):
     db.add(AuditLog(actor_id=actor_id, action=action, target_resource=target, details=details))
     try:

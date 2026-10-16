@@ -71,3 +71,31 @@ def complete_profile_review(payload: ProfileReviewRequest,
     from app.services.onboarding import complete_review
     complete_review(db, current_user)
     return get_current_user_profile(current_user, db)
+
+@router.get('/completion-receipts/{domain}/{version}')
+def completion_receipt(domain: str, version: str, response: Response,
+        current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    """Historical atomic audit evidence; absence never invents an acceptance."""
+    from app.models import AuditLog
+    from app.core.config import settings
+    from app.services.temporal import utc
+    if domain not in ('safety', 'profile-review'):
+        raise HTTPException(422, 'Unknown completion domain')
+    if domain == 'profile-review' and version != '1':
+        raise HTTPException(422, 'Unsupported profile review version')
+    if domain == 'safety':
+        import re
+        if not re.fullmatch(r'[0-9]+\.[0-9]+', version) or len(version) > 20:
+            raise HTTPException(422, 'Invalid policy version')
+    action = 'SAFETY_TERMS_ACCEPTED' if domain == 'safety' else 'PROFILE_REVIEW_COMPLETED'
+    candidates = db.query(AuditLog).filter_by(actor_id=current_user.id, action=action).order_by(AuditLog.created_at, AuditLog.id)
+    row = next((r for r in candidates if (r.details or {}).get('version' if domain == 'safety' else 'schema_version') == (version if domain == 'safety' else 1)), None)
+    response.headers['Cache-Control'] = 'no-store'
+    return {'schema_version': 1, 'domain': domain, 'version': version,
+        'owner_id': current_user.id, 'actor_id': current_user.id,
+        'status': 'committed' if row else 'unknown', 'receipt_id': row.id if row else None,
+        'recorded_at': utc(row.created_at) if row else None,
+        'evidence': 'transactional_completion_audit' if row else None,
+        'is_required_version': version == settings.SAFETY_POLICY_REQUIRED_VERSION if domain == 'safety' else True,
+        'current_state': current_user.safety_consent if domain == 'safety' else current_user.onboarding,
+        'historical_receipt_is_current_consent': False}

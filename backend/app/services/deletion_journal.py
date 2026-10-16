@@ -190,14 +190,25 @@ class DeletionJournal:
         receipt_targets = [a for a in receipt_candidates if any(
             r["owner"] == self.token("product-owner", a.user_id)
             and self.token("product", a.source_product_id if isinstance(a, ConfigurationAttempt) else a.resource_id) in r["products"] for r in product_records)]
+        from app.models.routine_history import RoutineConfigurationEvent
+        # Historical evidence can survive a partial product restore without a
+        # product row. Match immutable typed owner/product references, not JSON.
+        history_targets = []
+        if product_records:
+            history_targets = [event.id for event in db.query(RoutineConfigurationEvent) if any(
+                r['owner'] == self.token('product-owner', event.user_id)
+                and self.token('product', event.source_product_id) in r['products']
+                for r in product_records)]
         # All signed inputs and restored product links verified before mutation.
+        if history_targets:
+            db.query(RoutineConfigurationEvent).filter(RoutineConfigurationEvent.id.in_(history_targets)).delete(synchronize_session=False)
         for attempt in receipt_targets:
             attempt.result_snapshot = None
         for product in product_targets:
             db.query(ProductIntelligence).filter_by(product_id=product.id,
                 user_id=product.user_id).delete(synchronize_session=False)
             db.delete(product)
-        if product_targets or receipt_targets:
+        if product_targets or receipt_targets or history_targets:
             db.commit()
         for owner_id in user_ids:
             delete_account(db, owner_id, journal=self)

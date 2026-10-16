@@ -2,13 +2,13 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-Kind = Literal["message", "follow_up", "comparison", "routine"]
+Kind = Literal["message", "follow_up", "comparison", "routine", "agent_request"]
 
 
 class PreferencesIn(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
     expected_revision: int = Field(ge=0)
-    enabled_kinds: list[Kind] = Field(max_length=4)
+    enabled_kinds: list[Kind] = Field(max_length=5)
     push_enabled: bool = False
     timezone: str = Field(max_length=100)
     quiet_start: int = Field(ge=0, lt=1440)
@@ -34,3 +34,15 @@ class DeviceIn(BaseModel):
     token: str = Field(min_length=16, max_length=4096)
     platform: Literal["ios", "android", "web"]
     push_consent: bool
+
+class RoutineReminderIn(BaseModel):
+    model_config = ConfigDict(extra="forbid", strict=True)
+    expected_revision: int = Field(ge=0)
+    enabled: bool
+    timezone: str = Field(max_length=100)
+    am_minute: int = Field(ge=0, lt=1440)
+    pm_minute: int = Field(ge=0, lt=1440)
+    fold: Literal[0, 1]
+    gap_policy: Literal["skip"]
+
+    _known_zone = field_validator("timezone")(PreferencesIn.known_zone.__func__)
