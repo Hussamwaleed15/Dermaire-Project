@@ -138,6 +138,9 @@ class _PatientEntryGateState extends State<PatientEntryGate> {
           onSignOut: _signOut,
         );
       }
+      if (ApiService.instance.profileReviewRequired) {
+        return SkinProfileScreen(state: widget.state);
+      }
       if (widget.onboarding) return AccountCreatedScreen(state: widget.state);
       if (_enteredShell) return AppShell(state: widget.state);
       return EntryStatusPage(
@@ -1388,6 +1391,23 @@ class _SkinProfileScreenState extends State<SkinProfileScreen> {
       if (contextDraft.isNotEmpty) 'profile_context': Map.of(contextDraft),
     });
     if (!mounted || !ApiService.instance.isCurrentSession(generation)) return;
+    if (result == ProfileSaveResult.saved &&
+        ApiService.instance.profileReviewRequired) {
+      try {
+        await ApiService.instance.completeProfileReview();
+        await widget.state.account.hydrate();
+      } catch (_) {
+        if (mounted && ApiService.instance.isCurrentSession(generation)) {
+          setState(() {
+            saving = false;
+            error =
+                'Profile saved, but review completion is unconfirmed. Retry to reconcile.';
+          });
+        }
+        return;
+      }
+      if (!mounted || !ApiService.instance.isCurrentSession(generation)) return;
+    }
     if (result == ProfileSaveResult.saved) {
       draft.clear();
       contextDraft.clear();

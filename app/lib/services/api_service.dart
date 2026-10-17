@@ -1,3 +1,5 @@
+import '../integration/contract.dart';
+import '../entry/server_entry_metadata.dart';
 import 'dart:convert';
 import 'api_exception.dart';
 import 'request_failure.dart';
@@ -303,6 +305,12 @@ class ApiService extends ChangeNotifier {
   bool? _confirmedSafetyAcceptance;
   String? _sessionRole;
   Map<String, dynamic>? _consentUser;
+  ServerEntryMetadata? _entryMetadata;
+  final Map<String, PendingIntent> integrationIntents = {};
+  String? get requiredSafetyPolicyVersion => _entryMetadata?.requiredPolicy;
+  bool get profileReviewRequired =>
+      hasConfirmedSafetyAcceptance &&
+      _entryMetadata?.profileReviewRequired == true;
   int _profileRevision = 0;
   int? _consentProfileRevision;
 
@@ -372,6 +380,86 @@ class ApiService extends ChangeNotifier {
       throw RequestFailure.http(response.statusCode);
     }
     return jsonDecode(response.body);
+  }
+
+  Future<IntegrationResponse> integrationResource(
+    String path,
+    int generation, {
+    String method = 'GET',
+    Map<String, dynamic>? body,
+    Map<String, String>? query,
+    String? key,
+    Map<String, String> preconditions = const {},
+    bool withdrawal = false,
+  }) async {
+    void guard() {
+      if (!isCurrentSession(generation) ||
+          !['patient', 'doctor'].contains(authenticatedRole) ||
+          (!withdrawal &&
+              !(canReadPatientClinicalStatus || canReadDoctorWorkspace))) {
+        throw IntegrationFailure(401);
+      }
+    }
+
+    guard();
+    if (!RegExp(r'^[A-Za-z0-9_/-]+$').hasMatch(path) ||
+        path.contains('//') ||
+        ![
+          'messaging',
+          'clinical-plans',
+          'notifications',
+          'agent',
+          'doctor',
+          'users',
+        ].contains(path.split('/').first) ||
+        !['GET', 'POST', 'PUT', 'DELETE'].contains(method) ||
+        (withdrawal &&
+            !(method == 'DELETE' &&
+                (path.startsWith('agent/') ||
+                    path.startsWith('notifications/') ||
+                    path.startsWith('messaging/') ||
+                    path.startsWith('doctor/access/'))))) {
+      throw ArgumentError('Invalid integration resource');
+    }
+    if (key != null && !RegExp(r'^[A-Za-z0-9_-]{16,128}$').hasMatch(key)) {
+      throw ArgumentError('Invalid operation key');
+    }
+    final request = http.Request(
+      method,
+      Uri.parse('$baseUrl/$path').replace(queryParameters: query),
+    )..followRedirects = false;
+    request.headers.addAll(_headers(body != null));
+    request.headers.addAll(preconditions);
+    if (key != null) request.headers['Idempotency-Key'] = key;
+    if (body != null) request.body = jsonEncode(body);
+    final response = await _client
+        .send(request)
+        .then(http.Response.fromStream)
+        .timeout(const Duration(seconds: 20));
+    guard();
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw IntegrationFailure(response.statusCode);
+    }
+    return IntegrationResponse(
+      response.body.isEmpty ? null : jsonDecode(response.body),
+      Map.unmodifiable(response.headers),
+      response.statusCode,
+    );
+  }
+
+  Future<void> completeProfileReview() async {
+    final generation = sessionGeneration;
+    await integrationResource(
+      'users/profile-review',
+      generation,
+      method: 'POST',
+      body: {'reviewed': true},
+    );
+    if (!isCurrentSession(generation)) throw IntegrationFailure(401);
+    await readSafetyAcceptance();
+    if (profileReviewRequired) {
+      throw const FormatException('Profile review not confirmed');
+    }
   }
 
   Future<Map<String, dynamic>> _readClinical(
@@ -728,6 +816,8 @@ class ApiService extends ChangeNotifier {
     uncertainDoctorWrites.clear();
     inFlightDoctorWrites.clear();
     pendingDoctorReceipts.clear();
+    integrationIntents.clear();
+    _entryMetadata = null;
     uncertainGrantRevocations.clear();
     _sessionUserId = null;
     _sessionRole = null;
@@ -791,6 +881,7 @@ class ApiService extends ChangeNotifier {
     final wasPatientGrant = canManageDoctorGrants;
     final revision = ++_profileRevision;
     _consentUser = null;
+    _entryMetadata = null;
     final generation = _sessionGeneration;
     final owner = _sessionUserId;
     _consentGeneration = null;
@@ -825,7 +916,8 @@ class ApiService extends ChangeNotifier {
     _consentUser = jsonDecode(jsonEncode(decoded)) as Map<String, dynamic>;
     _consentProfileRevision = revision;
     _consentGeneration = generation;
-    final accepted = decoded['safety_accepted'] as bool;
+    _entryMetadata = ServerEntryMetadata.fromApi(decoded);
+    final accepted = _entryMetadata!.accepted;
     _confirmedSafetyAcceptance = accepted;
     if ((!accepted && wasAccepted) ||
         (wasDoctor && decoded['role'] != 'doctor') ||
@@ -837,6 +929,7 @@ class ApiService extends ChangeNotifier {
 
   /// Acknowledges the write only. Call readSafetyAcceptance before entry.
   Future<void> acceptSafetyTerms() async {
+    final policy = requiredSafetyPolicyVersion;
     final generation = _sessionGeneration;
     _consentGeneration = null;
     _confirmedSafetyAcceptance = null;
@@ -847,8 +940,8 @@ class ApiService extends ChangeNotifier {
         .post(
           Uri.parse('$baseUrl/auth/accept-safety'),
           headers: _headers(),
-          // Use the existing server default; policy currency is not exposed.
-          body: jsonEncode({'accepted': true}),
+          // Exact required version from this session's GET; legacy servers retain their default.
+          body: jsonEncode({'accepted': true, 'policy_version': ?policy}),
         )
         .timeout(const Duration(seconds: 20));
     if (!isCurrentSession(generation)) {
