@@ -13,7 +13,7 @@ This is a live execution ledger, not a claim of overall completion.
 | Deterministic PSM | PARTIAL | psm/*; latest schema/freshness compatibility pending; not image AI |
 | Doctor grant management/entry | PARTIAL | doctor/*, doctor_portal.dart; explicit new grant issue/claim replacing legacy block pending |
 | Persistent messaging | PARTIAL | messaging/messaging_models.dart, messaging_controller.dart, messaging_ui.dart; real enrollment/list/send/read/paging/withdraw/reconciliation integrated; context/day-group/scroll polish in F6 |
-| Typed clinical follow-ups | NOT STARTED | /clinical-plans exists; old text guidance preserved |
+| Typed clinical follow-ups | PARTIAL | plans/ models, controllers, UI; actual create/ack/cancel/reschedule/review/history/reconciliation; comparison-specific UX and policy-withdrawal extension pending |
 | Inbox/preferences/reminders | NOT STARTED | notifications/notification_availability.dart remains old availability page until new source adapter is verified |
 | Plan-linked comparison | NOT STARTED | comparison/* retains isolated unsupported scaffolding, no fake plans |
 | Agent sessions/actions/requests | NOT STARTED | agent/* old scaffold; persistent broker not integrated yet |
@@ -26,3 +26,5 @@ focused13 rechecked immutable payload handling. No backend/native/Tester changes
 F2–F6 continue; statuses updated after verified implementation, not on planning.
 
 F2a messaging: full1373 (+25), analyzer clean, original-key/receipt and policy-withdrawal regressions pass. F2 follow-up plans continues next.
+
+F2b follow-ups: full1395 (+22), analyzer clean. See FLUTTER_F2_FOLLOW_UPS.md.

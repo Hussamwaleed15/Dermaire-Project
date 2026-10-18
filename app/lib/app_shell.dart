@@ -1,3 +1,4 @@
+import 'plans/plan_ui.dart';
 import 'messaging/messaging_ui.dart';
 import 'package:flutter/material.dart';
 import 'chatbot.dart';
@@ -263,6 +264,12 @@ class ProfileTab extends StatelessWidget {
         title: 'Care conversations',
         subtitle: 'Consented messages with your connected doctor',
         onTap: () => openPage(context, const CareThreadsScreen()),
+      ),
+      ActionCard(
+        icon: '◷',
+        title: 'Follow-ups & comparison plans',
+        subtitle: 'Current clinician-authored schedules and plan history',
+        onTap: () => openPage(context, ClinicalPlansScreen(state: state)),
       ),
       ActionCard(
         icon: '🔒',

@@ -1,3 +1,4 @@
+import 'plans/plan_ui.dart';
 import 'messaging/messaging_ui.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
@@ -195,6 +196,10 @@ class _DoctorPortalScreenState extends State<DoctorPortalScreen>
             OutlinedButton(
               onPressed: () => openEntry(context, const CareThreadsScreen()),
               child: const Text('Care conversations'),
+            ),
+            OutlinedButton(
+              onPressed: () => openEntry(context, const ClinicalPlansScreen()),
+              child: const Text('Clinical plans'),
             ),
             if (controller.loading)
               const Text(
@@ -406,6 +411,20 @@ class _PatientDetailScreenState extends State<PatientDetailScreen>
               DoctorEvidenceScreen(connection: connection),
             ),
             child: const Text('Review clinical evidence'),
+          ),
+          OutlinedButton(
+            onPressed: () => openEntry(
+              context,
+              CreateClinicalPlanScreen(connection: connection),
+            ),
+            child: const Text('Create clinician follow-up'),
+          ),
+          OutlinedButton(
+            onPressed: () => openEntry(
+              context,
+              ClinicalPlansScreen(patient: widget.patient.id),
+            ),
+            child: const Text('Patient clinical plans'),
           ),
           Text(
             'Connection list retrieved: ${c.retrievedAt?.toUtc().toIso8601String() ?? "Unknown"} (snapshot)',
