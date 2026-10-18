@@ -130,3 +130,16 @@ focused65; all fake transports enforce flutter-tests.invalid. Real device/backen
 E2E and process-death validation remain separate.
 
 L2b verified gate: full1875 (+21), focused65, analyzer clean, diff clean.
+
+## L9a shared withdrawal workflow / L10 executable device entry
+
+Added one shared full entry→selective revoke→plan cancellation→evaluation
+cancellation→logout→second-account scenario, with four host light/dark/large-text
+variants and an SDK integration_test entry using the same assertions. All HTTP
+is intercepted and rejects non-synthetic hosts. No production accounts/native
+configuration touched. Only Flutter SDK dev dependency integration_test and lock
+resolution added. See FLUTTER_DEVICE_VALIDATION.md for exact executable commands,
+actual environment evidence and clear host/device/backend/process-death boundaries.
+Broader patient/doctor all-feature journeys remain PARTIAL; device execution BLOCKED.
+
+L9a gate: focused4 workflows, full1879, analyzer/pub get clean, diff clean.
