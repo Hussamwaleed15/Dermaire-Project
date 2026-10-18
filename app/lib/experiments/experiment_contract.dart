@@ -61,7 +61,8 @@ abstract final class ExperimentContract {
   }
 
   static bool valid(Map<String, dynamic> r, String owner) {
-    if (!text(r['id']) ||
+    if (!RoutineController.validRevision(r) ||
+        !text(r['id']) ||
         r['user_id'] != owner ||
         !instant(r['created_at']) ||
         !instant(r['start_date']) ||

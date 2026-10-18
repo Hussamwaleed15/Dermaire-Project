@@ -40,6 +40,7 @@ class RemoteExperimentRepository implements ExperimentRepository {
     Map<String, dynamic> payload, {
     String method = 'POST',
     Map<String, dynamic>? expected,
+    Map<String, dynamic>? expectedRoutine,
   }) async {
     final generation = api.sessionGeneration, owner = api.observationOwner!;
     if (path.isEmpty && !ExperimentContract.draft(payload) ||
@@ -58,22 +59,47 @@ class RemoteExperimentRepository implements ExperimentRepository {
           current['id'] != id ||
           current['engine_version'] != 2 ||
           expected == null ||
-          expected['user_id'] != owner ||
-          ![
-            'status',
-            'intervention',
-            'routine_entry_id',
-            'product_id',
-            'start_date',
-            'target_days',
-            'goal',
-            'notes',
-            'definition_snapshot',
-          ].every((k) => RoutineController.sameWire(current[k], expected[k]))) {
-        throw const FormatException(
-          'Experiment changed or read-only. Reopen it.',
-        );
+          !ExperimentContract.valid(expected, owner) ||
+          expected['id'] != id) {
+        throw const FormatException('Invalid reviewed experiment');
       }
+      if (![
+        'revision',
+        'revision_protected',
+        'status',
+        'intervention',
+        'routine_entry_id',
+        'product_id',
+        'start_date',
+        'target_days',
+        'goal',
+        'notes',
+        'definition_snapshot',
+      ].every((k) => RoutineController.sameWire(current[k], expected[k]))) {
+        throw RequestFailure.http(412);
+      }
+    }
+    int? routineRevision;
+    if (path.endsWith('/activate') &&
+        (expectedRoutine != null ||
+            expected?.containsKey('revision') == true)) {
+      if (expectedRoutine == null ||
+          !RoutineController.validRow(expectedRoutine, 'user_configured') ||
+          expectedRoutine['id'] != expected?['routine_entry_id'] ||
+          expectedRoutine['product_id'] != expected?['product_id']) {
+        throw RequestFailure.http(412);
+      }
+      final currentRoutine =
+          await api.patientResource(
+                'routine/entries/${expectedRoutine['id']}',
+                generation,
+              )
+              as Map<String, dynamic>;
+      if (!RoutineController.validRow(currentRoutine, 'user_configured') ||
+          !sameRoutineConfiguration(currentRoutine, expectedRoutine)) {
+        throw RequestFailure.http(412);
+      }
+      routineRevision = expectedRoutine['revision'] as int?;
     }
     final receipt =
         await api.patientResource(
@@ -81,6 +107,10 @@ class RemoteExperimentRepository implements ExperimentRepository {
               generation,
               method: method,
               payload: payload,
+              expectedRevision: path.isEmpty
+                  ? null
+                  : expected?['revision'] as int?,
+              expectedRoutineRevision: routineRevision,
             )
             as Map<String, dynamic>;
     final evaluating = path.endsWith('/evaluate');
@@ -127,6 +157,26 @@ class RemoteExperimentRepository implements ExperimentRepository {
     return evaluating ? verified['result'] as Map<String, dynamic> : verified;
   }
 }
+
+bool sameRoutineConfiguration(
+  Map<String, dynamic> current,
+  Map<String, dynamic> original,
+) => [
+  'id',
+  'product_id',
+  'product_name',
+  'schedule',
+  'frequency',
+  'active',
+  'instructions',
+  'am_order',
+  'pm_order',
+  'start_date',
+  'end_date',
+  'updated_at',
+  'revision',
+  'revision_protected',
+].every((key) => RoutineController.sameWire(current[key], original[key]));
 
 class ExperimentController extends ChangeNotifier {
   ExperimentController(this.repository, {this.onConfirmed}) {
@@ -238,6 +288,7 @@ class ExperimentController extends ChangeNotifier {
     Map<String, dynamic> payload, {
     String method = 'POST',
     Map<String, dynamic>? expected,
+    Map<String, dynamic>? expectedRoutine,
   }) async {
     if (_disposed ||
         saving ||
@@ -258,6 +309,7 @@ class ExperimentController extends ChangeNotifier {
               payload,
               method: method,
               expected: expected,
+              expectedRoutine: expectedRoutine,
             )
           : await repository.write(path, payload);
       final evaluating = path.endsWith('/evaluate');
@@ -312,15 +364,18 @@ class ExperimentController extends ChangeNotifier {
       }
       await onConfirmed?.call(sessionGeneration);
       return !_disposed && operationGeneration == _generation;
-    } catch (_) {
+    } catch (failure) {
       if (operationGeneration != _generation || _disposed) {
         return false;
       }
+      final problem = RequestFailure.from(failure);
       if (remote) {
-        uncertain.add(path);
+        if (path.isEmpty || problem.kind != RequestFailureKind.rejected) {
+          uncertain.add(path);
+        }
         stale = true;
       }
-      error = 'Save unconfirmed. Refresh before retrying.';
+      error = 'Save unconfirmed. ${problem.message}';
       saving = false;
       notifyListeners();
       return false;

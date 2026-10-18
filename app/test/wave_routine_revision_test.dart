@@ -41,7 +41,7 @@ class Wire {
       if (pending != null) return pending!.future;
       if (timeout) throw TimeoutException('synthetic');
       if (status != 200) return http.Response('{}', status);
-      row = {...row, ...body, 'revision': 12};
+      row = {...row, ...body, 'revision': 12, 'revision_protected': true};
       return http.Response(jsonEncode(row), 200);
     }
     return http.Response(
@@ -122,9 +122,9 @@ void main() {
     });
   }
   test(
-    'unprotected row does not opt in before linked experiment writer is upgraded',
+    'unprotected row opts in with compatible linked experiment writer',
     () async {
-      final wire = Wire()..expectedHeader = null;
+      final wire = Wire();
       wire.row['revision_protected'] = false;
       await wire.run((c) async {
         expect(await write(c, c.entries!.single), true);

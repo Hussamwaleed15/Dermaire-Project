@@ -65,11 +65,8 @@ class RemoteRoutineRepository implements RoutineRepository {
           current['revision'] != expectedRevision) {
         throw RequestFailure.http(412);
       }
-      // Do not opt legacy/unprotected rows in until all linked experiment
-      // activation writers can also supply Routine-If-Match.
-      if (current['revision_protected'] == true) {
-        precondition = expectedRevision;
-      }
+      // Linked experiment activation also supplies its reviewed routine revision.
+      precondition = expectedRevision;
       patch.removeWhere((k, v) => current[k] == v);
       if (patch.isEmpty) return current;
     }

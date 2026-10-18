@@ -1,3 +1,4 @@
+import 'activation_review.dart';
 import 'package:flutter/material.dart';
 import 'experiment_controller.dart';
 import '../services/api_service.dart';
@@ -52,6 +53,71 @@ class _ExperimentsViewState extends State<ExperimentsView> {
     }
   }
 
+  bool get activationForeground =>
+      WidgetsBinding.instance.lifecycleState == null ||
+      WidgetsBinding.instance.lifecycleState == AppLifecycleState.resumed;
+  bool checkingActivation = false;
+  Future<void> _activate(
+    ExperimentController c,
+    Map<String, dynamic> row,
+  ) async {
+    if (checkingActivation ||
+        c.saving ||
+        c.stale ||
+        !current ||
+        !activationForeground) {
+      return;
+    }
+    if (!c.remote) {
+      await c.write('${row['id']}/activate', {}, expected: row);
+      return;
+    }
+    setState(() => checkingActivation = true);
+    try {
+      final entry =
+          await ApiService.instance.patientResource(
+                'routine/entries/${row['routine_entry_id']}',
+                generation,
+              )
+              as Map<String, dynamic>;
+      if (!mounted || !current || !activationForeground) return;
+      if (!RoutineController.validRow(entry, 'user_configured') ||
+          entry['id'] != row['routine_entry_id'] ||
+          entry['product_id'] != row['product_id']) {
+        throw const FormatException('Invalid linked routine');
+      }
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (dialog) => ExperimentActivationReview(
+          generation: generation,
+          entry: entry,
+          experiment: row,
+        ),
+      );
+      if (!mounted || !current || !activationForeground || confirmed != true) {
+        return;
+      }
+      await c.write(
+        '${row['id']}/activate',
+        {},
+        expected: row,
+        expectedRoutine: entry,
+      );
+    } catch (_) {
+      if (mounted && current) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Linked routine could not be verified. Refresh before activating.',
+            ),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => checkingActivation = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) => AnimatedBuilder(
     animation: widget.controller,
@@ -80,6 +146,7 @@ class _ExperimentsViewState extends State<ExperimentsView> {
             const Text(
               'Change one routine variable. Results describe observations and associations, not diagnosis or causality.',
             ),
+            if (checkingActivation) const Text('Loading linked routine…'),
             if (c.error != null ||
                 c.stale ||
                 c.loading ||
@@ -201,17 +268,14 @@ class _ExperimentsViewState extends State<ExperimentsView> {
                           row['engine_version'] == 2)
                         TextButton(
                           onPressed:
-                              c.saving ||
+                              checkingActivation ||
+                                  c.saving ||
                                   c.stale ||
                                   c.uncertain.any(
                                     (p) => p.startsWith('${row['id']}/'),
                                   )
                               ? null
-                              : () => c.write(
-                                  '${row['id']}/activate',
-                                  {},
-                                  expected: row,
-                                ),
+                              : () => _activate(c, row),
                           child: const Text('Activate today'),
                         ),
                       if (row['engine_version'] == 2 &&

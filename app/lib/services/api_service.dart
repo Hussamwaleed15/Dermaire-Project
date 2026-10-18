@@ -1296,6 +1296,7 @@ class ApiService extends ChangeNotifier {
     String method = 'GET',
     Map<String, dynamic>? payload,
     int? expectedRevision,
+    int? expectedRoutineRevision,
   }) async {
     void guard() {
       if (!isCurrentSession(generation) || !canReadPatientClinicalStatus) {
@@ -1314,16 +1315,36 @@ class ApiService extends ChangeNotifier {
         (!(RegExp(r'^products/[A-Za-z0-9_-]+$').hasMatch(path) &&
                     ['PATCH', 'DELETE'].contains(method) ||
                 RegExp(r'^routine/entries/[A-Za-z0-9_-]+$').hasMatch(path) &&
+                    method == 'PATCH' ||
+                RegExp(r'^experiments/[A-Za-z0-9_-]+$').hasMatch(path) &&
+                    ['PATCH', 'DELETE'].contains(method) ||
+                RegExp(
+                      r'^experiments/[A-Za-z0-9_-]+/(activate|finish|evaluate)$',
+                    ).hasMatch(path) &&
+                    method == 'POST' ||
+                RegExp(
+                      r'^experiments/[A-Za-z0-9_-]+/toggle-pause$',
+                    ).hasMatch(path) &&
                     method == 'PATCH') ||
             expectedRevision < 1 ||
             expectedRevision > 2147483647)) {
       throw ArgumentError('Invalid configuration revision precondition');
+    }
+    if (expectedRoutineRevision != null &&
+        (!RegExp(r'^experiments/[A-Za-z0-9_-]+/activate$').hasMatch(path) ||
+            method != 'POST' ||
+            expectedRoutineRevision < 1 ||
+            expectedRoutineRevision > 2147483647)) {
+      throw ArgumentError('Invalid linked routine precondition');
     }
     final request = http.Request(method, Uri.parse('$baseUrl/$path'));
     request.followRedirects = false;
     request.headers.addAll(_headers(payload != null));
     if (expectedRevision != null) {
       request.headers['If-Match'] = '"$expectedRevision"';
+    }
+    if (expectedRoutineRevision != null) {
+      request.headers['Routine-If-Match'] = '"$expectedRoutineRevision"';
     }
     if (payload != null) request.body = jsonEncode(payload);
     final response = await _client
