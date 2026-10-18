@@ -233,7 +233,7 @@ class ProfileTab extends StatelessWidget {
             ),
             SizedBox(height: 6),
             Text(
-              '• Skin measurement vectors & Erythema scores\n• High-resolution photos encrypted in Azure Blob Storage\n• Azure AI Vision & Content Safety analytics',
+              '• Account, skin profile and reported observations\n• Private photos securely uploaded and stored on Azure when accepted\n• Available image-quality checks and limited nonclinical estimates; no validated image diagnosis',
               style: TextStyle(fontSize: 12, height: 1.6),
             ),
           ],

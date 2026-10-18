@@ -1,3 +1,4 @@
+import 'access_invitation.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
@@ -246,7 +247,13 @@ class _PatientAccessScreenState extends State<PatientAccessScreen> {
         title: 'Clinician access',
         children: [
           const Text(
-            'Creating new clinician connections is unavailable. Viewing and export permissions must be confirmed separately. Export is unavailable in this app.',
+            'Create a clinician invitation with explicit VIEW consent. Messaging requires separate consent. Export is unavailable in this app.',
+          ),
+          OutlinedButton(
+            onPressed: controller.loading || controller.saving
+                ? null
+                : () => openEntry(context, const AccessInvitationScreen()),
+            child: const Text('Invite your clinician'),
           ),
           OutlinedButton(
             onPressed: controller.loading || controller.saving
@@ -285,9 +292,17 @@ class _PatientAccessScreenState extends State<PatientAccessScreen> {
                   Text(
                     'Expires: ${grant.expiresAt.toUtc().toIso8601String()} (UTC)',
                   ),
-                  const Text(
-                    'Detailed viewing and export permission scopes are unavailable.',
-                  ),
+                  if (grant.scopes == null || grant.effectiveScopes == null)
+                    const Text(
+                      'Detailed viewing and export permission scopes are unavailable.',
+                    )
+                  else ...[
+                    Text('Recorded scopes: ${grant.scopes!.join(', ')}'),
+                    Text(
+                      'Effective scopes at last server read: ${grant.effectiveScopes!.isEmpty ? 'None' : grant.effectiveScopes!.join(', ')}',
+                    ),
+                    Text('Consent source: ${grant.consentSource ?? 'Unknown'}'),
+                  ],
                   if (['active', 'pending'].contains(grant.status))
                     OutlinedButton(
                       onPressed:

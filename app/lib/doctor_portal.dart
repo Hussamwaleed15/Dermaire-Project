@@ -1,3 +1,4 @@
+import 'doctor/access_invitation.dart';
 import 'agent/server_agent_ui.dart';
 import 'notifications/inbox_ui.dart';
 import 'plans/plan_ui.dart';
@@ -261,6 +262,11 @@ class _DoctorPortalScreenState extends State<DoctorPortalScreen>
                 onPressed: () =>
                     openEntry(context, const ClinicianRequestsScreen()),
                 child: const Text('Patient Agent requests'),
+              ),
+              OutlinedButton(
+                onPressed: () =>
+                    openEntry(context, const ClaimInvitationScreen()),
+                child: const Text('Claim patient invitation'),
               ),
             ],
           ),

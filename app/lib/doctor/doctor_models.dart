@@ -12,7 +12,17 @@ class DoctorGrant {
     Map<String, dynamic> value, {
     required String patient,
     String? doctor,
-  }) : id = doctorId(value['id']),
+  }) : scopes = value['scopes'] == null
+           ? null
+           : List.unmodifiable((value['scopes'] as List).cast<String>()),
+       effectiveScopes = value['effective_scopes'] == null
+           ? null
+           : List.unmodifiable(
+               (value['effective_scopes'] as List).cast<String>(),
+             ),
+       consentSource = value['consent_source'] as String?,
+       doctorName = value['doctor_name'] as String?,
+       id = doctorId(value['id']),
        patientId = doctorId(value['patient_id']),
        doctorIdValue = value['doctor_id'] == null
            ? null
@@ -24,6 +34,15 @@ class DoctorGrant {
            ? null
            : timestamp(value['revoked_at'], naiveUtc: true),
        revokedBy = optionalText(value['revoked_by']) {
+    if ((scopes != null &&
+            (scopes!.toSet().length != scopes!.length ||
+                scopes!.any((s) => !['VIEW', 'EXPORT'].contains(s)))) ||
+        (effectiveScopes != null &&
+            (scopes == null ||
+                effectiveScopes!.any((s) => !scopes!.contains(s)) ||
+                (status != 'active' && effectiveScopes!.isNotEmpty)))) {
+      throw const FormatException('Invalid grant scopes');
+    }
     if (patientId != patient ||
         value['granted_by'] != patient ||
         !['pending', 'active', 'revoked', 'expired'].contains(status) ||
@@ -42,6 +61,8 @@ class DoctorGrant {
       timestamp(value['revoked_at'], naiveUtc: true);
     }
   }
+  final List<String>? scopes, effectiveScopes;
+  final String? consentSource, doctorName;
   final String id, patientId, status;
   final String? doctorIdValue, revokedBy;
   final DateTime? revokedAt;

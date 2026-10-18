@@ -11,7 +11,7 @@ This is a live execution ledger, not a claim of overall completion.
 | Profile/observations/private capture | PARTIAL | account/*, observations/*, capture/*; new association/receipts pending |
 | Products/routines/adherence/experiments | PARTIAL | products/*, routine/*, experiments/*; new CAS and operation receipts/history pending |
 | Deterministic PSM | PARTIAL | psm/*; latest schema/freshness compatibility pending; not image AI |
-| Doctor grant management/entry | PARTIAL | doctor/*, doctor_portal.dart; explicit new grant issue/claim replacing legacy block pending |
+| Doctor grant management/entry | PARTIAL | doctor/access_invitation.dart actual intended-doctor VIEW issue/key attempts/current scoped claim; doctor_models.dart optional real scope readback; policy-loss selected revoke/restart recovery remain |
 | Persistent messaging | PARTIAL | messaging/messaging_models.dart, messaging_controller.dart, messaging_ui.dart; real enrollment/list/send/read/paging/withdraw/reconciliation integrated; context/day-group/scroll polish in F6 |
 | Typed clinical follow-ups | PARTIAL | plans/ models, controllers, UI; actual create/ack/cancel/reschedule/review/history/reconciliation; comparison-specific UX and policy-withdrawal extension pending |
 | Inbox/preferences/reminders | PARTIAL | notifications/inbox_models.dart, inbox_controller.dart, inbox_ui.dart; real inbox/read/history/CAS preferences/routine reminders/withdrawal; Agent deep links and device provider remain unavailable |
@@ -37,3 +37,6 @@ F3 remote verified756c89c8dab47f4317ad8f920d9ed5d7e67013a9.
 
 F5 server Agent broker: full1475 (+35), analyzer clean; pub get succeeded.
 F4 remote verifiedaaf8d56d60e9363775c53677abfe955559bfd838.
+
+F6a clinician linking: full1507 (+32), analyzer clean; pub get succeeded.
+F5 remote verified3377f683c862d1698d6af8dc2078b4831048810a.
