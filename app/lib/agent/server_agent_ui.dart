@@ -4,6 +4,7 @@ import '../clinical/clinical_ui.dart' show clinicalTime;
 import '../integration/private_view.dart';
 import 'server_agent_controller.dart';
 import 'server_agent_models.dart';
+import 'agent_workspace_summary.dart';
 
 class ServerAgentScreen extends StatefulWidget {
   const ServerAgentScreen({super.key});
@@ -13,6 +14,7 @@ class ServerAgentScreen extends StatefulWidget {
 
 class _ServerAgentState extends State<ServerAgentScreen> {
   final controller = ServerAgentController();
+  BrokerActionStage? actionFilter;
   @override
   Widget build(BuildContext context) => PrivateView(
     controller: controller,
@@ -39,6 +41,13 @@ class _ServerAgentState extends State<ServerAgentScreen> {
         subtitle:
             'Model inference is unavailable. These are explicit server-backed workflows, not autonomous medical care.',
         children: [
+          AgentWorkspaceSummary(
+            session: s,
+            actions: c.actions,
+            selected: c.selected,
+            busy: c.busy,
+            failed: c.error != null,
+          ),
           OutlinedButton(
             onPressed: c.busy ? null : c.refresh,
             child: const Text('Refresh server state'),
@@ -156,6 +165,8 @@ class _ServerAgentState extends State<ServerAgentScreen> {
             const Text(
               'Saved user text is untrusted input. It does not invoke actions. No generated assistant replies are available.',
             ),
+            if (c.turns.isEmpty)
+              const Text('No saved user messages in this session.'),
             for (final turn in c.turns)
               DermaireCard(
                 child: Column(
@@ -184,7 +195,32 @@ class _ServerAgentState extends State<ServerAgentScreen> {
                 'Proposals, requests & actual outcomes',
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
-              for (final action in c.actions)
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  ChoiceChip(
+                    label: const Text('All requests'),
+                    selected: actionFilter == null,
+                    onSelected: (_) => setState(() => actionFilter = null),
+                  ),
+                  for (final stage in BrokerActionStage.values)
+                    if (c.actions.any((a) => a.stage == stage))
+                      ChoiceChip(
+                        label: Text(stage.label),
+                        selected: actionFilter == stage,
+                        onSelected: (_) => setState(() => actionFilter = stage),
+                      ),
+                ],
+              ),
+              if (c.actions.isEmpty)
+                const Text('No proposals or requests saved in this session.'),
+              if (actionFilter != null &&
+                  !c.actions.any((a) => a.stage == actionFilter))
+                const Text('No current requests match this filter.'),
+              for (final action in c.actions.where(
+                (a) => actionFilter == null || a.stage == actionFilter,
+              ))
                 _BrokerActionCard(
                   key: ValueKey('${s.id}:${action.id}:${action.revision}'),
                   controller: c,
@@ -230,6 +266,7 @@ class _AgentConsentFormState extends State<_AgentConsentForm> {
           'Sessions expire within one hour and remain bound to this login. At most five can be active. This device remembers session references only for the current login; it does not save clinical context on disk.',
         ),
         CheckboxListTile(
+          key: const Key('agentReadConsent'),
           contentPadding: EdgeInsets.zero,
           title: const Text(
             'I consent to read my bounded longitudinal evidence for this session.',
@@ -240,6 +277,7 @@ class _AgentConsentFormState extends State<_AgentConsentForm> {
               : (v) => setState(() => read = v!),
         ),
         CheckboxListTile(
+          key: const Key('agentProposalConsent'),
           contentPadding: EdgeInsets.zero,
           title: const Text(
             'I also consent to preview proposals and explicitly confirm supported actions.',
@@ -252,10 +290,17 @@ class _AgentConsentFormState extends State<_AgentConsentForm> {
         FilledButton(
           onPressed: widget.controller.busy || !read
               ? null
-              : () => widget.controller.start(
-                  readConsent: read,
-                  actionConsent: actions,
-                ),
+              : () async {
+                  final agreedRead = read, agreedActions = actions;
+                  setState(() {
+                    read = false;
+                    actions = false;
+                  });
+                  await widget.controller.start(
+                    readConsent: agreedRead,
+                    actionConsent: agreedActions,
+                  );
+                },
           child: const Text('Create consented session'),
         ),
       ],
@@ -428,6 +473,7 @@ class _BrokerActionCardState extends State<_BrokerActionCard> {
             a.kind.replaceAll('_', ' '),
             style: Theme.of(context).textTheme.titleLarge,
           ),
+          Text(a.stageLabel, style: Theme.of(context).textTheme.titleSmall),
           Text(a.outcome),
           Text('Action revision: ${a.revision}'),
           if (a.payload['rationale'] is String)
@@ -584,6 +630,7 @@ class _ClinicianDecisionCardState extends State<_ClinicianDecisionCard> {
             a.kind.replaceAll('_', ' '),
             style: Theme.of(context).textTheme.titleLarge,
           ),
+          Text(a.stageLabel, style: Theme.of(context).textTheme.titleSmall),
           Text(a.outcome),
           Text('Request ${a.id} · revision ${a.revision}'),
           Text('Original grant: ${a.result?['access_id']}'),

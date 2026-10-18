@@ -106,6 +106,16 @@ class BrokerTurn {
   final DateTime created;
 }
 
+enum BrokerActionStage {
+  preview,
+  expiredPreview,
+  confirmedRequest,
+  pendingClinician,
+  doctorDecision,
+  executed,
+  withdrawn,
+}
+
 class BrokerAction {
   BrokerAction(Map<String, dynamic> v, {String? doctor})
     : id = resourceId(v['id']),
@@ -205,6 +215,26 @@ class BrokerAction {
   final Map<String, dynamic> payload;
   final Map<String, dynamic>? result;
   bool get fresh => DateTime.now().toUtc().isBefore(validUntil);
+  BrokerActionStage get stage {
+    if (state == 'revoked') return BrokerActionStage.withdrawn;
+    if (state == 'preview') {
+      return fresh
+          ? BrokerActionStage.preview
+          : BrokerActionStage.expiredPreview;
+    }
+    if (kind == 'mark_notification_read') return BrokerActionStage.executed;
+    if (result?['doctor_id'] != null) {
+      if (['accepted', 'rejected', 'reviewed'].contains(result?['status'])) {
+        return BrokerActionStage.doctorDecision;
+      }
+      if (result?['status'] == 'pending_clinician_review') {
+        return BrokerActionStage.pendingClinician;
+      }
+    }
+    return BrokerActionStage.confirmedRequest;
+  }
+
+  String get stageLabel => stage.label;
   String get outcome => state == 'preview'
       ? 'Proposed action, awaiting confirmation'
       : state == 'revoked'
@@ -212,4 +242,16 @@ class BrokerAction {
       : kind == 'mark_notification_read'
       ? 'Executed nonclinical action: app notification marked read'
       : 'Confirmed request · ${result?['status']}. No treatment, check-in or clinical plan was executed.';
+}
+
+extension BrokerActionStageLabel on BrokerActionStage {
+  String get label => switch (this) {
+    BrokerActionStage.preview => 'Needs your confirmation',
+    BrokerActionStage.expiredPreview => 'Preview expired',
+    BrokerActionStage.confirmedRequest => 'Confirmed request',
+    BrokerActionStage.pendingClinician => 'Awaiting clinician review',
+    BrokerActionStage.doctorDecision => 'Clinician decision recorded',
+    BrokerActionStage.executed => 'App action executed',
+    BrokerActionStage.withdrawn => 'Withdrawn and erased',
+  };
 }
