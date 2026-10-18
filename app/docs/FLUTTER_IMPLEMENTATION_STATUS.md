@@ -12,7 +12,7 @@ This is a live execution ledger, not a claim of overall completion.
 | Products/routines/adherence/experiments | PARTIAL | products/*, routine/*, experiments/*; new CAS and operation receipts/history pending |
 | Deterministic PSM | PARTIAL | psm/*; latest schema/freshness compatibility pending; not image AI |
 | Doctor grant management/entry | PARTIAL | doctor/*, doctor_portal.dart; explicit new grant issue/claim replacing legacy block pending |
-| Persistent messaging | NOT STARTED | /messaging now source-verified; no actual mobile adapter yet |
+| Persistent messaging | PARTIAL | messaging/messaging_models.dart, messaging_controller.dart, messaging_ui.dart; real enrollment/list/send/read/paging/withdraw/reconciliation integrated; context/day-group/scroll polish in F6 |
 | Typed clinical follow-ups | NOT STARTED | /clinical-plans exists; old text guidance preserved |
 | Inbox/preferences/reminders | NOT STARTED | notifications/notification_availability.dart remains old availability page until new source adapter is verified |
 | Plan-linked comparison | NOT STARTED | comparison/* retains isolated unsupported scaffolding, no fake plans |
@@ -24,3 +24,5 @@ This is a live execution ledger, not a claim of overall completion.
 F1: baseline1335; full suite1348 (+13), analyzer clean after lint repair,
 focused13 rechecked immutable payload handling. No backend/native/Tester changes.
 F2–F6 continue; statuses updated after verified implementation, not on planning.
+
+F2a messaging: full1373 (+25), analyzer clean, original-key/receipt and policy-withdrawal regressions pass. F2 follow-up plans continues next.

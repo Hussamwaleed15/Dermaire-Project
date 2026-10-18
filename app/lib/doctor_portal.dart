@@ -1,3 +1,4 @@
+import 'messaging/messaging_ui.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'access_control.dart';
@@ -191,6 +192,10 @@ class _DoctorPortalScreenState extends State<DoctorPortalScreen>
           eyebrow: 'Doctor workspace',
           title: 'Verify your doctor account',
           children: [
+            OutlinedButton(
+              onPressed: () => openEntry(context, const CareThreadsScreen()),
+              child: const Text('Care conversations'),
+            ),
             if (controller.loading)
               const Text(
                 'Verifying doctor role and safety acceptance…',
@@ -228,7 +233,7 @@ class _DoctorPortalScreenState extends State<DoctorPortalScreen>
         ],
         children: [
           const Text(
-            'Only current server-authorized connections are shown. Account role does not certify a medical license. Export and messaging are unavailable.',
+            'Only current server-authorized connections are shown. Account role does not certify a medical license. Export is unavailable. Care messages require separate patient consent.',
           ),
           const SizedBox(height: 12),
           SearchBar(
@@ -421,7 +426,7 @@ class _PatientDetailScreenState extends State<PatientDetailScreen>
             child: const Text('Notes and clinical reviews'),
           ),
           const Text(
-            'Doctor-patient messaging is unavailable. This workspace is not an emergency messaging service.',
+            'Open Care conversations for consented messages. This workspace is not an emergency messaging service.',
           ),
         ],
       );

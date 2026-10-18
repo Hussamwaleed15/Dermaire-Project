@@ -1,3 +1,4 @@
+import 'messaging/messaging_ui.dart';
 import 'package:flutter/material.dart';
 import 'chatbot.dart';
 import 'clinical/clinical_ui.dart';
@@ -256,6 +257,12 @@ class ProfileTab extends StatelessWidget {
         title: 'Notification availability',
         subtitle: 'Notifications and reminders are unavailable',
         onTap: () => openPage(context, const NotificationAvailabilityScreen()),
+      ),
+      ActionCard(
+        icon: '✉',
+        title: 'Care conversations',
+        subtitle: 'Consented messages with your connected doctor',
+        onTap: () => openPage(context, const CareThreadsScreen()),
       ),
       ActionCard(
         icon: '🔒',
