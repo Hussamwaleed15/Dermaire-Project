@@ -71,3 +71,5 @@ F6-L1 selective withdrawal: full1828 (+20), focused48, analyze/pub get clean. Sa
 F6-L2a: full1844 (+16), focused44, analyzer clean. Safety entry → metadata-only plan participation withdrawal, original grant/plan/CAS/key + historical receipt/current readback. Evaluation cancellation after policy loss remains PARTIAL. Secure recovery assessment documented in FLUTTER_SECURE_RECOVERY_DECISION.md; implementation/device proof BLOCKED.
 
 L2a remote verifieddc24dfc4ebb50aafcd88e828930252c7d41d9bc8. F6-L3a denied Safety/clinical review/PSM safety/Home/observation cache correction: full1854 (+10), focused77, analyzer clean. Existing scope/session tests retained; L3 full cross-domain journey review remains PARTIAL.
+
+L3a remote verified242f8d2b9ef52ffb60ef689f845ec0101587f263. L2b evaluation withdrawal: full1875 (+21), focused65, analyzer clean. Safety metadata manager now separates original job cancellation from parent participation withdrawal; latest-job replacement cannot resolve an original handle. Historical evaluation recovery remains PARTIAL L5.

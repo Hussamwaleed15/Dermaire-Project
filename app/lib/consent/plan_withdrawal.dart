@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../integration/contract.dart';
 import '../integration/private_view.dart';
+import '../entry/entry_motion.dart';
+import 'evaluation_withdrawal.dart';
 
 class PlanWithdrawalIntent extends PendingIntent {
   PlanWithdrawalIntent(this.plan)
@@ -94,6 +96,8 @@ class PlanWithdrawalController extends PrivateController {
     }
     final op = PlanWithdrawalIntent(Map.unmodifiable(selected));
     api.integrationIntents[storage] = op;
+    candidate = null;
+    confirmed = false;
     final ticket = begin();
     try {
       await send(op, ticket);
@@ -239,6 +243,18 @@ class PlanWithdrawalScreen extends StatelessWidget {
                         : 'Follow-up plan',
                   ),
                   Text('Plan: ${p['id']}'),
+                  if (p['kind'] == 'comparison')
+                    OutlinedButton(
+                      onPressed: c.busy
+                          ? null
+                          : () => Navigator.of(context).push(
+                              entryRoute<void>(
+                                context,
+                                EvaluationWithdrawalScreen(id: p['id']),
+                              ),
+                            ),
+                      child: const Text('Manage evaluation withdrawal'),
+                    ),
                   Text('Status: ${p['state']} · revision ${p['revision']}'),
                   if (!['cancelled', 'reviewed'].contains(p['state']))
                     OutlinedButton(

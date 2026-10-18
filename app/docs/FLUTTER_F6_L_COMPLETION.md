@@ -99,3 +99,34 @@ lib/services/api_service.dart, test/clinical_status_test.dart,
 test/wave_clinical_read_privacy_test.dart.
 
 L3a gate: full1854 (+10), focused77, analyzer clean, diff check clean.
+
+## L2b evaluation consent withdrawal — implemented, gate below
+
+Comparison plans now link to EvaluationWithdrawalScreen from the Safety withdrawal
+manager. Only current owned plan/job metadata cross the dedicated adapter boundary;
+images, capture IDs, clinical purpose, inference and human review content are dropped.
+GET/DELETE /clinical-plans/id/evaluation are verified against comparison_jobs.py.
+DELETE uses expected_revision query CAS, NOT Idempotency-Key or a fabricated attempt.
+
+The frozen session-only handle retains original job/plan/grant/revision. Current
+plan and job are checked before DELETE and an explicit retry; changed grant/job/
+revision cannot be silently rebased. Lost replies stay locked; current status of
+the SAME original job can confirm cancellation without another DELETE. Parent plan
+state remains independent. Backend permits cancelling a reviewed evaluation too;
+UI never claims parent cancellation, erased human history or clinical inference.
+First definite CAS rejection allows only a fresh read and new explicit confirmation;
+prior uncertainty is never discarded on a later conflict. Hidden/logged-out/switched
+views reject late metadata. No private image read is needed even if captures became
+unavailable or the patient's clinician grant was revoked.
+
+If the current job has been replaced, its state cannot prove the original outcome.
+The original remains locked; historical evaluation events may support a future
+scoped history adapter, but this increment does not reconstruct them or invent a
+job-attempt endpoint. That remaining historical recovery is PARTIAL L5 work.
+
+Files: lib/consent/evaluation_withdrawal.dart, plan_withdrawal.dart,
+lib/services/api_service.dart, test/wave_evaluation_withdrawal_test.dart.21 new tests,
+focused65; all fake transports enforce flutter-tests.invalid. Real device/backend
+E2E and process-death validation remain separate.
+
+L2b verified gate: full1875 (+21), focused65, analyzer clean, diff clean.
