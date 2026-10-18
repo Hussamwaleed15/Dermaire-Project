@@ -26,3 +26,19 @@ Files: agent/agent_workspace_summary.dart, server_agent_models.dart,
 server_agent_ui.dart, test/wave_agent_experience_test.dart.6 new tests, focused41,
 full1891, analyze clean. Existing withdrawal/expiry/stale/late/logout/duplicate
 controller tests retained. Real320px/200% light/dark consent and filter tests.
+
+M1 remote verifiedd3e7f5f07c0d5433b9ec4988f58def1b68cce0cf.
+
+## M2 inbox/reminder UX — DONE bounded
+
+Loaded-only category/unread filtering and due-UTC day headings preserve server
+order and paging, make filtered-empty state explicit, and distinguish loaded counts
+from global unread totals. Existing safe notification navigation remains unchanged:
+a message notice opens authorized conversations, not an inferred thread ID.
+Settings confirmation resets when timezone/quiet times/category/reminder/fold draft
+changes, preserving original server CAS and DST scheduling contract. No local
+scheduler or device token registration. No optimistic read or delivery claim.
+
+Files: notifications/inbox_models.dart, inbox_ui.dart,
+test/wave_notification_experience_test.dart.7 new tests, focused30, full1898,
+analyzer clean; existing current401/403/late/logout/withdrawal/CAS tests retained.

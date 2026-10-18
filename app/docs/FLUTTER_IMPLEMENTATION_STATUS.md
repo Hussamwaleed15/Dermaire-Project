@@ -80,3 +80,5 @@ L9a remote verified3041fb6e90810c78402d977064220109d278d96d.
 L8a messaging UTC day grouping/readable timestamps/accessible semantics: full1885 (+6), focused31, analyzer clean. Server order/read-watermark and lazy rows preserved. Broad notification/Agent UX and all-feature patient/doctor journeys remain PARTIAL; no model/push/device/restart completion claimed.
 
 F6-M start a93ab02097af15027e9b1b0ab3913f10b14b6b89, baseline1885. M1 Agent workspace/consent/action-stage UX: full1891 (+6), focused41, analyzer/pub get clean. Discovery/pagination/model remain source-verified boundaries; see FLUTTER_F6_M_EXECUTION.md.
+
+M1 remote verifiedd3e7f5f07c0d5433b9ec4988f58def1b68cce0cf. M2 loaded inbox filters/day grouping and draft-bound settings consent: full1898 (+7), focused30, analyzer clean. Current server scheduling/read/withdrawal behavior preserved; real push unavailable.

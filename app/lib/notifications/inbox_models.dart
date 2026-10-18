@@ -128,3 +128,17 @@ int? parseClock(String s) {
   if (a[0] > 23 || a[1] > 59) return null;
   return a[0] * 60 + a[1];
 }
+
+List<InboxNotice> filterLoadedNotices(
+  List<InboxNotice> notices, {
+  String? category,
+  bool unreadOnly = false,
+}) => List.unmodifiable(
+  notices.where(
+    (n) =>
+        (category == null || n.kind == category) &&
+        (!unreadOnly || n.read == null),
+  ),
+);
+String noticeUtcDay(InboxNotice notice) =>
+    notice.due.toUtc().toIso8601String().substring(0, 10);
