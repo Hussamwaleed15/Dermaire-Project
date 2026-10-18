@@ -463,6 +463,41 @@ class _RoutineScreenState extends State<RoutineScreen> {
                     'Morning and Evening group your routine steps; they do not set a clock time. Configure reminders separately in Reminder settings. Follow-up and photo comparison dates require confirmed clinical guidance.',
                   ),
                 ),
+                if (controller.configurationPending != null) ...[
+                  const Text(
+                    'A routine configuration request needs confirmation.',
+                  ),
+                  OutlinedButton(
+                    onPressed: controller.saving || controller.loading
+                        ? null
+                        : () => controller.recoverConfiguration(),
+                    child: const Text('Check original routine request'),
+                  ),
+                  if (controller.configurationPending?.lookupStatus ==
+                      'unknown')
+                    OutlinedButton(
+                      onPressed: controller.saving || controller.loading
+                          ? null
+                          : () => controller.recoverConfiguration(
+                              retryOriginal: true,
+                            ),
+                      child: const Text('Retry original routine request'),
+                    ),
+                  if (controller.configurationPending?.lookupStatus ==
+                          'expired' ||
+                      controller.configurationPending?.availability == 'erased')
+                    OutlinedButton(
+                      onPressed:
+                          controller.saving ||
+                              controller.loading ||
+                              controller.stale
+                          ? null
+                          : () => controller.recoverConfiguration(
+                              finishUnavailableReview: true,
+                            ),
+                      child: const Text('Finish routine receipt review'),
+                    ),
+                ],
                 if (controller.error != null ||
                     controller.stale ||
                     controller.loading ||

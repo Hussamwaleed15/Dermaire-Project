@@ -1312,6 +1312,10 @@ class ApiService extends ChangeNotifier {
             !(method == 'GET' &&
                 RegExp(
                   r'^products/[A-Za-z0-9_-]+/operation-attempts/(patch|delete)/[A-Za-z0-9_-]{16,128}$',
+                ).hasMatch(path)) &&
+            !(method == 'GET' &&
+                RegExp(
+                  r'^(routine/configuration-attempts/(create|update|stop)|experiments/operation-attempts/(create|edit|activate|finish|cancel|evaluate|legacy_pause))/[A-Za-z0-9_-]{16,128}(\?resource_id=[A-Za-z0-9_-]+)?$',
                 ).hasMatch(path)) ||
         !['GET', 'POST', 'PATCH', 'DELETE'].contains(method)) {
       throw ArgumentError('Invalid patient resource');
@@ -1346,8 +1350,18 @@ class ApiService extends ChangeNotifier {
         (!RegExp(r'^[A-Za-z0-9_-]{16,128}$').hasMatch(idempotencyKey) ||
             !(path == 'products' && method == 'POST' ||
                 RegExp(r'^products/[A-Za-z0-9_-]+$').hasMatch(path) &&
-                    ['PATCH', 'DELETE'].contains(method)))) {
-      throw ArgumentError('Invalid product operation identity');
+                    ['PATCH', 'DELETE'].contains(method) ||
+                path == 'routine/entries' && method == 'POST' ||
+                RegExp(r'^routine/entries/[A-Za-z0-9_-]+$').hasMatch(path) &&
+                    ['PATCH', 'DELETE'].contains(method) ||
+                path == 'experiments' && method == 'POST' ||
+                RegExp(r'^experiments/[A-Za-z0-9_-]+$').hasMatch(path) &&
+                    ['PATCH', 'DELETE'].contains(method) ||
+                RegExp(
+                      r'^experiments/[A-Za-z0-9_-]+/(activate|finish|evaluate)$',
+                    ).hasMatch(path) &&
+                    method == 'POST'))) {
+      throw ArgumentError('Invalid foundation operation identity');
     }
     final request = http.Request(method, Uri.parse('$baseUrl/$path'));
     request.followRedirects = false;

@@ -53,8 +53,8 @@ newer current data, current absence, malformed/scope/error states, late sessions
 controller reconstruction (explicitly not process persistence), actual UI.
 
 Next: integrate routine/experiment receipts with their own domain-specific original
-projections and revisions, then minimal privacy-safe durable recovery handles and
-real persistence-boundary tests. Extend already implemented messaging/plan/clinical/
+projections and revisions, then the F6e storage audit and persistence-boundary verification when an
+approved suitable storage mechanism is available (verified blocker below). Extend already implemented messaging/plan/clinical/
 Agent recovery without rebuilding their architecture or restoring stale authority.
 
 ## Storage audit and policy
@@ -75,3 +75,33 @@ Full encrypted payload restoration may require separately approved secure-storag
 configuration; a minimal-handle design must not claim that capability.
 
 F6d-1 gate:27 new regressions; all1652 tests pass, analyzer clean. Fresh pub get succeeded at continuation baseline. Expired/erased receipt review rereads receipt and current state before explicit Finish receipt review; it neither replays nor fabricates original content. Unknown cannot be dismissed by that action. No restart claim in this increment.
+
+## F6e storage investigation — BLOCKED durable identity/payload persistence
+
+The installed shared_preferences2.5.5 README explicitly says writes may reach disk
+asynchronously and are not guaranteed persisted when the call returns; it must not
+store critical data. A read-after-write from its cache is not a durable receipt.
+Both old and newer preferences APIs remain preference storage, not a transactional
+secure operation journal. The application has no configured secure payload store
+or transactional mobile database. Source audit found only existing preferences
+and memory state. No native dependency/configuration was added.
+
+Therefore this wave does not store critical operation keys/body snapshots in
+preferences and claim restart safety. Clinical/message/invitation/token payloads
+also remain prohibited there. Safe full F6e needs a reviewed durable journal and,
+for sensitive exact replay, platform-appropriate protected storage, its persistence
+and deletion guarantees and real device verification. Native setup requires Amr's
+explicit approval under this task. This is a Flutter/platform blocker, not a new
+API requirement for Hussam. Other independent F6d/F6f–k work continues.
+
+Until implemented: logout/account switch/session expiry clear memory, operation
+keys and sensitive bodies; no old-account payload is restored. Process death loses
+memory; no restart-safe claim is made, nor are keys synthesized as replacements.
+There is no on-disk recovery schema to migrate or corrupt in this increment. Future
+storage must fail closed on corrupt/unsupported schema, verify owner/role/current
+consent before any lookup, preserve original scopes/preconditions, and erase scoped
+content on logout/withdrawal/account deletion under an explicit retention policy.
+Pending encrypted-body restoration and real persistence-boundary tests remain
+BLOCKED rather than being replaced by controller-recreation tests.
+
+F6d-2 routine configuration:29 new tests, all1681 pass; analyzer clean, pub get succeeded. Fresh runtime inspection lists macOS only; flutter emulators reports no emulator sources. Android/iOS runtime validation is BLOCKED, not performed.

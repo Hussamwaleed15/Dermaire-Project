@@ -1,8 +1,9 @@
 import 'dart:async';
-import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import '../services/api_service.dart';
 import '../services/request_failure.dart';
+import '../integration/configuration_receipt.dart';
+import '../integration/contract.dart';
 
 abstract class RoutineRepository {
   Future<List<Map<String, dynamic>>> read(String resource);
@@ -15,6 +16,118 @@ abstract class RoutineRepository {
 
 class RemoteRoutineRepository implements RoutineRepository {
   final api = ApiService.instance;
+  static const intentId = 'configuration:routine';
+  ConfigurationPending? get pending =>
+      api.integrationIntents[intentId] is ConfigurationPending
+      ? api.integrationIntents[intentId] as ConfigurationPending
+      : null;
+  void guard(ConfigurationPending op) {
+    if (!api.isCurrentSession(op.generation) ||
+        api.observationOwner != op.owner ||
+        !api.canReadPatientClinicalStatus ||
+        !identical(pending, op)) {
+      throw const FormatException('Routine request session changed');
+    }
+  }
+
+  Future<Map<String, dynamic>> dispatchConfiguration(
+    ConfigurationPending op,
+  ) async {
+    guard(op);
+    final wasUncertain = op.uncertain;
+    try {
+      final original =
+          await api.patientResource(
+                op.path,
+                op.generation,
+                method: op.method,
+                payload: op.body,
+                expectedRevision: op.expectedRevision,
+                idempotencyKey: op.key,
+              )
+              as Map<String, dynamic>;
+      if (!RoutineController.validRow(original, 'user_configured') ||
+          op.resource != null && original['id'] != op.resource ||
+          !op.body.entries.every(
+            (e) => RoutineController.sameWire(original[e.key], e.value),
+          )) {
+        throw const FormatException('Invalid original routine response');
+      }
+      final current =
+          await api.patientResource(
+                'routine/entries/${original['id']}',
+                op.generation,
+              )
+              as Map<String, dynamic>;
+      if (!RoutineController.validRow(current, 'user_configured') ||
+          !RoutineController.sameWire(original, current)) {
+        throw const FormatException('Routine current readback changed');
+      }
+      guard(op);
+      api.integrationIntents.remove(intentId);
+      return current;
+    } catch (failure) {
+      if (identical(pending, op)) {
+        if (!wasUncertain &&
+            failure is IntegrationFailure &&
+            [400, 403, 404, 409, 410, 412, 422, 428].contains(failure.status)) {
+          api.integrationIntents.remove(intentId);
+        } else {
+          op.uncertain = true;
+        }
+      }
+      rethrow;
+    }
+  }
+
+  Future<bool> reconcileConfiguration({
+    bool retryOriginal = false,
+    bool finishUnavailableReview = false,
+  }) async {
+    final op = pending;
+    if (op == null) return true;
+    guard(op);
+    final raw = await api.patientResource(op.lookupPath, op.generation);
+    guard(op);
+    final receipt = ConfigurationReceipt.parse(raw, op);
+    op.lookupStatus = receipt.status;
+    op.availability = receipt.availability;
+    if (receipt.status == 'unknown') {
+      op.uncertain = true;
+      if (!retryOriginal) return false;
+      await dispatchConfiguration(op);
+      return true;
+    }
+    final original = receipt.original;
+    if (original != null &&
+        (!RoutineController.validRow(original, 'user_configured') ||
+            original['id'] != receipt.resource ||
+            original['revision'] != receipt.revision)) {
+      throw const FormatException('Wrong original routine snapshot');
+    }
+    try {
+      final current =
+          await api.patientResource(
+                'routine/entries/${receipt.resource}',
+                op.generation,
+              )
+              as Map<String, dynamic>;
+      if (!RoutineController.validRow(current, 'user_configured') ||
+          current['id'] != receipt.resource) {
+        throw const FormatException('Invalid current routine');
+      }
+    } on PatientResourceMissing {
+      /* Historical receipt does not restore an erased row. */
+    }
+    guard(op);
+    if ((receipt.status == 'expired' || receipt.availability == 'erased') &&
+        !finishUnavailableReview) {
+      return false;
+    }
+    api.integrationIntents.remove(intentId);
+    return true;
+  }
+
   @override
   Future<List<Map<String, dynamic>>> read(String resource) async {
     final generation = api.sessionGeneration;
@@ -49,6 +162,15 @@ class RemoteRoutineRepository implements RoutineRepository {
     String? expectedUpdatedAt,
     int? expectedRevision,
   }) async {
+    if (!api.canReadPatientClinicalStatus || api.observationOwner == null) {
+      throw RequestFailure.session();
+    }
+    if (!(resource == 'entries' && method == 'POST' ||
+        RegExp(r'^entries/[A-Za-z0-9_-]+$').hasMatch(resource) &&
+            method == 'PATCH' ||
+        resource == 'adherence' && method == 'POST')) {
+      throw ArgumentError('Unsupported routine write');
+    }
     final generation = api.sessionGeneration;
     var patch = Map<String, dynamic>.of(payload);
     int? precondition;
@@ -69,6 +191,24 @@ class RemoteRoutineRepository implements RoutineRepository {
       precondition = expectedRevision;
       patch.removeWhere((k, v) => current[k] == v);
       if (patch.isEmpty) return current;
+    }
+    if (resource != 'adherence') {
+      if (pending != null) {
+        throw const FormatException('Resolve original routine request first');
+      }
+      final op = ConfigurationPending(
+        domain: 'routine',
+        operation: method == 'POST' ? 'create' : 'update',
+        owner: api.observationOwner!,
+        generation: generation,
+        path: 'routine/$resource',
+        body: patch,
+        method: method,
+        resource: method == 'POST' ? null : resource.split('/').last,
+        expectedRevision: precondition,
+      );
+      api.integrationIntents[intentId] = op;
+      return dispatchConfiguration(op);
     }
     final receipt =
         await api.patientResource(
@@ -103,15 +243,7 @@ class RemoteRoutineRepository implements RoutineRepository {
       }
       return verified;
     }
-    final id = receipt['id'] as String;
-    final verified =
-        await api.patientResource('routine/entries/$id', generation)
-            as Map<String, dynamic>;
-    if (!RoutineController.validRow(verified, 'user_configured') ||
-        jsonEncode(receipt) != jsonEncode(verified)) {
-      throw const FormatException('Routine readback changed');
-    }
-    return verified;
+    throw const FormatException('Unsupported routine operation');
   }
 }
 
@@ -130,6 +262,67 @@ class RoutineController extends ChangeNotifier {
             !ApiService.instance.canReadPatientClinicalStatus)) {
       session = ApiService.instance.sessionGeneration;
       clear();
+    }
+  }
+
+  ConfigurationPending? get configurationPending =>
+      remote && ApiService.instance.canReadPatientClinicalStatus
+      ? (repository as RemoteRoutineRepository).pending
+      : null;
+  Future<bool> recoverConfiguration({
+    bool retryOriginal = false,
+    bool finishUnavailableReview = false,
+  }) async {
+    if (_disposed ||
+        saving ||
+        loading ||
+        !remote ||
+        configurationPending == null) {
+      return false;
+    }
+    final ticket = _generation, original = configurationPending!;
+    saving = true;
+    error = null;
+    notifyListeners();
+    try {
+      final resolved = await (repository as RemoteRoutineRepository)
+          .reconcileConfiguration(
+            retryOriginal: retryOriginal,
+            finishUnavailableReview: finishUnavailableReview,
+          );
+      if (_disposed || ticket != _generation) return false;
+      if (resolved) {
+        uncertain.remove(
+          original.resource == null
+              ? 'entries'
+              : 'entries/${original.resource}',
+        );
+      }
+      saving = false;
+      await refresh();
+      if (_disposed || _generation != ticket + 1) return false;
+      if (!stale) {
+        error = resolved
+            ? finishUnavailableReview
+                  ? 'Receipt review complete. No original request was repeated.'
+                  : 'Original routine request confirmed. Current routine refreshed.'
+            : configurationPending?.lookupStatus == 'unknown'
+            ? 'The original routine request remains uncertain. No committed receipt is available yet.'
+            : 'The original receipt content is expired or erased. Review current records before finishing receipt review.';
+      }
+      notifyListeners();
+      return resolved && !stale;
+    } catch (failure) {
+      if (_disposed || ticket != _generation) return false;
+      stale = true;
+      error =
+          'Routine request remains unconfirmed. ${failure is IntegrationFailure ? RequestFailure.http(failure.status).message : RequestFailure.from(failure).message}';
+      return false;
+    } finally {
+      if (!_disposed && ticket == _generation) {
+        saving = false;
+        notifyListeners();
+      }
     }
   }
 
@@ -264,7 +457,9 @@ class RoutineController extends ChangeNotifier {
         (remote &&
             (entries == null ||
                 stale ||
-                uncertain.contains(writeKey(resource, payload))))) {
+                uncertain.contains(writeKey(resource, payload)) ||
+                resource.startsWith('entries') &&
+                    configurationPending != null))) {
       return false;
     }
     if (resource == 'adherence' &&
@@ -308,14 +503,18 @@ class RoutineController extends ChangeNotifier {
           entries != null &&
           history != null;
       if (!confirmed && remote && !_disposed && _generation == generation + 1) {
-        uncertain.add(writeKey(resource, payload));
+        if (configurationPending != null) {
+          uncertain.add(writeKey(resource, payload));
+        }
         stale = true;
         notifyListeners();
       }
       return confirmed;
     } catch (failure) {
       if (generation != _generation || _disposed) return false;
-      final problem = RequestFailure.from(failure);
+      final problem = failure is IntegrationFailure
+          ? RequestFailure.http(failure.status)
+          : RequestFailure.from(failure);
       if (remote) {
         // Only definite configuration PATCH rejection permits a refreshed
         // edit. Adherence409 is not proof of the original report's outcome.
