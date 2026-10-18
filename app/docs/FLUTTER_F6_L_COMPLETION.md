@@ -143,3 +143,39 @@ actual environment evidence and clear host/device/backend/process-death boundari
 Broader patient/doctor all-feature journeys remain PARTIAL; device execution BLOCKED.
 
 L9a gate: focused4 workflows, full1879, analyzer/pub get clean, diff clean.
+
+## L5 remaining receipt coverage — source inventory rechecked
+
+| Domain | Actual recovery contract | Current boundary |
+|---|---|---|
+| Invitation issue/claim | keyed original grant/clinical attempt, current original grant checks | Existing AccessInvitationController; restart still unavailable |
+| Selected/bulk revoke | keyed consent attempt + independent current grant | L1 selected/current verification; bulk historical-only label retained |
+| Messaging consent open | POST threads without a general key/receipt route | Existing explicit grant-bound open/read; no synthetic universal receipt |
+| Message send | key + thread attempt + original consent/grant | Existing ConversationController; current-read/unknown handling preserved |
+| Follow-up acknowledge/reschedule/cancel | key + plan operation attempt, payload CAS | Existing PlanController; L2 adds metadata-only patient cancellation at policy entry |
+| Comparison evaluation request | keyed evaluate attempt/current job | Existing PlanController; receipt is not inference |
+| Evaluation DELETE | query CAS/current same job, no attempt endpoint | L2b original job scope/current read; replaced-job historical recovery PARTIAL |
+| Agent submit/doctor decision | defined original session/action/CAS repeat + current state | Existing server_agent_controller; no general synthetic lookup/session discovery |
+| Notification preferences | revision CAS and independent current preference read | Existing NoticeSettingsController, no invented keyed receipt |
+| Notification read/unread | direct current state, no cross-device CAS/attempt | Existing serialized UI, remote ordering still a verified backend boundary |
+
+## L8a messaging presentation
+
+Actual patient/doctor conversation now groups adjacent saved messages by UTC day,
+uses readable UTC times and full timestamp semantics, preserves server sequence
+order and peer in-app read watermark, and adds stable per-session/thread scroll
+storage identity. Message rows remain lazy in the original ListView; no full-history
+rendering or new PHI cache. A saved/read message is never labelled device delivery.
+Original send/reconciliation, paging and withdrawal logic are unchanged.
+
+Files: lib/messaging/message_timeline.dart, messaging_ui.dart,
+test/wave_message_timeline_test.dart.6 new tests: UTC offset/day boundary,
+sequence/group boundaries, real conversation for patient/doctor × light/dark at
+320px/200% reduced motion; no mutation sent by reading. Focused31 passed.
+Full scroll anchoring during prepended history, notification detail polish and
+Agent overview are NOT claimed complete by this presentation increment.
+
+L8a gate: full1885 (+6), focused31, analyzer clean, diff clean. Wave baseline1808;
+77 new tests across six verified increments. Every prior increment was pushed and
+remote SHA verified before continuing. Final delivery SHA is the commit containing
+this ledger and is reported after remote verification in the delivery message.

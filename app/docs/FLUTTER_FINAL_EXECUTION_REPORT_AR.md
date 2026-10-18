@@ -195,3 +195,68 @@ L2b: إضافة إلغاء وظيفة تقييم المقارنة من مدخل 
 
 L2b رُفع وتطابق4ba7c12c6398d3ef771b810147b597d0fd044919.
 L9a: رحلة Widgets مترابطة من بوابة السلامة إلى سحب منحة محددة ثم إلغاء الخطة والتقييم المنفصل ثم Logout وحساب ثانٍ، بأربع حالات Light/Dark وخط عادي/200% وReduced Motion. نفس السيناريو له مدخلintegration_test جاهز للجهاز، أضيفت له تبعيةFlutter SDK للاختبار فقط دون تغيير native. نجحpub get والتحليل وكل1879 اختبارًا (+4). الاختبار على الجهاز لم يُشغّل؛ الملف تم تحليله ثابتًا فقط. تعليمات التشغيل والحدود فيFLUTTER_DEVICE_VALIDATION.md. هذه Fake HTTP وليست Backend E2E أو إثبات تخزين بعد موت العملية، والرحلة الكاملة لكل خصائص المريض والطبيب ما زالت PARTIAL.
+
+L9a رُفع وتطابق3041fb6e90810c78402d977064220109d278d96d.
+L8a: تجميع الرسائل حسب يومUTC مع وقت مقروء ووصف وصول دلالي كامل للتاريخ، والحفاظ على ترتيبSequence وإقرار القراءة الحقيقي داخل التطبيق. الصفوف تظل تُبنى تدريجيًا، ومفتاح موضع التمرير مرتبط بالجلسة والمحادثة؛ لا ادعاء اكتمال تثبيت الموضع عند إضافة التاريخ. نجح التحليل وكل1885 اختبارًا (+6)، منها31 مركّزة للمريض والطبيب و320px/200% والوضعين. لا تعديل في عقود الرسائل أو أي ادعاء تسليمPush.
+
+## تسليم دفعة F6-L — الحالة النهائية المحدودة
+
+- نقطة البداية:c7eb85f85a49610760620c7ccb09bfbd6324d6cc، main نظيف ومتطابق معorigin عند البداية وكلfetch لاحق دون تغييرات متعارضة.
+- DONE في حدود التنفيذ: L1 سحب منحة محددة، L2a سحب المشاركة في خطة، L2b إلغاء تقييم مستقل، L3a مسح القراءات السريرية المرفوضة، L9a رحلة السحب والخروج وتبديل الحساب، L8a عرض الرسائل. أضيفت3 شاشات حقيقية داخل مدخل السلامة، لا إعادة تصميم للتطبيق.
+- DONE تقييم L4 المعماري فقط: البدائل والمقترح والمتطلبات والاختبارات والموافقات موثقة فيFLUTTER_SECURE_RECOVERY_DECISION.md، دون ادعاء تنفيذ المخزن.
+- PARTIAL: L3 عبر جميع الشاشات والمحررات، L5 استعادة العمليات التاريخية عند استبدال وظيفة التقييم، L7 عرض التقدم والتاريخ الشامل، L8 إشعارات/تثبيت تمرير التاريخ، L9 رحلة جميع خصائص المريض والطبيب. الوظائف السابقة محفوظة؛ لا تمثيل هذه الأجزاء كمكتملة.
+- NOT STARTED كتوسعات جديدة في هذه الدفعة: تحسينات Agent overview وNotification UX الأوسع، لا حذف للوظائف السابقة.
+- BLOCKED L4 التنفيذ والتعافي بعد موت العملية: يلزم اختيار وفحصBinding التخزين والموافقة الصريحة على native ثم إثبات الحفظ/الحذف/الأعطال على جهاز. لا بيانات حساسة فيSharedPreferences ولا ادعاءExactly-once.
+- BLOCKED L10 Android/iOS runtime: غياب Android SDK وأي جهاز/محاكي موبايل متاح. مدخلIntegration Test جاهز ومحلّل فقط، لم يُنفّذ على جهاز. تعليمات آمنة فيFLUTTER_DEVICE_VALIDATION.md؛ لم تُغيّر أدوات أو إعدادات native.
+- BLOCKED خارجيًا: نماذجInference ومزودPush الحقيقي واكتشاف جلساتAgent حسب المتطلبات الموثقة لحسام. أعيد فحصها منSource الحالي؛ لا أنظمة Backend/Tester/Production/DB/Azure معدلة، ولا بيانات سريرية حقيقية.
+
+الفحوصات: baseline1808؛ النهائي1885 (+77). analyze نظيف، pub get ناجح، diff check نظيف. النتائج المركّزة لكل جزء48/44/77/65/4/31، وهي فحوصات متداخلة وليست مجموع اختبارات فريد. HTTP Fake يرفضHosts الحقيقية. Widget ≠ جهاز، Fake HTTP ≠ Backend E2E، Controller جديد ≠ Process-death recovery.
+
+الـCommits المرفوعة التي تحقق تطابقها قبل جزء الرسائل الأخير:
+
+- 35bf7d0fe7afb283ff6b0b86fce03be9ad4c9c7a — L1.
+- dc24dfc4ebb50aafcd88e828930252c7d41d9bc8 — L2a ومقترحL4.
+- 242f8d2b9ef52ffb60ef689f845ec0101587f263 — L3a.
+- 4ba7c12c6398d3ef771b810147b597d0fd044919 — L2b.
+- 3041fb6e90810c78402d977064220109d278d96d — L9a/L10 harness.
+
+SHA النهائي هوcommit الذي يحوي قسم L8a وهذا التقرير، وترد قيمته الكاملة في رسالة التسليم بعدpush والتحقق منremote وحالة الشجرة. كل تغييرات الدفعة داخلapp/؛ SDK integration_test تبعية اختبار فقط، دون تحرير إعداداتAndroid/iOS.
+
+الخطوات التالية بالترتيب:
+
+1. محول تاريخ تقييم metadata-only لحسم وظيفة أصلية استُبدلت دون لمس الوظيفة الجديدة، مع فحوص الترقيم والصلاحيات.
+2. استكمال اختبارات الرحلات عبر كل خصائص المريض والطبيب، وإلغاء الأذونات من جلسة ثانية وردود الصور/الإشعارات المتأخرة.
+3. تحسيناتAgent والإشعارات وتثبيت تمرير التاريخ مع العقود الحالية؛ احتياجات الهوية/الترقيم/discovery في تقرير حسام، دون اختلاقها.
+4. مراجعةBinding SQLCipher/مفاتيح المنصة وإعدادdiff أصلي محدد للحصول على موافقة عمرو، ثم اختباراتdurability حقيقية قبل نقل الحالة منBLOCKED.
+5. بعد تجهيز جهاز معتمد، تشغيل مدخلintegration_test المحدد معFake HTTP فقط، ثم توسيع اختبارات الكاميرا/التشغيل/الخلفية دون Production.
+
+### ملفات الدفعة الفعلية منc7eb85f
+
+- `app/docs/FLUTTER_BACKEND_GAPS_FOR_HUSSAM.md`
+- `app/docs/FLUTTER_DEVICE_VALIDATION.md`
+- `app/docs/FLUTTER_F6_L_COMPLETION.md`
+- `app/docs/FLUTTER_FINAL_EXECUTION_REPORT_AR.md`
+- `app/docs/FLUTTER_IMPLEMENTATION_STATUS.md`
+- `app/docs/FLUTTER_SECURE_RECOVERY_DECISION.md`
+- `app/integration_test/withdrawal_smoke_test.dart`
+- `app/lib/clinical/clinical_controller.dart`
+- `app/lib/consent/clinician_withdrawal.dart`
+- `app/lib/consent/evaluation_withdrawal.dart`
+- `app/lib/consent/plan_withdrawal.dart`
+- `app/lib/home_controller.dart`
+- `app/lib/messaging/message_timeline.dart`
+- `app/lib/messaging/messaging_ui.dart`
+- `app/lib/observations/observation_controller.dart`
+- `app/lib/psm/psm_controller.dart`
+- `app/lib/services/api_service.dart`
+- `app/pubspec.lock`
+- `app/pubspec.yaml`
+- `app/test/clinical_status_test.dart`
+- `app/test/support/withdrawal_workflow.dart`
+- `app/test/wave_clinical_read_privacy_test.dart`
+- `app/test/wave_entry_withdrawal_test.dart`
+- `app/test/wave_evaluation_withdrawal_test.dart`
+- `app/test/wave_message_timeline_test.dart`
+- `app/test/wave_plan_withdrawal_test.dart`
+- `app/test/wave_selective_withdrawal_test.dart`
+- `app/test/wave_withdrawal_workflow_test.dart`

@@ -5,6 +5,7 @@ import '../clinical/clinical_ui.dart' show clinicalTime;
 import '../integration/private_view.dart';
 import 'messaging_controller.dart';
 import 'messaging_models.dart';
+import 'message_timeline.dart';
 
 class CareThreadsScreen extends StatefulWidget {
   const CareThreadsScreen({super.key, this.patient});
@@ -170,6 +171,7 @@ class _CareConversationState extends State<CareConversationScreen> {
       ],
     ),
     builder: (context, c) => DermairePage(
+      key: PageStorageKey('messages:${c.generation}:${thread.id}'),
       eyebrow: 'Consented care conversation',
       title: c.role == 'patient'
           ? 'Messages with your doctor'
@@ -199,41 +201,15 @@ class _CareConversationState extends State<CareConversationScreen> {
           const Text(
             'No messages yet. Send only information you choose to share.',
           ),
-        for (final message in c.messages)
-          Align(
-            alignment: message.actor == c.owner
-                ? Alignment.centerRight
-                : Alignment.centerLeft,
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 460),
-              child: DermaireCard(
-                color: message.actor == c.owner
-                    ? Theme.of(context).colorScheme.primaryContainer
-                    : null,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      message.actor == c.owner
-                          ? 'You'
-                          : c.role == 'patient'
-                          ? 'Doctor'
-                          : 'Patient',
-                      style: const TextStyle(fontWeight: FontWeight.w700),
-                    ),
-                    Text(message.body),
-                    Text(
-                      '${clinicalTime(message.createdAt)} · sequence ${message.sequence}',
-                    ),
-                    if (message.actor == c.owner &&
-                        (c.role == 'patient' ? c.doctorRead : c.patientRead) >=
-                            message.sequence)
-                      const Text('Acknowledged read in app'),
-                  ],
-                ),
-              ),
-            ),
-          ),
+        const Text(
+          'Messages are grouped by UTC day. Read acknowledgements reflect saved in-app reading state.',
+        ),
+        ...buildCareMessageTimeline(
+          messages: c.messages,
+          owner: c.owner,
+          role: c.role,
+          peerRead: c.role == 'patient' ? c.doctorRead : c.patientRead,
+        ),
         if (c.messages.length >= 500)
           const Text('Displaying a bounded window of 500 messages.'),
         OutlinedButton(
