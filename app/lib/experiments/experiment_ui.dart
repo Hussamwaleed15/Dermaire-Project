@@ -146,6 +146,34 @@ class _ExperimentsViewState extends State<ExperimentsView> {
             const Text(
               'Change one routine variable. Results describe observations and associations, not diagnosis or causality.',
             ),
+            if (c.configurationPending != null) ...[
+              const Text(
+                'An experiment request needs confirmation. Current records and the original result are separate.',
+              ),
+              OutlinedButton(
+                onPressed: c.saving || c.loading
+                    ? null
+                    : () => c.recoverConfiguration(),
+                child: const Text('Check original experiment request'),
+              ),
+              if (c.configurationPending?.lookupStatus == 'unknown')
+                OutlinedButton(
+                  onPressed: c.saving || c.loading
+                      ? null
+                      : () => c.recoverConfiguration(retryOriginal: true),
+                  child: const Text('Retry original experiment request'),
+                ),
+              if (c.configurationPending?.lookupStatus == 'expired' ||
+                  c.configurationPending?.availability == 'erased')
+                OutlinedButton(
+                  onPressed: c.saving || c.loading || c.stale
+                      ? null
+                      : () => c.recoverConfiguration(
+                          finishUnavailableReview: true,
+                        ),
+                  child: const Text('Finish experiment receipt review'),
+                ),
+            ],
             if (checkingActivation) const Text('Loading linked routine…'),
             if (c.error != null ||
                 c.stale ||

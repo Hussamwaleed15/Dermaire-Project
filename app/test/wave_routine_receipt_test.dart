@@ -22,7 +22,7 @@ class RoutineWire {
   String operation = 'edit', loss = 'after';
   String? key, originalBody, match;
   bool lose = true;
-  int writes = 0, lookupStatus = 200;
+  int writes = 0, lookupStatus = 200, mutationStatus = 200;
   Map<String, dynamic> Function(Map<String, dynamic>)? change;
   Completer<http.Response>? delayed;
   final lookupSent = Completer<void>();
@@ -85,6 +85,7 @@ class RoutineWire {
         expect(r.headers['If-Match'], match);
       }
       expect(match, operation == 'create' ? null : '"7"');
+      if (mutationStatus != 200) return http.Response('{}', mutationStatus);
       if (loss == 'before' && lose) throw TimeoutException('synthetic');
       if (original == null) {
         original = {
@@ -334,4 +335,37 @@ void main() {
       await ApiService.instance.init();
     }, () => MockClient(w.call));
   });
+  test(
+    'definite routine create422 does not orphan a pending creation lock',
+    () async {
+      final w = RoutineWire()
+        ..operation = 'create'
+        ..current = null
+        ..lose = false
+        ..mutationStatus = 422;
+      await w.run((c) async {
+        expect(await w.submit(c), false);
+        expect(c.configurationPending, isNull);
+        expect(c.uncertain, isEmpty);
+        final rejectedKey = w.key;
+        await c.refresh();
+        w.mutationStatus = 200;
+        w.key = null;
+        expect(
+          await c.write('entries', {
+            'product_id': 'product',
+            'schedule': 'AM',
+            'frequency': 'daily',
+            'start_date': '2026-10-18',
+            'instructions': 'Reviewed replacement',
+            'am_order': 0,
+            'pm_order': 0,
+          }),
+          true,
+        );
+        expect(w.key, isNot(rejectedKey));
+        expect(w.writes, 2);
+      });
+    },
+  );
 }

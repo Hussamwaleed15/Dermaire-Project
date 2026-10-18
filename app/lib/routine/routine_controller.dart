@@ -516,11 +516,9 @@ class RoutineController extends ChangeNotifier {
           ? RequestFailure.http(failure.status)
           : RequestFailure.from(failure);
       if (remote) {
-        // Only definite configuration PATCH rejection permits a refreshed
-        // edit. Adherence409 is not proof of the original report's outcome.
-        if (!(method == 'PATCH' &&
-            resource.startsWith('entries/') &&
-            problem.kind == RequestFailureKind.rejected)) {
+        // Configuration writes retain their own exact pending operation. An
+        // adherence409 still has no receipt and remains uncertain.
+        if (resource == 'adherence' || configurationPending != null) {
           uncertain.add(writeKey(resource, payload));
         }
         stale = true;

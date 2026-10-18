@@ -53,12 +53,16 @@ class Wire {
         request.headers['Routine-If-Match'],
         path.endsWith('/activate') ? '"7"' : null,
       );
-      expect(jsonDecode(request.body), isNot(contains('expected_version')));
+      final requestBody = request.method == 'DELETE' && request.body.isEmpty
+          ? <String, dynamic>{}
+          : jsonDecode(request.body) as Map<String, dynamic>;
+      if (request.method == 'DELETE') expect(request.body, isEmpty);
+      expect(requestBody, isNot(contains('expected_version')));
       if (!sent.isCompleted) sent.complete();
       if (pending != null) return pending!.future;
       if (timeout) throw TimeoutException('synthetic');
       if (status != 200) return http.Response('{}', status);
-      final body = jsonDecode(request.body) as Map<String, dynamic>;
+      final body = requestBody;
       if (path.endsWith('/activate')) {
         row = experiment('active');
       } else if (path.endsWith('/finish')) {

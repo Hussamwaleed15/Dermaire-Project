@@ -33,3 +33,25 @@ will be added only after source verification during implementation.
 - Doctor Agent request responses omit patient_id, so Flutter cannot safely link a request to authorized patient context. Add an authorized patient reference/deep link (still bound to original session/grant).
 - Doctor request inbox is bounded to100 with no cursor. Add authorized pagination before claiming complete historical request retrieval.
 - Model/provider transport remains unavailable. Flutter displays real broker outcomes, not generated assistant replies or autonomous clinical actions.
+
+## Continuation source recheck and actionable priority
+
+Rechecked during F6 continuation from3efe4b5/cdfc8da against current registered
+agent_platform/notifications routes, action_out DTO, model_providers and disabled
+notification provider. No backend edits or live calls. Existing foundation
+product/routine/experiment committed receipt APIs are implemented: they are NOT
+backend blockers, and Flutter is now consuming them.
+
+| Priority / endpoint | Verified limitation | Required contract / Flutter consequence |
+|---|---|---|
+| P0 recovery: foundation attempt GET routes and current domain services | Only committed/unknown/expired; missing row does not fence an earlier in-flight request | If definitive abandonment/replacement is required, design owner-bound server reservation/fencing or terminal rejection semantics. Flutter cannot safely equate unknown with failed or issue a replacement key; current exact replay/unknown lock remains intentional |
+| P1 Agent: GET /agent/sessions/{id}, no list route | Known ID and original login/TTL required; no restart discovery or revoke-all | Authenticated minimal scoped discovery plus explicit revocation, defining cross-login behavior without reviving authority; otherwise restart session restoration remains unavailable |
+| P1 Doctor Agent: GET /agent/requests and action_out | Newest100 only, no cursor and no patient_id/authorized patient link in output | Add authorized patient reference and cursor. Bind to original session/grant; Flutter otherwise opens no guessed patient context and cannot claim complete history |
+| P1 Messaging notice: GET /notifications item | source_id is a message ID; no authorized thread reference | Add thread_id or authenticated resolution, with current original consent/grant recheck. Flutter currently opens authorized conversation list, not an invented direct thread |
+| P1 read ordering: PUT /notifications/{id}/read and /unread | No version or attempt identity | If cross-device ordering is required, add CAS/current-state/attempt semantics; UI serialization alone cannot guarantee remote ordering |
+| External: provider/model adapters | DisabledPushProvider, unavailable Agent inference and unvalidated comparison artifact/transport remain | Supply reviewed provider/model setup and real device/clinical evidence separately; no frontend synthetic delivery, response or diagnosis |
+
+Secure local restart storage and unavailable mobile emulators are Flutter/platform
+constraints documented in FLUTTER_F6_RECOVERY_CONTRACTS.md, not new API tasks for
+Hussam. No claim that unknown is rejected, that a new VIEW grant restores an old
+request, or that reviewed synthetic output establishes clinical validation.
