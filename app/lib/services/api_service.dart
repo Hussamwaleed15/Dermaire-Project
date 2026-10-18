@@ -307,6 +307,7 @@ class ApiService extends ChangeNotifier {
   Map<String, dynamic>? _consentUser;
   ServerEntryMetadata? _entryMetadata;
   final Map<String, PendingIntent> integrationIntents = {};
+  final Map<String, String> integrationReferences = {};
   String? get requiredSafetyPolicyVersion => _entryMetadata?.requiredPolicy;
   bool get profileReviewRequired =>
       hasConfirmedSafetyAcceptance &&
@@ -820,6 +821,7 @@ class ApiService extends ChangeNotifier {
     inFlightDoctorWrites.clear();
     pendingDoctorReceipts.clear();
     integrationIntents.clear();
+    integrationReferences.clear();
     _entryMetadata = null;
     uncertainGrantRevocations.clear();
     _sessionUserId = null;

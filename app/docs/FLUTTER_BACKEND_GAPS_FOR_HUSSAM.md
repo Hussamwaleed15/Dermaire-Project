@@ -27,3 +27,9 @@ will be added only after source verification during implementation.
 - Message notification source_id is a message ID without thread_id or a resolution route. Add an authorized thread/deep-link reference to avoid requiring manual conversation selection. Flutter currently opens authorized conversations honestly.
 - Read/unread has no revision/attempt identity: cross-device/late-write ordering cannot be proven. If ordered edits are required, add CAS plus current-state/attempt semantics.
 - Push provider remains disabled and mobile token configuration is absent. No fake registration. Confirm provider/token/plugin plan separately; no configuration changed.
+
+## F5 verified contract needs
+- Agent session GET needs a known ID; there is no active-session list/discovery or revoke-all endpoint. Flutter intentionally does not persist PHI/auth sessions. Add authenticated minimal session discovery + explicit bulk revocation if process-restart recovery is required; define original-login/TTL behavior without reviving old authority.
+- Doctor Agent request responses omit patient_id, so Flutter cannot safely link a request to authorized patient context. Add an authorized patient reference/deep link (still bound to original session/grant).
+- Doctor request inbox is bounded to100 with no cursor. Add authorized pagination before claiming complete historical request retrieval.
+- Model/provider transport remains unavailable. Flutter displays real broker outcomes, not generated assistant replies or autonomous clinical actions.

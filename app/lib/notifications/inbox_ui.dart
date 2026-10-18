@@ -1,3 +1,4 @@
+import '../agent/server_agent_ui.dart';
 import 'package:flutter/material.dart';
 import '../dermaire_widgets.dart';
 import '../entry/entry_motion.dart';
@@ -123,8 +124,14 @@ class _InboxState extends State<NotificationInboxScreen> {
                     'The notification references a message. Select its authorized conversation to read current history.',
                   ),
                 if (n.kind == 'agent_request')
-                  const Text(
-                    'Agent request details are not integrated in this increment. This notification does not mean clinical action was executed.',
+                  OutlinedButton(
+                    onPressed: () => openEntry(
+                      context,
+                      c.role == 'doctor'
+                          ? const ClinicianRequestsScreen()
+                          : const ServerAgentScreen(),
+                    ),
+                    child: const Text('Open authorized Agent requests'),
                   ),
               ],
             ),

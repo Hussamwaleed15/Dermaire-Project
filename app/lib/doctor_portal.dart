@@ -1,3 +1,4 @@
+import 'agent/server_agent_ui.dart';
 import 'notifications/inbox_ui.dart';
 import 'plans/plan_ui.dart';
 import 'messaging/messaging_ui.dart';
@@ -255,6 +256,11 @@ class _DoctorPortalScreenState extends State<DoctorPortalScreen>
                 onPressed: () =>
                     openEntry(context, const NotificationInboxScreen()),
                 child: const Text('Notification inbox'),
+              ),
+              OutlinedButton(
+                onPressed: () =>
+                    openEntry(context, const ClinicianRequestsScreen()),
+                child: const Text('Patient Agent requests'),
               ),
             ],
           ),

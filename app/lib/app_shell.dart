@@ -1,3 +1,4 @@
+import 'agent/server_agent_ui.dart';
 import 'plans/plan_ui.dart';
 import 'messaging/messaging_ui.dart';
 import 'package:flutter/material.dart';
@@ -258,6 +259,13 @@ class ProfileTab extends StatelessWidget {
         title: 'Notification inbox',
         subtitle: 'Current updates, read state and reminder preferences',
         onTap: () => openPage(context, const NotificationInboxScreen()),
+      ),
+      ActionCard(
+        icon: '✦',
+        title: 'Agent sessions & requests',
+        subtitle:
+            'Consented context, saved notes and explicit request outcomes',
+        onTap: () => openPage(context, const ServerAgentScreen()),
       ),
       ActionCard(
         icon: '✉',

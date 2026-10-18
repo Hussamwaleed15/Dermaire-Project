@@ -16,7 +16,7 @@ This is a live execution ledger, not a claim of overall completion.
 | Typed clinical follow-ups | PARTIAL | plans/ models, controllers, UI; actual create/ack/cancel/reschedule/review/history/reconciliation; comparison-specific UX and policy-withdrawal extension pending |
 | Inbox/preferences/reminders | PARTIAL | notifications/inbox_models.dart, inbox_controller.dart, inbox_ui.dart; real inbox/read/history/CAS preferences/routine reminders/withdrawal; Agent deep links and device provider remain unavailable |
 | Plan-linked comparison | PARTIAL | plans/* typed original-grant plan/source/baseline, private images, guided capture association, evaluation consent/status/review/attempts; model unavailable; policy-loss withdrawal/restart recovery remain F6 |
-| Agent sessions/actions/requests | NOT STARTED | agent/* old scaffold; persistent broker not integrated yet |
+| Agent sessions/actions/requests | PARTIAL | agent/server_agent_* actual consent/session/context/user-turns/preview/confirm/routing/doctor decisions/revocation; unsupported model/session discovery remain explicit |
 | Genuine model inference | BLOCKED | Provider/model unavailable in actual backend; no synthetic assistant responses |
 | Push delivery | BLOCKED | No real configured mobile token/provider transport/device proof; inbox independent |
 | Cross-domain privacy/recovery | PARTIAL | existing generation/current401/disposal guards retained; extend and test every new domain |
@@ -34,3 +34,6 @@ F2b remote verified60e6bae6c75e1d70035991ca5ac4d0b51de998bb.
 
 F4 comparison: full1440 (+22), analyzer clean; pub get succeeded.
 F3 remote verified756c89c8dab47f4317ad8f920d9ed5d7e67013a9.
+
+F5 server Agent broker: full1475 (+35), analyzer clean; pub get succeeded.
+F4 remote verifiedaaf8d56d60e9363775c53677abfe955559bfd838.
