@@ -105,7 +105,10 @@ class RemoteProductRepository implements ProductRepository {
   Future<Product> update(Product product) async {
     final generation = api.sessionGeneration, owner = api.observationOwner!;
     final latest = await read(product.id, generation, owner);
-    if (product.serverUpdatedAt != latest.serverUpdatedAt) {
+    if (product.owner != owner ||
+        product.serverRevision != latest.serverRevision ||
+        product.revisionProtected != latest.revisionProtected ||
+        product.serverUpdatedAt != latest.serverUpdatedAt) {
       throw const FormatException('Product changed. Reopen the editor.');
     }
     final desired = product.toApi(), existing = latest.toApi();
@@ -120,6 +123,7 @@ class RemoteProductRepository implements ProductRepository {
         generation,
         method: 'PATCH',
         payload: patch,
+        expectedRevision: product.serverRevision,
       ),
       owner,
     );
@@ -133,8 +137,27 @@ class RemoteProductRepository implements ProductRepository {
 
   @override
   Future<void> delete(String id) async {
-    final generation = api.sessionGeneration;
-    await api.patientResource('products/$id', generation, method: 'DELETE');
+    final generation = api.sessionGeneration, owner = api.observationOwner!;
+    await deleteChecked(await read(id, generation, owner));
+  }
+
+  // The controller supplies the exact server snapshot the patient reviewed.
+  Future<void> deleteChecked(Product product) async {
+    final generation = api.sessionGeneration, owner = api.observationOwner!;
+    final id = product.id;
+    final latest = await read(id, generation, owner);
+    if (product.owner != owner ||
+        product.serverRevision != latest.serverRevision ||
+        product.revisionProtected != latest.revisionProtected ||
+        product.serverUpdatedAt != latest.serverUpdatedAt) {
+      throw const FormatException('Product changed. Reopen the editor.');
+    }
+    await api.patientResource(
+      'products/$id',
+      generation,
+      method: 'DELETE',
+      expectedRevision: product.serverRevision,
+    );
     try {
       await api.patientResource('products/$id', generation);
     } on PatientResourceMissing {

@@ -24,6 +24,8 @@ class Product {
     required this.createdAt,
     required this.updatedAt,
     this.serverUpdatedAt,
+    this.serverRevision,
+    this.revisionProtected,
     this.owner,
     this.brand,
     this.productType,
@@ -43,6 +45,9 @@ class Product {
     this.inExperiment = false,
   });
 
+  // Absent only for legacy responses. Never inferred from timestamps.
+  final int? serverRevision;
+  final bool? revisionProtected;
   final DateTime? serverUpdatedAt;
   final String? owner;
   final String id;
@@ -94,6 +99,8 @@ class Product {
     DateTime? updatedAt,
   }) => Product(
     serverUpdatedAt: serverUpdatedAt,
+    serverRevision: serverRevision,
+    revisionProtected: revisionProtected,
     owner: owner,
     id: id ?? this.id,
     name: name ?? this.name,
@@ -180,6 +187,15 @@ class Product {
         )) {
       throw const FormatException('Unsupported product contract');
     }
+    if (json.containsKey('revision') ||
+        json.containsKey('revision_protected')) {
+      if (json['revision'] is! int ||
+          (json['revision'] as int) < 1 ||
+          (json['revision'] as int) > 2147483647 ||
+          json['revision_protected'] is! bool) {
+        throw const FormatException('Invalid product revision');
+      }
+    }
     final parsed = Product.fromJson({
       for (final entry in json.entries)
         (_apiKeys.entries
@@ -195,15 +211,27 @@ class Product {
           createdAt: timestamp(json['created_at'], naiveUtc: true),
           updatedAt: updated,
         )
-        .withServerIdentity(json['user_id'] as String, updated);
+        .withServerIdentity(
+          json['user_id'] as String,
+          updated,
+          revision: json['revision'] as int?,
+          protected: json['revision_protected'] as bool?,
+        );
   }
-  Product withServerIdentity(String owner, DateTime version) => Product(
+  Product withServerIdentity(
+    String owner,
+    DateTime version, {
+    int? revision,
+    bool? protected,
+  }) => Product(
     id: id,
     name: name,
     category: category,
     createdAt: createdAt,
     updatedAt: updatedAt,
     serverUpdatedAt: version,
+    serverRevision: revision,
+    revisionProtected: protected,
     owner: owner,
     brand: brand,
     productType: productType,

@@ -27,6 +27,26 @@ class RequestFailure extends ApiException {
       RequestFailureKind.denied,
       'Access was denied. Check your account before retrying.',
     ),
+    409 => RequestFailure._(
+      RequestFailureKind.rejected,
+      'This change conflicts with current records. Refresh and review before retrying.',
+    ),
+    410 => RequestFailure._(
+      RequestFailureKind.rejected,
+      'The operation or retained result is no longer available. Refresh current records.',
+    ),
+    412 => RequestFailure._(
+      RequestFailureKind.rejected,
+      'This record changed. Refresh and reopen the editor before saving again.',
+    ),
+    422 => RequestFailure._(
+      RequestFailureKind.rejected,
+      'The request was not accepted. Review the details before retrying.',
+    ),
+    428 => RequestFailure._(
+      RequestFailureKind.rejected,
+      'A current record revision is required. Refresh and reopen the editor.',
+    ),
     429 => RequestFailure._(
       RequestFailureKind.rateLimited,
       'Too many requests. Wait before trying again.',

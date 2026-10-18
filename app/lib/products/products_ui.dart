@@ -804,6 +804,10 @@ class _ProductEditorScreenState extends State<ProductEditorScreen> {
     final now = DateTime.now();
     final product = Product(
       id: widget.product?.id ?? 'product-${now.microsecondsSinceEpoch}',
+      owner: widget.product?.owner,
+      serverUpdatedAt: widget.product?.serverUpdatedAt,
+      serverRevision: widget.product?.serverRevision,
+      revisionProtected: widget.product?.revisionProtected,
       name: ProductValidation.clean(name.text),
       brand: ProductValidation.clean(brand.text).isEmpty
           ? null

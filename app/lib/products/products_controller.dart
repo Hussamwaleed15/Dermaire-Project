@@ -259,7 +259,11 @@ class ProductsController extends ChangeNotifier {
       );
     }
     return _commit(() async {
-      await _repository.delete(id);
+      if (_repository is RemoteProductRepository) {
+        await _repository.deleteChecked(product);
+      } else {
+        await _repository.delete(id);
+      }
       return _products.where((item) => item.id != id).toList();
     }, 'Product removed.');
   }
@@ -327,14 +331,15 @@ class ProductsController extends ChangeNotifier {
         );
       }
       return ProductOperationResult.success(success);
-    } on Object {
+    } on Object catch (failure) {
       if (_disposed || generation != _generation) {
         return const ProductOperationResult.failure(
           'Session changed. Please sign in again.',
         );
       }
       isStale = true;
-      errorMessage = 'Change not confirmed. Refresh online before retrying.';
+      errorMessage =
+          'Change not confirmed. ${RequestFailure.from(failure).message}';
       return ProductOperationResult.failure(errorMessage!);
     } finally {
       if (!_disposed && generation == _generation) {

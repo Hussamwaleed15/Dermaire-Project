@@ -41,3 +41,20 @@ artifact/secure model image loading/clinical validation, genuine Agent model pro
 Future policy text/version publishing before unauthenticated registration needs an
 explicit product/server contract; current registration retains the actual legacy
 server default rather than inventing a version. Existing terms are not model advice.
+
+## Verified implementation delta after the starting audit
+
+The matrix above records the starting audit, not current missing-feature claims.
+Use FLUTTER_IMPLEMENTATION_STATUS.md for remaining work. Actual pushed increments:
+F1 current policy/profile review901a512; F2a messaging f2c74dc; F2b follow-ups
+60e6bae; F3 inbox/preferences/reminders756c89c; F4 plan-linked comparison aaf8d56;
+F5 scoped server Agent3377f68; F6a explicit clinician linking5eee1d8; F6b real
+clinical snapshots5006c796829a9c3d0bc88bed049ff3818c9622f7. These are bounded
+integrations, not claims of model inference, push delivery or complete recovery.
+Patient/doctor combined clinical reads use actual /clinical-snapshot routes and
+original VIEW authority; independent existing projections remain separate reads.
+
+F6c-1 adds actual product editor identity preservation and original-revision
+PATCH/DELETE preconditions. Routine/experiment CAS, configuration/adherence
+receipts/history, process-restart recovery and remaining policy-loss withdrawals
+are still Flutter work; their existing backend routes are not missing APIs.

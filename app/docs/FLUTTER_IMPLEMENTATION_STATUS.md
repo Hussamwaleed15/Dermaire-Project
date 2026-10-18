@@ -9,7 +9,7 @@ This is a live execution ledger, not a claim of overall completion.
 | Entry identity/light-dark logos | DONE preserved | dermaire_logo.dart, entry/*; supplied assets unchanged |
 | Patient Home/atomic snapshots | PARTIAL | clinical/clinical_snapshot*.dart actual patient/doctor shared-clock transaction bundle linked from Home/Reports and patient context; independent controllers remain separate reads |
 | Profile/observations/private capture | PARTIAL | account/*, observations/*, capture/*; new association/receipts pending |
-| Products/routines/adherence/experiments | PARTIAL | products/*, routine/*, experiments/*; new CAS and operation receipts/history pending |
+| Products/routines/adherence/experiments | PARTIAL | products/* actual editor retains server identity and original quoted PATCH/DELETE revisions; routine/*, experiments/* CAS and all configuration receipts/history/restart recovery pending |
 | Deterministic PSM | PARTIAL | psm/*; latest schema/freshness compatibility pending; not image AI |
 | Doctor grant management/entry | PARTIAL | doctor/access_invitation.dart actual intended-doctor VIEW issue/key attempts/current scoped claim; doctor_models.dart optional real scope readback; policy-loss selected revoke/restart recovery remain |
 | Persistent messaging | PARTIAL | messaging/messaging_models.dart, messaging_controller.dart, messaging_ui.dart; real enrollment/list/send/read/paging/withdraw/reconciliation integrated; context/day-group/scroll polish in F6 |
@@ -42,3 +42,5 @@ F6a clinician linking: full1507 (+32), analyzer clean; pub get succeeded.
 F5 remote verified3377f683c862d1698d6af8dc2078b4831048810a.
 
 F6b clinical snapshots: full1538 (+31), analyzer clean; pub get succeeded. F6a remote verified5eee1d888a0c08cf0cf708c0b5c6e7bfb845e43a.
+
+F6c-1 products: full1566 (+28), analyzer clean; pub get succeeded. F6b remote verified5006c796829a9c3d0bc88bed049ff3818c9622f7.

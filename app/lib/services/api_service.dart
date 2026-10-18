@@ -1295,6 +1295,7 @@ class ApiService extends ChangeNotifier {
     int generation, {
     String method = 'GET',
     Map<String, dynamic>? payload,
+    int? expectedRevision,
   }) async {
     void guard() {
       if (!isCurrentSession(generation) || !canReadPatientClinicalStatus) {
@@ -1309,9 +1310,19 @@ class ApiService extends ChangeNotifier {
         !['GET', 'POST', 'PATCH', 'DELETE'].contains(method)) {
       throw ArgumentError('Invalid patient resource');
     }
+    if (expectedRevision != null &&
+        (!RegExp(r'^products/[A-Za-z0-9_-]+$').hasMatch(path) ||
+            !['PATCH', 'DELETE'].contains(method) ||
+            expectedRevision < 1 ||
+            expectedRevision > 2147483647)) {
+      throw ArgumentError('Invalid product revision precondition');
+    }
     final request = http.Request(method, Uri.parse('$baseUrl/$path'));
     request.followRedirects = false;
     request.headers.addAll(_headers(payload != null));
+    if (expectedRevision != null) {
+      request.headers['If-Match'] = '"$expectedRevision"';
+    }
     if (payload != null) request.body = jsonEncode(payload);
     final response = await _client
         .send(request)
