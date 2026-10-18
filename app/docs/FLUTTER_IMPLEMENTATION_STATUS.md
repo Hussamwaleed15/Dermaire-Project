@@ -1,3 +1,15 @@
+# Latest verified checkpoint — F6-N2026-10-19
+Code SHA23ee7e33fc0fd53ac7e915ada5435374da9d9030; first native bridge78844d6.
+Real SQLCipher3.5.2/native-assets and protected key bridges implemented, isolated
+SecureRecoverySession integrated with existing coordinator/product receipt reader.
+2021 full host tests (+39), analyzer clean.2 iOS native tests and bounded actual
+SIGKILL/open-WAL storage recovery passed. file_protection_verified=false on simulator;
+strict adapter correctly refuses. Android runtime BLOCKED. Production journaling
+DISABLED / activation NOT APPROVED. Overall qualification PARTIAL, not full F6/app
+completion. See FLUTTER_F6_N_SECURE_RECOVERY_REPORT_AR.md. Historical ledger follows.
+
+---
+
 # Latest verified checkpoint — F6-M2026-10-18
 
 Implementation SHA `0b1de6e0462f56fe58abbf6e4a80f7f44348c8a2`; final documentation follows separately.

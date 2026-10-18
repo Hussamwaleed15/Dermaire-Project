@@ -1,3 +1,16 @@
+# F6-N implementation decision — 2026-10-19
+Real SQLCipher adapter and Android Keystore/iOS Keychain bridges implemented at
+23ee7e3 after explicit native approval and approved3.5.2 dependency amendment.
+No production composition/activation.2021 host tests and analyzer clean;2 iOS
+native tests plus bounded SIGKILL/open-WAL storage recovery. Strict simulator
+fileProtectionMismatch remains fail-closed, qualification injection exists only
+inside the explicit debug integration entry. Android runtime BLOCKED, hardware
+Data Protection and complete crash/backup/key invalidation gates remain incomplete.
+Lifecycle/schema/retention/erasure limits: FLUTTER_F6_N_LIFECYCLE.md.
+The historical pending-approval/no-adapter statements below are superseded.
+
+---
+
 # L4 — Secure recovery engineering decision
 
 2026-10-18. Status: architecture assessed; platform implementation BLOCKED pending

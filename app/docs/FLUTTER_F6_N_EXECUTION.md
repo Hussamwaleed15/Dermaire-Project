@@ -26,7 +26,7 @@ These31 are candidate host tests, not yet final app regression/device evidence.
 
 N1 gate:1993 full host tests (+11), analyzer clean, diff check clean;1 native iOS key test passed. Android remains static-only.
 
-N2 in progress: approved3.5.2 resolved in real app:8 transitive additions, existing
+N2 in progress: approved3.5.2 resolved in real app:8 package additions (1 direct,7 transitive), existing
 versions preserved (hooks2.0.2, code_assets1.2.1, record_use0.6.0). Actual focused
 suite63 passed. Encrypted disk adapter validates nonempty cipher_version, raw256-bit
 random key, encrypted header, memory security, temp memory, WAL/FULL, integrity,

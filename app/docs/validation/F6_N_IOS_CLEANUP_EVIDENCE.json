@@ -1,0 +1,11 @@
+{
+  "phase": "cleanup",
+  "passed": true,
+  "qualification_only": true,
+  "cipher_version": "4.18.0 community",
+  "sqlite_version": "3.53.4",
+  "file_protection_verified": false,
+  "writes": 0,
+  "receipts": 0,
+  "current_reads": 0
+}

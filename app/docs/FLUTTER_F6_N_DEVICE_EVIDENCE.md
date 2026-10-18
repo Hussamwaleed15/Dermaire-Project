@@ -87,3 +87,8 @@ native key test without the simulator-protection define, then build/install the
 synthetic target (no qualification bypass), provide explicit phase control, terminate
 and relaunch using actual package ID com.example.dermaire_app. Do not install tools
 or change app IDs/minimums/signing to make this report green.
+
+Final cleanup phase also passed on the simulator:0 writes/reads; native fence, key
+deletion, DB/WAL/SHM removal and refusal of createKey in fenced namespace. Restored
+simulator to its original shutdown state. This is selected synthetic namespace
+cleanup, not flash/backup/Keychain-orphan cryptographic-erasure proof.

@@ -1,3 +1,17 @@
+# F6-N update — APPROVED IMPLEMENTATION / NOT APPROVED FOR PRODUCTION
+2026-10-19. Amr explicitly approved the native architecture and then the specific
+sqlite3 3.5.2 amendment after3.7.1 failed Flutter meta resolution. Applied reviewed
+native scope with safety hardening in the same files/channels; no SDK minimum,
+identifier, signing, entitlement or SwiftPM changes. Exact executed code23ee7e3.
+2021 host tests, analyzer clean,2 iOS native integration tests; bounded SIGKILL
+storage qualification passed. Strict iOS file protection unavailable on simulator
+and correctly refused. Android SDK absent. This supersedes the proposal-only status
+below; the old draft patch is HISTORICAL and must not be reapplied.
+See FLUTTER_F6_N_SECURE_RECOVERY_REPORT_AR.md and FLUTTER_F6_N_DEPENDENCY_AMENDMENT.md.
+Production mutations remain on prior memory behavior. Rollout NOT APPROVED.
+
+---
+
 # Secure operation journal — concrete native approval proposal
 
 Status: PROPOSED / NOT APPROVED / NOT APPLIED.2026-10-18.

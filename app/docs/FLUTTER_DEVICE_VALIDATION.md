@@ -1,3 +1,15 @@
+# Latest device result — F6-N2026-10-19
+The existing iPhone17/iOS26.0.1 simulator built native-assets SQLCipher with SwiftPM.
+2 native key/strict-refusal integration tests passed; actual SIGKILL44531→44562
+with live DB/WAL/SHM recovered original identity with0 new writes,1 receipt and1
+current read. This run used explicit test-only simulator qualification injection;
+file_protection_verified=false. Strict lib/native protection remains fail-closed.
+Not proof of complete secure production restart recovery or hardware protection.
+Android SDK still absent; no Android runtime test.2021 host tests/analyzer clean.
+Exact commands/evidence/limits: FLUTTER_F6_N_DEVICE_EVIDENCE.md. Historical F6-M below.
+
+---
+
 # Flutter device validation — verified2026-10-18
 
 Current bounded result: **iOS simulator synthetic smoke PASSED**. Android execution
