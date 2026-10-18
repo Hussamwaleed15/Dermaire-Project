@@ -1351,7 +1351,8 @@ class ApiService extends ChangeNotifier {
             !(path == 'products' && method == 'POST' ||
                 RegExp(r'^products/[A-Za-z0-9_-]+$').hasMatch(path) &&
                     ['PATCH', 'DELETE'].contains(method) ||
-                path == 'routine/entries' && method == 'POST' ||
+                ['routine/entries', 'routine/adherence'].contains(path) &&
+                    method == 'POST' ||
                 RegExp(r'^routine/entries/[A-Za-z0-9_-]+$').hasMatch(path) &&
                     ['PATCH', 'DELETE'].contains(method) ||
                 path == 'experiments' && method == 'POST' ||

@@ -4,6 +4,7 @@ import '../services/api_service.dart';
 import '../services/request_failure.dart';
 import '../integration/configuration_receipt.dart';
 import '../integration/contract.dart';
+import 'adherence_operation.dart';
 
 abstract class RoutineRepository {
   Future<List<Map<String, dynamic>>> read(String resource);
@@ -128,6 +129,137 @@ class RemoteRoutineRepository implements RoutineRepository {
     return true;
   }
 
+  static const adherenceIntentId = 'routine:adherence';
+  AdherencePending? get adherencePending =>
+      api.integrationIntents[adherenceIntentId] is AdherencePending
+      ? api.integrationIntents[adherenceIntentId] as AdherencePending
+      : null;
+  void guardAdherence(AdherencePending op) {
+    if (!api.isCurrentSession(op.generation) ||
+        api.observationOwner != op.owner ||
+        !api.canReadPatientClinicalStatus ||
+        !identical(adherencePending, op)) {
+      throw const FormatException('Adherence request session changed');
+    }
+  }
+
+  Future<Map<String, dynamic>> dispatchAdherence(AdherencePending op) async {
+    guardAdherence(op);
+    final wasUncertain = op.uncertain;
+    try {
+      final record =
+          await api.patientResource(
+                op.path,
+                op.generation,
+                method: 'POST',
+                payload: op.body,
+                idempotencyKey: op.key,
+              )
+              as Map<String, dynamic>;
+      final nested = record['receipt'];
+      if (nested is! Map) {
+        throw const FormatException('Missing keyed adherence receipt');
+      }
+      final receipt = AdherenceReceipt.parse({...nested, 'result': record}, op);
+      if (!RoutineController.validRow(record, 'user_reported') ||
+          receipt.status != 'committed') {
+        throw const FormatException('Unconfirmed original report');
+      }
+      final rows =
+          await api.patientResource(
+                'routine/adherence?routine_entry_id=${resourceId(op.body['routine_entry_id'])}&limit=100&offset=0',
+                op.generation,
+              )
+              as List;
+      if (rows.any(
+            (r) =>
+                r is! Map<String, dynamic> ||
+                !RoutineController.validRow(r, 'user_reported') ||
+                r['routine_entry_id'] != op.body['routine_entry_id'],
+          ) ||
+          rows.map((r) => (r as Map)['id']).toSet().length != rows.length) {
+        throw const FormatException('Invalid current report window');
+      }
+      final match = rows
+          .whereType<Map<String, dynamic>>()
+          .where((r) => r['id'] == record['id'])
+          .firstOrNull;
+      if (match != null && !RoutineController.sameWire(match, record) ||
+          match == null && rows.length < 100) {
+        throw const FormatException('Adherence current history unconfirmed');
+      }
+      guardAdherence(op);
+      api.integrationIntents.remove(adherenceIntentId);
+      return match ?? record;
+    } catch (failure) {
+      if (identical(adherencePending, op)) {
+        if (!wasUncertain &&
+            failure is IntegrationFailure &&
+            failure.status == 422) {
+          api.integrationIntents.remove(adherenceIntentId);
+        } else {
+          op.uncertain = true;
+        }
+      }
+      rethrow;
+    }
+  }
+
+  Future<bool> reconcileAdherence({
+    bool retryOriginal = false,
+    bool finishExpiredReview = false,
+  }) async {
+    final op = adherencePending;
+    if (op == null) return true;
+    guardAdherence(op);
+    final value = await api.patientResource(
+      '${op.attemptPath}/${op.key}',
+      op.generation,
+    );
+    guardAdherence(op);
+    final receipt = AdherenceReceipt.parse(value, op);
+    op.lookupStatus = receipt.status;
+    if (receipt.status == 'unknown') {
+      op.uncertain = true;
+      if (!retryOriginal) return false;
+      await dispatchAdherence(op);
+      return true;
+    }
+    if (receipt.original != null &&
+        !RoutineController.validRow(receipt.original!, 'user_reported')) {
+      throw const FormatException('Malformed original adherence evidence');
+    }
+    // Current history is independent of the original configuration in the receipt.
+    final rows =
+        await api.patientResource(
+              'routine/adherence?routine_entry_id=${resourceId(op.body['routine_entry_id'])}&limit=100&offset=0',
+              op.generation,
+            )
+            as List;
+    if (rows.any(
+      (r) =>
+          r is! Map<String, dynamic> ||
+          !RoutineController.validRow(r, 'user_reported'),
+    )) {
+      throw const FormatException('Invalid current adherence history');
+    }
+    // Lookup itself reads the immutable owned report. A current bounded history
+    // page may omit an old report; never insert it or call absence a failure.
+    final match = rows
+        .whereType<Map<String, dynamic>>()
+        .where((r) => r['id'] == receipt.resource)
+        .firstOrNull;
+    if (match != null &&
+        receipt.original != null &&
+        !RoutineController.sameWire(match, receipt.original)) {
+      throw const FormatException('Immutable report changed');
+    }
+    guardAdherence(op);
+    if (receipt.status == 'expired' && !finishExpiredReview) return false;
+    api.integrationIntents.remove(adherenceIntentId);
+    return true;
+  }
+
   @override
   Future<List<Map<String, dynamic>>> read(String resource) async {
     final generation = api.sessionGeneration;
@@ -210,40 +342,16 @@ class RemoteRoutineRepository implements RoutineRepository {
       api.integrationIntents[intentId] = op;
       return dispatchConfiguration(op);
     }
-    final receipt =
-        await api.patientResource(
-              'routine/$resource',
-              generation,
-              method: method,
-              payload: patch,
-              expectedRevision: precondition,
-            )
-            as Map<String, dynamic>;
-    final evidence = resource == 'adherence';
-    if (!RoutineController.validRow(
-          receipt,
-          evidence ? 'user_reported' : 'user_configured',
-        ) ||
-        !patch.entries.every((e) => receipt[e.key] == e.value)) {
-      throw const FormatException('Unconfirmed routine mutation');
+    if (adherencePending != null) {
+      throw const FormatException('Resolve original adherence request first');
     }
-    if (evidence) {
-      final rows =
-          (await api.patientResource(
-                    'routine/adherence?routine_entry_id=${receipt['routine_entry_id']}&limit=100&offset=0',
-                    generation,
-                  )
-                  as List)
-              .cast<Map<String, dynamic>>();
-      final verified = rows.where((r) => r['id'] == receipt['id']).firstOrNull;
-      if (verified == null ||
-          !RoutineController.validRow(verified, 'user_reported') ||
-          !RoutineController.sameWire(receipt, verified)) {
-        throw const FormatException('Adherence readback not confirmed');
-      }
-      return verified;
-    }
-    throw const FormatException('Unsupported routine operation');
+    final op = AdherencePending(
+      owner: api.observationOwner!,
+      generation: generation,
+      body: patch,
+    );
+    api.integrationIntents[adherenceIntentId] = op;
+    return dispatchAdherence(op);
   }
 }
 
@@ -317,6 +425,57 @@ class RoutineController extends ChangeNotifier {
       stale = true;
       error =
           'Routine request remains unconfirmed. ${failure is IntegrationFailure ? RequestFailure.http(failure.status).message : RequestFailure.from(failure).message}';
+      return false;
+    } finally {
+      if (!_disposed && ticket == _generation) {
+        saving = false;
+        notifyListeners();
+      }
+    }
+  }
+
+  AdherencePending? get adherencePending =>
+      remote && ApiService.instance.canReadPatientClinicalStatus
+      ? (repository as RemoteRoutineRepository).adherencePending
+      : null;
+  Future<bool> recoverAdherence({
+    bool retryOriginal = false,
+    bool finishExpiredReview = false,
+  }) async {
+    if (_disposed || saving || loading || !remote || adherencePending == null) {
+      return false;
+    }
+    final ticket = _generation, original = adherencePending!;
+    saving = true;
+    error = null;
+    notifyListeners();
+    try {
+      final resolved = await (repository as RemoteRoutineRepository)
+          .reconcileAdherence(
+            retryOriginal: retryOriginal,
+            finishExpiredReview: finishExpiredReview,
+          );
+      if (_disposed || ticket != _generation) return false;
+      if (resolved) uncertain.remove(writeKey('adherence', original.body));
+      saving = false;
+      await refresh();
+      if (_disposed || _generation != ticket + 1) return false;
+      if (!stale) {
+        error = resolved
+            ? finishExpiredReview
+                  ? 'Expired report receipt reviewed. No report was repeated.'
+                  : 'Original adherence report confirmed. Current history refreshed.'
+            : adherencePending?.lookupStatus == 'unknown'
+            ? 'The original report remains uncertain. An occupied reporting slot is not proof of this request.'
+            : 'The original receipt expired. Review current history; do not repeat this report.';
+      }
+      notifyListeners();
+      return resolved && !stale;
+    } catch (failure) {
+      if (_disposed || ticket != _generation) return false;
+      stale = true;
+      error =
+          'Report remains unconfirmed. ${failure is IntegrationFailure ? RequestFailure.http(failure.status).message : RequestFailure.from(failure).message}';
       return false;
     } finally {
       if (!_disposed && ticket == _generation) {
@@ -431,6 +590,16 @@ class RoutineController extends ChangeNotifier {
       lastConfirmedAt = DateTime.now().toUtc();
       entries = configured;
       history = reported;
+      if (remote) {
+        if (configurationPending == null) {
+          uncertain.removeWhere(
+            (key) => key == 'entries' || key.startsWith('entries/'),
+          );
+        }
+        if (adherencePending == null) {
+          uncertain.removeWhere((key) => key.startsWith('adherence:'));
+        }
+      }
       historyHasMore = reported.length == 100;
       loadingMore = false;
       stale = false;
@@ -459,7 +628,8 @@ class RoutineController extends ChangeNotifier {
                 stale ||
                 uncertain.contains(writeKey(resource, payload)) ||
                 resource.startsWith('entries') &&
-                    configurationPending != null))) {
+                    configurationPending != null ||
+                resource == 'adherence' && adherencePending != null))) {
       return false;
     }
     if (resource == 'adherence' &&
@@ -517,8 +687,8 @@ class RoutineController extends ChangeNotifier {
           : RequestFailure.from(failure);
       if (remote) {
         // Configuration writes retain their own exact pending operation. An
-        // adherence409 still has no receipt and remains uncertain.
-        if (resource == 'adherence' || configurationPending != null) {
+        // Adherence409 is not proof that the original report committed.
+        if (adherencePending != null || configurationPending != null) {
           uncertain.add(writeKey(resource, payload));
         }
         stale = true;

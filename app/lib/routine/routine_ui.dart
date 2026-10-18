@@ -86,7 +86,12 @@ class _RoutineScreenState extends State<RoutineScreen> {
   }
 
   Future<void> _editor([Map<String, dynamic>? entry]) async {
-    if (!current || controller.stale || controller.saving) return;
+    if (!current ||
+        controller.stale ||
+        controller.saving ||
+        controller.configurationPending != null) {
+      return;
+    }
     List<Map<String, dynamic>> products = [];
     if (entry == null) {
       try {
@@ -386,6 +391,12 @@ class _RoutineScreenState extends State<RoutineScreen> {
   }
 
   Future<void> _stop(Map<String, dynamic> entry) async {
+    if (!current ||
+        controller.stale ||
+        controller.saving ||
+        controller.configurationPending != null) {
+      return;
+    }
     final yes = await showDialog<bool>(
       context: context,
       builder: (c) => AlertDialog(
@@ -463,6 +474,38 @@ class _RoutineScreenState extends State<RoutineScreen> {
                     'Morning and Evening group your routine steps; they do not set a clock time. Configure reminders separately in Reminder settings. Follow-up and photo comparison dates require confirmed clinical guidance.',
                   ),
                 ),
+                if (controller.adherencePending != null) ...[
+                  const Text(
+                    'An adherence report needs confirmation. Reporting days stay UTC.',
+                  ),
+                  OutlinedButton(
+                    onPressed: controller.saving || controller.loading
+                        ? null
+                        : () => controller.recoverAdherence(),
+                    child: const Text('Check original report'),
+                  ),
+                  if (controller.adherencePending?.lookupStatus == 'unknown')
+                    OutlinedButton(
+                      onPressed: controller.saving || controller.loading
+                          ? null
+                          : () => controller.recoverAdherence(
+                              retryOriginal: true,
+                            ),
+                      child: const Text('Retry original report'),
+                    ),
+                  if (controller.adherencePending?.lookupStatus == 'expired')
+                    OutlinedButton(
+                      onPressed:
+                          controller.saving ||
+                              controller.loading ||
+                              controller.stale
+                          ? null
+                          : () => controller.recoverAdherence(
+                              finishExpiredReview: true,
+                            ),
+                      child: const Text('Finish report receipt review'),
+                    ),
+                ],
                 if (controller.configurationPending != null) ...[
                   const Text(
                     'A routine configuration request needs confirmation.',
@@ -541,6 +584,7 @@ class _RoutineScreenState extends State<RoutineScreen> {
                     onPressed:
                         controller.saving ||
                             controller.stale ||
+                            controller.configurationPending != null ||
                             controller.uncertain.contains('entries')
                         ? null
                         : () => _editor(),
@@ -652,6 +696,8 @@ class _RoutineScreenState extends State<RoutineScreen> {
                                         TextButton(
                                           onPressed:
                                               controller.saving ||
+                                                  controller.adherencePending !=
+                                                      null ||
                                                   controller.stale ||
                                                   controller.uncertain.contains(
                                                     'adherence:${entry['id']}:$day:$slot',

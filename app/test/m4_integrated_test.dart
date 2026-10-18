@@ -78,7 +78,7 @@ class Journey {
         reportPosts++;
         if (failReport) throw TimeoutException('synthetic');
         final report = {
-          ...a.event(),
+          ...a.keyedEvent(owner: owner),
           ...jsonDecode(request.body) as Map<String, dynamic>,
         };
         reports.add(report);

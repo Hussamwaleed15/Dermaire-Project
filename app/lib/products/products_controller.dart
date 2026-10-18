@@ -197,6 +197,9 @@ class ProductsController extends ChangeNotifier {
       if (_disposed || generation != _generation) return;
       lastConfirmedAt = DateTime.now().toUtc();
       _products = products;
+      if (requiresServerSession) {
+        createUncertain = pendingOperation?.kind == 'create';
+      }
       isStale = false;
     } on Object catch (failure) {
       if (_disposed || generation != _generation) return;

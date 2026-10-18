@@ -21,6 +21,31 @@ Map<String, dynamic> event([String id = 'event']) => {
   'configuration_snapshot': r.entry(),
 };
 
+Map<String, dynamic> keyedEvent({
+  String owner = 'patient-1',
+  String id = 'event',
+}) => {
+  ...event(id),
+  'day_basis': 'UTC',
+  'configuration_snapshot': {
+    ...r.entry(),
+    'revision': 1,
+    'revision_protected': false,
+  },
+  'receipt': {
+    'schema_version': 1,
+    'operation': 'routine_adherence',
+    'attempt_id': id,
+    'owner_id': owner,
+    'actor_id': owner,
+    'resource_id': id,
+    'configuration_revision': 1,
+    'status': 'committed',
+    'committed_at': '2026-10-03T12:00:00Z',
+    'expires_at': '2026-11-02T12:00:00Z',
+  },
+};
+
 class Reports extends r.Repository {
   int offset = 0;
   List<Map<String, dynamic>> next = [];
@@ -126,13 +151,15 @@ void main() {
               return http.Response('{}', int.parse(kind));
             }
             stored = true;
-            return http.Response(jsonEncode(event()), 201);
+            expect(req.headers['Idempotency-Key'], isNotNull);
+            expect(req.headers['If-Match'], isNull);
+            return http.Response(jsonEncode(keyedEvent()), 201);
           }
           if (req.url.path.endsWith('/entries')) {
             return http.Response(jsonEncode([r.entry()]), 200);
           }
           return http.Response(
-            jsonEncode(stored && kind == 'confirmed' ? [event()] : []),
+            jsonEncode(stored && kind == 'confirmed' ? [keyedEvent()] : []),
             200,
           );
         }),

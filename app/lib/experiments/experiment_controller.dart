@@ -464,6 +464,7 @@ class ExperimentController extends ChangeNotifier {
       if (generation != _generation || _disposed) return false;
       lastConfirmedAt = DateTime.now().toUtc();
       rows = response;
+      if (remote && configurationPending == null) uncertain.clear();
       stale = false;
       hasMore = response.length == 100;
     } catch (failure) {
