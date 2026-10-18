@@ -1,3 +1,4 @@
+import 'recovery/recovery_ui.dart';
 import 'clinical/clinical_snapshot_ui.dart';
 import 'doctor/access_invitation.dart';
 import 'agent/server_agent_ui.dart';
@@ -241,6 +242,10 @@ class _DoctorPortalScreenState extends State<DoctorPortalScreen>
           ),
         ],
         children: [
+          OutlinedButton(
+            onPressed: () => openEntry(context, const RecoveryReviewScreen()),
+            child: const Text('Pending operation review'),
+          ),
           Wrap(
             spacing: 8,
             runSpacing: 8,

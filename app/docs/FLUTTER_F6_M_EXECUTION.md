@@ -98,3 +98,30 @@ consent/plan_withdrawal.dart, evaluation_withdrawal.dart,
 test/wave_operation_quarantine_test.dart.7 new tests; focused30 with notification
 regressions, full1929; analyzer clean. Read401/403/503 tested for both roles,
 replacement suppression, same/wrong account, explicit logout and metadata rejection.
+
+## M6 recovery engineering — PARTIAL; native adapter BLOCKED approval/runtime
+
+Implemented independent version1 metadata JournalEntry/OperationJournal protocol,
+transaction/CAS-aware persist-before-send coordinator, read-only receipt/current
+reconciliation, retention review locks and ordered durable-fence/key/file cleanup
+orchestration. Test Map journal exists in test/ only and is never wired to the app.
+Actual product create/patch/delete receipt reader reuses the same strict parser
+without constructing payloads/new keys. Patient account and doctor workspace now
+link Pending operation review; scoped memory identities are explicit, product
+receipts/current reads are separate, no identity automatically released/replayed.
+Other domains remain explicitly unsupported for cross-login review.
+
+Files: recovery/operation_journal.dart, product_receipt_reader.dart, recovery_ui.dart,
+products/product_operation.dart, app_shell.dart, doctor_portal.dart,
+test/wave_journal_protocol_test.dart, wave_journal_product_reader_test.dart.
+31 new tests, focused58 with previous27 product tests, full1960, analyzer clean.
+Deterministic tests cover both persistence failures, lost reply, unknown/expired,
+corrupt/newer/oversized schema, wrong account/session, permission loss, concurrent
+send/CAS, stale current record and interrupted cleanup; actual320px200% both themes.
+
+Native candidate sqlite3=3.7.1/source:sqlcipher inspected, official arm64 libraries
+hash verified; iOS Mach-O min12.0 and Android ELF API24. Exact unapplied patch inside
+docs/proposals passes git apply --check. flutter_secure_storage11.2.0 ordinary
+Android writeUnsafe uses apply(), rejected as sufficient critical-key durability.
+See FLUTTER_SECURE_STORAGE_APPROVAL_PROPOSAL.md. No dependency/native file applied,
+no disk adapter, no process-death/relaunch/device proof, no persistence claim.

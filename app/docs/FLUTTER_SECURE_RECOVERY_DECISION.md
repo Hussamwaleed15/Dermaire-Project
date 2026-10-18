@@ -111,3 +111,25 @@ Existing SwiftPM project is preserved; absent CocoaPods alone is not proof Swift
 cannot build. No suitable Android/iOS runtime was available and none was installed.
 All current recovery tests remain session-memory tests, not process-death proof.
 Continue independent L1/L2/L3/UX work while this platform decision awaits approval.
+
+## F6-M2026-10-18 superseding candidate decision
+
+A concrete candidate is now reviewed in FLUTTER_SECURE_STORAGE_APPROVAL_PROPOSAL.md:
+exact sqlite3=3.7.1 native-assets SQLCipher with private custom platform key bridge.
+The earlier statement that no package has been selected is superseded for this
+proposal only; no approval/application/device qualification has occurred. Existing
+SwiftPM/iOS14 and Android effective min24 retained. Official arm64 assets hash/static
+minimums inspected. flutter_secure_storage11.2.0 ordinary Android apply() is not
+sufficient critical-key durable acknowledgement. Do not substitute cached reads.
+
+Independent lib/recovery protocol and31 tests now exist. TestJournal is test-only,
+not a production fallback. Runtime app only exposes scoped memory-quarantine review;
+product reader validates actual original receipt and separately current owner/revision.
+No raw private payload restoration, automatic replay or implicit lock release.
+403/503 preserve pending identity;401/credential expiry quarantine minimal metadata
+before clearing raw payloads. Explicit logout/init/delete erase session memory.
+Legacy doctor-write sets remain outside this bounded quarantine implementation.
+Future durable cleanup on explicit logout differs from auth expiry and must honor
+fenced namespaces through interrupted cleanup. Local review expiry does not prove
+server receipt expiry or permit re-key. Actual disk adapter/process-death recovery
+remains BLOCKED specific native approval and executed mobile qualification.

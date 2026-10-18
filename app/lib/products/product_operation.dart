@@ -54,12 +54,31 @@ class ProductOperationReceipt {
   factory ProductOperationReceipt.parse(
     Object? value,
     ProductPendingOperation op,
-  ) {
+  ) => ProductOperationReceipt.parseIdentity(
+    value,
+    owner: op.owner,
+    kind: op.kind,
+    resource: op.resource,
+    expectedRevision: op.expectedRevision,
+  );
+
+  /// Read-only recovery does not reconstruct a payload or mint an operation key.
+  factory ProductOperationReceipt.parseIdentity(
+    Object? value, {
+    required String owner,
+    required String kind,
+    String? resource,
+    int? expectedRevision,
+  }) {
+    resourceId(owner);
+    if (!['create', 'patch', 'delete'].contains(kind)) {
+      throw const FormatException('Unsupported product receipt operation');
+    }
     if (value is! Map ||
         value['schema_version'] != 1 ||
-        value['owner_id'] != op.owner ||
-        value['actor_id'] != op.owner ||
-        value['operation'] != 'product_${op.kind}' ||
+        value['owner_id'] != owner ||
+        value['actor_id'] != owner ||
+        value['operation'] != 'product_$kind' ||
         value['attempt_id'] is! String ||
         !RegExp(
           r'^[A-Za-z0-9_-]{1,128}$',
@@ -89,9 +108,9 @@ class ProductOperationReceipt {
     if (revision is! int ||
         revision < 1 ||
         revision > 2147483647 ||
-        op.kind == 'create' && revision != 1 ||
-        op.expectedRevision != null && revision <= op.expectedRevision! ||
-        op.resource != null && id != op.resource ||
+        kind == 'create' && revision != 1 ||
+        expectedRevision != null && revision <= expectedRevision ||
+        resource != null && id != resource ||
         !expires.isAfter(recorded) ||
         (status == 'expired'
             ? availability != 'expired'
@@ -114,7 +133,7 @@ class ProductOperationReceipt {
     if (result is! Map<String, dynamic>) {
       throw const FormatException('Missing original product result');
     }
-    if (op.kind == 'delete') {
+    if (kind == 'delete') {
       if (result['deleted'] != true ||
           result['id'] != id ||
           result['revision'] != revision) {
@@ -124,7 +143,7 @@ class ProductOperationReceipt {
     }
     final original = Product.fromApi(result);
     if (original.id != id ||
-        original.owner != op.owner ||
+        original.owner != owner ||
         original.serverRevision != revision) {
       throw const FormatException('Wrong original product result');
     }

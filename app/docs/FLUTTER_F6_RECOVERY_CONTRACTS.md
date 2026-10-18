@@ -107,3 +107,15 @@ BLOCKED rather than being replaced by controller-recreation tests.
 F6d-2 routine configuration:29 new tests, all1681 pass; analyzer clean, pub get succeeded. Fresh runtime inspection lists macOS only; flutter emulators reports no emulator sources. Android/iOS runtime validation is BLOCKED, not performed.
 
 F6d-3 experiment gate1713 (+32) and F6d-4 adherence gate1741 (+28) passed with clean analyzers and pub get. Durable SQL receipts now used for all current product/routine/experiment/adherence UI mutations; this does not establish client process-restart persistence.
+
+## F6-M typed metadata boundary
+
+OperationIdentity stores owner/role, original path/receipt base/key, client payload
+fingerprint and allowlisted resource/grant/job/revisions. No raw body or bearer data.
+Fingerprint is not a backend-comparable digest. ProductReceiptReader supports only
+actual product contracts. It reuses strict parseIdentity and never creates a new
+PendingIntent/key. JournalCoordinator requires a real durable insert/CAS adapter;
+none is wired in production. Unknown/expiry/denial keep identities locked. Comparison
+DELETE cancellation still has no keyed receipt: history review is a distinct actual
+clinical-plan history contract, not a synthetic universal receipt. Original Agent
+login/TTL and invitation validity are not revived by memory quarantine or journal.

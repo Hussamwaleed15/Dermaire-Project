@@ -1,3 +1,4 @@
+import 'recovery/recovery_ui.dart';
 import 'clinical/clinical_snapshot_ui.dart';
 import 'agent/server_agent_ui.dart';
 import 'plans/plan_ui.dart';
@@ -289,6 +290,13 @@ class ProfileTab extends StatelessWidget {
         title: 'Doctor access',
         subtitle: 'Review current server sharing permissions',
         onTap: () => openPage(context, DoctorAccessScreen(state: state)),
+      ),
+      ActionCard(
+        icon: '↻',
+        title: 'Pending operation review',
+        subtitle:
+            'Retained identities after session expiry; no automatic replay',
+        onTap: () => openPage(context, const RecoveryReviewScreen()),
       ),
       ActionCard(
         icon: '♿',

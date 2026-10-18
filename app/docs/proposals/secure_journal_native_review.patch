@@ -1,0 +1,271 @@
+--- a/app/android/app/src/main/kotlin/com/example/dermaire_app/MainActivity.kt
++++ b/app/android/app/src/main/kotlin/com/example/dermaire_app/MainActivity.kt
+@@ -1,5 +1,120 @@
+ package com.example.dermaire_app
+ 
++import android.content.Context
++import android.os.Handler
++import android.os.Looper
++import android.security.keystore.KeyGenParameterSpec
++import android.security.keystore.KeyProperties
++import android.system.Os
++import android.system.OsConstants
+ import io.flutter.embedding.android.FlutterActivity
++import io.flutter.embedding.engine.FlutterEngine
++import io.flutter.plugin.common.MethodChannel
++import java.io.File
++import java.io.FileOutputStream
++import java.security.KeyStore
++import java.security.SecureRandom
++import java.util.concurrent.Executors
++import javax.crypto.Cipher
++import javax.crypto.KeyGenerator
++import javax.crypto.SecretKey
++import javax.crypto.spec.GCMParameterSpec
+ 
+-class MainActivity : FlutterActivity()
++class MainActivity : FlutterActivity() {
++    override fun configureFlutterEngine(engine: FlutterEngine) {
++        super.configureFlutterEngine(engine)
++        JournalKeyBridge(applicationContext).register(engine)
++    }
++}
++
++// PROPOSED, NOT COMPILED OR APPLIED. Runtime qualification is a separate gate.
++private class JournalKeyBridge(context: Context) {
++    private val root = File(context.noBackupFilesDir, "journal-v1")
++    private val worker = Executors.newSingleThreadExecutor()
++    private val main = Handler(Looper.getMainLooper())
++    private val store = KeyStore.getInstance("AndroidKeyStore").apply { load(null) }
++    private fun sync(file: File) {
++        val fd = Os.open(file.path, OsConstants.O_RDONLY or
++            (if (file.isDirectory) OsConstants.O_DIRECTORY else 0), 0)
++        try { Os.fsync(fd) } finally { Os.close(fd) }
++    }
++    private fun write(file: File, data: ByteArray) {
++        val temp = File(file.parentFile, file.name + ".tmp")
++        FileOutputStream(temp).use { it.write(data); it.flush(); it.fd.sync() }
++        check(temp.renameTo(file))
++        sync(file.parentFile!!)
++    }
++    private fun key(alias: String, create: Boolean): SecretKey {
++        (store.getKey(alias, null) as? SecretKey)?.let { return it }
++        check(create) // A missing/invalidated key never silently regenerates.
++        return KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, "AndroidKeyStore").run {
++            init(KeyGenParameterSpec.Builder(alias, KeyProperties.PURPOSE_ENCRYPT or
++                KeyProperties.PURPOSE_DECRYPT).setBlockModes(KeyProperties.BLOCK_MODE_GCM)
++                .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
++                .setUserAuthenticationRequired(false).build())
++            generateKey()
++        }
++    }
++    fun register(engine: FlutterEngine) {
++        MethodChannel(engine.dartExecutor.binaryMessenger, "dermaire/journal-keys-v1")
++            .setMethodCallHandler { call, result ->
++                worker.execute {
++                    try {
++                        val ns = call.argument<String>("namespace") ?: error("namespace")
++                        check(Regex("^[a-f0-9]{64}$").matches(ns))
++                        check(root.isDirectory || root.mkdirs())
++                        sync(root.parentFile!!)
++                        val fence = File(root, "$ns.fence")
++                        val dir = File(root, ns)
++                        val alias = "dermaire.journal.v1.$ns"
++                        val output: Any? = when (call.method) {
++                            "fence" -> { write(fence, byteArrayOf(1)); null }
++                            "destroyKey" -> {
++                                check(fence.exists())
++                                if (store.containsAlias(alias)) store.deleteEntry(alias)
++                                for (name in listOf("wrapped.key", "wrapped.key.tmp")) {
++                                    val file = File(dir, name)
++                                    check(!file.exists() || file.delete())
++                                }
++                                if (dir.exists()) sync(dir)
++                                null
++                            }
++                            "directory", "loadKey", "createKey" -> {
++                                check(!fence.exists())
++                                check(dir.isDirectory || dir.mkdir())
++                                sync(root)
++                                if (call.method == "directory") dir.path else {
++                                    val wrapped = File(dir, "wrapped.key")
++                                    if (!wrapped.exists()) {
++                                        check(call.method == "createKey")
++                                        // Dart adapter must forbid createKey if any DB/WAL exists.
++                                        val raw = ByteArray(32).also { SecureRandom().nextBytes(it) }
++                                        try {
++                                            val cipher = Cipher.getInstance("AES/GCM/NoPadding")
++                                            cipher.init(Cipher.ENCRYPT_MODE, key(alias, true))
++                                            cipher.updateAAD(ns.toByteArray(Charsets.US_ASCII))
++                                            val ciphertext = cipher.doFinal(raw)
++                                            check(cipher.iv.size == 12)
++                                            write(wrapped, byteArrayOf(1) + cipher.iv + ciphertext)
++                                        } finally { raw.fill(0) }
++                                    }
++                                    sync(wrapped); sync(dir)
++                                    val bytes = wrapped.readBytes()
++                                    check(bytes.size == 61 && bytes[0] == 1.toByte())
++                                    val cipher = Cipher.getInstance("AES/GCM/NoPadding")
++                                    cipher.init(Cipher.DECRYPT_MODE, key(alias, false),
++                                        GCMParameterSpec(128, bytes.copyOfRange(1, 13)))
++                                    cipher.updateAAD(ns.toByteArray(Charsets.US_ASCII))
++                                    cipher.doFinal(bytes.copyOfRange(13, bytes.size)).also { check(it.size == 32) }
++                                }
++                            }
++                            else -> error("unsupported")
++                        }
++                        main.post { result.success(output) }
++                    } catch (_: Exception) {
++                        main.post { result.error("journal_key_unavailable", "Protected journal key unavailable", null) }
++                    }
++                }
++            }
++    }
++}
+--- a/app/ios/Runner/AppDelegate.swift
++++ b/app/ios/Runner/AppDelegate.swift
+@@ -1,5 +1,7 @@
+ import Flutter
+ import UIKit
++import Security
++import Darwin
+ 
+ @main
+ @objc class AppDelegate: FlutterAppDelegate, FlutterImplicitEngineDelegate {
+@@ -12,5 +14,89 @@
+ 
+   func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
+     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
++    if let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "DermaireJournalKeys") {
++      JournalKeyBridge.register(registrar)
++    }
+   }
+ }
++
++// PROPOSED, NOT COMPILED OR APPLIED. Runtime qualification is a separate gate.
++private enum JournalKeyBridge {
++  static let queue = DispatchQueue(label: "dermaire.journal.keys")
++  static let service = "dermaire.journal.keys.v1"
++  enum Failure: Error { case unavailable }
++  static func sync(_ url: URL) throws {
++    let fd = Darwin.open(url.path, O_RDONLY)
++    guard fd >= 0 else { throw Failure.unavailable }
++    defer { Darwin.close(fd) }
++    guard Darwin.fsync(fd) == 0 else { throw Failure.unavailable }
++  }
++  static func register(_ registrar: FlutterPluginRegistrar) {
++    let channel = FlutterMethodChannel(name: "dermaire/journal-keys-v1", binaryMessenger: registrar.messenger())
++    channel.setMethodCallHandler { call, result in
++      queue.async {
++        do {
++          guard let arguments = call.arguments as? [String: Any],
++                let ns = arguments["namespace"] as? String,
++                ns.range(of: "^[a-f0-9]{64}$", options: .regularExpression) != nil else {
++            throw Failure.unavailable
++          }
++          let fm = FileManager.default
++          var root = try fm.url(for: .applicationSupportDirectory, in: .userDomainMask,
++            appropriateFor: nil, create: true).appendingPathComponent("journal-v1", isDirectory: true)
++          try fm.createDirectory(at: root, withIntermediateDirectories: true,
++            attributes: [.protectionKey: FileProtectionType.complete])
++          var values = URLResourceValues(); values.isExcludedFromBackup = true
++          try root.setResourceValues(values)
++          try sync(root.deletingLastPathComponent())
++          let fence = root.appendingPathComponent(ns + ".fence")
++          var dir = root.appendingPathComponent(ns, isDirectory: true)
++          let query: [String: Any] = [kSecClass as String: kSecClassGenericPassword,
++            kSecAttrService as String: service, kSecAttrAccount as String: ns,
++            kSecAttrSynchronizable as String: false]
++          let output: Any?
++          switch call.method {
++          case "fence":
++            try Data([1]).write(to: fence, options: [.atomic, .completeFileProtection])
++            try sync(fence); try sync(root); output = nil
++          case "destroyKey":
++            guard fm.fileExists(atPath: fence.path) else { throw Failure.unavailable }
++            let status = SecItemDelete(query as CFDictionary)
++            guard status == errSecSuccess || status == errSecItemNotFound else { throw Failure.unavailable }
++            output = nil
++          case "directory", "loadKey", "createKey":
++            guard !fm.fileExists(atPath: fence.path) else { throw Failure.unavailable }
++            try fm.createDirectory(at: dir, withIntermediateDirectories: true,
++              attributes: [.protectionKey: FileProtectionType.complete])
++            try dir.setResourceValues(values); try sync(root)
++            if call.method == "directory" { output = dir.path } else {
++              var read = query
++              read[kSecReturnData as String] = true
++              read[kSecMatchLimit as String] = kSecMatchLimitOne
++              var existing: CFTypeRef?
++              let status = SecItemCopyMatching(read as CFDictionary, &existing)
++              var data: Data
++              if status == errSecSuccess, let found = existing as? Data { data = found }
++              else if status == errSecItemNotFound && call.method == "createKey" {
++                // Dart adapter must forbid createKey if any DB/WAL exists.
++                var bytes = [UInt8](repeating: 0, count: 32)
++                guard SecRandomCopyBytes(kSecRandomDefault, bytes.count, &bytes) == errSecSuccess else { throw Failure.unavailable }
++                data = Data(bytes); bytes = [UInt8](repeating: 0, count: 32)
++                var insert = query
++                insert[kSecAttrAccessible as String] = kSecAttrAccessibleWhenUnlockedThisDeviceOnly
++                insert[kSecValueData as String] = data
++                guard SecItemAdd(insert as CFDictionary, nil) == errSecSuccess else { throw Failure.unavailable }
++              } else { throw Failure.unavailable }
++              guard data.count == 32 else { throw Failure.unavailable }
++              output = FlutterStandardTypedData(bytes: data)
++            }
++          default: throw Failure.unavailable
++          }
++          DispatchQueue.main.async { result(output) }
++        } catch {
++          DispatchQueue.main.async { result(FlutterError(code: "journal_key_unavailable", message: "Protected journal key unavailable", details: nil)) }
++        }
++      }
++    }
++  }
++}
+--- a/app/android/app/src/main/AndroidManifest.xml
++++ b/app/android/app/src/main/AndroidManifest.xml
+@@ -10,7 +10,9 @@
+     <application
+         android:label="dermaire_app"
+         android:name="${applicationName}"
+-        android:icon="@mipmap/ic_launcher">
++        android:icon="@mipmap/ic_launcher"
++        android:fullBackupContent="@xml/journal_backup_rules"
++        android:dataExtractionRules="@xml/journal_data_extraction_rules">
+         <activity
+             android:name=".MainActivity"
+             android:exported="true"
+--- /dev/null
++++ b/app/android/app/src/main/res/xml/journal_backup_rules.xml
+@@ -0,0 +1,4 @@
++<?xml version="1.0" encoding="utf-8"?>
++<full-backup-content>
++    <exclude domain="root" path="no_backup/journal-v1/" />
++</full-backup-content>
+--- /dev/null
++++ b/app/android/app/src/main/res/xml/journal_data_extraction_rules.xml
+@@ -0,0 +1,5 @@
++<?xml version="1.0" encoding="utf-8"?>
++<data-extraction-rules>
++    <cloud-backup><exclude domain="root" path="no_backup/journal-v1/" /></cloud-backup>
++    <device-transfer><exclude domain="root" path="no_backup/journal-v1/" /></device-transfer>
++</data-extraction-rules>
+--- a/app/pubspec.yaml
++++ b/app/pubspec.yaml
+@@ -18,6 +18,7 @@
+   permission_handler: 13.0.2
+   image: 4.9.2
+   crypto: 3.0.7
++  sqlite3: 3.7.1
+   google_sign_in: 6.2.2
+ dev_dependencies:
+   integration_test:
+@@ -38,3 +39,8 @@
+     - family: Fraunces
+       fonts:
+         - asset: assets/fonts/Fraunces-Variable.ttf
++
++hooks:
++  user_defines:
++    sqlite3:
++      source: sqlcipher

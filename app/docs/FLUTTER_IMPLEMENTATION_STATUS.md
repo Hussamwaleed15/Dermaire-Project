@@ -88,3 +88,5 @@ F6-M M3: bounded historical evaluation read/recovery implemented; focused41, ful
 F6-M M4 bounded prepend anchoring: focused35, full1922, analyzer clean. Lazy centered slivers preserve visible row geometry; actual small-screen large-text widgets tested.
 
 F6-M M5 PARTIAL overall; minimum operation identity quarantine separated from private view/payload cleanup. Current401/expiry preserve scoped metadata; no automatic replay.7 new tests, focused30, full1929, analyzer clean. Legacy doctor write sets and durable recovery remain separate work.
+
+F6-M M6 PARTIAL: versioned metadata journal protocol/coordinator/cleanup and real product receipt review implemented;31 new tests, focused58, full1960, analyzer clean. Native SQLCipher adapter BLOCKED specific approval + device qualification. Review exact unapplied docs/proposals/secure_journal_native_review.patch; no native or dependency edits applied.
