@@ -467,6 +467,120 @@ class ApiService extends ChangeNotifier {
     );
   }
 
+  /// Withdrawal-only patient adapter. Clinical content is discarded at this
+  /// boundary; ordinary integration reads still require current safety consent.
+  Future<Map<String, dynamic>> planWithdrawalMetadata(
+    String path,
+    int generation, {
+    String method = 'GET',
+    Map<String, dynamic>? body,
+    String? key,
+    Map<String, String>? query,
+  }) async {
+    void guard() {
+      if (!isCurrentSession(generation) ||
+          authenticatedRole != 'patient' ||
+          authenticatedOwner == null) {
+        throw IntegrationFailure(401);
+      }
+    }
+
+    guard();
+    final detail = RegExp(r'^clinical-plans/[A-Za-z0-9_-]+$').hasMatch(path);
+    final attempt = RegExp(
+      r'^clinical-plans/[A-Za-z0-9_-]+/attempts/cancel/[A-Za-z0-9_-]{16,128}$',
+    ).hasMatch(path);
+    if (!(method == 'GET' && (path == 'clinical-plans' || detail || attempt) ||
+        method == 'POST' &&
+            RegExp(r'^clinical-plans/[A-Za-z0-9_-]+/cancel$').hasMatch(path) &&
+            key != null &&
+            RegExp(r'^[A-Za-z0-9_-]{16,128}$').hasMatch(key))) {
+      throw ArgumentError('Invalid plan withdrawal resource');
+    }
+    final request = http.Request(
+      method,
+      Uri.parse('$baseUrl/$path').replace(queryParameters: query),
+    )..followRedirects = false;
+    request.headers.addAll(_headers(body != null));
+    if (body != null) request.body = jsonEncode(body);
+    if (key != null) request.headers['Idempotency-Key'] = key;
+    final response = await _client
+        .send(request)
+        .then(http.Response.fromStream)
+        .timeout(const Duration(seconds: 20));
+    guard();
+    if (response.statusCode != 200) {
+      throw IntegrationFailure(response.statusCode);
+    }
+    Map<String, dynamic> meta(Object? raw) {
+      if (raw is! Map ||
+          raw['schema_version'] != 'clinical-plan-1' ||
+          raw['patient_id'] != authenticatedOwner ||
+          raw['revision'] is! int ||
+          raw['revision'] < 1 ||
+          raw['clinical_clearance'] != false ||
+          !['follow_up', 'comparison'].contains(raw['kind']) ||
+          ![
+            'proposed',
+            'scheduled',
+            'captured',
+            'reviewed',
+            'cancelled',
+          ].contains(raw['state'])) {
+        throw const FormatException('Invalid withdrawal metadata');
+      }
+      for (final field in ['id', 'patient_id', 'doctor_id', 'access_id']) {
+        if (raw[field] is! String ||
+            !RegExp(r'^[A-Za-z0-9_-]+$').hasMatch(raw[field])) {
+          throw const FormatException('Invalid plan scope');
+        }
+      }
+      return {
+        for (final field in [
+          'id',
+          'patient_id',
+          'doctor_id',
+          'access_id',
+          'kind',
+          'revision',
+          'state',
+        ])
+          field: raw[field],
+      };
+    }
+
+    final raw = jsonDecode(response.body);
+    if (raw is! Map) throw const FormatException('Invalid withdrawal response');
+    if (path == 'clinical-plans') {
+      if (raw['items'] is! List ||
+          (raw['next_after'] != null &&
+              (raw['next_after'] is! String ||
+                  !RegExp(r'^[A-Za-z0-9_-]+$').hasMatch(raw['next_after'])))) {
+        throw const FormatException('Invalid plan page');
+      }
+      return {
+        'items': (raw['items'] as List).map(meta).toList(),
+        'next_after': raw['next_after'],
+      };
+    }
+    if (attempt) {
+      if (!['unknown', 'expired', 'committed'].contains(raw['status']) ||
+          raw['attempt_id'] is! String ||
+          (raw['status'] != 'committed' && raw['result'] != null)) {
+        throw const FormatException('Invalid cancellation receipt');
+      }
+      return {
+        'status': raw['status'],
+        'result': raw['result'] == null ? null : meta(raw['result']),
+      };
+    }
+    final result = meta(raw);
+    if (result['id'] != path.split('/')[1]) {
+      throw const FormatException('Wrong plan identity');
+    }
+    return result;
+  }
+
   Future<void> completeProfileReview() async {
     final generation = sessionGeneration;
     await integrationResource(

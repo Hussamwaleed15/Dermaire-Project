@@ -3,6 +3,7 @@ import '../integration/contract.dart';
 import '../integration/private_view.dart';
 import '../entry/entry_motion.dart';
 import '../doctor/doctor_models.dart';
+import 'plan_withdrawal.dart';
 
 /// A withdrawal-only patient action. It never reads grants/patient records or
 /// establishes safety acceptance; a historical receipt is not current access.
@@ -198,6 +199,14 @@ class ClinicianWithdrawalScreen extends StatelessWidget {
     body: ListView(
       padding: const EdgeInsets.all(20),
       children: [
+        OutlinedButton(
+          onPressed: c.busy
+              ? null
+              : () => Navigator.of(
+                  context,
+                ).push(entryRoute<void>(context, const PlanWithdrawalScreen())),
+          child: const Text('Manage plan withdrawal'),
+        ),
         const Text('Manage permission to share your patient records.'),
         const Text(
           'You can withdraw clinician permissions without accepting the current safety policy. Your saved account records remain.',

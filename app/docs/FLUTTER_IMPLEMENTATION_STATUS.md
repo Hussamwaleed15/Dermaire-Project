@@ -67,3 +67,5 @@ F6h-1 implemented denied/session read-cache removal for products/routines/experi
 F6h-1 verified: full1808 (+18; continuation total+183), focused49, analyzer clean, pub get succeeded; diff check clean. The older403 routine assertion was corrected to require record removal plus fresh authorized recovery. No code or native dependency change outsideapp/.
 
 F6-L1 selective withdrawal: full1828 (+20), focused48, analyze/pub get clean. Safety entry now supports explicit original grant selection without current policy acceptance, owned metadata only, keyed original receipt plus independent current grant verification. Restart persistence remains BLOCKED; other L milestones continue.
+
+F6-L2a: full1844 (+16), focused44, analyzer clean. Safety entry → metadata-only plan participation withdrawal, original grant/plan/CAS/key + historical receipt/current readback. Evaluation cancellation after policy loss remains PARTIAL. Secure recovery assessment documented in FLUTTER_SECURE_RECOVERY_DECISION.md; implementation/device proof BLOCKED.

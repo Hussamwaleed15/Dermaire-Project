@@ -34,3 +34,40 @@ unit/widget transport covers before/after-commit loss, duplicate submit, new gra
 wrong actor/grant/operation/current state, expiry,401/403/404/409/410/422/503,
 hide/logout/switch late replies and320px/200% light/dark screen interactions.
 No backend/Tester/native/Production changes; no real OAuth/device/backend E2E.
+
+## L2a plan participation withdrawal — DONE bounded; L2 overall PARTIAL
+
+Actual clinical_plans API/service authorize/mutate/attempt and CancelPlan inspected.
+POST /clinical-plans/id/cancel permits policy-loss patient withdrawal even after
+the original doctor grant is revoked; doctors still require their original grant.
+CAS is payload expected_revision, not an invented If-Match header. Reason is fixed
+nonclinical text; no free-text medical payload added.
+
+New PlanWithdrawalScreen is linked from the actual Safety withdrawal hub. Dedicated
+ApiService.planWithdrawalMetadata permits only owned patient list/detail/cancel/
+cancel-attempt routes and strips purpose, snapshots, capture references, notes and
+model results before returning data. The ordinary integration adapter still denies
+private plan GET without current policy. Identity/kind/state/revision only are shown.
+Explicit inline selected-plan confirmation is invalidated by refresh/hide/session;
+covering dialogs are avoided because they invalidate the private route lifecycle.
+
+PlanWithdrawalIntent freezes original patient/doctor/grant/plan, key and revision.
+Original receipt and independent current state stay separate. First definite conflict
+requires refresh and new explicit review; after uncertainty the original key remains
+locked. No automatic rebase/replacement. Unknown permits explicit original retry;
+expired remains unresolved. Metadata clears on failed reads and late results cannot
+restore it. Cancellation is NOT evidence that a separate evaluation job was cancelled.
+L2 evaluation-job policy-loss cancellation remains PARTIAL for a separate increment.
+
+Files: lib/consent/plan_withdrawal.dart, clinician_withdrawal.dart,
+lib/services/api_service.dart, test/wave_plan_withdrawal_test.dart. Gate:16 new tests,
+focused44, full1844, analyzer clean. Fake HTTP only; no backend/device E2E claim.
+
+## L4 decision / L10 environment
+
+See FLUTTER_SECURE_RECOVERY_DECISION.md: concrete encrypted transaction journal and
+platform key proposal, minimum data per domain, alternatives, migration/erasure,
+crash tests and native approvals. Architecture assessment DONE; implementation and
+process-death proof BLOCKED, no native changes. Fresh doctor/devices/emulators:
+Flutter3.44.8, missing Android SDK, only macOS, no emulator sources; Xcode26.0.1
+present, CocoaPods absent, existing SwiftPM preserved. Mobile runtime NOT RUN.
