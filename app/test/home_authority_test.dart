@@ -198,6 +198,8 @@ void main() {
         expect(find.textContaining('Fake private'), findsNothing);
         repo.fail = true;
         await tester.scrollUntilVisible(find.text('Refresh Home'), 200);
+        await tester.ensureVisible(find.text('Refresh Home'));
+        await tester.pumpAndSettle();
         await tester.tap(find.text('Refresh Home'));
         await tester.pumpAndSettle();
         await tester.scrollUntilVisible(

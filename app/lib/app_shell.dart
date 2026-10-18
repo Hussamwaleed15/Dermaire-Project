@@ -1,3 +1,4 @@
+import 'navigation/patient_navigation.dart';
 import 'recovery/recovery_ui.dart';
 import 'clinical/clinical_snapshot_ui.dart';
 import 'agent/server_agent_ui.dart';
@@ -45,6 +46,7 @@ class AppShell extends StatelessWidget {
   Widget build(BuildContext context) => AnimatedBuilder(
     animation: state,
     builder: (context, _) {
+      final generation = ApiService.instance.sessionGeneration;
       final pages = [
         HomeTab(state: state),
         ExperimentTab(state: state),
@@ -60,29 +62,26 @@ class AppShell extends StatelessWidget {
           onPressed: () => openPage(context, SkinAssistantScreen(state: state)),
           child: const Icon(Icons.chat_bubble_outline_rounded),
         ),
-        bottomNavigationBar: BottomNavigationBar(
-          currentIndex: state.selectedTab,
-          onTap: state.selectTab,
-          type: BottomNavigationBarType.fixed,
-          backgroundColor: Theme.of(context).colorScheme.surface,
-          selectedItemColor: Theme.of(context).colorScheme.primary,
-          unselectedItemColor: Theme.of(
-            context,
-          ).colorScheme.onSurface.withValues(alpha: .38),
-          selectedFontSize: 9.5,
-          unselectedFontSize: 9,
-          selectedLabelStyle: const TextStyle(
-            fontFamily: 'Karla',
-            fontWeight: FontWeight.w700,
-          ),
-          unselectedLabelStyle: const TextStyle(fontFamily: 'Karla'),
-          items: List.generate(
-            labels.length,
-            (index) => BottomNavigationBarItem(
-              icon: Icon(icons[index], size: 21),
-              label: labels[index],
-            ),
-          ),
+        bottomNavigationBar: PatientNavigation(
+          selected: state.selectedTab,
+          labels: labels,
+          icons: icons,
+          onSelect: (tab) {
+            if (ApiService.instance.isCurrentSession(generation)) {
+              state.selectTab(tab);
+            }
+          },
+          onObserve: () async {
+            final api = ApiService.instance;
+            if (!api.isCurrentSession(generation) ||
+                !api.canReadPatientClinicalStatus) {
+              return;
+            }
+            await openPage(context, CameraScreen(state: state));
+            if (context.mounted && api.isCurrentSession(generation)) {
+              await state.refreshPatientHome(generation: generation);
+            }
+          },
         ),
       );
     },
@@ -302,8 +301,7 @@ class ProfileTab extends StatelessWidget {
         icon: '♿',
         title: 'Accessibility',
         subtitle: 'Voice, larger text and contrast follow your device',
-        onTap: () =>
-            showDermaireSnack(context, 'Accessibility preferences opened'),
+        onTap: () => openPage(context, AccessibilityScreen(state: state)),
       ),
       ActionCard(
         icon: 'ⓘ',
@@ -334,10 +332,8 @@ class ProfileTab extends StatelessWidget {
         children: [
           Expanded(
             child: OutlinedButton(
-              onPressed: () => showDermaireSnack(
-                context,
-                'Your data export is being generated from Azure PostgreSQL',
-              ),
+              onPressed: () =>
+                  openPage(context, AccountDataScreen(state: state)),
               child: const Text('Export data'),
             ),
           ),
@@ -409,11 +405,15 @@ class HowItWorksScreen extends StatelessWidget {
   const HowItWorksScreen({super.key});
   static const steps = [
     ('1', 'Capture', 'Your phone guides you into the same position each time.'),
-    ('2', 'Measure', 'Skin features are extracted on your device.'),
+    (
+      '2',
+      'Record',
+      'Submit reported observations or private photos. Accepted photos are securely uploaded and stored on Azure.',
+    ),
     (
       '3',
       'Compare',
-      'Measurements are compared against your personal baseline.',
+      'Where recorded measurements exist, review their source and your server-calculated baseline. Photos alone do not establish improvement.',
     ),
     (
       '4',
@@ -423,7 +423,7 @@ class HowItWorksScreen extends StatelessWidget {
     (
       '5',
       'Report',
-      'AI turns your experiment data into an understandable report.',
+      'Review recorded experiment evidence and clinician guidance. Image-comparison and Agent models may be unavailable; no diagnosis is inferred.',
     ),
   ];
   @override
@@ -469,7 +469,7 @@ class HowItWorksScreen extends StatelessWidget {
       const Notice(
         icon: 'ⓘ',
         text:
-            'We measure changes in your skin measurements. Interaction checks use fixed rules, not AI guesswork.',
+            'Reported symptoms, manually entered measurements and limited nonclinical image estimates have different sources. This app does not provide a validated image diagnosis or emergency monitoring.',
       ),
     ],
   );
@@ -638,4 +638,67 @@ class _ContextScreenState extends State<ContextScreen> {
       );
     },
   );
+}
+
+class AccountDataScreen extends StatelessWidget {
+  const AccountDataScreen({super.key, required this.state});
+  final DermaireState state;
+  @override
+  Widget build(BuildContext context) => DermairePage(
+    title: 'Your account data',
+    children: [
+      const Notice(
+        icon: 'ⓘ',
+        text:
+            'Self-service export is not available. Nothing has been exported or queued.',
+      ),
+      const Text(
+        'Review your current profile, observations and sharing permissions in the app. VIEW permission does not grant EXPORT permission.',
+      ),
+      OutlinedButton(
+        onPressed: () => openPage(context, TimelineScreen(state: state)),
+        child: const Text('Review observation history'),
+      ),
+      OutlinedButton(
+        onPressed: () => openPage(context, const PatientAccessScreen()),
+        child: const Text('Review doctor sharing'),
+      ),
+    ],
+  );
+}
+
+class AccessibilityScreen extends StatelessWidget {
+  const AccessibilityScreen({super.key, required this.state});
+  final DermaireState state;
+  @override
+  Widget build(BuildContext context) {
+    final media = MediaQuery.of(context);
+    return DermairePage(
+      title: 'Accessibility',
+      children: [
+        Text(
+          'Text size follows your device: ${(media.textScaler.scale(16) / 16 * 100).round()}%',
+        ),
+        Text(
+          media.disableAnimations
+              ? 'Reduced motion is enabled by your device.'
+              : 'Motion follows your device preferences.',
+        ),
+        const Text(
+          'Use your device accessibility settings for larger text, screen reader and reduced motion. This page does not change those system settings.',
+        ),
+        const Text(
+          'Navigation actions include spoken labels and tooltips. Private records still require current permission.',
+        ),
+        OutlinedButton(
+          onPressed: state.toggleTheme,
+          child: Text(
+            Theme.of(context).brightness == Brightness.dark
+                ? 'Use light appearance'
+                : 'Use dark appearance',
+          ),
+        ),
+      ],
+    );
+  }
 }

@@ -168,6 +168,7 @@ class DermaireState extends ChangeNotifier {
   }
 
   void selectTab(int value) {
+    if (value < 0 || value > 5) return;
     selectedTab = value;
     notifyListeners();
   }

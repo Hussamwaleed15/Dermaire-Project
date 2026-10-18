@@ -1,3 +1,4 @@
+import '../navigation/patient_care_actions.dart';
 import '../clinical/clinical_snapshot_ui.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
@@ -158,6 +159,7 @@ class _PatientHomeState extends State<PatientHome> {
                   ],
                 ),
               ),
+              PatientCareActions(state: s),
               HomeRecentActivity(
                 key: const Key('homeRecentActivity'),
                 controller: s.observations,
