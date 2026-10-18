@@ -356,7 +356,7 @@ class RemoteRoutineRepository implements RoutineRepository {
 }
 
 class RoutineController extends ChangeNotifier {
-  RoutineController(this.repository) {
+  RoutineController(this.repository, {this.onRecoveryConfirmed}) {
     if (remote) {
       session = ApiService.instance.sessionGeneration;
       ApiService.instance.addListener(sessionChanged);
@@ -389,6 +389,9 @@ class RoutineController extends ChangeNotifier {
       return false;
     }
     final ticket = _generation, original = configurationPending!;
+    var expectedTicket = ticket;
+    var receiptResolved = false;
+    final sessionGeneration = ApiService.instance.sessionGeneration;
     saving = true;
     error = null;
     notifyListeners();
@@ -398,6 +401,7 @@ class RoutineController extends ChangeNotifier {
             retryOriginal: retryOriginal,
             finishUnavailableReview: finishUnavailableReview,
           );
+      receiptResolved = resolved;
       if (_disposed || ticket != _generation) return false;
       if (resolved) {
         uncertain.remove(
@@ -407,8 +411,19 @@ class RoutineController extends ChangeNotifier {
         );
       }
       saving = false;
+      expectedTicket = ticket + 1;
       await refresh();
-      if (_disposed || _generation != ticket + 1) return false;
+      if (_disposed || _generation != expectedTicket) return false;
+      if (resolved && !stale) {
+        saving = true;
+        notifyListeners();
+        await onRecoveryConfirmed?.call(sessionGeneration);
+      }
+      if (_disposed ||
+          _generation != expectedTicket ||
+          !ApiService.instance.isCurrentSession(sessionGeneration)) {
+        return false;
+      }
       if (!stale) {
         error = resolved
             ? finishUnavailableReview
@@ -421,13 +436,13 @@ class RoutineController extends ChangeNotifier {
       notifyListeners();
       return resolved && !stale;
     } catch (failure) {
-      if (_disposed || ticket != _generation) return false;
+      if (_disposed || expectedTicket != _generation) return false;
       stale = true;
       error =
-          'Routine request remains unconfirmed. ${failure is IntegrationFailure ? RequestFailure.http(failure.status).message : RequestFailure.from(failure).message}';
+          '${receiptResolved ? 'Original routine request confirmed, but related information could not refresh.' : 'Routine request remains unconfirmed.'} ${failure is IntegrationFailure ? RequestFailure.http(failure.status).message : RequestFailure.from(failure).message}';
       return false;
     } finally {
-      if (!_disposed && ticket == _generation) {
+      if (!_disposed && expectedTicket == _generation) {
         saving = false;
         notifyListeners();
       }
@@ -446,6 +461,9 @@ class RoutineController extends ChangeNotifier {
       return false;
     }
     final ticket = _generation, original = adherencePending!;
+    var expectedTicket = ticket;
+    var receiptResolved = false;
+    final sessionGeneration = ApiService.instance.sessionGeneration;
     saving = true;
     error = null;
     notifyListeners();
@@ -455,11 +473,23 @@ class RoutineController extends ChangeNotifier {
             retryOriginal: retryOriginal,
             finishExpiredReview: finishExpiredReview,
           );
+      receiptResolved = resolved;
       if (_disposed || ticket != _generation) return false;
       if (resolved) uncertain.remove(writeKey('adherence', original.body));
       saving = false;
+      expectedTicket = ticket + 1;
       await refresh();
-      if (_disposed || _generation != ticket + 1) return false;
+      if (_disposed || _generation != expectedTicket) return false;
+      if (resolved && !stale) {
+        saving = true;
+        notifyListeners();
+        await onRecoveryConfirmed?.call(sessionGeneration);
+      }
+      if (_disposed ||
+          _generation != expectedTicket ||
+          !ApiService.instance.isCurrentSession(sessionGeneration)) {
+        return false;
+      }
       if (!stale) {
         error = resolved
             ? finishExpiredReview
@@ -472,13 +502,13 @@ class RoutineController extends ChangeNotifier {
       notifyListeners();
       return resolved && !stale;
     } catch (failure) {
-      if (_disposed || ticket != _generation) return false;
+      if (_disposed || expectedTicket != _generation) return false;
       stale = true;
       error =
-          'Report remains unconfirmed. ${failure is IntegrationFailure ? RequestFailure.http(failure.status).message : RequestFailure.from(failure).message}';
+          '${receiptResolved ? 'Original report confirmed, but related information could not refresh.' : 'Report remains unconfirmed.'} ${failure is IntegrationFailure ? RequestFailure.http(failure.status).message : RequestFailure.from(failure).message}';
       return false;
     } finally {
-      if (!_disposed && ticket == _generation) {
+      if (!_disposed && expectedTicket == _generation) {
         saving = false;
         notifyListeners();
       }
@@ -516,6 +546,7 @@ class RoutineController extends ChangeNotifier {
   }
 
   final RoutineRepository repository;
+  final Future<void> Function(int generation)? onRecoveryConfirmed;
   List<Map<String, dynamic>>? entries;
   List<Map<String, dynamic>>? history;
   bool loading = false;

@@ -336,6 +336,8 @@ class ExperimentController extends ChangeNotifier {
     final ticket = _generation,
         original = configurationPending!,
         sessionGeneration = ApiService.instance.sessionGeneration;
+    var expectedTicket = ticket;
+    var receiptResolved = false;
     saving = true;
     error = null;
     notifyListeners();
@@ -345,6 +347,7 @@ class ExperimentController extends ChangeNotifier {
             retryOriginal: retryOriginal,
             finishUnavailableReview: finishUnavailableReview,
           );
+      receiptResolved = resolved;
       if (_disposed || ticket != _generation) return false;
       if (resolved) {
         uncertain.remove(
@@ -354,10 +357,15 @@ class ExperimentController extends ChangeNotifier {
         );
       }
       saving = false;
+      expectedTicket = ticket + 1;
       await refresh();
-      if (_disposed || _generation != ticket + 1) return false;
-      if (resolved && !stale) await onConfirmed?.call(sessionGeneration);
-      if (_disposed || _generation != ticket + 1) return false;
+      if (_disposed || _generation != expectedTicket) return false;
+      if (resolved && !stale) {
+        saving = true;
+        notifyListeners();
+        await onConfirmed?.call(sessionGeneration);
+      }
+      if (_disposed || _generation != expectedTicket) return false;
       if (!stale) {
         error = resolved
             ? finishUnavailableReview
@@ -370,13 +378,13 @@ class ExperimentController extends ChangeNotifier {
       notifyListeners();
       return resolved && !stale;
     } catch (failure) {
-      if (_disposed || ticket != _generation) return false;
+      if (_disposed || expectedTicket != _generation) return false;
       stale = true;
       error =
-          'Experiment request remains unconfirmed. ${failure is IntegrationFailure ? RequestFailure.http(failure.status).message : RequestFailure.from(failure).message}';
+          '${receiptResolved ? 'Original experiment request confirmed, but related information could not refresh.' : 'Experiment request remains unconfirmed.'} ${failure is IntegrationFailure ? RequestFailure.http(failure.status).message : RequestFailure.from(failure).message}';
       return false;
     } finally {
-      if (!_disposed && ticket == _generation) {
+      if (!_disposed && expectedTicket == _generation) {
         saving = false;
         notifyListeners();
       }

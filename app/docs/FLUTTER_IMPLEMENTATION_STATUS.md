@@ -56,3 +56,5 @@ F6d-2 routine configuration: all1681 (+29), analyzer clean, pub get succeeded. F
 F6d-3 experiments: all1713 (+32), analyzer clean, pub get succeeded. F6d-2 remote verifiedcdfc8da32c5dd4b81c913552e1f7cc98fdbb4c81. Agent/notification/provider gaps reverified in actual source; platform restart and device blockers remain explicit.
 
 F6d-4 adherence: all1741 (+28), analyzer clean, pub get succeeded. F6d-3 remote verified3285a1b9839f61c450c597ce7e00fde2c5fddac2. Unresolved refresh remains locked; actual externally resolved operations unlock only on a fresh successful read.
+
+F6g-1 recovery projections: all1762 (+21), analyzer clean, pub get succeeded. F6d-4 remote verified0931bef57bcde05136b2ec975acb30a0b020fa21. Product/routine/adherence/experiment recovered writes request actual related Home/clinical reads with callback busy/session guards; failed projections remain unavailable. Broader privacy/withdrawal/navigation work remains PARTIAL.

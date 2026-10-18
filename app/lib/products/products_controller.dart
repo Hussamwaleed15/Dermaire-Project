@@ -56,7 +56,10 @@ class ProductsController extends ChangeNotifier {
         'No recoverable product request is available.',
       );
     }
-    final generation = _generation;
+    final generation = _generation,
+        sessionGeneration = ApiService.instance.sessionGeneration;
+    var expectedGeneration = generation;
+    var receiptResolved = false;
     isSaving = true;
     errorMessage = null;
     notifyListeners();
@@ -65,6 +68,7 @@ class ProductsController extends ChangeNotifier {
         retryOriginal: retryOriginal,
         finishUnavailableReview: finishUnavailableReview,
       );
+      receiptResolved = resolved;
       if (_disposed || generation != _generation) {
         return const ProductOperationResult.failure(
           'Session changed. Reopen products.',
@@ -72,8 +76,21 @@ class ProductsController extends ChangeNotifier {
       }
       createUncertain = pendingOperation?.kind == 'create';
       isSaving = false;
+      expectedGeneration = generation + 1;
       await load();
-      if (_disposed || _generation != generation + 1) {
+      if (_disposed || _generation != expectedGeneration) {
+        return const ProductOperationResult.failure(
+          'Session changed. Reopen products.',
+        );
+      }
+      if (resolved && !isStale) {
+        isSaving = true;
+        notifyListeners();
+        await onConfirmed?.call(sessionGeneration);
+      }
+      if (_disposed ||
+          _generation != expectedGeneration ||
+          !ApiService.instance.isCurrentSession(sessionGeneration)) {
         return const ProductOperationResult.failure(
           'Session changed. Reopen products.',
         );
@@ -93,17 +110,17 @@ class ProductsController extends ChangeNotifier {
           ? ProductOperationResult.success(message)
           : ProductOperationResult.failure(message);
     } catch (failure) {
-      if (_disposed || generation != _generation) {
+      if (_disposed || expectedGeneration != _generation) {
         return const ProductOperationResult.failure(
           'Session changed. Reopen products.',
         );
       }
       isStale = true;
       errorMessage =
-          'Original request remains unconfirmed. ${failure is IntegrationFailure ? RequestFailure.http(failure.status).message : RequestFailure.from(failure).message}';
+          '${receiptResolved ? 'Original request confirmed, but related information could not refresh.' : 'Original request remains unconfirmed.'} ${failure is IntegrationFailure ? RequestFailure.http(failure.status).message : RequestFailure.from(failure).message}';
       return ProductOperationResult.failure(errorMessage!);
     } finally {
-      if (!_disposed && generation == _generation) {
+      if (!_disposed && expectedGeneration == _generation) {
         isSaving = false;
         notifyListeners();
       }

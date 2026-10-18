@@ -43,6 +43,9 @@ class _RoutineScreenState extends State<RoutineScreen> {
     reportDay = DateTime.now().toUtc().toIso8601String().substring(0, 10);
     controller = RoutineController(
       widget.repository ?? RemoteRoutineRepository(),
+      onRecoveryConfirmed: (session) async {
+        await widget.state?.refreshRoutineContext(generation: session);
+      },
     );
     ApiService.instance.addListener(_sessionChanged);
     controller.refresh();
@@ -477,6 +480,9 @@ class _RoutineScreenState extends State<RoutineScreen> {
                 if (controller.adherencePending != null) ...[
                   const Text(
                     'An adherence report needs confirmation. Reporting days stay UTC.',
+                  ),
+                  Text(
+                    'Original report: ${controller.adherencePending!.body['date']} UTC · ${controller.adherencePending!.body['slot']} · ${controller.adherencePending!.body['status']}',
                   ),
                   OutlinedButton(
                     onPressed: controller.saving || controller.loading
