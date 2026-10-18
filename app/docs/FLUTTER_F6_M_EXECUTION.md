@@ -57,3 +57,18 @@ Files: services/api_service.dart, consent/evaluation_withdrawal.dart,
 plans/plan_ui.dart, test/wave_evaluation_history_test.dart.20 new tests,
 focused41, full1918, analyzer clean. Covers pagination, malformed histories,
 401/403/404/409/410/422/503 and late session/visibility races; synthetic HTTP only.
+
+## M4 messaging prepend — DONE bounded
+
+Added AnchoredConversation with lazy slivers growing above a stable original
+server sequence. Variable-height earlier rows and later appended messages retain
+the visible original row without estimating total height. UTC presentation and
+server ordering retained. Origin day header is repeated as a continuation boundary
+to preserve its geometry. Widgets remain generation/thread keyed, disposed on
+private-view loss; no new private cache or delivery claim. Existing controller
+frozen pagination, overlap rejection, watermark and consent tests retained.
+
+Files: messaging/anchored_conversation.dart, messaging_ui.dart,
+test/wave_message_anchor_test.dart.4 new actual-widget tests with 100 variable
+height rows, 320px/100%/200%/both themes, append and reverse scrolling. Focused35,
+full1922, analyzer clean. No mobile runtime claim.

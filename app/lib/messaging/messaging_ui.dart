@@ -5,7 +5,7 @@ import '../clinical/clinical_ui.dart' show clinicalTime;
 import '../integration/private_view.dart';
 import 'messaging_controller.dart';
 import 'messaging_models.dart';
-import 'message_timeline.dart';
+import 'anchored_conversation.dart';
 
 class CareThreadsScreen extends StatefulWidget {
   const CareThreadsScreen({super.key, this.patient});
@@ -170,15 +170,24 @@ class _CareConversationState extends State<CareConversationScreen> {
           ),
       ],
     ),
-    builder: (context, c) => DermairePage(
-      key: PageStorageKey('messages:${c.generation}:${thread.id}'),
-      eyebrow: 'Consented care conversation',
-      title: c.role == 'patient'
-          ? 'Messages with your doctor'
-          : 'Messages with patient',
-      subtitle:
+    builder: (context, c) => AnchoredConversation(
+      key: ValueKey('messages:${c.generation}:${thread.id}'),
+      messages: c.messages,
+      owner: c.owner,
+      role: c.role,
+      peerRead: c.role == 'patient' ? c.doctorRead : c.patientRead,
+      header: [
+        const Eyebrow('Consented care conversation'),
+        Text(
+          c.role == 'patient'
+              ? 'Messages with your doctor'
+              : 'Messages with patient',
+          style: Theme.of(context).textTheme.headlineSmall,
+        ),
+        const Text(
           'Not monitored for emergencies. Messages are participant-authored; they do not establish a diagnosis or medical clearance.',
-      children: [
+        ),
+        const SizedBox(height: 18),
         Text('Patient ${thread.patient} · Doctor ${thread.doctor}'),
         OutlinedButton(
           onPressed: c.busy ? null : c.refresh,
@@ -204,12 +213,8 @@ class _CareConversationState extends State<CareConversationScreen> {
         const Text(
           'Messages are grouped by UTC day. Read acknowledgements reflect saved in-app reading state.',
         ),
-        ...buildCareMessageTimeline(
-          messages: c.messages,
-          owner: c.owner,
-          role: c.role,
-          peerRead: c.role == 'patient' ? c.doctorRead : c.patientRead,
-        ),
+      ],
+      footer: [
         if (c.messages.length >= 500)
           const Text('Displaying a bounded window of 500 messages.'),
         OutlinedButton(
