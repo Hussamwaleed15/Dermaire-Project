@@ -38,3 +38,13 @@ readback/appearance controls; methodology no longer claims on-device extraction 
 available AI. Existing Home test now ensures actual button visibility before tap;
 all result assertions retained.10 new regressions, focused81, full2031, analyze clean.
 No native/backend/Tester or journal activation changes.
+
+P1b DONE bounded prospective routine evidence/calendar: actual signed-cursor history
+and owner/filter/order/provenance validation; current calendar readback + explicitly
+approved forward-only IANA-zone change under original CAS. No UTC adherence rewrite
+or reminder change. Lost response retains frozen original draft; same-revision
+unknown locks replacement, explicit exact original retry only. A fresh higher
+calendar revision fences old CAS under the verified account lock; this is NOT an
+original receipt. Account-expiry quarantine still has no calendar receipt reader.
+Links from Routine, Reports and observation timeline;320px/200% consent resets on
+draft change.24 new tests, focused64, full2055, analyzer clean. No native changes.

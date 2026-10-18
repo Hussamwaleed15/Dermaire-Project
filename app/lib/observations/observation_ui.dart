@@ -1,3 +1,4 @@
+import '../routine/routine_evidence_ui.dart';
 import 'package:flutter/material.dart';
 import '../dermaire_state.dart';
 import '../dermaire_theme.dart';
@@ -689,6 +690,10 @@ class _ObservationHistoryScreenState extends State<ObservationHistoryScreen> {
       eyebrow: 'Longitudinal skin history',
       title: 'Your observations',
       children: [
+        OutlinedButton(
+          onPressed: () => openPage(context, const RoutineEvidenceScreen()),
+          child: const Text('Routine configuration history'),
+        ),
         if (c.historyPhase == ObservationHistoryPhase.loading) ...[
           const Text('Loading saved observations…'),
           if (!EntryMotion.reduced(context)) const CircularProgressIndicator(),

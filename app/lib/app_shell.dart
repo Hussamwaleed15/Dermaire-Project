@@ -1,3 +1,4 @@
+import 'routine/routine_evidence_ui.dart';
 import 'navigation/patient_navigation.dart';
 import 'recovery/recovery_ui.dart';
 import 'clinical/clinical_snapshot_ui.dart';
@@ -180,6 +181,10 @@ class ReportsTab extends StatelessWidget {
         child: const Text('Read combined clinical snapshot'),
       ),
       PersonalSkinModelEntry(state: state),
+      OutlinedButton(
+        onPressed: () => openPage(context, const RoutineEvidenceScreen()),
+        child: const Text('Routine history & calendar'),
+      ),
       OutlinedButton(
         onPressed: () => state.selectTab(1),
         child: const Text('Open experiment history'),

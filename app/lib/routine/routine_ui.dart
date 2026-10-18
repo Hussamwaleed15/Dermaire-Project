@@ -1,3 +1,5 @@
+import 'routine_evidence_ui.dart';
+import '../dermaire_widgets.dart' show openPage;
 import '../notifications/inbox_ui.dart';
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
@@ -441,6 +443,13 @@ class _RoutineScreenState extends State<RoutineScreen> {
       appBar: AppBar(
         title: const Text('My routine'),
         actions: [
+          IconButton(
+            tooltip: 'Routine history & calendar',
+            onPressed: current
+                ? () => openPage(context, const RoutineEvidenceScreen())
+                : null,
+            icon: const Icon(Icons.history_rounded),
+          ),
           IconButton(
             onPressed:
                 controller.loading ||

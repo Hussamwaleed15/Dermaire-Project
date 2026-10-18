@@ -541,6 +541,62 @@ class ApiService extends ChangeNotifier {
     );
   }
 
+  /// Narrow prospective routine evidence/calendar contract; not a generic route
+  /// expansion. Calendar changes use server revision CAS, not keyed receipts.
+  Future<IntegrationResponse> routineEvidence(
+    String resource,
+    int generation, {
+    String method = 'GET',
+    Map<String, dynamic>? body,
+    Map<String, String>? query,
+  }) async {
+    void guard() {
+      if (!isCurrentSession(generation) ||
+          !canReadPatientClinicalStatus ||
+          authenticatedRole != 'patient') {
+        throw IntegrationFailure(401);
+      }
+    }
+
+    guard();
+    if (!(resource == 'configuration-history' &&
+                method == 'GET' &&
+                body == null ||
+            resource == 'calendar-policy' &&
+                ['GET', 'PUT'].contains(method) &&
+                query == null) ||
+        query != null &&
+            query.keys.any(
+              (k) => !['limit', 'cursor', 'routine_entry_id'].contains(k),
+            ) ||
+        method == 'PUT' &&
+            (body == null ||
+                body.length != 2 ||
+                body['timezone'] is! String ||
+                body['expected_revision'] is! int)) {
+      throw ArgumentError('Invalid routine evidence request');
+    }
+    final request = http.Request(
+      method,
+      Uri.parse('$baseUrl/routine/$resource').replace(queryParameters: query),
+    )..followRedirects = false;
+    request.headers.addAll(_headers(body != null));
+    if (body != null) request.body = jsonEncode(body);
+    final response = await _client
+        .send(request)
+        .then(http.Response.fromStream)
+        .timeout(const Duration(seconds: 20));
+    guard();
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw IntegrationFailure(response.statusCode);
+    }
+    return IntegrationResponse(
+      jsonDecode(response.body),
+      Map.unmodifiable(response.headers),
+      response.statusCode,
+    );
+  }
+
   /// Withdrawal-only patient adapter. Clinical content is discarded at this
   /// boundary; ordinary integration reads still require current safety consent.
   Future<Map<String, dynamic>> planWithdrawalMetadata(
