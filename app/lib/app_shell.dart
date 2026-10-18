@@ -1,3 +1,4 @@
+import 'clinical/clinical_snapshot_ui.dart';
 import 'agent/server_agent_ui.dart';
 import 'plans/plan_ui.dart';
 import 'messaging/messaging_ui.dart';
@@ -174,6 +175,10 @@ class ReportsTab extends StatelessWidget {
   Widget build(BuildContext context) => _TabPage(
     children: [
       ClinicalHomePanel(controller: state.clinical),
+      OutlinedButton(
+        onPressed: () => openPage(context, const ClinicalSnapshotScreen()),
+        child: const Text('Read combined clinical snapshot'),
+      ),
       PersonalSkinModelEntry(state: state),
       OutlinedButton(
         onPressed: () => state.selectTab(1),

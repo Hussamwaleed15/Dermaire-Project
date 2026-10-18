@@ -426,10 +426,11 @@ class ClaimInvitationController extends PrivateController {
           original,
           patient: patient,
           doctor: owner,
-        ).grant.active(DateTime.now().toUtc()))
+        ).grant.active(DateTime.now().toUtc())) {
       throw const FormatException(
         'Original grant changed after patient readback',
       );
+    }
     _grant = ScopedGrant(original, patient: patient, doctor: owner);
     _expiry?.cancel();
     _expiry = Timer(

@@ -408,12 +408,18 @@ class ApiService extends ChangeNotifier {
         ![
           'messaging',
           'clinical-plans',
+          'clinical-snapshot',
           'notifications',
           'agent',
           'doctor',
           'users',
         ].contains(path.split('/').first) ||
         !['GET', 'POST', 'PUT', 'DELETE'].contains(method) ||
+        (path.split('/').first == 'clinical-snapshot' &&
+            (method != 'GET' ||
+                !RegExp(
+                  r'^clinical-snapshot(/patients/[A-Za-z0-9_-]+)?$',
+                ).hasMatch(path))) ||
         (withdrawal &&
             !(method == 'DELETE' &&
                 (path.startsWith('agent/') ||

@@ -7,7 +7,7 @@ This is a live execution ledger, not a claim of overall completion.
 |---|---|---|
 | Auth/current safety/profile review | DONE bounded current contract | services/api_service.dart, entry/server_entry_metadata.dart, onboarding_screens.dart; legacy metadata absence compatible; no future policy text invented |
 | Entry identity/light-dark logos | DONE preserved | dermaire_logo.dart, entry/*; supplied assets unchanged |
-| Patient Home/atomic snapshots | PARTIAL | home_controller.dart, clinical/*; new snapshot/freshness integration pending |
+| Patient Home/atomic snapshots | PARTIAL | clinical/clinical_snapshot*.dart actual patient/doctor shared-clock transaction bundle linked from Home/Reports and patient context; independent controllers remain separate reads |
 | Profile/observations/private capture | PARTIAL | account/*, observations/*, capture/*; new association/receipts pending |
 | Products/routines/adherence/experiments | PARTIAL | products/*, routine/*, experiments/*; new CAS and operation receipts/history pending |
 | Deterministic PSM | PARTIAL | psm/*; latest schema/freshness compatibility pending; not image AI |
@@ -40,3 +40,5 @@ F4 remote verifiedaaf8d56d60e9363775c53677abfe955559bfd838.
 
 F6a clinician linking: full1507 (+32), analyzer clean; pub get succeeded.
 F5 remote verified3377f683c862d1698d6af8dc2078b4831048810a.
+
+F6b clinical snapshots: full1538 (+31), analyzer clean; pub get succeeded. F6a remote verified5eee1d888a0c08cf0cf708c0b5c6e7bfb845e43a.

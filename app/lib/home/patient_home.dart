@@ -1,3 +1,4 @@
+import '../clinical/clinical_snapshot_ui.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../app_shell.dart' show CameraScreen, TimelineScreen, ContextScreen;
@@ -119,6 +120,11 @@ class _PatientHomeState extends State<PatientHome> {
               ClinicalHomePanel(
                 key: const Key('homeGuidance'),
                 controller: s.clinical,
+              ),
+              OutlinedButton(
+                onPressed: () =>
+                    openEntry(context, const ClinicalSnapshotScreen()),
+                child: const Text('Read combined clinical snapshot'),
               ),
               const SizedBox(height: 16),
               HomePersonalStatus(

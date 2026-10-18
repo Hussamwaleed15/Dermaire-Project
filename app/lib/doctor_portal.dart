@@ -1,3 +1,4 @@
+import 'clinical/clinical_snapshot_ui.dart';
 import 'doctor/access_invitation.dart';
 import 'agent/server_agent_ui.dart';
 import 'notifications/inbox_ui.dart';
@@ -444,6 +445,13 @@ class _PatientDetailScreenState extends State<PatientDetailScreen>
               DoctorEvidenceScreen(connection: connection),
             ),
             child: const Text('Review clinical evidence'),
+          ),
+          OutlinedButton(
+            onPressed: () => openEntry(
+              context,
+              ClinicalSnapshotScreen(connection: connection),
+            ),
+            child: const Text('Read combined clinical snapshot'),
           ),
           OutlinedButton(
             onPressed: () => openEntry(
