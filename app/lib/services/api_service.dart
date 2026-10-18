@@ -1297,6 +1297,7 @@ class ApiService extends ChangeNotifier {
     Map<String, dynamic>? payload,
     int? expectedRevision,
     int? expectedRoutineRevision,
+    String? idempotencyKey,
   }) async {
     void guard() {
       if (!isCurrentSession(generation) || !canReadPatientClinicalStatus) {
@@ -1306,8 +1307,12 @@ class ApiService extends ChangeNotifier {
 
     guard();
     if (!RegExp(
-          r'^(products|routine/(entries|adherence)|experiments)(/[A-Za-z0-9_-]+){0,2}(\?[A-Za-z0-9_=&-]+)?$',
-        ).hasMatch(path) ||
+              r'^(products|routine/(entries|adherence)|experiments)(/[A-Za-z0-9_-]+){0,2}(\?[A-Za-z0-9_=&-]+)?$',
+            ).hasMatch(path) &&
+            !(method == 'GET' &&
+                RegExp(
+                  r'^products/[A-Za-z0-9_-]+/operation-attempts/(patch|delete)/[A-Za-z0-9_-]{16,128}$',
+                ).hasMatch(path)) ||
         !['GET', 'POST', 'PATCH', 'DELETE'].contains(method)) {
       throw ArgumentError('Invalid patient resource');
     }
@@ -1337,6 +1342,13 @@ class ApiService extends ChangeNotifier {
             expectedRoutineRevision > 2147483647)) {
       throw ArgumentError('Invalid linked routine precondition');
     }
+    if (idempotencyKey != null &&
+        (!RegExp(r'^[A-Za-z0-9_-]{16,128}$').hasMatch(idempotencyKey) ||
+            !(path == 'products' && method == 'POST' ||
+                RegExp(r'^products/[A-Za-z0-9_-]+$').hasMatch(path) &&
+                    ['PATCH', 'DELETE'].contains(method)))) {
+      throw ArgumentError('Invalid product operation identity');
+    }
     final request = http.Request(method, Uri.parse('$baseUrl/$path'));
     request.followRedirects = false;
     request.headers.addAll(_headers(payload != null));
@@ -1345,6 +1357,9 @@ class ApiService extends ChangeNotifier {
     }
     if (expectedRoutineRevision != null) {
       request.headers['Routine-If-Match'] = '"$expectedRoutineRevision"';
+    }
+    if (idempotencyKey != null) {
+      request.headers['Idempotency-Key'] = idempotencyKey;
     }
     if (payload != null) request.body = jsonEncode(payload);
     final response = await _client
@@ -1356,6 +1371,7 @@ class ApiService extends ChangeNotifier {
       throw PatientResourceMissing();
     }
     if (![200, 201, 204].contains(response.statusCode)) {
+      if (idempotencyKey != null) throw IntegrationFailure(response.statusCode);
       throw RequestFailure.http(response.statusCode);
     }
     return response.statusCode == 204 ? null : jsonDecode(response.body);

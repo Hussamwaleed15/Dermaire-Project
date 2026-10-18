@@ -62,7 +62,8 @@ class ProductsFeatureTab extends StatelessWidget {
                             controller.isLoading ||
                                 controller.isSaving ||
                                 controller.isStale ||
-                                controller.createUncertain
+                                controller.createUncertain ||
+                                controller.pendingOperation != null
                             ? null
                             : () => openPage(
                                 context,
@@ -108,10 +109,58 @@ class ProductsFeatureTab extends StatelessWidget {
                           controller.isStale &&
                           controller.lastConfirmedAt != null,
                       confirmedAt: controller.lastConfirmedAt,
-                      uncertainWrite: controller.createUncertain,
+                      uncertainWrite:
+                          controller.createUncertain ||
+                          controller.pendingOperation != null,
                       busy: controller.isLoading || controller.isSaving,
                       onRefresh: controller.load,
                       refreshLabel: 'Retry refresh',
+                    ),
+                  ),
+                ),
+              if (controller.pendingOperation != null)
+                SliverPadding(
+                  padding: const EdgeInsets.all(20),
+                  sliver: SliverToBoxAdapter(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        const Text(
+                          'A previous product request needs confirmation. Refreshing the library alone does not resolve it.',
+                        ),
+                        OutlinedButton(
+                          onPressed: controller.isSaving || controller.isLoading
+                              ? null
+                              : () => controller.recoverProductOperation(),
+                          child: const Text('Check original request'),
+                        ),
+                        if (controller.pendingOperation?.lookupStatus ==
+                                'expired' ||
+                            controller.pendingOperation?.availability ==
+                                'erased')
+                          OutlinedButton(
+                            onPressed:
+                                controller.isSaving ||
+                                    controller.isLoading ||
+                                    controller.isStale
+                                ? null
+                                : () => controller.recoverProductOperation(
+                                    finishUnavailableReview: true,
+                                  ),
+                            child: const Text('Finish receipt review'),
+                          ),
+                        if (controller.pendingOperation?.lookupStatus ==
+                            'unknown')
+                          OutlinedButton(
+                            onPressed:
+                                controller.isSaving || controller.isLoading
+                                ? null
+                                : () => controller.recoverProductOperation(
+                                    retryOriginal: true,
+                                  ),
+                            child: const Text('Retry original request'),
+                          ),
+                      ],
                     ),
                   ),
                 ),

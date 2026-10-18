@@ -9,7 +9,7 @@ This is a live execution ledger, not a claim of overall completion.
 | Entry identity/light-dark logos | DONE preserved | dermaire_logo.dart, entry/*; supplied assets unchanged |
 | Patient Home/atomic snapshots | PARTIAL | clinical/clinical_snapshot*.dart actual patient/doctor shared-clock transaction bundle linked from Home/Reports and patient context; independent controllers remain separate reads |
 | Profile/observations/private capture | PARTIAL | account/*, observations/*, capture/*; new association/receipts pending |
-| Products/routines/adherence/experiments | PARTIAL | products/* actual editor retains server identity and original quoted PATCH/DELETE revisions; routine/* and experiments/* consume original revisions; explicit reviewed dual-resource activation supports safe routine opt-in; configuration receipts/history/restart recovery pending |
+| Products/routines/adherence/experiments | PARTIAL | products/* actual editor retains server identity and original quoted PATCH/DELETE revisions; routine/* and experiments/* consume original revisions; explicit reviewed dual-resource activation supports safe routine opt-in; product_operation.dart / product_repository.dart / products_controller.dart / products_ui.dart now integrate create/patch/delete original receipts and explicit check/retry/review; routine/experiment receipts, history and restart recovery pending |
 | Deterministic PSM | PARTIAL | psm/*; latest schema/freshness compatibility pending; not image AI |
 | Doctor grant management/entry | PARTIAL | doctor/access_invitation.dart actual intended-doctor VIEW issue/key attempts/current scoped claim; doctor_models.dart optional real scope readback; policy-loss selected revoke/restart recovery remain |
 | Persistent messaging | PARTIAL | messaging/messaging_models.dart, messaging_controller.dart, messaging_ui.dart; real enrollment/list/send/read/paging/withdraw/reconciliation integrated; context/day-group/scroll polish in F6 |
@@ -48,3 +48,5 @@ F6c-1 products: full1566 (+28), analyzer clean; pub get succeeded. F6b remote ve
 F6c-2 protected routine edit/stop: full1590 (+24), analyzer clean; pub get succeeded. F6c-1 remote verifieddc73dbc970ea126ac396be638adc1fc9638d7d79.
 
 F6c-3 experiments/linked routine: full1625 (+35), analyzer clean; pub get succeeded. F6c-2 remote verified45c19219352e85ee18c042acf9f1ecfb76a1edc9.
+
+F6 continuation start3efe4b5a36e793e12628d8d3d4f8aafe6a75d3e5; fetched identical main; baseline1625. F6d-1 product receipts: all1652 (+27), analyzer clean. Controller recreation is session memory only; F6e persistence not yet implemented.

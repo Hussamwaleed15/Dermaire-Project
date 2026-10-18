@@ -4,6 +4,8 @@ import '../services/api_service.dart';
 import '../services/request_failure.dart';
 import 'product.dart';
 import 'product_repository.dart';
+import 'product_operation.dart';
+import '../integration/contract.dart';
 import 'product_validation.dart';
 
 class ProductOperationResult {
@@ -38,6 +40,76 @@ class ProductsController extends ChangeNotifier {
   bool get requiresServerSession => _repository is RemoteProductRepository;
   List<Product> _products = [];
   int _generation = 0;
+  ProductPendingOperation? get pendingOperation =>
+      requiresServerSession && ApiService.instance.canReadPatientClinicalStatus
+      ? (_repository as RemoteProductRepository).pending
+      : null;
+  Future<ProductOperationResult> recoverProductOperation({
+    bool retryOriginal = false,
+    bool finishUnavailableReview = false,
+  }) async {
+    if (!requiresServerSession ||
+        isSaving ||
+        isLoading ||
+        pendingOperation == null) {
+      return const ProductOperationResult.failure(
+        'No recoverable product request is available.',
+      );
+    }
+    final generation = _generation;
+    isSaving = true;
+    errorMessage = null;
+    notifyListeners();
+    try {
+      final resolved = await (_repository as RemoteProductRepository).reconcile(
+        retryOriginal: retryOriginal,
+        finishUnavailableReview: finishUnavailableReview,
+      );
+      if (_disposed || generation != _generation) {
+        return const ProductOperationResult.failure(
+          'Session changed. Reopen products.',
+        );
+      }
+      createUncertain = pendingOperation?.kind == 'create';
+      isSaving = false;
+      await load();
+      if (_disposed || _generation != generation + 1) {
+        return const ProductOperationResult.failure(
+          'Session changed. Reopen products.',
+        );
+      }
+      final message = isStale
+          ? 'The original receipt was checked, but the current library could not be refreshed.'
+          : resolved
+          ? finishUnavailableReview
+                ? 'Receipt review complete. No original request was repeated.'
+                : 'Original product request confirmed. The library shows current server records.'
+          : pendingOperation?.lookupStatus == 'unknown'
+          ? 'The server has no committed receipt yet. The original request remains uncertain.'
+          : 'The original receipt content is expired or erased. Review current records; do not resubmit this request.';
+      if (!isStale) errorMessage = message;
+      notifyListeners();
+      return resolved && !isStale
+          ? ProductOperationResult.success(message)
+          : ProductOperationResult.failure(message);
+    } catch (failure) {
+      if (_disposed || generation != _generation) {
+        return const ProductOperationResult.failure(
+          'Session changed. Reopen products.',
+        );
+      }
+      isStale = true;
+      errorMessage =
+          'Original request remains unconfirmed. ${failure is IntegrationFailure ? RequestFailure.http(failure.status).message : RequestFailure.from(failure).message}';
+      return ProductOperationResult.failure(errorMessage!);
+    } finally {
+      if (!_disposed && generation == _generation) {
+        isSaving = false;
+        notifyListeners();
+      }
+    }
+  }
+
   bool createUncertain = false;
   bool isStale = false;
   bool isLoading = true;
@@ -187,7 +259,7 @@ class ProductsController extends ChangeNotifier {
       return [..._products, saved];
     }, 'Product saved to your library.');
     if (!result.success && requiresServerSession && isStale) {
-      createUncertain = true;
+      createUncertain = pendingOperation?.kind == 'create';
     }
     return result;
   }
@@ -306,6 +378,11 @@ class ProductsController extends ChangeNotifier {
         'Refresh products online before making changes.',
       );
     }
+    if (pendingOperation != null) {
+      return const ProductOperationResult.failure(
+        'Check the original product request before starting another change.',
+      );
+    }
     if (isSaving) {
       return const ProductOperationResult.failure(
         'Please wait for the current change to finish.',
@@ -339,7 +416,7 @@ class ProductsController extends ChangeNotifier {
       }
       isStale = true;
       errorMessage =
-          'Change not confirmed. ${RequestFailure.from(failure).message}';
+          'Change not confirmed. ${failure is IntegrationFailure ? RequestFailure.http(failure.status).message : RequestFailure.from(failure).message}';
       return ProductOperationResult.failure(errorMessage!);
     } finally {
       if (!_disposed && generation == _generation) {
