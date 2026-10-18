@@ -443,6 +443,16 @@ class _PatientDetailScreenState extends State<PatientDetailScreen>
           OutlinedButton(
             onPressed: () => openEntry(
               context,
+              CreateClinicalPlanScreen(
+                connection: connection,
+                comparison: true,
+              ),
+            ),
+            child: const Text('Create plan-linked comparison'),
+          ),
+          OutlinedButton(
+            onPressed: () => openEntry(
+              context,
               ClinicalPlansScreen(patient: widget.patient.id),
             ),
             child: const Text('Patient clinical plans'),

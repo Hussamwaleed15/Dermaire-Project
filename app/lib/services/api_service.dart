@@ -418,7 +418,10 @@ class ApiService extends ChangeNotifier {
                 (path.startsWith('agent/') ||
                     path.startsWith('notifications/') ||
                     path.startsWith('messaging/') ||
-                    path.startsWith('doctor/access/'))))) {
+                    path.startsWith('doctor/access/') ||
+                    RegExp(
+                      r'^clinical-plans/[A-Za-z0-9_-]+/evaluation$',
+                    ).hasMatch(path))))) {
       throw ArgumentError('Invalid integration resource');
     }
     if (key != null && !RegExp(r'^[A-Za-z0-9_-]{16,128}$').hasMatch(key)) {

@@ -1,3 +1,4 @@
+import 'plan_evaluation.dart';
 import '../clinical/clinical_models.dart';
 import '../integration/contract.dart';
 
@@ -84,27 +85,35 @@ class PlanEvent {
   ) : revision = count(data['revision']),
       operation = text(data['operation']),
       actor = resourceId(data['actor_id']),
-      recorded = timestamp(data['recorded_at']),
-      snapshot = ClinicalPlan.fromApi(
-        object(object(data['snapshot'])['plan']),
-        owner,
-        role,
-      ),
-      details = Map.unmodifiable(object(object(data['snapshot'])['details'])) {
-    if (revision != snapshot.revision ||
-        snapshot.id != plan.id ||
-        snapshot.patient != plan.patient ||
-        snapshot.doctor != plan.doctor ||
-        snapshot.grant != plan.grant ||
-        ![plan.patient, plan.doctor].contains(actor)) {
-      throw const FormatException('Unverified plan history');
+      recorded = timestamp(data['recorded_at']) {
+    if (![plan.patient, plan.doctor].contains(actor)) {
+      throw const FormatException('Unverified event actor');
+    }
+    final event = object(data['snapshot']);
+    if (operation == 'evaluation') {
+      evaluation = PlanEvaluation(event, plan);
+      if (event['plan_revision'] != revision) {
+        throw const FormatException('Unverified evaluation revision');
+      }
+      details = const {};
+    } else {
+      snapshot = ClinicalPlan.fromApi(object(event['plan']), owner, role);
+      details = Map.unmodifiable(object(event['details']));
+      if (revision != snapshot!.revision ||
+          snapshot!.id != plan.id ||
+          snapshot!.patient != plan.patient ||
+          snapshot!.doctor != plan.doctor ||
+          snapshot!.grant != plan.grant) {
+        throw const FormatException('Unverified plan history');
+      }
     }
   }
   final int revision;
   final String operation, actor;
   final DateTime recorded;
-  final ClinicalPlan snapshot;
-  final Map<String, dynamic> details;
+  ClinicalPlan? snapshot;
+  PlanEvaluation? evaluation;
+  late final Map<String, dynamic> details;
 }
 
 String? validateWallSchedule(String local, String zone, int? fold) {

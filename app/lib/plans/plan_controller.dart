@@ -1,3 +1,4 @@
+import 'plan_evaluation.dart';
 import '../clinical/clinical_models.dart';
 import '../integration/contract.dart';
 import '../integration/private_view.dart';
@@ -64,6 +65,8 @@ class PlanController extends PrivateController {
   final _history = <PlanEvent>[];
   int? nextHistory;
   String? outcome;
+  PlanEvaluation? _evaluation;
+  PlanEvaluation? get evaluation => current ? _evaluation : null;
   ClinicalPlan? get value => current ? _value : null;
   List<PlanEvent> get history => current ? List.unmodifiable(_history) : [];
   String get intentId => 'plan:$id';
@@ -72,9 +75,20 @@ class PlanController extends PrivateController {
   @override
   void wipe() {
     _value = null;
+    _evaluation = null;
     _history.clear();
     nextHistory = null;
     outcome = null;
+  }
+
+  void invalidateEvidence() {
+    if (disposed) return;
+    revision++;
+    wipe();
+    busy = false;
+    error =
+        'Plan or private image authority changed. Refresh current plan before viewing evidence.';
+    notifyListeners();
   }
 
   Future<ClinicalPlan> read() async => ClinicalPlan.fromApi(
@@ -113,6 +127,7 @@ class PlanController extends PrivateController {
       if (!valid(ticket)) return;
       apply(row);
       await readHistory(ticket, 0);
+      if (valid(ticket)) await readEvaluation(ticket);
     } catch (failure) {
       if (valid(ticket)) {
         wipe();
@@ -163,6 +178,31 @@ class PlanController extends PrivateController {
     nextHistory = next;
   }
 
+  Future<void> readEvaluation(int ticket) async {
+    final plan = value;
+    if (plan == null || plan.kind != 'comparison') return;
+    final job = PlanEvaluation(
+      object(
+        (await api.integrationResource(
+          'clinical-plans/$id/evaluation',
+          generation,
+        )).data,
+      ),
+      plan,
+    );
+    if (!valid(ticket)) return;
+    if (job.state != 'not_requested' &&
+        (job.wire['plan_revision'] as int) > plan.revision) {
+      final latest = await read();
+      if (!valid(ticket)) return;
+      apply(latest);
+      if ((job.wire['plan_revision'] as int) > latest.revision) {
+        throw const FormatException('Plan read is behind evaluation');
+      }
+    }
+    _evaluation = job;
+  }
+
   Future<void> moreHistory() async {
     if (!current || busy || nextHistory == null || _history.length >= 500) {
       return;
@@ -199,13 +239,17 @@ class PlanController extends PrivateController {
       'reschedule': {'local_due', 'timezone', 'fold'},
       'review': {'assessment'},
       'capture': {'capture_id'},
+      'evaluation': {'image_processing_consent'},
+      'evaluation/review': {'job_id', 'decision', 'assessment'},
     };
     if (!allowed.containsKey(operation) ||
         fields.keys.any((k) => !allowed[operation]!.contains(k))) {
       return false;
     }
-    if (['acknowledge', 'capture'].contains(operation) && role != 'patient' ||
-        ['review', 'reschedule'].contains(operation) && role != 'doctor') {
+    if (['acknowledge', 'capture', 'evaluation'].contains(operation) &&
+            role != 'patient' ||
+        ['review', 'reschedule', 'evaluation/review'].contains(operation) &&
+            role != 'doctor') {
       return false;
     }
     if (operation == 'reschedule' &&
@@ -217,9 +261,26 @@ class PlanController extends PrivateController {
             null) {
       return false;
     }
+    if (operation == 'evaluation' &&
+        (plan.kind != 'comparison' ||
+            plan.state != 'captured' ||
+            fields['image_processing_consent'] != true)) {
+      return false;
+    }
+    if (operation == 'evaluation/review' &&
+        (evaluation?.currentState != 'pending_human_review' ||
+            fields['job_id'] != evaluation?.wire['id'] ||
+            !['reviewed', 'rejected'].contains(fields['decision']))) {
+      return false;
+    }
     final intent = PendingIntent(
       path: 'clinical-plans/$id/$operation',
-      attemptPath: 'clinical-plans/$id/attempts/$operation',
+      attemptPath:
+          'clinical-plans/$id/attempts/${operation == 'evaluation'
+              ? 'evaluate'
+              : operation == 'evaluation/review'
+              ? 'evaluation_review'
+              : operation}',
       body: {'expected_revision': expected, ...fields},
     );
     api.integrationIntents[intentId] = intent;
@@ -243,22 +304,25 @@ class PlanController extends PrivateController {
       }
       sent = true;
       intent.uncertain = true;
-      final receipt = ClinicalPlan.fromApi(
-        object(
-          (await api.integrationResource(
-            intent.path,
-            generation,
-            method: 'POST',
-            body: intent.body,
-            key: intent.key,
-          )).data,
-        ),
-        owner,
-        role,
+      final data = object(
+        (await api.integrationResource(
+          intent.path,
+          generation,
+          method: 'POST',
+          body: intent.body,
+          key: intent.key,
+        )).data,
       );
       acknowledged = true;
       if (!valid(ticket)) return false;
-      return await confirm(receipt, intent, ticket);
+      if (intent.path.contains('/evaluation')) {
+        return await confirmEvaluation(data, intent, ticket);
+      }
+      return await confirm(
+        ClinicalPlan.fromApi(data, owner, role),
+        intent,
+        ticket,
+      );
     } catch (failure) {
       if (!authenticatedCurrent) return false;
       if (!wasUncertain &&
@@ -318,11 +382,96 @@ class PlanController extends PrivateController {
     apply(latest);
     _history.clear();
     await readHistory(ticket, 0);
+    if (valid(ticket)) await readEvaluation(ticket);
     if (!valid(ticket)) return false;
     api.integrationIntents.remove(intentId);
     outcome =
         'Change confirmed at revision ${receipt.revision}. Current plan revision ${latest.revision}; no notification delivery is implied.';
     return true;
+  }
+
+  Future<bool> confirmEvaluation(
+    Map<String, dynamic> data,
+    PendingIntent intent,
+    int ticket,
+  ) async {
+    final plan = await read();
+    if (!valid(ticket)) return false;
+    final receipt = PlanEvaluation(data, plan),
+        expected = intent.body['expected_revision'] as int;
+    final isReview = intent.path.endsWith('/review');
+    if (receipt.wire['plan_revision'] != expected + 1 ||
+        plan.revision < expected + 1 ||
+        (!isReview && receipt.state != 'queued') ||
+        (isReview &&
+            (receipt.state != intent.body['decision'] ||
+                receipt.wire['id'] != intent.body['job_id'] ||
+                object(receipt.wire['human_review'])['assessment'] !=
+                    intent.body['assessment']))) {
+      throw const FormatException('Unverified evaluation receipt');
+    }
+    apply(plan);
+    await readEvaluation(ticket);
+    if (!valid(ticket)) return false;
+    _history.clear();
+    await readHistory(ticket, 0);
+    if (!valid(ticket)) return false;
+    api.integrationIntents.remove(intentId);
+    outcome = isReview
+        ? 'Clinician inference review recorded. This does not certify clinical accuracy or clearance.'
+        : 'Evaluation request recorded. Current evaluation state: ${evaluation?.currentState}. This is not a completed clinical analysis.';
+    return true;
+  }
+
+  Future<void> cancelEvaluation() async {
+    final plan = value;
+    if (!current ||
+        busy ||
+        pending != null ||
+        plan == null ||
+        plan.kind != 'comparison' ||
+        evaluation == null ||
+        evaluation!.state == 'not_requested') {
+      return;
+    }
+    final ticket = begin();
+    try {
+      final before = await read();
+      if (!valid(ticket)) return;
+      if (before.revision != plan.revision) throw IntegrationFailure(409);
+      final data = object(
+        (await api.integrationResource(
+          'clinical-plans/$id/evaluation',
+          generation,
+          method: 'DELETE',
+          query: {'expected_revision': '${plan.revision}'},
+          withdrawal: true,
+        )).data,
+      );
+      final receipt = PlanEvaluation(data, plan);
+      if (receipt.state != 'cancelled') {
+        throw const FormatException('Unverified evaluation cancellation');
+      }
+      final latest = await read();
+      if (!valid(ticket)) return;
+      apply(latest);
+      await readEvaluation(ticket);
+      if (!valid(ticket)) return;
+      _history.clear();
+      await readHistory(ticket, 0);
+      if (valid(ticket)) {
+        outcome =
+            'Evaluation cancellation acknowledged. Current state: ${evaluation?.currentState}.';
+      }
+    } catch (e) {
+      if (valid(ticket)) {
+        wipe();
+        error =
+            'Cancellation is unconfirmed. Refresh current evaluation before another request. ${integrationError(e)}';
+      }
+    } finally {
+      finish(ticket);
+    }
   }
 
   Future<bool> reconcile({bool retryOriginal = false}) async {
@@ -338,6 +487,13 @@ class PlanController extends PrivateController {
       );
       if (!valid(ticket)) return false;
       if (data['status'] == 'committed') {
+        if (intent.path.contains('/evaluation')) {
+          return await confirmEvaluation(
+            object(data['result']),
+            intent,
+            ticket,
+          );
+        }
         return await confirm(
           ClinicalPlan.fromApi(object(data['result']), owner, role),
           intent,
@@ -501,6 +657,10 @@ class CreatePlanController extends PrivateController {
         receipt.state != 'proposed' ||
         receipt.kind != intent.body['kind'] ||
         receipt.purpose != intent.body['purpose'] ||
+        receipt.baseline != intent.body['baseline_capture_id'] ||
+        (intent.body['source_id'] != null &&
+            (receipt.source['source_id'] != intent.body['source_id'] ||
+                receipt.source['source_type'] != intent.body['source_type'])) ||
         receipt.timezone != intent.body['timezone'] ||
         DateTime.parse(receipt.localWallTime) !=
             DateTime.parse(intent.body['local_due'] as String)) {
@@ -520,6 +680,8 @@ class CreatePlanController extends PrivateController {
     if (latest.id != receipt.id ||
         latest.revision < receipt.revision ||
         latest.patient != receipt.patient ||
+        latest.baseline != receipt.baseline ||
+        latest.kind != receipt.kind ||
         latest.grant != receipt.grant) {
       throw const FormatException('Unverified current plan');
     }

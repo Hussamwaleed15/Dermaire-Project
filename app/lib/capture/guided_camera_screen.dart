@@ -64,8 +64,10 @@ class GuidedCameraScreen extends StatefulWidget {
     required this.state,
     this.cameraPort,
     this.prepare,
+    this.returnCapture = false,
   });
   final DermaireState state;
+  final bool returnCapture;
   final CameraPort? cameraPort;
   final Future<PreparedPhoto> Function(Uint8List)? prepare;
   @override
@@ -317,6 +319,25 @@ class _GuidedCameraScreenState extends State<GuidedCameraScreen>
                             },
                       icon: const Icon(Icons.photo_library_outlined),
                       label: const Text('View private image history'),
+                    ),
+                  if (widget.returnCapture &&
+                      capture.phase == GuidedCapturePhase.confirmed &&
+                      capture.record?.state == 'accepted' &&
+                      capture.record?.stored == true)
+                    FilledButton(
+                      onPressed: () {
+                        final record = capture.record!;
+                        if (!current) return;
+                        setState(() => allowPop = true);
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          if (current &&
+                              capture.record?.id == record.id &&
+                              ModalRoute.of(context)?.isCurrent == true) {
+                            Navigator.of(context).pop(record);
+                          }
+                        });
+                      },
+                      child: const Text('Use this confirmed capture'),
                     ),
                   if (capture.phase == GuidedCapturePhase.confirmed &&
                       capture.record != null)

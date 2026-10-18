@@ -1,3 +1,7 @@
+import '../doctor/doctor_records_controller.dart';
+import '../capture/guided_camera_screen.dart';
+import '../capture/guided_capture_models.dart';
+import 'plan_images.dart';
 import 'package:flutter/material.dart';
 import '../dermaire_widgets.dart';
 import '../dermaire_state.dart';
@@ -88,10 +92,69 @@ class ClinicalPlanScreen extends StatefulWidget {
 
 class _ClinicalPlanState extends State<ClinicalPlanScreen> {
   late PlanController controller = PlanController(widget.id);
+  GuidedCaptureRecord? candidate;
+  int? capturePlanRevision;
+  @override
+  void initState() {
+    super.initState();
+    controller.addListener(guardCandidate);
+  }
+
+  void guardCandidate() {
+    if (!controller.authenticatedCurrent || !controller.visible) {
+      candidate = null;
+      capturePlanRevision = null;
+    }
+  }
+
+  @override
+  void dispose() {
+    controller.removeListener(guardCandidate);
+    super.dispose();
+  }
+
+  Future<void> takeFollowup(ClinicalPlan plan) async {
+    final state = widget.state;
+    if (state == null ||
+        !controller.current ||
+        controller.busy ||
+        controller.pending != null ||
+        plan.state != 'scheduled') {
+      return;
+    }
+    final generation = controller.generation;
+    final record = await openEntry<GuidedCaptureRecord>(
+      context,
+      GuidedCameraScreen(state: state, returnCapture: true),
+    );
+    if (!mounted ||
+        !controller.authenticatedCurrent ||
+        generation != controller.generation ||
+        record == null ||
+        record.owner != controller.owner ||
+        record.state != 'accepted' ||
+        !record.stored ||
+        record.id == plan.baseline ||
+        plan.acknowledged == null ||
+        record.receivedAt.isBefore(plan.acknowledged!)) {
+      return;
+    }
+    setState(() {
+      candidate = record;
+      capturePlanRevision = plan.revision;
+    });
+  }
+
   @override
   void didUpdateWidget(covariant ClinicalPlanScreen old) {
     super.didUpdateWidget(old);
-    if (old.id != widget.id) controller = PlanController(widget.id);
+    if (old.id != widget.id) {
+      controller.removeListener(guardCandidate);
+      controller = PlanController(widget.id);
+      controller.addListener(guardCandidate);
+      candidate = null;
+      capturePlanRevision = null;
+    }
   }
 
   @override
@@ -141,8 +204,74 @@ class _ClinicalPlanState extends State<ClinicalPlanScreen> {
               'A plan is not medical clearance. Follow current safety guidance; this is not an emergency service.',
             ),
             if (plan.kind == 'comparison') ...[
+              Text(
+                'Plan-linked source: ${plan.source['source_type']} · ${plan.source['source_id']}',
+              ),
+              if (c.role == 'patient' &&
+                  plan.state == 'scheduled' &&
+                  widget.state != null)
+                FilledButton(
+                  onPressed: c.busy || c.pending != null
+                      ? null
+                      : () => takeFollowup(plan),
+                  child: const Text('Take guided follow-up capture'),
+                ),
+              if (candidate != null && c.role == 'patient') ...[
+                Text(
+                  'Confirmed capture awaiting explicit association: ${candidate!.id}',
+                ),
+                if (capturePlanRevision != plan.revision)
+                  const Text(
+                    'The plan changed during capture. Review the current schedule and take a new follow-up for this revision.',
+                  ),
+                FilledButton(
+                  onPressed:
+                      c.busy ||
+                          c.pending != null ||
+                          plan.state != 'scheduled' ||
+                          capturePlanRevision != plan.revision
+                      ? null
+                      : () async {
+                          final saved = await c.mutate('capture', {
+                            'capture_id': candidate!.id,
+                          }, plan.revision);
+                          if (saved && mounted) {
+                            setState(() => candidate = null);
+                          }
+                        },
+                  child: const Text(
+                    'Associate confirmed capture with this plan',
+                  ),
+                ),
+              ],
+              PlanImagePanel(
+                key: ValueKey('images:${plan.id}:${plan.revision}'),
+                controller: c,
+                plan: plan,
+              ),
               Text('Baseline capture: ${plan.baseline}'),
               Text('Follow-up capture: ${plan.followup ?? 'Not attached'}'),
+              _EvaluationActions(
+                key: ValueKey('evaluation:${plan.id}:${plan.revision}'),
+                controller: c,
+                plan: plan,
+              ),
+              if (c.evaluation != null) ...[
+                Text(
+                  'Evaluation state: ${c.evaluation!.currentState.replaceAll('_', ' ')}',
+                ),
+                if (c.evaluation!.state != 'not_requested')
+                  Text(
+                    'Evaluation event revision: ${c.evaluation!.wire['plan_revision']}',
+                  ),
+                if (c.evaluation!.wire['human_review'] is Map)
+                  Text(
+                    'Clinician inference review: ${(c.evaluation!.wire['human_review'] as Map)['assessment']}',
+                  ),
+                const Text(
+                  'A queued job is a processing request. A clinician plan review is separate from a review of inference evidence.',
+                ),
+              ],
               const Text(
                 'Comparison inference is unavailable unless a real current result is separately returned. No improvement percentage or diagnosis is inferred.',
               ),
@@ -170,7 +299,9 @@ class _ClinicalPlanState extends State<ClinicalPlanScreen> {
                     Text(
                       'Author account: ${event.actor} · ${clinicalTime(event.recorded)}',
                     ),
-                    Text('Recorded state: ${event.snapshot.state}'),
+                    Text(
+                      'Recorded state: ${event.snapshot?.state ?? event.evaluation?.state}',
+                    ),
                     if (event.details['assessment'] is String)
                       Text(
                         'Clinician-authored assessment: ${event.details['assessment']}',
@@ -333,8 +464,13 @@ class _PlanActionsState extends State<_PlanActions> {
 }
 
 class CreateClinicalPlanScreen extends StatefulWidget {
-  const CreateClinicalPlanScreen({super.key, required this.connection});
+  const CreateClinicalPlanScreen({
+    super.key,
+    required this.connection,
+    this.comparison = false,
+  });
   final DoctorConnectionController connection;
+  final bool comparison;
   @override
   State<CreateClinicalPlanScreen> createState() => _CreateClinicalPlanState();
 }
@@ -346,7 +482,9 @@ class _CreateClinicalPlanState extends State<CreateClinicalPlanScreen> {
     controller: controller,
     builder: (context, c) => DermairePage(
       eyebrow: 'Clinician-authored scheduling',
-      title: 'Create follow-up plan',
+      title: widget.comparison
+          ? 'Create comparison plan'
+          : 'Create follow-up plan',
       children: [
         Text(
           'Selected patient: ${widget.connection.patientId}. Current original grant is rechecked before creating a plan.',
@@ -380,24 +518,49 @@ class _CreateClinicalPlanState extends State<CreateClinicalPlanScreen> {
             ),
           ),
         ] else
-          _NewFollowupForm(controller: c),
+          _NewFollowupForm(controller: c, comparison: widget.comparison),
       ],
     ),
   );
 }
 
 class _NewFollowupForm extends StatefulWidget {
-  const _NewFollowupForm({required this.controller});
+  const _NewFollowupForm({required this.controller, required this.comparison});
   final CreatePlanController controller;
+  final bool comparison;
   @override
   State<_NewFollowupForm> createState() => _NewFollowupFormState();
 }
 
 class _NewFollowupFormState extends State<_NewFollowupForm> {
+  late final records = DoctorRecordsController(widget.controller.connection);
+  String? baseline, source;
+  @override
+  void initState() {
+    super.initState();
+    if (widget.comparison) {
+      records.addListener(changed);
+      records.refresh();
+    }
+  }
+
+  void changed() {
+    if (mounted) {
+      setState(() {
+        if (!records.confirmed) {
+          baseline = null;
+          source = null;
+        }
+      });
+    }
+  }
+
   final purpose = TextEditingController();
   String? error;
   @override
   void dispose() {
+    records.removeListener(changed);
+    records.dispose();
     purpose.dispose();
     super.dispose();
   }
@@ -417,6 +580,49 @@ class _NewFollowupFormState extends State<_NewFollowupForm> {
           errorText: error,
         ),
       ),
+      if (widget.comparison) ...[
+        const Text(
+          'Choose a real intervention and an accepted private baseline from the currently authorized patient timeline. No arbitrary photo pairing.',
+        ),
+        OutlinedButton(
+          onPressed: records.loading ? null : records.refresh,
+          child: const Text('Refresh authorized evidence'),
+        ),
+        if (records.loading) const Text('Reading authorized evidence…'),
+        if (records.error != null) Text(records.error!),
+        if (records.hasMore)
+          OutlinedButton(
+            onPressed: records.loadingMore ? null : records.loadMore,
+            child: const Text('Load more evidence'),
+          ),
+        const Text('Intervention or observation'),
+        for (final item in records.items.where(
+          (i) =>
+              i.field == 'record' &&
+              ['routine', 'experiment', 'checkin'].contains(i.source),
+        ))
+          ChoiceChip(
+            label: Text('${item.source} · ${item.sourceId}'),
+            selected: source == item.id,
+            onSelected: widget.controller.busy
+                ? null
+                : (_) => setState(() => source = item.id),
+          ),
+        const Text('Private baseline'),
+        for (final item in records.items.where((i) => i.storedCapture))
+          ChoiceChip(
+            label: Text('Capture ${item.sourceId}'),
+            selected: baseline == item.sourceId,
+            onSelected: widget.controller.busy
+                ? null
+                : (_) => setState(() => baseline = item.sourceId),
+          ),
+        if (!records.loading &&
+            records.items.where((i) => i.storedCapture).isEmpty)
+          const Text(
+            'No accepted stored baseline in the loaded authorized evidence.',
+          ),
+      ],
       _ScheduleEditor(
         busy: widget.controller.busy,
         onSubmit: (local, zone, fold) async {
@@ -427,15 +633,37 @@ class _NewFollowupFormState extends State<_NewFollowupForm> {
             );
             return false;
           }
+          final selected = records.items
+              .where((i) => i.id == source)
+              .firstOrNull;
+          if (widget.comparison &&
+              (!records.confirmed ||
+                  selected == null ||
+                  !records.canReadCapture(baseline ?? ''))) {
+            setState(
+              () => error =
+                  'Choose an authorized source and accepted stored baseline.',
+            );
+            return false;
+          }
           return widget.controller.create({
-            'kind': 'follow_up',
+            'kind': widget.comparison ? 'comparison' : 'follow_up',
+            if (widget.comparison) ...{
+              'source_type': selected!.source == 'checkin'
+                  ? 'observation'
+                  : selected.source,
+              'source_id': selected.sourceId,
+              'baseline_capture_id': baseline,
+            },
             'purpose': purpose.text.trim(),
             'local_due': local,
             'timezone': zone,
             'fold': fold,
           });
         },
-        label: 'Create proposed follow-up',
+        label: widget.comparison
+            ? 'Propose this comparison plan'
+            : 'Create proposed follow-up',
       ),
     ],
   );
@@ -539,4 +767,137 @@ class _ScheduleEditorState extends State<_ScheduleEditor> {
       ),
     ],
   );
+}
+
+class _EvaluationActions extends StatefulWidget {
+  const _EvaluationActions({
+    super.key,
+    required this.controller,
+    required this.plan,
+  });
+  final PlanController controller;
+  final ClinicalPlan plan;
+  @override
+  State<_EvaluationActions> createState() => _EvaluationActionsState();
+}
+
+class _EvaluationActionsState extends State<_EvaluationActions> {
+  bool processingConsent = false, reviewConsent = false;
+  final assessment = TextEditingController();
+  @override
+  void dispose() {
+    assessment.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = widget.controller, p = widget.plan, job = c.evaluation;
+    final disabled = c.busy || c.pending != null;
+    final inference = job?.wire['inference'];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (c.role == 'patient' &&
+            p.state == 'captured' &&
+            job != null &&
+            [
+              'not_requested',
+              'unavailable',
+              'cancelled',
+            ].contains(job.currentState)) ...[
+          const Text(
+            'A validated clinical comparison model is unavailable. You can explicitly request the supported processing workflow; a queued request does not mean analysis has run.',
+          ),
+          CheckboxListTile(
+            contentPadding: EdgeInsets.zero,
+            title: const Text(
+              'I consent to process these two plan-linked private images for this evaluation request.',
+            ),
+            value: processingConsent,
+            onChanged: disabled
+                ? null
+                : (v) => setState(() => processingConsent = v!),
+          ),
+          FilledButton(
+            onPressed: disabled || !processingConsent
+                ? null
+                : () => c.mutate('evaluation', {
+                    'image_processing_consent': true,
+                  }, p.revision),
+            child: const Text('Request plan evaluation'),
+          ),
+        ],
+        if (job != null &&
+            ![
+              'not_requested',
+              'cancelled',
+              'reviewed',
+              'rejected',
+            ].contains(job.currentState))
+          OutlinedButton(
+            onPressed: disabled ? null : c.cancelEvaluation,
+            child: const Text('Cancel evaluation request'),
+          ),
+        if (inference is Map && inference['result'] is Map) ...[
+          Text('Model version: ${inference['model_version']}'),
+          Text('Artifact SHA-256: ${inference['artifact_sha256']}'),
+          const Text(
+            'Nonclinical image-quality evidence only. Accuracy is not clinically validated.',
+          ),
+          for (final flag
+              in (inference['result'] as Map)['quality_flags'] as List)
+            Text('Image-quality flag: $flag'),
+        ],
+        if (c.role == 'doctor' &&
+            job?.currentState == 'pending_human_review') ...[
+          TextField(
+            controller: assessment,
+            enabled: !disabled,
+            maxLength: 1500,
+            maxLines: 3,
+            decoration: const InputDecoration(
+              labelText:
+                  'Assessment of this inference evidence · 10–1500 characters',
+            ),
+          ),
+          CheckboxListTile(
+            contentPadding: EdgeInsets.zero,
+            title: const Text(
+              'I have reviewed the exact job and artifact above. This does not certify model accuracy or clinical clearance.',
+            ),
+            value: reviewConsent,
+            onChanged: disabled
+                ? null
+                : (v) => setState(() => reviewConsent = v!),
+          ),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              for (final decision in ['reviewed', 'rejected'])
+                OutlinedButton(
+                  onPressed: disabled || !reviewConsent
+                      ? null
+                      : () {
+                          if (assessment.text.trim().length >= 10) {
+                            c.mutate('evaluation/review', {
+                              'job_id': job!.wire['id'],
+                              'decision': decision,
+                              'assessment': assessment.text.trim(),
+                            }, p.revision);
+                          }
+                        },
+                  child: Text(
+                    decision == 'reviewed'
+                        ? 'Record inference review'
+                        : 'Reject inference evidence',
+                  ),
+                ),
+            ],
+          ),
+        ],
+      ],
+    );
+  }
 }

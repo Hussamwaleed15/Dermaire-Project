@@ -94,6 +94,13 @@ class PlanWire extends f.DoctorWire {
         result['purpose'] = body['purpose'];
         result['kind'] = body['kind'];
         result['access_id'] = body['access_id'];
+        result['baseline_capture_id'] = body['baseline_capture_id'];
+        if (body['source_id'] != null) {
+          result['source_snapshot'] = {
+            'source_id': body['source_id'],
+            'source_type': body['source_type'],
+          };
+        }
       } else {
         result['revision'] = (plan['revision'] as int) + 1;
         result['state'] = {

@@ -15,7 +15,7 @@ This is a live execution ledger, not a claim of overall completion.
 | Persistent messaging | PARTIAL | messaging/messaging_models.dart, messaging_controller.dart, messaging_ui.dart; real enrollment/list/send/read/paging/withdraw/reconciliation integrated; context/day-group/scroll polish in F6 |
 | Typed clinical follow-ups | PARTIAL | plans/ models, controllers, UI; actual create/ack/cancel/reschedule/review/history/reconciliation; comparison-specific UX and policy-withdrawal extension pending |
 | Inbox/preferences/reminders | PARTIAL | notifications/inbox_models.dart, inbox_controller.dart, inbox_ui.dart; real inbox/read/history/CAS preferences/routine reminders/withdrawal; Agent deep links and device provider remain unavailable |
-| Plan-linked comparison | NOT STARTED | comparison/* retains isolated unsupported scaffolding, no fake plans |
+| Plan-linked comparison | PARTIAL | plans/* typed original-grant plan/source/baseline, private images, guided capture association, evaluation consent/status/review/attempts; model unavailable; policy-loss withdrawal/restart recovery remain F6 |
 | Agent sessions/actions/requests | NOT STARTED | agent/* old scaffold; persistent broker not integrated yet |
 | Genuine model inference | BLOCKED | Provider/model unavailable in actual backend; no synthetic assistant responses |
 | Push delivery | BLOCKED | No real configured mobile token/provider transport/device proof; inbox independent |
@@ -31,3 +31,6 @@ F2b follow-ups: full1395 (+22), analyzer clean. See FLUTTER_F2_FOLLOW_UPS.md.
 
 F3 inbox/settings/reminders: full1418 (+23), analyzer clean; pub get succeeded.
 F2b remote verified60e6bae6c75e1d70035991ca5ac4d0b51de998bb.
+
+F4 comparison: full1440 (+22), analyzer clean; pub get succeeded.
+F3 remote verified756c89c8dab47f4317ad8f920d9ed5d7e67013a9.
