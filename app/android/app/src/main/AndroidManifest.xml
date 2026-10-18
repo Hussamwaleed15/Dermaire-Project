@@ -10,7 +10,9 @@
     <application
         android:label="dermaire_app"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:fullBackupContent="@xml/journal_backup_rules"
+        android:dataExtractionRules="@xml/journal_data_extraction_rules">
         <activity
             android:name=".MainActivity"
             android:exported="true"
