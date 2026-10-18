@@ -151,6 +151,7 @@ class JournalCoordinator {
       } catch (_) {
         // Lost responses cannot cause automatic retry, deletion or a new key.
       }
+      guard(i);
       return JournalPhase.unconfirmed;
     } finally {
       _inFlight.remove(lock);

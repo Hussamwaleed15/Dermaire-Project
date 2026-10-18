@@ -1,3 +1,4 @@
+import 'support/contract_assertions.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'package:dermaire_app/consent/clinician_withdrawal.dart';
@@ -31,7 +32,7 @@ class Wire extends base.Wire {
   Completer<http.Response>? held;
   @override
   Future<http.Response> call(http.Request r) async {
-    expect(r.url.host, 'flutter-tests.invalid');
+    expectContract(r.url.host, 'flutter-tests.invalid');
     final path = r.url.path;
     if (path.contains('/doctor/access') ||
         path.contains('/consent-attempts/revoke/')) {

@@ -92,3 +92,12 @@ F6-M M5 PARTIAL overall; minimum operation identity quarantine separated from pr
 F6-M M6 PARTIAL: versioned metadata journal protocol/coordinator/cleanup and real product receipt review implemented;31 new tests, focused58, full1960, analyzer clean. Native SQLCipher adapter BLOCKED specific approval + device qualification. Review exact unapplied docs/proposals/secure_journal_native_review.patch; no native or dependency edits applied.
 
 F6-M M7 bounded connected-care journeys and legacy doctor/grant identity lifecycle DONE; whole-device/full-roadmap integration PARTIAL.15 new tests, focused98, full1975, analyzer clean. Legacy PendingIntent quarantine gap noted in M5/M6 is now addressed for actual notes/reviews/grant withdrawal; no new server idempotency semantics claimed.
+
+F6-M M8: DONE bounded iOS simulator synthetic integration smoke (iPhone17,
+iOS26.0 runtime/version26.0.1, DB96C794-96EA-4BB6-BDB3-301F8F385FB9), exit0/1test.
+Explicit isolated transport + pure fake contract checks + bounded readiness added;
+7 new host regressions, focused122, full1982 (+97 from1885), analyze clean.
+Android runtime BLOCKED no SDK/AVD. Secure restart recovery still PARTIAL/BLOCKED
+specific native approval/device storage qualification; no persistence claim.
+The earlier inference that no iOS simulator exists is superseded by direct simctl
+inventory and successful execution. No tracked native/backend/Tester change.

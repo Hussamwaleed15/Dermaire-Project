@@ -81,3 +81,36 @@ still returns unavailable and push provider is not proof of delivery. Required
 contracts/security impact/priorities are listed above; no already implemented APIs
 are requested again. Durable local storage/native runtime are Flutter/platform
 constraints, not additional backend tasks. No live backend verification performed.
+
+## F6-M closing handoff — source reverified2026-10-18
+
+Actual backend tree last changed at8ad2ceafced5b1f06ade5a082d4939503d31c687;
+Flutter wave started at a93ab02. Source verification only; no live backend/DB test.
+Existing detailed requirements above remain authoritative; concise actionable list:
+
+| Priority | Existing route / observed source | Required contract / acceptance test |
+|---|---|---|
+| P1 | GET /agent/sessions/{session_id}; no list/discovery | Authenticated minimal session discovery with original-login/TTL/revocation rules. Returning metadata must not revive an old context/session after reauthentication. Test wrong owner, expired/revoked sessions and replacement grants. Flutter currently states discovery unavailable. |
+| P1 | GET /agent/requests orders and limits100; no cursor; action projection omits an authorized patient reference | Stable authorized pagination and explicit authorized patient_id/target tied to original grant/session. Test>100 requests, cursor boundaries and revoked grants. Flutter cannot safely infer a patient or completeness. |
+| P1 | GET /notifications message source_id is a message ID; no thread target/resolver | Add an authorized thread reference or authorized target resolver. Verify membership/consent again on navigation; never encode clinical text for lock-screen display. Flutter opens current authorized conversations. |
+| P1 | PUT /notifications/{id}/read and /unread have no revision/attempt fence | If cross-device ordering is required, supply monotonic server revision/CAS and original operation semantics; test reversed/late concurrent read/unread. Flutter makes no global ordering/delivery claim. |
+| P0 recovery boundary | Product/configuration/etc. receipt lookup returns unknown without durable rejected/in-flight proof | Define authoritative in-flight/rejected states and safe retention/replacement rules if replacement is to be unlocked. Unknown is not evidence a prior write cannot still commit. Test delayed original commits after unknown lookup. Flutter retains locks and never re-keys automatically. |
+
+**Historical evaluation is not a missing endpoint.** GET /clinical-plans/{plan_id}/history
+already returns ordered immutable events, including evaluation-job snapshots and
+next_after_revision. Flutter now consumes that actual contract, with original/latest
+job identities separate and bounded metadata. DELETE /clinical-plans/{id}/evaluation
+still has no keyed cancellation receipt; current/history proof must not be described
+as one. No additional history endpoint requested.
+
+POST /notifications/devices already exists. Real mobile token transport/provider
+configuration/actual delivery and validated comparison/Agent model remain external
+capability gates owned with Hussam; no fake device or provider success added.
+Legacy doctor note/review APIs also already support optional keyed attempts in the
+source. Current older Flutter write path still uses local uncertainty correlation;
+fully adopting those keyed receipts is Flutter integration work, not a request to
+reimplement the API. Do not weaken original-grant authorization to recover old data.
+
+Secure local journal/native key integration and Android SDK setup are Flutter/platform
+approval/runtime constraints, not Azure/DB work for Hussam. No backend, provider,
+production, database or Tester file changed by this wave.

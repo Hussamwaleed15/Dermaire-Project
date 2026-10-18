@@ -1,3 +1,4 @@
+import 'support/contract_assertions.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'package:dermaire_app/consent/clinician_withdrawal.dart';
@@ -31,7 +32,7 @@ class Wire {
         'retry_safe': false,
       };
   Future<http.Response> call(http.Request r) async {
-    expect(r.url.host, 'flutter-tests.invalid');
+    expectContract(r.url.host, 'flutter-tests.invalid');
     if (r.url.path.endsWith('/auth/login')) {
       return http.Response(
         jsonEncode({
@@ -62,8 +63,8 @@ class Wire {
     if (r.url.path.contains('/consent-attempts/')) {
       lookups++;
       final key = r.url.pathSegments.last;
-      expect(r.method, 'GET');
-      expect(r.url.path.contains('/revoke_all/'), true);
+      expectContract(r.method, 'GET');
+      expectContract(r.url.path.contains('/revoke_all/'), true);
       if (!lookupSent.isCompleted) lookupSent.complete();
       if (delayed != null) return delayed!.future;
       final receipt = value(key);
@@ -73,10 +74,10 @@ class Wire {
       );
     }
     if (r.url.path.endsWith('/doctor/revoke/$owner')) {
-      expect(r.method, 'DELETE');
-      expect(r.body, isEmpty);
+      expectContract(r.method, 'DELETE');
+      expectContract(r.body, isEmpty);
       final key = r.headers['Idempotency-Key']!;
-      expect(key, matches(RegExp(r'^[A-Za-z0-9_-]{16,128}$')));
+      expectContract(key, matches(RegExp(r'^[A-Za-z0-9_-]{16,128}$')));
       keys.add(key);
       deletes++;
       if (loss == 'before' && lose) throw TimeoutException('synthetic');
@@ -109,7 +110,7 @@ class Wire {
       email: 'synthetic@example.invalid',
       password: 'synthetic',
     );
-    expect(await ApiService.instance.readSafetyAcceptance(), false);
+    expectContract(await ApiService.instance.readSafetyAcceptance(), false);
   }
 
   Future<void> run(

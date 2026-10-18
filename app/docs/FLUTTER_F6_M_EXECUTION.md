@@ -152,3 +152,45 @@ wave_legacy_identity_lifecycle_test.dart, wave_operation_quarantine_test.dart.
 full1975; analyzer clean. Broader capture/product/routine/adherence/experiment/
 observation journeys retain existing domain suites, not yet one complete device
 journey. All-world application/runtime completeness remains PARTIAL.
+
+## M8 device validation — DONE iOS synthetic smoke; PARTIAL mobile readiness
+
+Initial Flutter doctor/devices/emulators showed only macOS/no emulator sources.
+Direct xcrun simctl inventory then found installed available iOS26.0 runtime
+(version26.0.1,23A8464) with shutdown devices. Booted existing iPhone17
+DB96C794-96EA-4BB6-BDB3-301F8F385FB9; Flutter recognized it. No SDK/runtime installed.
+
+Ran the existing integration_test/withdrawal_smoke_test.dart on that simulator.
+Initial runs exposed host-only assumptions: http.runWithClient factory scope does
+not cover every native frame callback; framework expect() guards are inappropriate
+inside fake-server callbacks; frame settlement does not guarantee completed reads.
+Implemented release-disabled, test-host-only explicit synthetic transport scope,
+pure Matcher contract assertions preserving the same predicates, and bounded actual
+state/control waits in the shared scenario. No check/assertion suppressed. Ordinary
+app transport remains unchanged outside the explicit synthetic scope. No other host
+is allowed while that scope is active. Scope cleanup/error/host-switch/root-callback
+behavior tested. No Production URL/account/OAuth or real medical data used.
+
+Final command:
+flutter test integration_test/withdrawal_smoke_test.dart --no-pub -d DB96C794-96EA-4BB6-BDB3-301F8F385FB9
+Exit0; Xcode build17.0s; runtime test7s;1 test passed. This is an executed iOS
+SIMULATOR synthetic integration smoke, not physical-device/backend E2E, camera,
+Google OAuth, Push or process-death evidence. Simulator restored to its prior
+shutdown state afterwards. Tracked Android/iOS/native/Tester files unchanged.
+
+Also hardened journal prepareAndSend: late network completion after session change
+cannot publish the old phase; original unconfirmed scoped metadata remains.
+7 new host regressions (6 synthetic transport/contract +1 late journal send).
+Focused122; final full1982 (+97 from1885 baseline); analyzer clean. Debug synthetic
+Dart/asset bundle compilation also succeeded in /tmp before simulator execution;
+it is weaker evidence than the subsequently executed test, not an APK/device test.
+
+Files: services/api_service.dart, recovery/operation_journal.dart,
+test/support/withdrawal_workflow.dart, contract_assertions.dart,
+wave_entry_withdrawal_test.dart, wave_selective_withdrawal_test.dart,
+wave_plan_withdrawal_test.dart, wave_synthetic_transport_test.dart,
+wave_journal_protocol_test.dart. Existing integration entry retained.
+Android execution BLOCKED missing Android SDK/AVD/device; no installation attempted.
+Full mobile/privacy/native-camera/real-OAuth/encrypted-storage qualification remains
+PARTIAL/NOT STARTED where appropriate. Native journal proposal still requires Amr's
+specific approval; simulator success does not approve/apply that patch.

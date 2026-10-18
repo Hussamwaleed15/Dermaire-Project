@@ -296,6 +296,28 @@ class ApiService extends ChangeNotifier {
 
   late String baseUrl = defaultBaseUrl;
   final http.Client _client = _SessionClient();
+  http.Client Function()? _syntheticTransport;
+
+  /// Integration-test injection independent of the engine frame callback's Zone.
+  /// This never permits real hosts and is unavailable in release builds.
+  @visibleForTesting
+  Future<T> withSyntheticTransport<T>(
+    Future<T> Function() action,
+    http.Client Function() factory,
+  ) async {
+    if (kReleaseMode ||
+        Uri.parse(baseUrl).host != 'flutter-tests.invalid' ||
+        _syntheticTransport != null) {
+      throw StateError('Synthetic transport requires an isolated test scope');
+    }
+    _syntheticTransport = factory;
+    try {
+      return await action();
+    } finally {
+      _syntheticTransport = null;
+    }
+  }
+
   Timer? _expiryTimer;
   DateTime? _expiresAt;
   String? _authToken;
@@ -2125,7 +2147,11 @@ class _SessionClient extends http.BaseClient {
     }
 
     api._guardQuarantinedMutation(request);
-    final client = http.Client();
+    final synthetic = api._syntheticTransport;
+    if (synthetic != null && request.url.host != 'flutter-tests.invalid') {
+      throw StateError('Synthetic transport rejected a non-test host');
+    }
+    final client = synthetic?.call() ?? http.Client();
     http.StreamedResponse response;
     try {
       if (request is _PrivateImageRequest) {

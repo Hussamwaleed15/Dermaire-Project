@@ -1,3 +1,4 @@
+import 'support/contract_assertions.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'package:dermaire_app/consent/plan_withdrawal.dart';
@@ -16,7 +17,7 @@ class Wire extends f.PlanWire {
   Completer<http.Response>? held;
   @override
   Future<http.Response> call(http.Request r) async {
-    expect(r.url.host, 'flutter-tests.invalid');
+    expectContract(r.url.host, 'flutter-tests.invalid');
     if (r.url.path.endsWith('/users/me')) {
       return http.Response(
         jsonEncode({"id": owner, "role": "patient", "safety_accepted": false}),

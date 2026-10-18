@@ -135,3 +135,15 @@ server receipt expiry or permit re-key. Actual disk adapter/process-death recove
 remains BLOCKED specific native approval and executed mobile qualification.
 
 M7 supersedes the legacy-doctor quarantine limitation above: notes/reviews and patient grant withdrawal now retain scoped local correlation across current401/expiry too. Those requests still do not send a server key; their history GET is not a keyed receipt. Original sequence0 is supported explicitly. No durable adapter or automatic replay added.
+
+## M8 verified runtime update
+
+The earlier no-simulator conclusion is superseded: direct simctl found an installed
+available iOS26.0 runtime/version26.0.1. The existing synthetic withdrawal entry
+built and passed on iPhone17 simulator (exit0,1test). No native tracked files or
+package dependencies changed. This validates that bounded synthetic UI workflow
+on the existing SwiftPM project; it does NOT validate the proposed SQLCipher/key
+bridge, encrypted WAL, key durability, crashes, physical storage or process death.
+The native proposal remains unapproved/unapplied. Android SDK/AVD remains absent.
+Final1982 host tests/analyzer clean; test transport cannot activate on real hosts or
+release mode. Added late-send session guard to the independent journal coordinator.

@@ -233,6 +233,27 @@ void main() {
     await expectation;
     expect(store.writes, 0);
   });
+  test(
+    'late network result after account change cannot publish old phase',
+    () async {
+      final response = Completer<void>();
+      final sent = Completer<void>();
+      final task = coordinator.prepareAndSend(entry(identity()), () async {
+        sent.complete();
+        await response.future;
+      });
+      final expectation = expectLater(
+        task,
+        throwsA(isA<RecoverySessionLost>()),
+      );
+      await sent.future;
+      active = false;
+      response.complete();
+      await expectation;
+      expect(store.saved!.phase, JournalPhase.unconfirmed);
+      expect(store.saved!.identity.owner, 'patient-1');
+    },
+  );
   test('duplicate concurrent send is fenced', () async {
     store.pause = Completer();
     var sends = 0;

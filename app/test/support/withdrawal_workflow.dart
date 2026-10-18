@@ -1,3 +1,4 @@
+import 'contract_assertions.dart';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -5,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:dermaire_app/services/api_service.dart';
+import 'package:dermaire_app/integration/private_view.dart';
 import 'package:dermaire_app/dermaire_state.dart';
 import 'package:dermaire_app/dermaire_theme.dart';
 import 'package:dermaire_app/onboarding_screens.dart';
@@ -42,8 +44,48 @@ Future<void> withdrawalWorkflow(
     'clinical_clearance': false,
   };
   DermaireState? state;
+  Future<void> waitFor(bool Function() ready, String description) async {
+    for (var frame = 0; frame < 100 && !ready(); frame++) {
+      await t.pump(const Duration(milliseconds: 100));
+    }
+    expect(ready(), true, reason: description);
+  }
+
   Future<void> tapVisible(Finder finder) async {
-    await t.scrollUntilVisible(finder, 180);
+    bool found() {
+      try {
+        return finder.evaluate().isNotEmpty;
+      } on StateError {
+        return false;
+      } // A lazy .first finder has no row yet.
+    }
+
+    for (var frame = 0; frame < 60 && !found(); frame++) {
+      await t.pump(const Duration(milliseconds: 100));
+      if (!found() &&
+          find.byType(Scrollable).hitTestable().evaluate().isNotEmpty) {
+        await t.drag(
+          find.byType(Scrollable).hitTestable().first,
+          const Offset(0, -180),
+        );
+      }
+    }
+    final selective = find
+        .byWidgetPredicate(
+          (w) =>
+              w is PrivateView && w.controller is SelectiveWithdrawalController,
+        )
+        .evaluate();
+    final c = selective.isEmpty
+        ? null
+        : (selective.first.widget as PrivateView).controller
+              as SelectiveWithdrawalController;
+    expect(
+      found(),
+      true,
+      reason:
+          'Authorized control missing; lifecycle=${t.binding.lifecycleState}; selective=${selective.length}; visible=${c?.visible}; busy=${c?.busy}; authenticated=${c?.authenticatedCurrent}; grants=${c?.grants.length}; error=${c?.error}',
+    );
     await t.ensureVisible(finder);
     await t.pumpAndSettle();
     await t.tap(finder);
@@ -61,7 +103,7 @@ Future<void> withdrawalWorkflow(
     ),
     home: PatientEntryGate(key: ValueKey(g.owner), state: s),
   );
-  await http.runWithClient(
+  await api.withSyntheticTransport(
     () async {
       try {
         await g.login();
@@ -70,11 +112,19 @@ Future<void> withdrawalWorkflow(
         await t.pumpAndSettle();
         expect(find.byType(AppShell), findsNothing);
         expect(api.hasConfirmedSafetyAcceptance, false);
+        await waitFor(
+          () => find.byType(SafetyResponsibilityScreen).evaluate().isNotEmpty,
+          'Server consent read must resolve to the actual safety screen',
+        );
         await tapVisible(find.text('Manage clinician access'));
         await tapVisible(find.text('Choose one clinician grant'));
         await tapVisible(find.text('Select this grant').first);
         await tapVisible(find.byType(Checkbox));
         await tapVisible(find.text('Revoke selected grant'));
+        await waitFor(
+          () => g.deletes == 1 && api.integrationIntents.isEmpty,
+          'Original selective withdrawal must be confirmed before checking its result',
+        );
         expect(g.deletes, 1);
         expect(g.rows.first['status'], 'revoked');
         expect(g.rows.last['status'], 'pending');
@@ -84,11 +134,20 @@ Future<void> withdrawalWorkflow(
         await tapVisible(find.text('Withdraw from this plan'));
         await tapVisible(find.byType(Checkbox));
         await tapVisible(find.text('Cancel plan'));
+        await waitFor(
+          () =>
+              p.plan['state'] == 'cancelled' && api.integrationIntents.isEmpty,
+          'Original plan cancellation must complete server readback',
+        );
         expect(p.plan['state'], 'cancelled');
         expect(p.sends.length, 1);
         await tapVisible(find.text('Manage evaluation withdrawal'));
         await tapVisible(find.byType(Checkbox));
         await tapVisible(find.text('Cancel evaluation job'));
+        await waitFor(
+          () => evaluationDeletes == 1 && api.integrationIntents.isEmpty,
+          'Original evaluation cancellation must complete readback',
+        );
         expect(evaluationDeletes, 1);
         expect(job['state'], 'cancelled');
         expect(p.plan['state'], 'cancelled');
@@ -112,6 +171,10 @@ Future<void> withdrawalWorkflow(
         await t.pumpWidget(app(state!));
         await t.pumpAndSettle();
         expect(find.byType(AppShell), findsNothing);
+        await waitFor(
+          () => find.byType(SafetyResponsibilityScreen).evaluate().isNotEmpty,
+          'New account must resolve its own safety state',
+        );
         await tapVisible(find.text('Manage clinician access'));
         await tapVisible(find.text('Choose one clinician grant'));
         expect(find.text('No clinician grants returned.'), findsOneWidget);
@@ -126,15 +189,15 @@ Future<void> withdrawalWorkflow(
       }
     },
     () => MockClient((r) async {
-      expect(r.url.host, 'flutter-tests.invalid');
+      expectContract(r.url.host, 'flutter-tests.invalid');
       if (r.url.path.endsWith('/auth/logout')) {
         loggedOut++;
         return http.Response('{}', 200);
       }
       if (r.url.path.endsWith('/evaluation')) {
         if (r.method == 'DELETE') {
-          expect(r.headers['Idempotency-Key'], isNull);
-          expect(
+          expectContract(r.headers['Idempotency-Key'], isNull);
+          expectContract(
             r.url.queryParameters['expected_revision'],
             '${p.plan['revision']}',
           );
