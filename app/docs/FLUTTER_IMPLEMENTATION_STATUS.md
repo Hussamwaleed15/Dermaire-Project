@@ -1,3 +1,15 @@
+# Latest verified checkpoint — F6-M2026-10-18
+
+Implementation SHA `0b1de6e0462f56fe58abbf6e4a80f7f44348c8a2`; final documentation follows separately.
+Host tests1982 (+97 from1885), analyzer clean;1 isolated iOS simulator smoke passed
+on iPhone17/iOS26.0.1. Overall PARTIAL, not whole-application completion. Android
+SDK/AVD unavailable; durable journal native adapter awaits specific approval and
+storage qualification. Native/backend/Tester tracked files unchanged.
+See FLUTTER_F6_M_FINAL_REPORT_AR.md / FLUTTER_F6_M_CHANGED_FILES.md. Historical
+ledger below records earlier checkpoints and must not override this closing evidence.
+
+---
+
 # Flutter integration wave — implementation status
 
 Audited remote source8ad2ceafced5b1f06ade5a082d4939503d31c687;2026-10-18.

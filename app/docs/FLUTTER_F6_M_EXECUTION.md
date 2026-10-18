@@ -1,3 +1,11 @@
+# Closing checkpoint — F6-M
+
+Implementation `0b1de6e0462f56fe58abbf6e4a80f7f44348c8a2`; eight tested increments pushed normally.
+Baseline1885 → final1982, analyze clean;1 iOS26.0.1 simulator synthetic smoke passed.
+Overall PARTIAL: native encrypted restart recovery and Android/device-wide
+qualification remain bounded by the explicit gates in the final report.
+See FLUTTER_F6_M_FINAL_REPORT_AR.md for statuses, commits and exact file inventory.
+
 # F6-M execution ledger —2026-10-18
 
 Start a93ab02097af15027e9b1b0ab3913f10b14b6b89; correct origin fetch/push,
