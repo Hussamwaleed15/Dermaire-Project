@@ -352,6 +352,10 @@ void main() {
           await t.tap(find.text('Manage clinician access'));
           await t.pumpAndSettle();
           expect(find.text('Clinician access controls'), findsOneWidget);
+          await t.scrollUntilVisible(
+            find.byKey(const Key('confirmClinicianWithdrawal')),
+            180,
+          );
           final checkbox = find.descendant(
             of: find.byKey(const Key('confirmClinicianWithdrawal')),
             matching: find.byType(Checkbox),

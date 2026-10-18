@@ -2,16 +2,21 @@ import 'package:flutter/material.dart';
 import '../integration/contract.dart';
 import '../integration/private_view.dart';
 import '../entry/entry_motion.dart';
+import '../doctor/doctor_models.dart';
 
 /// A withdrawal-only patient action. It never reads grants/patient records or
 /// establishes safety acceptance; a historical receipt is not current access.
 class ClinicianWithdrawalController extends PrivateController {
   static const intentId = 'consent:revoke_all';
+  String? get selectedId => null;
+  String get storageId => intentId;
+  Future<void> verifyCurrent(PendingIntent op, int ticket) async {}
+  void discardDenied(Object failure) {}
   bool confirmedScope = false;
   String? outcome, lookupStatus;
   bool get canWithdraw => authenticatedCurrent && visible && role == 'patient';
   PendingIntent? get pending =>
-      authenticatedCurrent ? api.integrationIntents[intentId] : null;
+      authenticatedCurrent ? api.integrationIntents[storageId] : null;
   bool usable(int ticket) => canWithdraw && ticket == revision;
   void confirmScope(bool value) {
     if (!canWithdraw || busy || pending != null) return;
@@ -34,18 +39,23 @@ class ClinicianWithdrawalController extends PrivateController {
   Future<void> withdrawAll() async {
     if (!canWithdraw || busy || !confirmedScope || pending != null) return;
     final op = PendingIntent(
-      path: 'doctor/revoke/${resourceId(owner)}',
-      attemptPath: 'doctor/consent-attempts/revoke_all',
+      path: selectedId == null
+          ? 'doctor/revoke/${resourceId(owner)}'
+          : 'doctor/access/${resourceId(selectedId)}',
+      attemptPath: selectedId == null
+          ? 'doctor/consent-attempts/revoke_all'
+          : 'doctor/consent-attempts/revoke',
       method: 'DELETE',
       body: {},
     );
-    api.integrationIntents[intentId] = op;
+    api.integrationIntents[storageId] = op;
     confirmedScope = false;
     final ticket = begin();
     try {
       await send(op, ticket);
     } catch (e) {
       if (usable(ticket)) {
+        discardDenied(e);
         op.uncertain = true;
         error = 'Withdrawal is unconfirmed. ${integrationError(e)}';
       }
@@ -63,7 +73,10 @@ class ClinicianWithdrawalController extends PrivateController {
       withdrawal: true,
     )).data;
     if (!usable(ticket)) return;
-    if (data is! Map || data['success'] != true) {
+    if (data is! Map ||
+        (op.path.startsWith('doctor/access/')
+            ? !validSelectedResult(data, op)
+            : data['success'] != true)) {
       throw const FormatException('Withdrawal acknowledgement unavailable');
     }
     // The SQL receipt proves only the original withdrawal, not later grants.
@@ -78,11 +91,20 @@ class ClinicianWithdrawalController extends PrivateController {
       await readReceipt(op, ticket, retryOriginal: retryOriginal);
     } catch (e) {
       if (usable(ticket)) {
+        discardDenied(e);
         error = 'Withdrawal remains unconfirmed. ${integrationError(e)}';
       }
     } finally {
       finish(ticket);
     }
+  }
+
+  bool validSelectedResult(Map data, PendingIntent op) {
+    final grant = DoctorGrant.fromApi(
+      Map<String, dynamic>.from(data),
+      patient: owner,
+    );
+    return grant.id == op.path.split('/').last && grant.confirmedRevoked;
   }
 
   Future<void> readReceipt(
@@ -123,8 +145,12 @@ class ClinicianWithdrawalController extends PrivateController {
     }
     if (value['owner_id'] != owner ||
         value['actor_id'] != owner ||
-        value['operation'] != 'revoke_all' ||
-        value['access_id'] != owner ||
+        value['operation'] !=
+            (op.path.startsWith('doctor/access/') ? 'revoke' : 'revoke_all') ||
+        value['access_id'] !=
+            (op.path.startsWith('doctor/access/')
+                ? op.path.split('/').last
+                : owner) ||
         value['snapshot_basis'] != 'original_committed_not_current') {
       throw const FormatException('Wrong original withdrawal scope');
     }
@@ -142,11 +168,14 @@ class ClinicianWithdrawalController extends PrivateController {
     if (value['status'] != 'committed' ||
         value['result_availability'] != 'retained' ||
         result is! Map ||
-        result['success'] != true) {
+        (op.path.startsWith('doctor/access/')
+            ? !validSelectedResult(result, op)
+            : result['success'] != true)) {
       throw const FormatException('Unverified withdrawal result');
     }
-    if (!identical(pending, op)) return;
-    api.integrationIntents.remove(intentId);
+    await verifyCurrent(op, ticket);
+    if (!usable(ticket) || !identical(pending, op)) return;
+    api.integrationIntents.remove(storageId);
     lookupStatus = 'committed';
     outcome =
         'The server recorded the original withdrawal. Permissions granted afterwards are not included in that receipt.';
@@ -176,6 +205,17 @@ class ClinicianWithdrawalScreen extends StatelessWidget {
         if (c.role != 'patient')
           const Text('These controls are available to patient accounts.')
         else ...[
+          OutlinedButton(
+            onPressed: c.busy
+                ? null
+                : () => Navigator.of(context).push(
+                    entryRoute<void>(
+                      context,
+                      const SelectiveWithdrawalScreen(),
+                    ),
+                  ),
+            child: const Text('Choose one clinician grant'),
+          ),
           if (c.outcome != null)
             Semantics(liveRegion: true, child: Text(c.outcome!)),
           if (c.error != null)
@@ -226,6 +266,205 @@ class ClinicianWithdrawalScreen extends StatelessWidget {
           const Text(
             'An original withdrawal receipt does not describe the current permission list. A new grant requires its own explicit withdrawal.',
           ),
+        ],
+      ],
+    ),
+  );
+}
+
+class SelectiveWithdrawalController extends ClinicianWithdrawalController {
+  List<DoctorGrant> grants = [];
+  String? selection;
+  @override
+  String? get selectedId => selection;
+  @override
+  String get storageId => 'consent:revoke';
+  @override
+  void wipe() {
+    super.wipe();
+    grants = [];
+    selection = null;
+  }
+
+  @override
+  void discardDenied(Object failure) {
+    if (failure is IntegrationFailure && [401, 403].contains(failure.status)) {
+      grants = [];
+      selection = null;
+      confirmedScope = false;
+    }
+  }
+
+  Future<List<DoctorGrant>> readGrants() async {
+    final data = (await api.integrationResource(
+      'doctor/access',
+      generation,
+      withdrawal: true,
+    )).data;
+    if (data is! List) throw const FormatException('Invalid access metadata');
+    final rows = data
+        .map(
+          (v) => DoctorGrant.fromApi(
+            Map<String, dynamic>.from(v as Map),
+            patient: owner,
+          ),
+        )
+        .toList();
+    if (rows.map((r) => r.id).toSet().length != rows.length) {
+      throw const FormatException('Duplicate access metadata');
+    }
+    return rows;
+  }
+
+  @override
+  Future<void> refresh() async {
+    if (!canWithdraw || busy) return;
+    final ticket = begin();
+    grants = [];
+    selection = null;
+    confirmedScope = false;
+    try {
+      final rows = await readGrants();
+      if (usable(ticket)) grants = rows;
+    } catch (e) {
+      if (usable(ticket)) error = integrationError(e);
+    } finally {
+      finish(ticket);
+    }
+  }
+
+  void select(String id) {
+    if (!canWithdraw ||
+        busy ||
+        pending != null ||
+        !grants.any(
+          (g) =>
+              g.id == id &&
+              ['active', 'pending'].contains(g.status) &&
+              g.expiresAt.isAfter(DateTime.now().toUtc()),
+        )) {
+      return;
+    }
+    selection = id;
+    confirmedScope = false;
+    outcome = null;
+    notifyListeners();
+  }
+
+  @override
+  Future<void> withdrawAll() async {
+    if (selection == null ||
+        !grants.any(
+          (g) =>
+              g.id == selection &&
+              ['active', 'pending'].contains(g.status) &&
+              g.expiresAt.isAfter(DateTime.now().toUtc()),
+        )) {
+      return;
+    }
+    await super.withdrawAll();
+  }
+
+  @override
+  Future<void> verifyCurrent(PendingIntent op, int ticket) async {
+    final rows = await readGrants();
+    if (!usable(ticket)) return;
+    if (!rows.any(
+      (g) => g.id == op.path.split('/').last && g.confirmedRevoked,
+    )) {
+      throw const FormatException('Current revocation not confirmed');
+    }
+    grants = rows;
+    selection = null;
+  }
+}
+
+class SelectiveWithdrawalScreen extends StatelessWidget {
+  const SelectiveWithdrawalScreen({super.key});
+  @override
+  Widget build(BuildContext context) => PrivateView(
+    controller: SelectiveWithdrawalController(),
+    builder: page,
+    unavailableBuilder: page,
+  );
+  Widget page(
+    BuildContext context,
+    SelectiveWithdrawalController c,
+  ) => Scaffold(
+    appBar: AppBar(title: const Text('Choose clinician access')),
+    body: ListView(
+      padding: const EdgeInsets.all(20),
+      children: [
+        const Text(
+          'Withdraw one original grant. Other grants remain separate. Only sharing metadata is shown here.',
+        ),
+        OutlinedButton(
+          onPressed: c.busy ? null : c.refresh,
+          child: const Text('Refresh sharing metadata'),
+        ),
+        if (c.busy) const Text('Verifying sharing permissions…'),
+        if (c.error != null) Semantics(liveRegion: true, child: Text(c.error!)),
+        if (c.outcome != null)
+          Semantics(liveRegion: true, child: Text(c.outcome!)),
+        if (!c.busy && c.error == null && c.grants.isEmpty)
+          const Text('No clinician grants returned.'),
+        for (final g in c.grants)
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    g.doctorName ??
+                        (g.doctorIdValue == null
+                            ? 'Pending invitation'
+                            : 'Linked clinician'),
+                  ),
+                  Text('Grant: ${g.id}'),
+                  Text('Status: ${g.status}'),
+                  Text('Expires: ${g.expiresAt.toUtc().toIso8601String()} UTC'),
+                  if (['active', 'pending'].contains(g.status) &&
+                      g.expiresAt.isAfter(DateTime.now().toUtc()))
+                    OutlinedButton(
+                      onPressed: c.busy || c.pending != null
+                          ? null
+                          : () => c.select(g.id),
+                      child: Text(
+                        c.selection == g.id
+                            ? 'Selected grant'
+                            : 'Select this grant',
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        if (c.pending == null && c.selection != null) ...[
+          CheckboxListTile(
+            value: c.confirmedScope,
+            onChanged: c.busy ? null : (v) => c.confirmScope(v == true),
+            title: const Text('Withdraw only the selected clinician grant.'),
+          ),
+          FilledButton(
+            onPressed: c.busy || !c.confirmedScope ? null : c.withdrawAll,
+            child: const Text('Revoke selected grant'),
+          ),
+        ],
+        if (c.pending != null) ...[
+          OutlinedButton(
+            onPressed: c.busy ? null : c.reconcile,
+            child: const Text('Check original withdrawal'),
+          ),
+          if (c.lookupStatus == 'unknown')
+            OutlinedButton(
+              onPressed: c.busy ? null : () => c.reconcile(retryOriginal: true),
+              child: const Text('Retry original withdrawal'),
+            ),
+          if (c.lookupStatus == 'expired')
+            const Text(
+              'The original result expired. Review current sharing; do not replace an uncertain request.',
+            ),
         ],
       ],
     ),

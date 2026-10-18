@@ -435,9 +435,10 @@ class ApiService extends ChangeNotifier {
                         ).hasMatch(path)) ||
                 method == 'GET' &&
                     authenticatedRole == 'patient' &&
-                    RegExp(
-                      r'^doctor/consent-attempts/(revoke|revoke_all)/[A-Za-z0-9_-]{16,128}$',
-                    ).hasMatch(path)))) {
+                    (path == 'doctor/access' ||
+                        RegExp(
+                          r'^doctor/consent-attempts/(revoke|revoke_all)/[A-Za-z0-9_-]{16,128}$',
+                        ).hasMatch(path))))) {
       throw ArgumentError('Invalid integration resource');
     }
     if (key != null && !RegExp(r'^[A-Za-z0-9_-]{16,128}$').hasMatch(key)) {
