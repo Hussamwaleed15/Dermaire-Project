@@ -82,3 +82,5 @@ L8a messaging UTC day grouping/readable timestamps/accessible semantics: full188
 F6-M start a93ab02097af15027e9b1b0ab3913f10b14b6b89, baseline1885. M1 Agent workspace/consent/action-stage UX: full1891 (+6), focused41, analyzer/pub get clean. Discovery/pagination/model remain source-verified boundaries; see FLUTTER_F6_M_EXECUTION.md.
 
 M1 remote verifiedd3e7f5f07c0d5433b9ec4988f58def1b68cce0cf. M2 loaded inbox filters/day grouping and draft-bound settings consent: full1898 (+7), focused30, analyzer clean. Current server scheduling/read/withdrawal behavior preserved; real push unavailable.
+
+F6-M M3: bounded historical evaluation read/recovery implemented; focused41, full1918, analyzer clean. Original and latest jobs remain separate. See FLUTTER_F6_M_EXECUTION.md.

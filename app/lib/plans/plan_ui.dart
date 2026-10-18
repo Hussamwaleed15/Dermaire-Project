@@ -302,6 +302,14 @@ class _ClinicalPlanState extends State<ClinicalPlanScreen> {
                     Text(
                       'Recorded state: ${event.snapshot?.state ?? event.evaluation?.state}',
                     ),
+                    if (event.evaluation != null) ...[
+                      Text(
+                        'Historical evaluation job: ${event.evaluation!.wire['id']}',
+                      ),
+                      const Text(
+                        'This saved job event is not current processing consent or proof of completed inference.',
+                      ),
+                    ],
                     if (event.details['assessment'] is String)
                       Text(
                         'Clinician-authored assessment: ${event.details['assessment']}',

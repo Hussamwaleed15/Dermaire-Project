@@ -21,6 +21,11 @@ class EvaluationWithdrawalController extends PrivateController {
   static const storage = 'withdrawal:evaluation';
   Map<String, dynamic>? plan, job;
   bool confirmed = false;
+  List<Map<String, dynamic>> history = [];
+  int? nextHistory;
+  int recoveryAfter = 0;
+  String? recoveryKey;
+  Map<String, dynamic>? originalHistory;
   String? outcome;
   bool get allowed => authenticatedCurrent && visible && role == 'patient';
   bool usable(int ticket) => allowed && ticket == revision;
@@ -31,6 +36,11 @@ class EvaluationWithdrawalController extends PrivateController {
   void wipe() {
     plan = null;
     job = null;
+    history = [];
+    nextHistory = null;
+    recoveryAfter = 0;
+    recoveryKey = null;
+    originalHistory = null;
     confirmed = false;
     outcome = null;
   }
@@ -199,6 +209,103 @@ class EvaluationWithdrawalController extends PrivateController {
     }
   }
 
+  Future<Map<String, dynamic>> readHistoryPage(int after) =>
+      api.planWithdrawalMetadata(
+        'clinical-plans/${resourceId(id)}/history',
+        generation,
+        query: {'after_revision': '$after', 'limit': '100'},
+      );
+  Future<void> loadHistory({
+    bool more = false,
+    bool recoverOriginal = false,
+  }) async {
+    final op = pending;
+    if (!allowed ||
+        busy ||
+        more && nextHistory == null ||
+        recoverOriginal && (op == null || op.plan['id'] != id)) {
+      return;
+    }
+    final ticket = begin();
+    try {
+      var p = await readPlan();
+      if (!usable(ticket)) return;
+      if (recoverOriginal && !samePlan(p, op!)) throw IntegrationFailure(409);
+      if (recoverOriginal && recoveryKey != op!.key) {
+        recoveryAfter = 0;
+        originalHistory = null;
+        recoveryKey = op.key;
+      }
+      final after = recoverOriginal
+          ? recoveryAfter
+          : more
+          ? nextHistory!
+          : 0;
+      final data = await readHistoryPage(after);
+      if (!usable(ticket)) return;
+      if (data['scanned_through'] > p['revision']) p = await readPlan();
+      if (!usable(ticket)) return;
+      if (data['scanned_through'] > p['revision'] ||
+          p['kind'] != 'comparison' ||
+          recoverOriginal && !samePlan(p, op!)) {
+        throw const FormatException('History ahead of authorized plan');
+      }
+      final events = (data['events'] as List).cast<Map<String, dynamic>>();
+      if (events.any(
+        (e) => ![p['patient_id'], p['doctor_id']].contains(e['actor_id']),
+      )) {
+        throw const FormatException('Unverified evaluation author');
+      }
+      if (recoverOriginal) {
+        for (final event in events) {
+          if ((event['job'] as Map)['id'] == op!.job['id'] &&
+              event['revision'] > op.plan['revision']) {
+            originalHistory = Map<String, dynamic>.from(event['job']);
+          }
+        }
+        recoveryAfter = data['scanned_through'];
+        if (data['next_after_revision'] != null) {
+          outcome =
+              'Original job history check is incomplete. Continue checking earlier operation history; no cancellation was repeated.';
+          return;
+        }
+        if (originalHistory?['state'] != 'cancelled') {
+          outcome =
+              'Available history does not confirm cancellation of the original job. No request was repeated.';
+          return;
+        }
+        final latest = await readJob();
+        final currentPlan = await readPlan();
+        if (!usable(ticket) || !identical(pending, op)) return;
+        if (!samePlan(currentPlan, op!) ||
+            currentPlan['revision'] < originalHistory!['plan_revision']) {
+          throw const FormatException('Original history scope changed');
+        }
+        api.integrationIntents.remove(storage);
+        plan = currentPlan;
+        job = latest;
+        outcome =
+            'Original job is recorded cancelled in server history. Current evaluation state: ${latest['state']}. No current job was cancelled or replaced.';
+      } else {
+        history = more ? [...history, ...events] : events;
+        nextHistory = data['next_after_revision'];
+      }
+    } catch (e) {
+      if (usable(ticket)) {
+        plan = null;
+        job = null;
+        history = [];
+        nextHistory = null;
+        originalHistory = null;
+        recoveryAfter = 0;
+        recoveryKey = null;
+        error = 'Evaluation history unavailable. ${integrationError(e)}';
+      }
+    } finally {
+      finish(ticket);
+    }
+  }
+
   Future<void> reconcile({bool retryOriginal = false}) async {
     final op = pending;
     if (!allowed || busy || op == null || op.plan['id'] != id) return;
@@ -264,6 +371,34 @@ class EvaluationWithdrawalScreen extends StatelessWidget {
             child: const Text('Cancel evaluation job'),
           ),
         ],
+        OutlinedButton(
+          onPressed: c.busy ? null : () => c.loadHistory(),
+          child: const Text('Read evaluation history'),
+        ),
+        for (final event in c.history)
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Historical job: ${event['job']['id']}'),
+                  Text(
+                    'Revision ${event['revision']} · ${event['job']['state']}',
+                  ),
+                  Text('Recorded: ${event['recorded_at']}'),
+                  const Text(
+                    'Historical state does not restore current consent or prove model inference.',
+                  ),
+                ],
+              ),
+            ),
+          ),
+        if (c.nextHistory != null)
+          OutlinedButton(
+            onPressed: c.busy ? null : () => c.loadHistory(more: true),
+            child: const Text('More evaluation history'),
+          ),
         if (c.pending != null) ...[
           OutlinedButton(
             onPressed: c.busy ? null : c.reconcile,
@@ -275,6 +410,12 @@ class EvaluationWithdrawalScreen extends StatelessWidget {
           ),
           const Text(
             'A different current job cannot resolve this original request. No replacement job will be cancelled.',
+          ),
+          OutlinedButton(
+            onPressed: c.busy
+                ? null
+                : () => c.loadHistory(recoverOriginal: true),
+            child: const Text('Check original job history'),
           ),
         ],
       ],

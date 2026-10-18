@@ -493,8 +493,15 @@ class ApiService extends ChangeNotifier {
     final evaluation = RegExp(
       r'^clinical-plans/[A-Za-z0-9_-]+/evaluation$',
     ).hasMatch(path);
+    final history = RegExp(
+      r'^clinical-plans/[A-Za-z0-9_-]+/history$',
+    ).hasMatch(path);
     if (!(method == 'GET' &&
-            (path == 'clinical-plans' || detail || attempt || evaluation) ||
+            (path == 'clinical-plans' ||
+                detail ||
+                attempt ||
+                evaluation ||
+                history) ||
         method == 'DELETE' &&
             evaluation &&
             query?['expected_revision'] != null &&
@@ -559,18 +566,19 @@ class ApiService extends ChangeNotifier {
 
     final raw = jsonDecode(response.body);
     if (raw is! Map) throw const FormatException('Invalid withdrawal response');
-    if (evaluation) {
-      if (raw['state'] == 'not_requested' && method == 'GET') {
-        return {'state': 'not_requested'};
+    Map<String, dynamic> jobMeta(Object? source) {
+      if (source is! Map) {
+        throw const FormatException('Invalid evaluation history');
       }
-      final input = raw['input'];
-      if (raw['schema_version'] != 'comparison-job-1' ||
-          raw['id'] is! String ||
-          !RegExp(r'^[A-Za-z0-9_-]+$').hasMatch(raw['id']) ||
+      final value = source;
+      final input = value['input'];
+      if (value['schema_version'] != 'comparison-job-1' ||
+          value['id'] is! String ||
+          !RegExp(r'^[A-Za-z0-9_-]+$').hasMatch(value['id']) ||
           input is! Map ||
           input['plan_id'] != path.split('/')[1] ||
-          raw['plan_revision'] is! int ||
-          raw['plan_revision'] < 1 ||
+          value['plan_revision'] is! int ||
+          value['plan_revision'] < 1 ||
           ![
             'queued',
             'running',
@@ -579,19 +587,79 @@ class ApiService extends ChangeNotifier {
             'cancelled',
             'reviewed',
             'rejected',
-          ].contains(raw['state']) ||
-          raw['clinical_clearance'] != false ||
-          raw['medical_resources_modified'] != false ||
-          (raw['effective_state'] != null &&
-              raw['effective_state'] != 'cancelled')) {
+          ].contains(value['state']) ||
+          value['clinical_clearance'] != false ||
+          value['medical_resources_modified'] != false ||
+          (value['effective_state'] != null &&
+              value['effective_state'] != 'cancelled')) {
         throw const FormatException('Invalid evaluation withdrawal metadata');
       }
       return {
-        'id': raw['id'],
+        'id': value['id'],
         'plan_id': input['plan_id'],
-        'plan_revision': raw['plan_revision'],
-        'state': raw['state'],
-        'effective_state': raw['effective_state'],
+        'plan_revision': value['plan_revision'],
+        'state': value['state'],
+        'effective_state': value['effective_state'],
+      };
+    }
+
+    if (evaluation) {
+      if (raw['state'] == 'not_requested' && method == 'GET') {
+        return {'state': 'not_requested'};
+      }
+      return jobMeta(raw);
+    }
+    if (history) {
+      final after = int.tryParse(query?['after_revision'] ?? '0') ?? -1;
+      if (after < 0 ||
+          raw['items'] is! List ||
+          (raw['items'] as List).length > 100 ||
+          raw['numeric_comparison_metrics'] != null) {
+        throw const FormatException('Invalid evaluation history page');
+      }
+      var last = after;
+      final events = <Map<String, dynamic>>[];
+      for (final event in raw['items'] as List) {
+        if (event is! Map ||
+            event['revision'] is! int ||
+            event['revision'] <= last ||
+            event['actor_id'] is! String ||
+            !RegExp(r'^[A-Za-z0-9_-]+$').hasMatch(event['actor_id']) ||
+            event['recorded_at'] is! String ||
+            DateTime.tryParse(event['recorded_at'])?.isUtc != true) {
+          throw const FormatException('Unordered evaluation history');
+        }
+        last = event['revision'];
+        if (event['operation'] == 'evaluation') {
+          final job = jobMeta(event['snapshot']);
+          if (job['plan_revision'] != last) {
+            throw const FormatException('Wrong evaluation event revision');
+          }
+          events.add({
+            'revision': last,
+            'actor_id': event['actor_id'],
+            'recorded_at': event['recorded_at'],
+            'job': job,
+          });
+        } else {
+          final snapshot = event['snapshot'];
+          if (snapshot is! Map) {
+            throw const FormatException('Invalid plan event');
+          }
+          final plan = meta(snapshot['plan']);
+          if (plan['id'] != path.split('/')[1] || plan['revision'] != last) {
+            throw const FormatException('Wrong historical plan');
+          }
+        }
+      }
+      final next = raw['next_after_revision'];
+      if (next != null && (next is! int || next != last || last == after)) {
+        throw const FormatException('Invalid evaluation history cursor');
+      }
+      return {
+        'events': events,
+        'scanned_through': last,
+        'next_after_revision': next,
       };
     }
     if (path == 'clinical-plans') {

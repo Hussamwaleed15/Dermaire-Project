@@ -42,3 +42,18 @@ scheduler or device token registration. No optimistic read or delivery claim.
 Files: notifications/inbox_models.dart, inbox_ui.dart,
 test/wave_notification_experience_test.dart.7 new tests, focused30, full1898,
 analyzer clean; existing current401/403/late/logout/withdrawal/CAS tests retained.
+
+## M3 evaluation history — DONE bounded
+
+Actual ordered GET /clinical-plans/{id}/history integrated into the dedicated
+withdrawal metadata transport. Strict minimal projection rejects malformed,
+foreign-plan, unordered and nonprogressing pages without retaining clinical
+payloads. Explicit original-job history recovery scans one page per user action
+and waits for complete history before resolving a cancelled original job; a newer
+current job remains separate and is never cancelled by that recovery.
+Historical metadata is not current authorization or inference evidence.
+
+Files: services/api_service.dart, consent/evaluation_withdrawal.dart,
+plans/plan_ui.dart, test/wave_evaluation_history_test.dart.20 new tests,
+focused41, full1918, analyzer clean. Covers pagination, malformed histories,
+401/403/404/409/410/422/503 and late session/visibility races; synthetic HTTP only.
