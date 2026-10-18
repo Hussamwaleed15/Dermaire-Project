@@ -96,7 +96,7 @@ class AgentWire extends f.DoctorWire {
       return f.json(
         showChoices
             ? [
-                {...routine.entry(), 'revision': 3},
+                {...routine.entry(), 'revision': 3, 'revision_protected': true},
               ]
             : [],
       );

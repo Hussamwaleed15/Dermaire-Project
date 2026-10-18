@@ -159,10 +159,7 @@ void main() {
     await tester.tap(find.text('Stop step'));
     await tester.pumpAndSettle();
     expect(find.text('Saved on server'), findsNothing);
-    expect(
-      find.text('Save unconfirmed. Refresh before retrying.'),
-      findsOneWidget,
-    );
+    expect(find.textContaining('Save unconfirmed.'), findsOneWidget);
   });
   test(
     'writes require matching server fields, history survives refresh',

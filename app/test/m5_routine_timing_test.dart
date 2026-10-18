@@ -55,7 +55,9 @@ void main() {
           findsOneWidget,
         );
         expect(
-          find.textContaining('No reminders are scheduled'),
+          find.textContaining(
+            'Configure reminders separately in Reminder settings',
+          ),
           findsOneWidget,
         );
         expect(find.byType(TimePickerDialog), findsNothing);

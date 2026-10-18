@@ -64,16 +64,16 @@ class _RoutineScreenState extends State<RoutineScreen> {
     String resource,
     Map<String, dynamic> payload, {
     String method = 'POST',
+    Map<String, dynamic>? expected,
   }) async {
     if (!current) return;
-    final entry = controller.entries
-        ?.where((e) => e['id'] == resource.split('/').last)
-        .firstOrNull;
+    final entry = expected;
     final success = await controller.write(
       resource,
       payload,
       method: method,
       expectedUpdatedAt: entry?['updated_at'] as String?,
+      expectedRevision: entry?['revision'] as int?,
     );
     if (success && current) {
       await widget.state?.refreshRoutineContext(generation: generation);
@@ -264,6 +264,7 @@ class _RoutineScreenState extends State<RoutineScreen> {
                             payload,
                             method: entry == null ? 'POST' : 'PATCH',
                             expectedUpdatedAt: entry?['updated_at'] as String?,
+                            expectedRevision: entry?['revision'] as int?,
                           );
                           if (!dialogContext.mounted || !current) return;
                           pending = false;
@@ -283,9 +284,10 @@ class _RoutineScreenState extends State<RoutineScreen> {
                           } else {
                             setState(() {});
                             ScaffoldMessenger.of(dialogContext).showSnackBar(
-                              const SnackBar(
+                              SnackBar(
                                 content: Text(
-                                  'Save unconfirmed. Your draft is still here.',
+                                  controller.error ??
+                                      'Save unconfirmed. Your draft is still here.',
                                 ),
                               ),
                             );
@@ -404,7 +406,12 @@ class _RoutineScreenState extends State<RoutineScreen> {
       ),
     );
     if (yes == true && mounted && current) {
-      await _save('entries/${entry['id']}', {'active': false}, method: 'PATCH');
+      await _save(
+        'entries/${entry['id']}',
+        {'active': false},
+        method: 'PATCH',
+        expected: entry,
+      );
     }
   }
 
@@ -453,7 +460,7 @@ class _RoutineScreenState extends State<RoutineScreen> {
                 const Padding(
                   padding: EdgeInsets.symmetric(vertical: 12),
                   child: Text(
-                    'Morning and Evening group your routine steps; they do not set a clock time. No reminders are scheduled by this app. Follow-up and photo comparison dates require confirmed clinical guidance.',
+                    'Morning and Evening group your routine steps; they do not set a clock time. Configure reminders separately in Reminder settings. Follow-up and photo comparison dates require confirmed clinical guidance.',
                   ),
                 ),
                 if (controller.error != null ||

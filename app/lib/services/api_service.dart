@@ -1311,11 +1311,13 @@ class ApiService extends ChangeNotifier {
       throw ArgumentError('Invalid patient resource');
     }
     if (expectedRevision != null &&
-        (!RegExp(r'^products/[A-Za-z0-9_-]+$').hasMatch(path) ||
-            !['PATCH', 'DELETE'].contains(method) ||
+        (!(RegExp(r'^products/[A-Za-z0-9_-]+$').hasMatch(path) &&
+                    ['PATCH', 'DELETE'].contains(method) ||
+                RegExp(r'^routine/entries/[A-Za-z0-9_-]+$').hasMatch(path) &&
+                    method == 'PATCH') ||
             expectedRevision < 1 ||
             expectedRevision > 2147483647)) {
-      throw ArgumentError('Invalid product revision precondition');
+      throw ArgumentError('Invalid configuration revision precondition');
     }
     final request = http.Request(method, Uri.parse('$baseUrl/$path'));
     request.followRedirects = false;

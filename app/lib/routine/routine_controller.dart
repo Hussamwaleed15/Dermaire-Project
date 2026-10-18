@@ -47,18 +47,28 @@ class RemoteRoutineRepository implements RoutineRepository {
     Map<String, dynamic> payload, {
     String method = 'POST',
     String? expectedUpdatedAt,
+    int? expectedRevision,
   }) async {
     final generation = api.sessionGeneration;
     var patch = Map<String, dynamic>.of(payload);
+    int? precondition;
     if (method == 'PATCH') {
       final current =
           await api.patientResource('routine/$resource', generation)
               as Map<String, dynamic>;
       if (!RoutineController.validRow(current, 'user_configured') ||
-          current['id'] != resource.split('/').last ||
-          expectedUpdatedAt == null ||
-          current['updated_at'] != expectedUpdatedAt) {
-        throw const FormatException('Routine changed. Reopen this step.');
+          current['id'] != resource.split('/').last) {
+        throw const FormatException('Invalid routine snapshot');
+      }
+      if (expectedUpdatedAt == null ||
+          current['updated_at'] != expectedUpdatedAt ||
+          current['revision'] != expectedRevision) {
+        throw RequestFailure.http(412);
+      }
+      // Do not opt legacy/unprotected rows in until all linked experiment
+      // activation writers can also supply Routine-If-Match.
+      if (current['revision_protected'] == true) {
+        precondition = expectedRevision;
       }
       patch.removeWhere((k, v) => current[k] == v);
       if (patch.isEmpty) return current;
@@ -69,6 +79,7 @@ class RemoteRoutineRepository implements RoutineRepository {
               generation,
               method: method,
               payload: patch,
+              expectedRevision: precondition,
             )
             as Map<String, dynamic>;
     final evidence = resource == 'adherence';
@@ -173,7 +184,8 @@ class RoutineController extends ChangeNotifier {
       row['created_at'] is String &&
       DateTime.tryParse(row['created_at'] as String) != null &&
       (source == 'user_configured'
-          ? row['product_id'] is String &&
+          ? validRevision(row) &&
+                row['product_id'] is String &&
                 (row['product_id'] as String).isNotEmpty &&
                 row['product_name'] is String &&
                 ['AM', 'PM', 'BOTH'].contains(row['schedule']) &&
@@ -202,6 +214,12 @@ class RoutineController extends ChangeNotifier {
                     row['routine_entry_id'] &&
                 (row['configuration_snapshot']['schedule'] == 'BOTH' ||
                     row['configuration_snapshot']['schedule'] == row['slot']));
+  static bool validRevision(Map<String, dynamic> row) =>
+      !row.containsKey('revision') && !row.containsKey('revision_protected') ||
+      row['revision'] is int &&
+          row['revision'] >= 1 &&
+          row['revision'] <= 2147483647 &&
+          row['revision_protected'] is bool;
   Future<void> refresh() async {
     if (_disposed || saving || loadingMore || loading) return;
     final generation = ++_generation;
@@ -242,6 +260,7 @@ class RoutineController extends ChangeNotifier {
     Map<String, dynamic> payload, {
     String method = 'POST',
     String? expectedUpdatedAt,
+    int? expectedRevision,
   }) async {
     if (saving ||
         loading ||
@@ -272,6 +291,7 @@ class RoutineController extends ChangeNotifier {
               payload,
               method: method,
               expectedUpdatedAt: expectedUpdatedAt,
+              expectedRevision: expectedRevision,
             )
           : await repository.write(resource, payload, method: method);
       final evidence = resource == 'adherence';
@@ -296,13 +316,20 @@ class RoutineController extends ChangeNotifier {
         notifyListeners();
       }
       return confirmed;
-    } catch (_) {
+    } catch (failure) {
       if (generation != _generation || _disposed) return false;
+      final problem = RequestFailure.from(failure);
       if (remote) {
-        uncertain.add(writeKey(resource, payload));
+        // Only definite configuration PATCH rejection permits a refreshed
+        // edit. Adherence409 is not proof of the original report's outcome.
+        if (!(method == 'PATCH' &&
+            resource.startsWith('entries/') &&
+            problem.kind == RequestFailureKind.rejected)) {
+          uncertain.add(writeKey(resource, payload));
+        }
         stale = true;
       }
-      error = 'Save unconfirmed. Refresh before retrying.';
+      error = 'Save unconfirmed. ${problem.message}';
       saving = false;
       notifyListeners();
       return false;
