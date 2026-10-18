@@ -27,6 +27,13 @@ class ConfigurationPending extends PendingIntent {
   String? lookupStatus, availability;
   String get lookupPath =>
       '$attemptPath/$key${resource == null ? '' : '?resource_id=${resourceId(resource)}'}';
+  @override
+  Map<String, Object> get recoveryScope => {
+    ...super.recoveryScope,
+    'resource_id': ?resource,
+    'expected_revision': ?expectedRevision,
+    'expected_routine_revision': ?expectedRoutineRevision,
+  };
 }
 
 class ConfigurationReceipt {

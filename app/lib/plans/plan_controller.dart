@@ -282,6 +282,11 @@ class PlanController extends PrivateController {
               ? 'evaluation_review'
               : operation}',
       body: {'expected_revision': expected, ...fields},
+      identityScope: {
+        'access_id': plan.grant,
+        'patient_id': plan.patient,
+        'doctor_id': plan.doctor,
+      },
     );
     api.integrationIntents[intentId] = intent;
     return deliver(intent);

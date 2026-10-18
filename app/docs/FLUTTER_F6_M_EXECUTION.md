@@ -72,3 +72,29 @@ Files: messaging/anchored_conversation.dart, messaging_ui.dart,
 test/wave_message_anchor_test.dart.4 new actual-widget tests with 100 variable
 height rows, 320px/100%/200%/both themes, append and reverse scrolling. Focused35,
 full1922, analyzer clean. No mobile runtime claim.
+
+## M5 private views versus unresolved identity — DONE bounded / PARTIAL domain audit
+
+Current401 and credential expiry now quarantine minimum PendingIntent metadata
+before clearing all private payloads/views. Authentication attempts retain that
+account/role-scoped memory quarantine; another account cannot read it. Explicit
+logout/init/account deletion still erase it. Same-path replacement mutations are
+blocked before HTTP; blocked unsent replacements are not new uncertain operations.
+No original body, token, invitation or clinical text crosses that boundary.
+Original grant/job/revisions are projected for implemented typed plan/evaluation,
+message, product and configuration operations. Notification expected_revision0 is
+supported because that is the real initial settings CAS.403/503 protected reads
+retain current-session pending identities while wiping visible content.
+
+This is memory quarantine, NOT process-death recovery or restored authorization.
+Special legacy doctor write sets are still session-bound and outside this typed
+PendingIntent quarantine; full domain durable recovery remains PARTIAL. Agent and
+invitation receipt routes do not acquire cross-login validity from retained metadata.
+
+Files: integration/operation_identity.dart, contract.dart, configuration_receipt.dart,
+services/api_service.dart, products/product_operation.dart,
+messaging/messaging_controller.dart, plans/plan_controller.dart,
+consent/plan_withdrawal.dart, evaluation_withdrawal.dart,
+test/wave_operation_quarantine_test.dart.7 new tests; focused30 with notification
+regressions, full1929; analyzer clean. Read401/403/503 tested for both roles,
+replacement suppression, same/wrong account, explicit logout and metadata rejection.

@@ -47,11 +47,36 @@ class PendingIntent {
     required this.attemptPath,
     required Map<String, dynamic> body,
     this.method = 'POST',
-  }) : _body = jsonEncode(body),
+    Map<String, Object> identityScope = const {},
+  }) : _scope = Map.unmodifiable(identityScope),
+       _body = jsonEncode(body),
        key = operationKey();
   final String path, attemptPath, key, method;
   final String _body;
+  final Map<String, Object> _scope;
   Map<String, dynamic> get body =>
       Map.unmodifiable(jsonDecode(_body) as Map<String, dynamic>);
+
+  /// Only identifiers/revisions may cross an authorization-loss boundary.
+  Map<String, Object> get recoveryScope => {
+    ..._scope,
+    for (final e in body.entries)
+      if ([
+            'access_id',
+            'patient_id',
+            'doctor_id',
+            'job_id',
+            'expected_revision',
+          ].contains(e.key) &&
+          e.value != null)
+        e.key: e.value as Object,
+  };
   bool uncertain = false;
+}
+
+class QuarantinedOperationFailure extends IntegrationFailure {
+  QuarantinedOperationFailure() : super(409);
+  @override
+  String get message =>
+      'An original operation remains unresolved after session expiry. No replacement request was sent. Review its original receipt; this device has no durable recovery yet.';
 }

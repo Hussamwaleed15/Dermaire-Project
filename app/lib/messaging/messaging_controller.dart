@@ -239,6 +239,11 @@ class ConversationController extends PrivateController {
       path: 'messaging/threads/${thread.id}/messages',
       attemptPath: 'messaging/threads/${thread.id}/attempts',
       body: {'body': body.trim()},
+      identityScope: {
+        'access_id': thread.grant,
+        'patient_id': thread.patient,
+        'doctor_id': thread.doctor,
+      },
     );
     api.integrationIntents[intentId] = intent;
     return deliver(intent);

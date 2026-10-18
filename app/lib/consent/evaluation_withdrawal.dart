@@ -13,6 +13,15 @@ class EvaluationWithdrawalIntent extends PendingIntent {
         body: {},
       );
   final Map<String, dynamic> plan, job;
+  @override
+  Map<String, Object> get recoveryScope => {
+    'resource_id': resourceId(plan['id']),
+    'access_id': resourceId(plan['access_id']),
+    'patient_id': resourceId(plan['patient_id']),
+    'doctor_id': resourceId(plan['doctor_id']),
+    'job_id': resourceId(job['id']),
+    'expected_revision': plan['revision'] as int,
+  };
 }
 
 class EvaluationWithdrawalController extends PrivateController {

@@ -31,6 +31,12 @@ class ProductPendingOperation extends PendingIntent {
   final int generation;
   final int? expectedRevision;
   String? lookupStatus, availability;
+  @override
+  Map<String, Object> get recoveryScope => {
+    ...super.recoveryScope,
+    'resource_id': ?resource,
+    'expected_revision': ?expectedRevision,
+  };
 }
 
 class ProductOperationReceipt {

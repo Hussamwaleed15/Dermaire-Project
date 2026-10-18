@@ -1,4 +1,5 @@
 import '../integration/contract.dart';
+import '../integration/operation_identity.dart';
 import '../entry/server_entry_metadata.dart';
 import 'dart:convert';
 import 'api_exception.dart';
@@ -308,6 +309,31 @@ class ApiService extends ChangeNotifier {
   ServerEntryMetadata? _entryMetadata;
   final Map<String, PendingIntent> integrationIntents = {};
   final Map<String, String> integrationReferences = {};
+  final Map<String, OperationIdentity> _quarantinedOperations = {};
+  List<OperationIdentity> get quarantinedOperations => isAuthenticated
+      ? List.unmodifiable(
+          _quarantinedOperations.values.where(
+            (v) => v.owner == authenticatedOwner && v.role == authenticatedRole,
+          ),
+        )
+      : const [];
+  void _guardQuarantinedMutation(http.BaseRequest request) {
+    if (['GET', 'HEAD', 'OPTIONS'].contains(request.method)) return;
+    final root = Uri.parse(baseUrl).path;
+    final path = request.url.path.startsWith('$root/')
+        ? request.url.path.substring(root.length + 1)
+        : '';
+    if (quarantinedOperations.any((v) => v.path == path)) {
+      // These replacement intents never reached HTTP. Retain only the original
+      // quarantine rather than minting another uncertain identity.
+      final originals = quarantinedOperations.map((v) => v.key).toSet();
+      integrationIntents.removeWhere(
+        (_, op) => op.path == path && !originals.contains(op.key),
+      );
+      throw QuarantinedOperationFailure();
+    }
+  }
+
   String? get requiredSafetyPolicyVersion => _entryMetadata?.requiredPolicy;
   bool get profileReviewRequired =>
       hasConfirmedSafetyAcceptance &&
@@ -849,7 +875,7 @@ class ApiService extends ChangeNotifier {
   // Invalidate earlier auth attempts before sending another request. Logout
   // increments the same generation even when no token has arrived yet.
   Future<int> _beginAuthentication() async {
-    final cleanup = _clearSession();
+    final cleanup = _clearSession(preserveOperationIdentity: true);
     final generation = _sessionGeneration;
     await cleanup;
     if (generation != _sessionGeneration) {
@@ -874,7 +900,7 @@ class ApiService extends ChangeNotifier {
     final headers = <String, String>{};
     if (isJson) headers['Content-Type'] = 'application/json';
     if (_authToken != null && !isAuthenticated) {
-      unawaited(_clearSession());
+      unawaited(_clearSession(preserveOperationIdentity: true));
       throw ApiException('Session expired. Please sign in again');
     }
     if (_authToken != null) {
@@ -1052,11 +1078,30 @@ class ApiService extends ChangeNotifier {
     _expiresAt = DateTime.now().add(Duration(seconds: ttl));
     _expiryTimer = Timer(
       Duration(seconds: ttl),
-      () => unawaited(_clearSession()),
+      () => unawaited(_clearSession(preserveOperationIdentity: true)),
     );
   }
 
-  Future<void> _clearSession() async {
+  Future<void> _clearSession({bool preserveOperationIdentity = false}) async {
+    if (preserveOperationIdentity) {
+      final owner = _sessionUserId, role = _sessionRole;
+      if (owner != null && role != null) {
+        for (final op in integrationIntents.values) {
+          final identity = OperationIdentity(
+            owner: owner,
+            role: role,
+            path: op.path,
+            receiptPath: op.attemptPath,
+            key: op.key,
+            fingerprint: OperationIdentity.digest(op.body),
+            scope: op.recoveryScope,
+          );
+          _quarantinedOperations['$owner:$role:${op.key}'] = identity;
+        }
+      }
+    } else {
+      _quarantinedOperations.clear();
+    }
     final hadSession = _authToken != null;
     _sessionGeneration++;
     uncertainDoctorWrites.clear();
@@ -2021,11 +2066,12 @@ class _SessionClient extends http.BaseClient {
           sentToken != null &&
           api.isCurrentSession(generation) &&
           sentToken == 'Bearer ${api.authToken}') {
-        await api._clearSession();
+        await api._clearSession(preserveOperationIdentity: true);
         throw RequestFailure.session();
       }
     }
 
+    api._guardQuarantinedMutation(request);
     final client = http.Client();
     http.StreamedResponse response;
     try {

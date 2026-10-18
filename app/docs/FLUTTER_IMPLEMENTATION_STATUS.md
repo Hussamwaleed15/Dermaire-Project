@@ -86,3 +86,5 @@ M1 remote verifiedd3e7f5f07c0d5433b9ec4988f58def1b68cce0cf. M2 loaded inbox filt
 F6-M M3: bounded historical evaluation read/recovery implemented; focused41, full1918, analyzer clean. Original and latest jobs remain separate. See FLUTTER_F6_M_EXECUTION.md.
 
 F6-M M4 bounded prepend anchoring: focused35, full1922, analyzer clean. Lazy centered slivers preserve visible row geometry; actual small-screen large-text widgets tested.
+
+F6-M M5 PARTIAL overall; minimum operation identity quarantine separated from private view/payload cleanup. Current401/expiry preserve scoped metadata; no automatic replay.7 new tests, focused30, full1929, analyzer clean. Legacy doctor write sets and durable recovery remain separate work.

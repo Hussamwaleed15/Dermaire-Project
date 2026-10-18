@@ -16,6 +16,14 @@ class PlanWithdrawalIntent extends PendingIntent {
         },
       );
   final Map<String, dynamic> plan;
+  @override
+  Map<String, Object> get recoveryScope => {
+    ...super.recoveryScope,
+    'resource_id': resourceId(plan['id']),
+    'access_id': resourceId(plan['access_id']),
+    'patient_id': resourceId(plan['patient_id']),
+    'doctor_id': resourceId(plan['doctor_id']),
+  };
 }
 
 class PlanWithdrawalController extends PrivateController {
