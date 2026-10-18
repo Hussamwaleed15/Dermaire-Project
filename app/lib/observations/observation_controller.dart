@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import '../services/api_service.dart';
+import '../services/request_failure.dart';
 import 'observation_models.dart';
 
 enum ObservationPhase {
@@ -236,11 +237,19 @@ class ObservationController extends ChangeNotifier {
       historyStale = false;
       notifyListeners();
       return true;
-    } catch (_) {
+    } catch (failure) {
       if (!current ||
           !api.isCurrentSession(generation) ||
           revision != _historyRevision) {
         return false;
+      }
+      if (failure is RequestFailure &&
+          [
+            RequestFailureKind.denied,
+            RequestFailureKind.session,
+          ].contains(failure.kind)) {
+        _history = null;
+        historyRetrievedAt = null;
       }
       historyPhase = ObservationHistoryPhase.failed;
       historyStale = _history != null;

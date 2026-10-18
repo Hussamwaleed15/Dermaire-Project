@@ -64,3 +64,20 @@ consumes them at the real entry gate; no backend work is requested for that flow
 Original committed/expired receipts describe the original operation only, not
 new grants or the current permission list. General unknown/rejected/in-flight
 limitations and Agent/provider requirements above remain distinct.
+
+## F6-L source recheck —2026-10-18
+
+At dc24dfc, rechecked current registered doctor/clinical_plans/agent_platform/
+notifications APIs and services. Selective revoke/list and patient plan cancellation
+already exist, including policy-loss exceptions and original receipts; implemented
+in Flutter, not backend requests. Patient cancellation does not require restoring a
+revoked clinician grant; doctor plan access still requires its original grant.
+Evaluation DELETE has CAS/current-job semantics, not a synthetic keyed receipt.
+
+Existing P0/P1 table remains current: Agent GET session needs a known ID (no list),
+action_out omits patient identity, doctor inbox bounded100/no cursor; notification
+read/unread lacks CAS/attempt and message notice lacks thread context; model provider
+still returns unavailable and push provider is not proof of delivery. Required
+contracts/security impact/priorities are listed above; no already implemented APIs
+are requested again. Durable local storage/native runtime are Flutter/platform
+constraints, not additional backend tasks. No live backend verification performed.

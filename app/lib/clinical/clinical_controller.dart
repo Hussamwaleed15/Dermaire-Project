@@ -106,9 +106,9 @@ class ClinicalController extends ChangeNotifier {
         if (!valid()) return;
         _safety = ClinicalRead(
           phase: ClinicalPhase.failed,
-          value: _safety.value,
-          retrievedAt: _safety.retrievedAt,
-          stale: _safety.value != null,
+          value: denied(failure) ? null : _safety.value,
+          retrievedAt: denied(failure) ? null : _safety.retrievedAt,
+          stale: !denied(failure) && _safety.value != null,
           error: _message('Safety', failure),
         );
       }
@@ -128,9 +128,9 @@ class ClinicalController extends ChangeNotifier {
         if (!valid()) return;
         _review = ClinicalRead(
           phase: ClinicalPhase.failed,
-          value: _review.value,
-          retrievedAt: _review.retrievedAt,
-          stale: _review.value != null,
+          value: denied(failure) ? null : _review.value,
+          retrievedAt: denied(failure) ? null : _review.retrievedAt,
+          stale: !denied(failure) && _review.value != null,
           error: _message('Clinician review', failure),
         );
       }
@@ -142,6 +142,10 @@ class ClinicalController extends ChangeNotifier {
         _safety.phase == ClinicalPhase.ready &&
         _review.phase == ClinicalPhase.ready;
   }
+
+  bool denied(Object failure) =>
+      failure is ClinicalRequestException &&
+      [401, 403].contains(failure.status);
 
   String _message(String source, Object failure) {
     if (failure is TimeoutException) {

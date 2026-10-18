@@ -71,3 +71,31 @@ crash tests and native approvals. Architecture assessment DONE; implementation a
 process-death proof BLOCKED, no native changes. Fresh doctor/devices/emulators:
 Flutter3.44.8, missing Android SDK, only macOS, no emulator sources; Xcode26.0.1
 present, CocoaPods absent, existing SwiftPM preserved. Mobile runtime NOT RUN.
+
+## L3a denied clinical caches — implemented, gate recorded below
+
+Concrete defects corrected: ClinicalController retained old Safety/clinician review
+values after403; PsmController retained its prior embedded safety on model403;
+HomeController retained an inaccessible private snapshot; ObservationController kept
+prior history after403 because its transport discarded HTTP status. Transport now
+preserves safe status metadata, never raw error bodies. Denied contents/timestamps
+are discarded, while temporary503 remains distinct and pending writes are untouched.
+Successful authorized reads restore only fresh content. Existing clinical403 tests
+now require removal, not stale retention; all timeout/urgent precedence assertions
+are preserved.10 new unit regressions use synthetic-host-only transport/repositories.
+
+Source privacy review of other domains: messaging/notifications/plans/Agent and
+ClinicalSnapshot use PrivateController generation/current/visibility checks and
+wipe failures, with separate integrationIntents; doctor connection/records use
+original grants and clear failed reads; capture history clears before request and
+private image transport cancels/rejects stale sessions/scopes. This inspection and
+the existing regression suite do not prove every cross-domain user journey or every
+editor lifecycle. L3 overall remains PARTIAL until explicit comprehensive workflow
+coverage is completed. VIEW is not EXPORT, and a new grant cannot revive originals.
+
+Files: lib/clinical/clinical_controller.dart, lib/psm/psm_controller.dart,
+lib/home_controller.dart, lib/observations/observation_controller.dart,
+lib/services/api_service.dart, test/clinical_status_test.dart,
+test/wave_clinical_read_privacy_test.dart.
+
+L3a gate: full1854 (+10), focused77, analyzer clean, diff check clean.

@@ -616,6 +616,7 @@ class ApiService extends ChangeNotifier {
     if (response.statusCode == 403) {
       throw ClinicalRequestException(
         'Access to this clinical information was denied. Refresh or sign in again.',
+        status: 403,
       );
     }
     if (response.statusCode != 200) {
@@ -669,7 +670,7 @@ class ApiService extends ChangeNotifier {
         .timeout(const Duration(seconds: 20));
     _guardObservation(generation);
     if (response.statusCode != 200) {
-      throw ApiException('Observation history unavailable.');
+      throw RequestFailure.http(response.statusCode);
     }
     final list = jsonDecode(response.body) as List;
     return List.unmodifiable(
@@ -1660,7 +1661,7 @@ class ApiService extends ChangeNotifier {
         .get(Uri.parse('$baseUrl/home'), headers: _headers(false))
         .timeout(const Duration(seconds: 15));
     if (generation != sessionGeneration) throw ApiException('Session changed.');
-    if (res.statusCode != 200) throw ApiException('Home unavailable');
+    if (res.statusCode != 200) throw RequestFailure.http(res.statusCode);
     return jsonDecode(res.body) as Map<String, dynamic>;
   }
 
@@ -2013,5 +2014,6 @@ class ProfileRequestException extends ApiException {
 }
 
 class ClinicalRequestException extends ApiException {
-  ClinicalRequestException(super.message);
+  ClinicalRequestException(super.message, {this.status});
+  final int? status;
 }

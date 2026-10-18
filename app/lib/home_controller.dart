@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'home/home_response.dart';
 import 'package:flutter/foundation.dart';
 import 'services/api_service.dart';
+import 'services/request_failure.dart';
 
 abstract class HomeRepository {
   Future<Map<String, dynamic>> read();
@@ -71,8 +72,17 @@ class HomeController extends ChangeNotifier {
       loading = false;
       notifyListeners();
       return true;
-    } catch (_) {
+    } catch (failure) {
       if (!valid()) return false;
+      if (failure is RequestFailure &&
+          [
+            RequestFailureKind.denied,
+            RequestFailureKind.session,
+          ].contains(failure.kind)) {
+        _snapshot = null;
+        retrievedAt = null;
+        stale = false;
+      }
       loading = false;
       error = 'Home unavailable. Connect and refresh to confirm current data.';
       notifyListeners();

@@ -82,6 +82,9 @@ class PsmController extends ChangeNotifier {
       phase = PsmPhase.ready;
     } catch (e) {
       if (!current || request != _request) return;
+      if (e is PsmReadException && [401, 403].contains(e.status)) {
+        _lastSafety = null;
+      }
       phase = e is FormatException || e is TypeError
           ? PsmPhase.unsupported
           : PsmPhase.failed;

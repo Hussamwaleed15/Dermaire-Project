@@ -250,7 +250,7 @@ void main() {
   for (final target in ['safety', 'doctor/review-status']) {
     for (final failure in ['401', '403', '503', 'offline', 'timeout']) {
       test(
-        '$target $failure fails honestly, retains only stale memory and retries',
+        '$target $failure hides denied data, preserves only authorized stale memory and retries',
         () async {
           var fail = false;
           final controller = ClinicalController(api);
@@ -267,11 +267,19 @@ void main() {
               } else {
                 if (target == 'safety') {
                   expect(controller.safety.phase, ClinicalPhase.failed);
-                  expect(controller.safety.stale, isTrue);
+                  expect(controller.safety.stale, failure != '403');
+                  if (failure == '403') {
+                    expect(controller.safety.value, isNull);
+                    expect(controller.safety.retrievedAt, isNull);
+                  }
                   expect(controller.review.phase, ClinicalPhase.ready);
                 } else {
                   expect(controller.review.phase, ClinicalPhase.failed);
-                  expect(controller.review.stale, isTrue);
+                  expect(controller.review.stale, failure != '403');
+                  if (failure == '403') {
+                    expect(controller.review.value, isNull);
+                    expect(controller.review.retrievedAt, isNull);
+                  }
                   expect(controller.safety.phase, ClinicalPhase.ready);
                 }
               }
