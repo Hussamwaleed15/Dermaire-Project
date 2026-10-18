@@ -60,3 +60,8 @@ F6d-4 adherence: all1741 (+28), analyzer clean, pub get succeeded. F6d-3 remote 
 F6g-1 recovery projections: all1762 (+21), analyzer clean, pub get succeeded. F6d-4 remote verified0931bef57bcde05136b2ec975acb30a0b020fa21. Product/routine/adherence/experiment recovered writes request actual related Home/clinical reads with callback busy/session guards; failed projections remain unavailable. Broader privacy/withdrawal/navigation work remains PARTIAL.
 
 F6g-2 entry withdrawal: all1790 (+28), analyzer clean, pub get succeeded. F6g-1 remote verifiedd409d6917d820c0ad9791116c3025aa1151bf7bb. Actual Safety entry links to patient bulk clinician withdrawal without policy acceptance or private record reads. Original receipt does not claim current permissions; selected withdrawal/plan policy-loss work remains PARTIAL. See FLUTTER_F6G_ENTRY_WITHDRAWAL.md.
+
+F6g-2 remote verified238b5edcfcd199207900c6f361d16dabf32b310d.
+F6h-1 implemented denied/session read-cache removal for products/routines/experiments, including paged histories, while preserving unresolved mutation identities. Broader F6h remains PARTIAL. See FLUTTER_F6H_FOUNDATION_READ_PRIVACY.md for exact files and tests.
+
+F6h-1 verified: full1808 (+18; continuation total+183), focused49, analyzer clean, pub get succeeded; diff check clean. The older403 routine assertion was corrected to require record removal plus fresh authorized recovery. No code or native dependency change outsideapp/.

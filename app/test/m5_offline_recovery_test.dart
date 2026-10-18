@@ -120,7 +120,7 @@ void main() {
     'invalid',
   ]) {
     test(
-      'routine $mode retains previous confirmation, then GET recovery',
+      'routine $mode preserves only authorized stale data, then GET recovery',
       () async {
         final wire = Wire();
         await wire.run(() async {
@@ -138,8 +138,14 @@ void main() {
           wire.status = int.tryParse(mode);
           await c.refresh();
           expect(c.stale, true);
-          expect(c.entries!.single['id'], 'entry');
-          expect(c.lastConfirmedAt, confirmed);
+          if (mode == '403') {
+            expect(c.entries, isNull);
+            expect(c.history, isNull);
+            expect(c.lastConfirmedAt, isNull);
+          } else {
+            expect(c.entries!.single['id'], 'entry');
+            expect(c.lastConfirmedAt, confirmed);
+          }
           expect(c.readFailure, isNotNull);
           expect(c.error, isNot(contains('private server body')));
           expect(await c.write('entries', {'schedule': 'AM'}), false);
@@ -154,6 +160,8 @@ void main() {
           await c.refresh();
           expect(c.stale, false);
           expect(c.readFailure, isNull);
+          expect(c.entries!.single['id'], 'entry');
+          expect(c.lastConfirmedAt, isNotNull);
           expect(wire.writes, 0);
           c.dispose();
         });

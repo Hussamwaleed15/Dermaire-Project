@@ -456,6 +456,16 @@ class ExperimentController extends ChangeNotifier {
               row['routine_entry_id'] is String)) &&
       (row['result'] == null || validResult(row['result']));
 
+  void discardUnauthorizedRead(RequestFailure failure) {
+    if (failure.kind != RequestFailureKind.denied &&
+        failure.kind != RequestFailureKind.session) {
+      return;
+    }
+    rows = null;
+    hasMore = false;
+    lastConfirmedAt = null;
+  }
+
   Future<bool> refresh() async {
     if (_disposed || saving || loadingMore || loading) return false;
     final generation = ++_generation;
@@ -479,6 +489,7 @@ class ExperimentController extends ChangeNotifier {
       if (generation != _generation || _disposed) return false;
       stale = true;
       readFailure = RequestFailure.from(failure);
+      discardUnauthorizedRead(readFailure!);
       error = 'Experiments unavailable. ${readFailure!.message}';
     }
     if (generation != _generation || _disposed) return false;
@@ -617,10 +628,13 @@ class ExperimentController extends ChangeNotifier {
       }
       rows = [...rows!, ...page];
       hasMore = page.length == 100;
-    } catch (_) {
+    } catch (failure) {
       if (_disposed || generation != _generation) return;
       stale = true;
-      error = 'History unavailable or changed. Refresh before making changes.';
+      readFailure = RequestFailure.from(failure);
+      discardUnauthorizedRead(readFailure!);
+      error =
+          'History unavailable. ${readFailure!.message} Refresh before making changes.';
     } finally {
       if (!_disposed && generation == _generation) {
         loadingMore = false;

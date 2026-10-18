@@ -600,6 +600,17 @@ class RoutineController extends ChangeNotifier {
           row['revision'] >= 1 &&
           row['revision'] <= 2147483647 &&
           row['revision_protected'] is bool;
+  void discardUnauthorizedRead(RequestFailure failure) {
+    if (failure.kind != RequestFailureKind.denied &&
+        failure.kind != RequestFailureKind.session) {
+      return;
+    }
+    entries = null;
+    history = null;
+    historyHasMore = false;
+    lastConfirmedAt = null;
+  }
+
   Future<void> refresh() async {
     if (_disposed || saving || loadingMore || loading) return;
     final generation = ++_generation;
@@ -638,6 +649,7 @@ class RoutineController extends ChangeNotifier {
       if (generation != _generation || _disposed) return;
       stale = true;
       readFailure = RequestFailure.from(failure);
+      discardUnauthorizedRead(readFailure!);
       error = 'Routine unavailable. ${readFailure!.message}';
     }
     if (generation != _generation || _disposed) return;
@@ -755,11 +767,13 @@ class RoutineController extends ChangeNotifier {
       }
       history = [...history!, ...page];
       historyHasMore = page.length == 100;
-    } catch (_) {
+    } catch (failure) {
       if (_disposed || generation != _generation) return;
       stale = true;
+      readFailure = RequestFailure.from(failure);
+      discardUnauthorizedRead(readFailure!);
       error =
-          'History refresh failed or changed. Previously confirmed reports remain; refresh before recording.';
+          'History unavailable. ${readFailure!.message} Refresh before recording.';
     } finally {
       if (!_disposed && generation == _generation) {
         loadingMore = false;

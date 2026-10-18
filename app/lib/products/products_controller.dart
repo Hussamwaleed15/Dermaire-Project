@@ -222,8 +222,19 @@ class ProductsController extends ChangeNotifier {
       if (_disposed || generation != _generation) return;
       isStale = true;
       readFailure = RequestFailure.from(failure);
-      errorMessage =
-          'Could not refresh products. ${readFailure!.message} Displayed data may be stale.';
+      final denied =
+          readFailure!.kind == RequestFailureKind.denied ||
+          readFailure!.kind == RequestFailureKind.session;
+      if (denied) {
+        _products = [];
+        lastConfirmedAt = null;
+        query = '';
+        categoryFilter = null;
+        statusFilter = null;
+      }
+      errorMessage = denied
+          ? 'Product access unavailable. ${readFailure!.message}'
+          : 'Could not refresh products. ${readFailure!.message} Displayed data may be stale.';
     } finally {
       if (!_disposed && generation == _generation) {
         _reading = false;

@@ -124,3 +124,57 @@ F6g-1: ربط تسوية طلبات المنتجات/الروتين/الالتز
 
 F6g-1 رُفع وتطابق معd409d6917d820c0ad9791116c3025aa1151bf7bb.
 F6g-2: إضافة سحب صلاحيات الأطباء والدعوات المعلقة من شاشة السلامة الفعلية، دون إجبار المريض على قبول السياسة الحالية أو قراءة سجلات خاصة أو فتح AppShell. الطلب بموافقة صريحة ومفتاح ثابت، والتحقق من إيصال revoke_all الأصلي قبل أي إعادة. الإيصال لا يثبت قائمة الصلاحيات الحالية ولا يسحب منحًا لاحقة تلقائيًا. النتائج المتأخرة بعد إخفاء الشاشة أو الخروج أو تبديل الحساب لا تستعيد التأكيد أو الصلاحيات. الملفات: consent/clinician_withdrawal.dart وonboarding_screens.dart وservices/api_service.dart وwave_entry_withdrawal_test.dart والتوثيق FLUTTER_F6G_ENTRY_WITHDRAWAL.md. نجح pub get والتحليل وكل1790 اختبارًا (+28)، تشمل320px/200% بالوضعين وأخطاء401/403/404/409/410/422/503. السحب الفردي وإلغاء الخطة/التقييم بعد فقد السياسة يظلان PARTIAL؛ التعافي الدائم وتجربة Android/iOS يظلان BLOCKED. لا تغيير Backend أو Tester أو native ولا اتصال Production.
+
+F6g-2 رُفع وتطابق مع238b5edcfcd199207900c6f361d16dabf32b310d.
+F6h-1: إصلاح إبقاء سجلات المنتجات والروتين والتجارب بعد رفض صلاحية القراءة. تُحذف البيانات المؤقتة وتاريخ آخر تأكيد عند403/انتهاء الجلسة، بما فيها صفحات التاريخ، بينما يظل عطل503 منفصلًا وتظل الطلبات غير المؤكدة محفوظة بهويتها الأصلية. القراءة المصرّح بها تعيد البيانات؛ الرد المتأخر بعد الخروج لا يستعيدها. اختبارات جديدة18 واختبار M5 القديم أصبح يطلب الإخفاء عند403 ثم إعادة القراءة المصرح بها. الملفات: products/products_controller.dart وroutine/routine_controller.dart وexperiments/experiment_controller.dart وwave_foundation_read_privacy_test.dart وm5_offline_recovery_test.dart، بالإضافة إلى FLUTTER_F6H_FOUNDATION_READ_PRIVACY.md.
+
+### حدود التسليم في هذا الاستكمال
+
+- DONE في حدود الأجزاء المنفذة: F6d-1..4 لإيصالات المنتجات والروتين والتجارب والالتزام، F6g-1 لتحديث القراءات المرتبطة بعد التعافي، F6g-2 لسحب صلاحيات جميع الأطباء من مدخل السلامة، وF6h-1 لإخفاء قوائم القراءة المرفوضة.
+- PARTIAL: F6d/f/g/h عمومًا؛ السحب الفردي بعد فقد السياسة، إلغاء الخطة/التقييم من مدخل غير مقبول السياسة، التاريخ/التقويم الكامل، ومراجعة جميع الشاشات والمحررات عبر النطاقات لم تكتمل. ليست هذه الأجزاء محجوبة كلها بعقد Backend؛ يبقى فيها عمل Flutter مستقل.
+- NOT STARTED كتوسعات جديدة في هذا الاستكمال: تحسينات F6i/j الواسعة للـAgent والمقارنات والحركة؛ التنفيذ السابق محفوظ، ولا يُدّعى اكتماله.
+- PARTIAL F6k: اختبارات Controllers وWidgets وعقود Fake HTTP تشمل المسارات الفعلية الموضحة؛ ليست Backend E2E أو رحلة جهاز كاملة.
+- BLOCKED F6e: لا يوجد مخزن مناسب معدّ لضمان حفظ هوية وحمولة الطلب الحساسة عبر موت العملية. SharedPreferences لا يضمن تثبيت الكتابة الحرجة؛ لم يُستخدم كحل غير آمن. يلزم اعتماد تقنية التخزين وإعداداتها الأصلية قبل التنفيذ والتحقق على جهاز.
+- BLOCKED اختبار Android/iOS: فحص الأجهزة أعاد macOS فقط ولا مصادر محاكيات. لم تُركّب أدوات ولم تُعدّل ملفات native.
+- BLOCKED خارجي: Push حقيقي، نموذج المقارنة والاستدلال المقيد، واكتشاف جلسات Agent بعد إعادة التشغيل وفق العقد الموثق لحسام. لا ردود أو درجات أو تسليمات وهمية.
+
+نقطة البداية3efe4b5a36e793e12628d8d3d4f8aafe6a75d3e5، وآخر نقطة رفع مؤكدة قبل F6h-1 هي238b5edcfcd199207900c6f361d16dabf32b310d. يُذكر SHA النهائي بعد رفع commit هذا التقرير في رسالة التسليم، وتُعرف نسخة التقرير من سجل Git. لم تُغيّر ملفات خارجapp/، ولا Backend/Tester/native/Production/provider، ولم تُستخدم بيانات مرضى حقيقية.
+
+نتيجة F6h-1 النهائية: نجحpub get والتحليل دون ملاحظات وكل1808 اختبارًا، منها49 في الفحص المركّز للخصوصية والتعافي. الزيادة خلال الاستكمال183 اختبارًا من خط الأساس1625. تحققdiff نظيف.
+
+### قائمة الملفات الفعلية في الاستكمال من3efe4b5
+
+- `app/docs/FLUTTER_BACKEND_GAPS_FOR_HUSSAM.md`
+- `app/docs/FLUTTER_F6D_ADHERENCE_RECEIPTS.md`
+- `app/docs/FLUTTER_F6D_EXPERIMENT_RECEIPTS.md`
+- `app/docs/FLUTTER_F6D_ROUTINE_RECEIPTS.md`
+- `app/docs/FLUTTER_F6G_ENTRY_WITHDRAWAL.md`
+- `app/docs/FLUTTER_F6G_RECOVERY_PROJECTIONS.md`
+- `app/docs/FLUTTER_F6H_FOUNDATION_READ_PRIVACY.md`
+- `app/docs/FLUTTER_F6_RECOVERY_CONTRACTS.md`
+- `app/docs/FLUTTER_FINAL_EXECUTION_REPORT_AR.md`
+- `app/docs/FLUTTER_IMPLEMENTATION_STATUS.md`
+- `app/lib/consent/clinician_withdrawal.dart`
+- `app/lib/experiments/experiment_controller.dart`
+- `app/lib/experiments/experiment_ui.dart`
+- `app/lib/integration/configuration_receipt.dart`
+- `app/lib/onboarding_screens.dart`
+- `app/lib/products/product_operation.dart`
+- `app/lib/products/product_repository.dart`
+- `app/lib/products/products_controller.dart`
+- `app/lib/products/products_ui.dart`
+- `app/lib/routine/adherence_operation.dart`
+- `app/lib/routine/routine_controller.dart`
+- `app/lib/routine/routine_ui.dart`
+- `app/lib/services/api_service.dart`
+- `app/test/m4_adherence_test.dart`
+- `app/test/m4_integrated_test.dart`
+- `app/test/m5_offline_recovery_test.dart`
+- `app/test/wave_adherence_receipt_test.dart`
+- `app/test/wave_entry_withdrawal_test.dart`
+- `app/test/wave_experiment_receipt_test.dart`
+- `app/test/wave_experiment_revision_test.dart`
+- `app/test/wave_foundation_read_privacy_test.dart`
+- `app/test/wave_product_receipt_test.dart`
+- `app/test/wave_recovery_projection_test.dart`
+- `app/test/wave_routine_receipt_test.dart`
