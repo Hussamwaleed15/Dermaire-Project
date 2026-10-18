@@ -250,6 +250,11 @@ class DoctorWorkspaceController extends ChangeNotifier {
               'patients/${patient.id}/notes',
               generation,
               method: 'POST',
+              identityScope: {
+                'access_id': grant.id,
+                'patient_id': patient.id,
+                'doctor_id': session.userId,
+              },
               payload: {
                 'content': value.trim(),
                 'priority': 'routine',
@@ -295,6 +300,9 @@ class DoctorWorkspaceController extends ChangeNotifier {
         }
         return false;
       }
+      api.integrationIntents.remove(
+        'legacy:doctor:patients/${patient.id}/notes',
+      );
       notes[patient.id] = rows.map((n) => n.content).toList();
       audit
           .putIfAbsent(patient.id, () => [])

@@ -125,3 +125,30 @@ docs/proposals passes git apply --check. flutter_secure_storage11.2.0 ordinary
 Android writeUnsafe uses apply(), rejected as sufficient critical-key durability.
 See FLUTTER_SECURE_STORAGE_APPROVAL_PROPOSAL.md. No dependency/native file applied,
 no disk adapter, no process-death/relaunch/device proof, no persistence claim.
+
+## M7 connected workflows and legacy privacy — DONE bounded / PARTIAL full roadmap
+
+8 real-widget patient/doctor journeys: server safety gate/profile hydration → actual
+shell/workspace navigation → message read/send → follow-up read/patient acceptance
+→ inbox read/safe message navigation → Agent consent/session or doctor request inbox
+→ logout/account switch. Doctor variants also open combined snapshot/evidence then
+lose current patient access and verify private cleanup. Both themes,320/390px,
+100%/200%, reduced motion. Contract-faithful combined fake rejects all real hosts.
+These are host journeys, not backend E2E or mobile-device proof.
+
+Expanded minimum correlation to legacy unkeyed notes/reviews and grant withdrawal:
+original local correlation retained until real current/history proof, minimal grant/
+sequence survives current401, raw clinical receipt/payload is cleared. No server
+Idempotency-Key/receipt is claimed for those unkeyed requests.6 new read401/403/503
+clinical regressions. Fixed optional empty Agent receipt path representation;1 new
+current401 regression proves absent receipt never obstructs session invalidation or
+invents a route. Existing original login/TTL restrictions retained.
+
+Files: services/api_service.dart, integration/contract.dart, operation_identity.dart,
+doctor/doctor_controller.dart, doctor_clinical_controller.dart, patient_access.dart,
+test/support/connected_care_workflow.dart, wave_connected_care_workflow_test.dart,
+wave_legacy_identity_lifecycle_test.dart, wave_operation_quarantine_test.dart.
+15 new tests; focused98 including foundation/clinical privacy and doctor reviews;
+full1975; analyzer clean. Broader capture/product/routine/adherence/experiment/
+observation journeys retain existing domain suites, not yet one complete device
+journey. All-world application/runtime completeness remains PARTIAL.

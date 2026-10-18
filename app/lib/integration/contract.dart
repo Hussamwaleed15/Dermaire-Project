@@ -67,6 +67,7 @@ class PendingIntent {
             'doctor_id',
             'job_id',
             'expected_revision',
+            'expected_sequence',
           ].contains(e.key) &&
           e.value != null)
         e.key: e.value as Object,

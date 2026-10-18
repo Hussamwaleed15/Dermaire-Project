@@ -1,3 +1,5 @@
+import 'package:dermaire_app/agent/server_agent_controller.dart';
+import 'wave_agent_test.dart' as agent;
 import 'dart:convert';
 import 'package:dermaire_app/integration/operation_identity.dart';
 import 'package:dermaire_app/messaging/messaging_controller.dart';
@@ -92,6 +94,36 @@ void main() {
       );
     }
   }
+  test(
+    'Agent original without receipt route survives current401 without inventing discovery',
+    () async {
+      final w = agent.AgentWire();
+      await w.run(() async {
+        await w.login();
+        final controller = ServerAgentController();
+        await controller.refresh();
+        w.mode = 'lost before';
+        expect(
+          await controller.start(readConsent: true, actionConsent: false),
+          false,
+        );
+        final key = controller.pending!.key;
+        expect(controller.pending!.attemptPath, isEmpty);
+        w.profileStatus = 401;
+        await expectLater(
+          api.readSafetyAcceptance(),
+          throwsA(isA<ApiException>()),
+        );
+        expect(api.isAuthenticated, false);
+        expect(api.integrationIntents, isEmpty);
+        w.profileStatus = null;
+        await w.login();
+        expect(api.quarantinedOperations.single.key, key);
+        expect(api.quarantinedOperations.single.receiptPath, isEmpty);
+        controller.dispose();
+      });
+    },
+  );
   test('operation metadata rejects extra private fields and unsafe paths', () {
     final identity = OperationIdentity(
       owner: 'patient-1',

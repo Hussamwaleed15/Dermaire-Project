@@ -133,3 +133,5 @@ Future durable cleanup on explicit logout differs from auth expiry and must hono
 fenced namespaces through interrupted cleanup. Local review expiry does not prove
 server receipt expiry or permit re-key. Actual disk adapter/process-death recovery
 remains BLOCKED specific native approval and executed mobile qualification.
+
+M7 supersedes the legacy-doctor quarantine limitation above: notes/reviews and patient grant withdrawal now retain scoped local correlation across current401/expiry too. Those requests still do not send a server key; their history GET is not a keyed receipt. Original sequence0 is supported explicitly. No durable adapter or automatic replay added.

@@ -18,16 +18,16 @@ class OperationIdentity {
     if (!['patient', 'doctor'].contains(role) ||
         !RegExp(r'^[a-f0-9]{48}$').hasMatch(key) ||
         !RegExp(r'^[a-f0-9]{64}$').hasMatch(fingerprint) ||
-        [path, receiptPath].any(
-          (p) =>
-              !RegExp(r'^[A-Za-z0-9_/-]{1,512}$').hasMatch(p) ||
-              p.contains('//'),
-        ) ||
+        !RegExp(r'^[A-Za-z0-9_/-]{1,512}$').hasMatch(path) ||
+        path.contains('//') ||
+        (receiptPath.isNotEmpty &&
+            (!RegExp(r'^[A-Za-z0-9_/-]{1,512}$').hasMatch(receiptPath) ||
+                receiptPath.contains('//'))) ||
         scope.keys.any((k) => !scopeFields.contains(k))) {
       throw const FormatException('Invalid operation metadata');
     }
     for (final e in scope.entries) {
-      if (e.key.endsWith('revision')) {
+      if (e.key.endsWith('revision') || e.key == 'expected_sequence') {
         if (e.value is! int ||
             (e.value as int) < 0 ||
             (e.value as int) > 2147483647) {
@@ -44,6 +44,7 @@ class OperationIdentity {
     'patient_id',
     'doctor_id',
     'job_id',
+    'expected_sequence',
     'expected_revision',
     'expected_routine_revision',
   };

@@ -374,6 +374,7 @@ class ApiService extends ChangeNotifier {
     int generation, {
     String method = 'GET',
     Map<String, dynamic>? payload,
+    Map<String, Object> identityScope = const {},
   }) async {
     void guard() {
       if (!isCurrentSession(generation) || !canReadDoctorWorkspace) {
@@ -394,6 +395,25 @@ class ApiService extends ChangeNotifier {
                 ).hasMatch(path))) {
       throw ArgumentError('Invalid doctor resource');
     }
+    // This legacy route does not send a server idempotency key. The local key
+    // correlates uncertainty only; GET collection history is not a keyed receipt.
+    final intentId = 'legacy:doctor:$path';
+    PendingIntent? original;
+    if (method == 'POST') {
+      if (integrationIntents.containsKey(intentId)) {
+        throw ApiException(
+          'An original clinical write remains unresolved. Refresh original history before another write.',
+        );
+      }
+      original = PendingIntent(
+        path: 'doctor/$path',
+        attemptPath: 'doctor/$path',
+        body: payload ?? {},
+        identityScope: identityScope,
+      );
+      original.uncertain = true;
+      integrationIntents[intentId] = original;
+    }
     final request = http.Request(method, Uri.parse('$baseUrl/doctor/$path'))
       ..followRedirects = false;
     request.headers.addAll(_headers(payload != null));
@@ -404,6 +424,12 @@ class ApiService extends ChangeNotifier {
         .timeout(const Duration(seconds: 20));
     guard();
     if (response.statusCode != (method == 'POST' ? 201 : 200)) {
+      if (original != null &&
+          response.statusCode >= 400 &&
+          response.statusCode < 500 &&
+          identical(integrationIntents[intentId], original)) {
+        integrationIntents.remove(intentId);
+      }
       throw RequestFailure.http(response.statusCode);
     }
     return jsonDecode(response.body);
@@ -1973,6 +1999,27 @@ class ApiService extends ChangeNotifier {
     if (revokeId != null && !RegExp(r'^[A-Za-z0-9_-]+$').hasMatch(revokeId)) {
       throw ArgumentError('Invalid grant identity');
     }
+    final intentId = 'legacy:grant:$revokeId';
+    PendingIntent? original;
+    if (revokeId != null) {
+      if (integrationIntents.containsKey(intentId)) {
+        throw ApiException(
+          'Original access withdrawal remains unresolved. Read current grant history first.',
+        );
+      }
+      original = PendingIntent(
+        path: 'doctor/access/$revokeId',
+        attemptPath: 'doctor/access',
+        method: 'DELETE',
+        body: {},
+        identityScope: {
+          'access_id': revokeId,
+          'patient_id': authenticatedOwner!,
+        },
+      );
+      original.uncertain = true;
+      integrationIntents[intentId] = original;
+    }
     final request = http.Request(
       revokeId == null ? 'GET' : 'DELETE',
       Uri.parse(
@@ -1986,6 +2033,12 @@ class ApiService extends ChangeNotifier {
         .timeout(const Duration(seconds: 20));
     guard();
     if (response.statusCode != 200) {
+      if (original != null &&
+          response.statusCode >= 400 &&
+          response.statusCode < 500 &&
+          identical(integrationIntents[intentId], original)) {
+        integrationIntents.remove(intentId);
+      }
       throw RequestFailure.http(response.statusCode);
     }
     return jsonDecode(response.body);

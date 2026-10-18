@@ -123,6 +123,9 @@ class DoctorClinicalController extends ChangeNotifier {
       if (found) {
         api.pendingDoctorReceipts.remove(key(kind));
         api.uncertainDoctorWrites.remove(key(kind));
+        api.integrationIntents.remove(
+          'legacy:doctor:patients/${connection.patientId}/$kind',
+        );
       }
     }
   }
@@ -298,6 +301,11 @@ class DoctorClinicalController extends ChangeNotifier {
                 generation,
                 method: 'POST',
                 payload: payload,
+                identityScope: {
+                  'access_id': grantId,
+                  'patient_id': connection.patientId,
+                  'doctor_id': connection.parent.session.userId,
+                },
               )
               as Map<String, dynamic>;
       acknowledged = true;

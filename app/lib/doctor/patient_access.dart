@@ -54,6 +54,7 @@ class PatientAccessController extends ChangeNotifier {
     for (final grant in parsed) {
       if (grant.confirmedRevoked) {
         api.uncertainGrantRevocations.remove(grant.id);
+        api.integrationIntents.remove('legacy:grant:${grant.id}');
       }
     }
     return parsed;
@@ -144,6 +145,7 @@ class PatientAccessController extends ChangeNotifier {
       }
       grants = List.unmodifiable(after);
       api.uncertainGrantRevocations.remove(id);
+      api.integrationIntents.remove('legacy:grant:$id');
       return true;
     } catch (failure) {
       if (!current || revision != _revision) return false;
