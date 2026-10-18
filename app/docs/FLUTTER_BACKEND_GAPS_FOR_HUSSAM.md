@@ -55,3 +55,12 @@ Secure local restart storage and unavailable mobile emulators are Flutter/platfo
 constraints documented in FLUTTER_F6_RECOVERY_CONTRACTS.md, not new API tasks for
 Hussam. No claim that unknown is rejected, that a new VIEW grant restores an old
 request, or that reviewed synthetic output establishes clinical validation.
+
+## F6g-2 withdrawal contract recheck
+
+Actual deps safety exceptions and doctor revoke/consent-attempts routes already
+support patient bulk withdrawal before current safety acceptance. Flutter now
+consumes them at the real entry gate; no backend work is requested for that flow.
+Original committed/expired receipts describe the original operation only, not
+new grants or the current permission list. General unknown/rejected/in-flight
+limitations and Agent/provider requirements above remain distinct.

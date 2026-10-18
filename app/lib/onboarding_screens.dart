@@ -10,6 +10,7 @@ import 'dermaire_theme.dart';
 import 'dermaire_widgets.dart';
 import 'doctor_portal.dart';
 import 'access_control.dart';
+import 'consent/clinician_withdrawal.dart';
 import 'entry/safety_consent_controller.dart';
 import 'entry/entry_copy.dart';
 import 'entry/entry_motion.dart';
@@ -1111,6 +1112,15 @@ class _SafetyResponsibilityScreenState
           ),
       ],
       children: [
+        if (ApiService.instance.isAuthenticated &&
+            ApiService.instance.authenticatedRole == 'patient')
+          OutlinedButton(
+            onPressed: () => Navigator.of(context).push(
+              entryRoute<void>(context, const ClinicianWithdrawalScreen()),
+            ),
+            child: const Text('Manage clinician access'),
+          ),
+
         const _SafetyItem(
           icon: Icons.health_and_safety_outlined,
           title: 'Dermaire is not medical advice',
