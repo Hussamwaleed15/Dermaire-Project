@@ -24,12 +24,12 @@ import Darwin
 private enum JournalKeyBridge {
   static let queue = DispatchQueue(label: "dermaire.journal.keys")
   static let service = "dermaire.journal.keys.v1"
-  enum Failure: Error { case unavailable }
+  enum Failure: String, Error { case unavailable, syncOpen, syncCommit, fileProtectionMismatch }
   static func sync(_ url: URL) throws {
     let fd = Darwin.open(url.path, O_RDONLY)
-    guard fd >= 0 else { throw Failure.unavailable }
+    guard fd >= 0 else { throw Failure.syncOpen }
     defer { Darwin.close(fd) }
-    guard Darwin.fsync(fd) == 0 else { throw Failure.unavailable }
+    guard Darwin.fsync(fd) == 0 else { throw Failure.syncCommit }
   }
   static func register(_ registrar: FlutterPluginRegistrar) {
     let channel = FlutterMethodChannel(name: "dermaire/journal-keys-v1", binaryMessenger: registrar.messenger())
@@ -75,7 +75,8 @@ private enum JournalKeyBridge {
               var protected = file
               try protected.setResourceValues(values)
               let attrs = try fm.attributesOfItem(atPath: file.path)
-              guard attrs[.protectionKey] as? FileProtectionType == .complete else { throw Failure.unavailable }
+              let protection = (attrs[.protectionKey] as? FileProtectionType)?.rawValue ?? (attrs[.protectionKey] as? String)
+              guard protection == FileProtectionType.complete.rawValue else { throw Failure.fileProtectionMismatch }
               try sync(file)
             }
             try sync(dir); output = nil
@@ -103,7 +104,10 @@ private enum JournalKeyBridge {
               var existing: CFTypeRef?
               let status = SecItemCopyMatching(read as CFDictionary, &existing)
               var data: Data
-              if status == errSecSuccess, let found = existing as? Data { data = found }
+              if status == errSecSuccess, let found = existing as? Data {
+                guard call.method == "loadKey" else { throw Failure.unavailable }
+                data = found
+              }
               else if status == errSecItemNotFound && call.method == "createKey" {
                 guard try fm.contentsOfDirectory(atPath: dir.path).isEmpty else { throw Failure.unavailable }
                 var bytes = [UInt8](repeating: 0, count: 32)
@@ -121,7 +125,7 @@ private enum JournalKeyBridge {
           }
           DispatchQueue.main.async { result(output) }
         } catch {
-          DispatchQueue.main.async { result(FlutterError(code: "journal_key_unavailable", message: "Protected journal key unavailable", details: nil)) }
+          DispatchQueue.main.async { result(FlutterError(code: "journal_key_unavailable", message: "Protected journal key unavailable", details: ["reason": (error as? Failure)?.rawValue ?? "filesystem-\((error as NSError).code)"])) }
         }
       }
     }

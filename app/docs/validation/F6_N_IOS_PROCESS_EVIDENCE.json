@@ -1,0 +1,41 @@
+{
+  "prepare": {
+    "phase": "prepare",
+    "passed": true,
+    "qualification_only": true,
+    "cipher_version": "4.18.0 community",
+    "sqlite_version": "3.53.4",
+    "file_protection_verified": false,
+    "writes": 1,
+    "receipts": 0,
+    "current_reads": 0
+  },
+  "artifacts": [
+    {
+      "artifact": "operations.db-shm",
+      "size": 32768,
+      "known_plaintext_found": false
+    },
+    {
+      "artifact": "operations.db",
+      "size": 4096,
+      "known_plaintext_found": false
+    },
+    {
+      "artifact": "operations.db-wal",
+      "size": 28872,
+      "known_plaintext_found": false
+    }
+  ],
+  "recover": {
+    "phase": "recover",
+    "passed": true,
+    "qualification_only": true,
+    "cipher_version": "4.18.0 community",
+    "sqlite_version": "3.53.4",
+    "file_protection_verified": false,
+    "writes": 0,
+    "receipts": 1,
+    "current_reads": 1
+  }
+}

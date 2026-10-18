@@ -12,7 +12,8 @@ abstract interface class JournalPlatform {
 }
 
 class JournalUnavailable implements Exception {
-  const JournalUnavailable();
+  const JournalUnavailable([this.stage = 'unavailable']);
+  final String stage;
   @override
   String toString() => 'Protected operation recovery unavailable';
 }
@@ -67,6 +68,15 @@ class NativeJournalPlatform implements JournalPlatform {
     }
     try {
       await _channel.invokeMethod<void>(action, {'namespace': namespace});
+    } on PlatformException catch (e) {
+      final details = e.details;
+      final reason = details is Map ? details['reason'] : null;
+      final safe =
+          reason is String &&
+          RegExp(
+            r'^(unavailable|syncOpen|syncCommit|fileProtectionMismatch|filesystem--?[0-9]{1,6})$',
+          ).hasMatch(reason);
+      throw JournalUnavailable(safe ? reason : 'native-action');
     } catch (_) {
       throw const JournalUnavailable();
     }

@@ -76,7 +76,8 @@ class JournalEntry {
 
 /// An implementation must acknowledge only after encrypted durable transaction
 /// commit, use namespace+key uniqueness/CAS, and reject quarantined namespaces.
-/// No production implementation is supplied by this Flutter-only increment.
+/// EncryptedOperationJournal supplies a disk adapter for isolated qualification;
+/// production mutation composition remains disabled.
 abstract interface class OperationJournal {
   Future<JournalEntry?> read(OperationIdentity identity);
   Future<void> insertDurably(JournalEntry entry);

@@ -103,6 +103,7 @@ private class JournalKeyBridge(context: Context) {
                                 sync(root)
                                 if (call.method == "directory") dir.path else {
                                     val wrapped = File(dir, "wrapped.key")
+                                    if (call.method == "createKey") check(!wrapped.exists())
                                     if (!wrapped.exists()) {
                                         check(call.method == "createKey")
                                         check(dir.listFiles()?.isEmpty() == true)

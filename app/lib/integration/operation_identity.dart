@@ -3,7 +3,8 @@ import 'package:crypto/crypto.dart';
 import 'contract.dart';
 
 /// Sensitive correlation metadata, never a payload, grant or replay authority.
-/// This value is memory-only until a reviewed durable adapter is implemented.
+/// Runtime controllers retain this in memory. The encrypted disk adapter is
+/// available only through explicit isolated qualification, not production wiring.
 class OperationIdentity {
   OperationIdentity({
     required this.owner,
