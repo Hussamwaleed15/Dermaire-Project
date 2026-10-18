@@ -22,3 +22,8 @@ are superseded by real source contracts. Do not recreate those implemented APIs.
 
 No live backend/DB/provider verification or deployment performed. Additional gaps
 will be added only after source verification during implementation.
+
+## F3 verified boundaries
+- Message notification source_id is a message ID without thread_id or a resolution route. Add an authorized thread/deep-link reference to avoid requiring manual conversation selection. Flutter currently opens authorized conversations honestly.
+- Read/unread has no revision/attempt identity: cross-device/late-write ordering cannot be proven. If ordered edits are required, add CAS plus current-state/attempt semantics.
+- Push provider remains disabled and mobile token configuration is absent. No fake registration. Confirm provider/token/plugin plan separately; no configuration changed.

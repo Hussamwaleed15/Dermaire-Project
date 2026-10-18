@@ -1,3 +1,4 @@
+import 'notifications/inbox_ui.dart';
 import 'plans/plan_ui.dart';
 import 'messaging/messaging_ui.dart';
 import 'dart:async';
@@ -237,6 +238,26 @@ class _DoctorPortalScreenState extends State<DoctorPortalScreen>
           ),
         ],
         children: [
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              OutlinedButton(
+                onPressed: () => openEntry(context, const CareThreadsScreen()),
+                child: const Text('Care conversations'),
+              ),
+              OutlinedButton(
+                onPressed: () =>
+                    openEntry(context, const ClinicalPlansScreen()),
+                child: const Text('Clinical plans'),
+              ),
+              OutlinedButton(
+                onPressed: () =>
+                    openEntry(context, const NotificationInboxScreen()),
+                child: const Text('Notification inbox'),
+              ),
+            ],
+          ),
           const Text(
             'Only current server-authorized connections are shown. Account role does not certify a medical license. Export is unavailable. Care messages require separate patient consent.',
           ),

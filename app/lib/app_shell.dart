@@ -15,7 +15,7 @@ import 'products/products_ui.dart';
 import 'services/api_service.dart';
 import 'psm/psm_screen.dart';
 import 'doctor/patient_access.dart';
-import 'notifications/notification_availability.dart';
+import 'notifications/inbox_ui.dart';
 
 class AppShell extends StatelessWidget {
   const AppShell({super.key, required this.state});
@@ -255,9 +255,9 @@ class ProfileTab extends StatelessWidget {
       ),
       ActionCard(
         icon: 'ⓘ',
-        title: 'Notification availability',
-        subtitle: 'Notifications and reminders are unavailable',
-        onTap: () => openPage(context, const NotificationAvailabilityScreen()),
+        title: 'Notification inbox',
+        subtitle: 'Current updates, read state and reminder preferences',
+        onTap: () => openPage(context, const NotificationInboxScreen()),
       ),
       ActionCard(
         icon: '✉',

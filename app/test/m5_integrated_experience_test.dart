@@ -358,7 +358,7 @@ void main() {
       );
       await tester.tap(find.text('Notification availability'));
       await tester.pumpAndSettle();
-      expect(find.text('Notifications are unavailable'), findsOneWidget);
+      expect(find.text('Device delivery is unavailable'), findsOneWidget);
       expect(find.byType(Switch), findsNothing);
       await tester.pageBack();
       await tester.pumpAndSettle();

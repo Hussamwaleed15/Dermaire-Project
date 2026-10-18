@@ -1,3 +1,4 @@
+import '../notifications/inbox_ui.dart';
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import '../services/recovery_notice.dart';
@@ -540,6 +541,17 @@ class _RoutineScreenState extends State<RoutineScreen> {
                                     ),
                                   ],
                                 ),
+                              TextButton(
+                                onPressed: controller.stale
+                                    ? null
+                                    : () => openEntry(
+                                        context,
+                                        NotificationPreferencesScreen(
+                                          entryId: entry['id'] as String,
+                                        ),
+                                      ),
+                                child: const Text('Routine reminder settings'),
+                              ),
                               if (entry['instructions'] != null)
                                 Text(entry['instructions'] as String),
                               if (entry['active'] == true ||

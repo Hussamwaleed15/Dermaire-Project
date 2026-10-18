@@ -9,8 +9,8 @@ class NotificationAvailabilityScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) => const DermairePage(
     eyebrow: 'Notifications',
-    title: 'Notifications are unavailable',
-    subtitle: 'This app does not currently send or schedule notifications.',
+    title: 'Device delivery is unavailable',
+    subtitle: 'Use the notification inbox for current in-app updates.',
     children: [
       DermaireCard(
         child: Column(
@@ -19,7 +19,7 @@ class NotificationAvailabilityScreen extends StatelessWidget {
             Text('Preferences', style: TextStyle(fontWeight: FontWeight.w700)),
             SizedBox(height: 8),
             Text(
-              'Notification preferences cannot be saved yet. There are no notification switches to enable.',
+              'Notification preferences and routine reminder schedules can be saved from the inbox. A saved setting does not prove device delivery.',
             ),
             SizedBox(height: 16),
             Text(
