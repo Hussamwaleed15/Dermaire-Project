@@ -48,13 +48,31 @@ class ConfigurationReceipt {
   final String? resource;
   final int? revision;
   final Map<String, dynamic>? original;
-  factory ConfigurationReceipt.parse(Object? value, ConfigurationPending op) {
+  factory ConfigurationReceipt.parse(Object? value, ConfigurationPending op) =>
+      ConfigurationReceipt.parseIdentity(
+        value,
+        owner: op.owner,
+        domain: op.domain,
+        operation: op.operation,
+        resource: op.resource,
+        expectedRevision: op.expectedRevision,
+      );
+
+  /// A receipt lookup needs original identity, never a restored draft/new key.
+  factory ConfigurationReceipt.parseIdentity(
+    Object? value, {
+    required String owner,
+    required String domain,
+    required String operation,
+    String? resource,
+    int? expectedRevision,
+  }) {
     if (value is! Map ||
         value['schema_version'] != 1 ||
-        value['owner_id'] != op.owner ||
-        value['actor_id'] != op.owner ||
-        value['domain'] != op.domain ||
-        value['operation'] != op.operation ||
+        value['owner_id'] != owner ||
+        value['actor_id'] != owner ||
+        value['domain'] != domain ||
+        value['operation'] != operation ||
         value['attempt_id'] is! String ||
         !RegExp(
           r'^[A-Za-z0-9_-]{1,128}$',
@@ -81,15 +99,15 @@ class ConfigurationReceipt {
         availability = value['result_availability'];
     final recorded = timestamp(value['recorded_at']),
         expires = timestamp(value['expires_at']);
-    final expectedKind = op.operation == 'evaluate' ? 'evaluation' : op.domain;
-    if (op.resource != null && id != op.resource ||
+    final expectedKind = operation == 'evaluate' ? 'evaluation' : domain;
+    if (resource != null && id != resource ||
         revision is! int ||
         revision < 1 ||
         revision > 2147483647 ||
-        op.expectedRevision != null &&
-            (op.operation == 'stop'
-                ? revision < op.expectedRevision!
-                : revision <= op.expectedRevision!) ||
+        expectedRevision != null &&
+            (operation == 'stop'
+                ? revision < expectedRevision
+                : revision <= expectedRevision) ||
         value['result_kind'] != expectedKind ||
         !expires.isAfter(recorded) ||
         value['snapshot_basis'] != 'original_committed_not_current' ||

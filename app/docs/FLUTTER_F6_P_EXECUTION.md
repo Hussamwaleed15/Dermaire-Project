@@ -66,3 +66,43 @@ draft change.24 new tests, focused64, full2055, analyzer clean. No native change
   conversation list switch, real plan list switch. All transports deny live hosts.
 - This is software privacy/navigation work, not doctor license verification,
   encrypted-journal activation, or a new backend receipt protocol.
+
+## P4 — additional minimum-identity recovery readers
+
+Implemented read-only adapters for actual routine ConfigurationAttempt and
+experiment ConfigurationAttempt contracts. Existing parser now accepts minimum
+identity directly; no reconstructed payload, replacement key, or generic receipt
+interpretation. Routine create/update/stop and experiment create/edit/activate/
+finish/cancel/evaluate/legacy-pause paths are explicitly checked. Original owner,
+actor, domain, operation, resource, revision, availability and DTO are validated.
+Current resources are separate reads; newer/missing rows require review. Activation
+and evaluation always require additional related/derived-state review, rather than
+claiming the whole intervention/current evaluation is verified from one revision.
+
+The existing in-memory quarantine review UI now exposes those two domains for a
+currently authorized patient. Product behavior is preserved. Explicit logout still
+purges session memory under the previously approved lifecycle; auth expiry/401
+retains minimum identity for the same account. No disk wiring into actual mutations.
+
+Recovery audit of current software:
+
+| Domain | Actual original lookup / guard | Additional disk reader status |
+|---|---|---|
+| Products | products/attempts or per-resource operation-attempts; owner/revision | Existing product reader, isolated qualification |
+| Routine config | routine/configuration-attempts/{operation}/{key}; owner/resource/CAS | Added configuration reader; stop preserves row |
+| Experiments | experiments/operation-attempts/{operation}/{key}; experiment CAS + activation Routine-If-Match | Added reader; activation/evaluation related state requires review |
+| Adherence | routine/adherence/attempts/{key}; original report/config snapshot | Existing in-session parser; metadata-only reader NOT IMPLEMENTED (exact report fields not in minimum identity) |
+| Messaging | messaging/threads/{id}/attempts/{key}; original thread/grant + messaging consent | Existing in-session parser; metadata-only disk adapter NOT IMPLEMENTED |
+| Follow-ups/plan changes | clinical-plans/{id}/attempts/{operation}/{key}, creation-attempts/{patient}/{key}; original grant/revision | Existing in-session reconciliation; disk adapter NOT IMPLEMENTED |
+| Comparison evaluation/review | clinical-plans/{id}/attempts/evaluate or evaluation_review/{key}; current job/grant/consent | Existing domain controller; disk adapter NOT IMPLEMENTED |
+| Doctor grants | keyed issue/revoke supported by actual backend, legacy mobile withdrawal remains local correlation | No new disk adapter; do not label history GET a keyed receipt |
+| Doctor notes/reviews | backend keyed route exists; legacy mobile collection reads remain unkeyed | Minimum quarantine only; domain upgrade NOT IMPLEMENTED |
+| Agent action/request | agent/sessions/{id}/action-attempts/{key}; known session/login authority; doctor request decisions separate | Existing in-session logic, restart discovery BLOCKED; disk adapter NOT IMPLEMENTED |
+| Calendar policy | routine/calendar-policy read + revision CAS only | No keyed receipt exists; pending original review only |
+
+21 new regressions cover both domains, malformed scope/snapshot, unknown/expired/
+erased/403, late session response, real SQLCipher close/reopen + coordinator,
+original-key preservation/no resend, and actual recovery UI at320px200% boththemes.
+Encrypted reopen uses fake platform keys with actual SQLCipher; it is NOT process
+termination, native device validation or production activation. Production journal
+remains DISABLED/NOT APPROVED; no native changes or protection bypass.

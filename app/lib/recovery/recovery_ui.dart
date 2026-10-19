@@ -4,6 +4,7 @@ import '../integration/operation_identity.dart';
 import '../integration/private_view.dart';
 import 'operation_journal.dart';
 import 'product_receipt_reader.dart';
+import 'configuration_receipt_reader.dart';
 
 class RecoveryReviewController extends PrivateController {
   List<OperationIdentity> identities = [];
@@ -21,12 +22,36 @@ class RecoveryReviewController extends PrivateController {
     notifyListeners();
   }
 
+  JournalReceiptReader? readerFor(OperationIdentity i) {
+    if (role != 'patient') return null;
+    try {
+      if (i.path == 'products' || i.path.startsWith('products/')) {
+        final reader = ProductReceiptReader(api, generation);
+        reader.kind(i);
+        return reader;
+      }
+      final reader = ConfigurationReceiptReader(api, generation);
+      reader.contract(i);
+      return reader;
+    } on FormatException {
+      return null;
+    }
+  }
+
+  String domainLabel(OperationIdentity i) => i.path.startsWith('products')
+      ? 'product'
+      : i.path.startsWith('routine/')
+      ? 'routine'
+      : 'experiment';
+
   Future<void> inspect(OperationIdentity identity) async {
     if (!current || busy || !identities.contains(identity)) return;
     final ticket = begin();
     outcome = null;
     try {
-      final reader = ProductReceiptReader(api, generation);
+      final reader = readerFor(identity);
+      if (reader == null) throw const FormatException('Unsupported receipt');
+      final domain = domainLabel(identity);
       final receipt = await reader.lookup(identity);
       if (!valid(ticket)) return;
       final currentVerified = receipt.outcome == ReceiptOutcome.committed
@@ -40,8 +65,8 @@ class RecoveryReviewController extends PrivateController {
           'Original receipt has expired. Replacement remains blocked; review current records.',
         ReceiptOutcome.committed =>
           currentVerified
-              ? 'Original receipt recorded and current product verified separately. Nothing was replayed. The identity remains retained for review.'
-              : 'Original receipt recorded; current product differs or is unavailable. Review current records. Nothing was replayed.',
+              ? 'Original receipt recorded and current $domain verified separately. Nothing was replayed. The identity remains retained for review.'
+              : 'Original receipt recorded; current $domain differs, is unavailable, or requires additional related-state review. Review current records. Nothing was replayed.',
       };
     } catch (e) {
       if (valid(ticket)) {
@@ -92,10 +117,10 @@ class _RecoveryReviewState extends State<RecoveryReviewScreen> {
                 const Text(
                   'Original identity retained. No request payload or access token restored.',
                 ),
-                if (i.path == 'products' || i.path.startsWith('products/'))
+                if (c.readerFor(i) != null)
                   OutlinedButton(
                     onPressed: c.busy ? null : () => c.inspect(i),
-                    child: const Text('Check original product receipt'),
+                    child: Text('Check original ${c.domainLabel(i)} receipt'),
                   )
                 else
                   const Text(
