@@ -1,3 +1,34 @@
+# F6-P reverified handoff to Hussam —2026-10-19
+
+Source verification only. Last backend change remains
+8ad2ceafced5b1f06ade5a082d4939503d31c687. No live calls or backend/provider edits.
+The earlier detailed ledger below remains historical context; this concise current
+table states work actually needed from Hussam.
+
+| Priority / owner | Existing endpoint / exact source | Current behavior and missing contract | Flutter/safety consequence and acceptance requirement |
+|---|---|---|---|
+| P0 / Hussam | Product/configuration attempt GETs; services/configuration_attempts.py and product_attempts.py | Committed/unknown/expired only; unknown does not fence an earlier in-flight write | To permit safe replacement, define owner-bound terminal rejection/in-flight reservation/fencing and retention. Test delayed original commit after unknown. Flutter preserves original uncertainty, does not auto re-key |
+| P1 / Hussam | GET /agent/sessions/{session_id}; api/v1/agent_platform.py | Requires known ID/original login/TTL; no minimal discovery or revoke-all | If restart discovery is required, return authenticated scoped metadata, define cross-login/revocation explicitly. Test wrong owner/login/expired/revoked and replacement grant; no revived context authority |
+| P1 / Hussam | GET /agent/requests; service.action_out | Hard limit100; no cursor; action output has no explicit authorized patient target | Add stable authorized cursor + patient reference bound to original grant/session. Test>100/revoked cases. Flutter cannot claim completeness or guess patient navigation |
+| P1 / Hussam | GET /notifications; api/v1/notifications.py | Message notice source_id identifies a message; no trusted thread target/resolver | Add authorized thread_id or target resolver with current membership/original consent checks. Flutter opens current conversation list; no guessed thread/private text in push |
+| P1 if ordered edits required / Hussam | PUT /notifications/{id}/read and /unread | No revision/CAS/attempt fencing | Define monotonic version/current-state and original-operation semantics; test reversed cross-device writes. Local serialization does not prove global ordering |
+| External / Hussam with reviewed provider setup | services/model_providers.py | Agent provider unavailable; DisabledComparisonProvider; no validated live inference transport/artifact | Provide reviewed provider/model/image transport and clinical validation independently. Flutter must keep real unavailable states and never invent diagnostic/assistant results |
+| External / Hussam + later mobile/device approval | POST /notifications/devices exists; services/notifications.py DisabledPushProvider | Registration API exists; real mobile token transport/provider/device delivery unverified | Agree real provider and transport separately; test actual delivery/revocation/quiet hours on devices. No duplicate registration API request; provider accepted is not delivered |
+
+Already implemented and **not new backend requests**: routine configuration history
+and calendar policy (now consumed by Flutter), product/routine/experiment receipts,
+messaging/consent, follow-up scheduling and original receipts, clinical-plan immutable
+history including evaluation snapshots, keyed grant and optional doctor note/review
+attempts. The older mobile notes/reviews path still needs Flutter keyed integration;
+metadata-only journal adapters for adherence/messaging/plans/etc. are Flutter software
+work, not missing endpoints. Calendar policy is CAS-only; no receipt was fabricated.
+
+These are contract requests, not authorization to change Azure/database/providers.
+Production journal activation and deferred physical device qualification remain Amr's
+separate rollout boundary, not something to solve by weakening server authorization.
+
+---
+
 # Verified backend/external boundaries — integration wave2026-10-18
 
 Source8ad2ceafced5b1f06ade5a082d4939503d31c687. Amr edits app/ only.

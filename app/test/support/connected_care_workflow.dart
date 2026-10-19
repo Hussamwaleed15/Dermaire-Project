@@ -1,3 +1,5 @@
+import 'package:dermaire_app/doctor/doctor_clinical_ui.dart';
+import '../m6_clinical_reviews_test.dart' as clinical;
 import 'package:dermaire_app/clinical/clinical_snapshot_ui.dart';
 import 'package:dermaire_app/doctor/doctor_evidence_ui.dart';
 import 'package:dermaire_app/capture/private_capture_image.dart';
@@ -47,6 +49,7 @@ Future<void> connectedCareWorkflow(
   final p = plans.PlanWire(doctor: doctor);
   final a = agent.AgentWire(doctor: doctor);
   final e = evidence.EvidenceWire();
+  final clinician = clinical.ClinicalWire();
   final state = DermaireState();
   final reads = <String>[];
   Future<void> tap(Finder finder) async {
@@ -174,6 +177,61 @@ Future<void> connectedCareWorkflow(
           expect(find.byType(ClinicalSnapshotScreen), findsOneWidget);
           expect(reads.any((p) => p.contains('/clinical-snapshot')), true);
           await back(ClinicalSnapshotScreen);
+          await tap(find.text('Notes and clinical reviews'));
+          expect(find.byType(DoctorClinicalScreen), findsOneWidget);
+          final note = find.byKey(const Key('clinicalNote'));
+          await t.scrollUntilVisible(
+            note,
+            250,
+            scrollable: find.byType(Scrollable).first,
+          );
+          await t.ensureVisible(note);
+          await t.enterText(
+            note,
+            'Synthetic connected clinician context for this patient.',
+          );
+          FocusManager.instance.primaryFocus?.unfocus();
+          await t.pumpAndSettle();
+          await t.scrollUntilVisible(
+            find.byKey(const Key('addClinicalNote')),
+            250,
+            scrollable: find.byType(Scrollable).first,
+          );
+          await tap(find.byKey(const Key('addClinicalNote')));
+          expect(clinician.posts, 1);
+          expect(clinician.saved.single['patient_id'], 'patient-1');
+          expect(api.integrationIntents, isEmpty);
+          await tap(find.text('Open this patient’s care conversations'));
+          expect(find.byType(CareThreadsScreen), findsOneWidget);
+          expect(
+            t.widget<CareThreadsScreen>(find.byType(CareThreadsScreen)).patient,
+            'patient-1',
+          );
+          await tap(find.text('Patient account patient-1'));
+          expect(find.byType(CareConversationScreen), findsOneWidget);
+          await t.scrollUntilVisible(
+            find.text('Synthetic original participant message'),
+            250,
+            scrollable: find.byType(Scrollable).first,
+          );
+          expect(
+            find.text('Synthetic original participant message'),
+            findsOneWidget,
+          );
+          await back(CareConversationScreen);
+          await back(CareThreadsScreen);
+          await back(DoctorClinicalScreen);
+          await tap(find.text('Patient clinical plans'));
+          expect(
+            t
+                .widget<ClinicalPlansScreen>(find.byType(ClinicalPlansScreen))
+                .patient,
+            'patient-1',
+          );
+          await tap(find.text('Clinician follow-up'));
+          expect(find.byType(ClinicalPlanScreen), findsOneWidget);
+          await back(ClinicalPlanScreen);
+          await back(ClinicalPlansScreen);
           await tap(find.text('Review clinical evidence'));
           expect(find.byType(DoctorEvidenceScreen), findsOneWidget);
           final dynamic portal = t.state(
@@ -229,6 +287,9 @@ Future<void> connectedCareWorkflow(
       }
       final path = request.url.path;
       reads.add(path);
+      if (doctor && (path.endsWith('/notes') || path.endsWith('/reviews'))) {
+        return clinician.call(request);
+      }
       if (path.contains('/messaging/') || path.endsWith('/doctor/access')) {
         return m.call(request);
       }

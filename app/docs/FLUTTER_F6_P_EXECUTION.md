@@ -121,3 +121,21 @@ revision checks, schedules, consent and evaluation workflow remain authoritative
 Six widget workflows verify inbox -> current revision8 despite older notice ->
 capture availability/state identity -> logout cleanup,320px200%,both themes. Actual
 camera hardware is not invoked or claimed by these navigation tests.
+
+## P6/P7 — expanded workflows and current handoff
+
+Eight existing real-widget connected-care combinations retain entry/safety, messaging
+send/read, plan acknowledgment, inbox, Agent, logout/account switch. The four doctor
+combinations now additionally enter selected patient -> clinical snapshot -> record
+clinical note with independent readback -> contextual patient conversation ->
+contextual plan -> clinical evidence -> revoked patient cleanup. Assertions retained;
+large-text tests explicitly scroll lazy content and dismiss the keyboard before save.
+They are fake-HTTP workflows, not backend E2E or device validation. Existing separate
+foundation/capture/revision/withdrawal tests remain, rather than claiming one complete
+19-step patient/12-step doctor journey. Broad combined coverage remains PARTIAL.
+
+Rechecked actual agent_platform/notifications/clinical_plans APIs and their services,
+configuration_attempts/model_providers/notifications implementations. No new backend
+commit since8ad2cea. Updated current status and concise Hussam table; existing history,
+calendar, optional keyed doctor receipts and device registration are not missing APIs.
+No simulator rerun, physical device evidence or journal production activation in P.

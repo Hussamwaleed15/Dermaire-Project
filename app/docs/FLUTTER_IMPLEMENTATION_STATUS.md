@@ -1,3 +1,31 @@
+# Current F6-P status —2026-10-19
+
+This section supersedes older completion/blocker claims below. Historical entries
+remain audit history, not current capability assertions. Wave start
+745b26ee5224632fe121ccde31d6bd6091d757c7; fresh baseline2021 tests/analyze clean.
+
+| Area | Current status | Verified F6-P outcome / remaining boundary |
+|---|---|---|
+| P0 inventory | DONE | Actual source/routes inspected; FLUTTER_F6_P_EXECUTION.md holds domain backlog |
+| Patient connectivity | DONE bounded / PARTIAL full roadmap | Six original tabs preserved, centered capture restored; Home care navigation + authorized readback; routine history/calendar linked; inbox plans preserve capture state |
+| Routine chronology/calendar | DONE bounded | Prospective signed-cursor history + provenance/UTC cutoff; explicit forward-only zone/CAS/readback; original uncertain calendar CAS retained; no historical relabeling or invented keyed receipt |
+| Doctor connectivity | DONE bounded / PARTIAL full roadmap | Patient-specific notes/conversations/plans; actual optional scopes; original current connection gates; patient-prop rebinding |
+| Cross-domain privacy | PARTIAL | Grant-loss narratives/receipt cache removed, minimum uncertainty retained; late note/review cannot restore raw content; existing all-domain session/denial tests preserved. No blanket claim of full security audit |
+| Secure recovery software | PARTIAL | SQLCipher/native lifecycle from F6-N preserved; additional routine/experiment metadata readers and actual review UI; product reader retained; other domains still require domain adapters (see execution matrix) |
+| Production journal | BLOCKED / NOT APPROVED | Still disabled. No new native changes, qualification bypass or live mutation composition |
+| UI/UX | DONE bounded / PARTIAL full roadmap | Responsive semantic nav, actual accessibility/account review, truthful methodology, role/state plan next step,320px200%/reduced-motion workflows; no unnecessary screen rebuild |
+| P6 workflows | PARTIAL comprehensive roadmap | Eight connected-care role/theme/font workflows, four withdrawal workflows and existing domain journeys; doctor route expanded through notes + contextual messages/plans before revocation. Six new inbox-to-comparison workflows. No single claimed19-step patient/12-step doctor backend E2E |
+| AI/Push | BLOCKED external | Actual broker/plan/inbox usable; real inference and device delivery remain unavailable |
+| Device qualification | DEFERRED physical / PARTIAL simulator | Prior F6-N isolated iOS process-kill evidence remains bounded; not rerun in P. No Android runtime or physical security claim |
+
+Verified implementation commits before the final workflow/report increment:
+e4adfd9,ed88c06,120a63e,8f7a012,edae544. Full suite after each:
+2031,2055,2060,2081,2087; analyzer clean.66 new regressions from2021.
+No backend/Tester/native/production edits. Detailed Arabic closeout and remaining
+work: FLUTTER_F6_P_FINAL_REPORT_AR.md. F6 as a whole remains PARTIAL.
+
+---
+
 # Latest verified checkpoint — F6-N2026-10-19
 Code SHA23ee7e33fc0fd53ac7e915ada5435374da9d9030; first native bridge78844d6.
 Real SQLCipher3.5.2/native-assets and protected key bridges implemented, isolated
