@@ -114,3 +114,33 @@ permission/expiry/original-scope checks, plan creation/ack/cancel/reschedule/rev
 comparison capture/evaluation/clinician review and current replacement/cancellation,
 plus four real retained-message UI variants at320px200% with no body restoration.
 No native edits, production mutation wiring, journal activation or automatic send.
+
+## Q2c — patient consent and doctor claim metadata readers
+
+GrantReceiptReader implements the distinct patient GrantAttempt and doctor claim
+ClinicalAttempt envelopes. Issue review returns metadata only and never restores
+or advertises bearer validity, even when a historical receipt is committed. Selected
+withdrawal verifies that original grant separately; bulk withdrawal checks current
+permissions independently and cannot claim new later grants were withdrawn.
+
+Claim intents retain a minimum patient routing hint + actual lookup path when the
+untrusted code contains a syntactically valid candidate. The hint grants no authority:
+server-owned original attempt, actor/patient/original access and fresh current grant
+must all validate. No code, QR payload or narrative is restored from metadata. Opaque
+codes without a candidate keep the existing safe original-session behavior; no fake
+lookup is constructed. Role/session guards and original grant replacement denial hold.
+
+12 new tests; focused118, full2190, analyze clean. Issuance/unavailable/unknown/expired,
+claim/replacement, malformed actor/grant, selected/bulk withdrawal and new later grants
+are exercised through actual controllers. Existing policy-loss withdrawal tests still
+pass without accepting safety terms. Journal activation remains disabled.
+
+Q2 contract audit: Agent action-attempt GET returns CURRENT action_out(row), not an
+immutable original preview/confirmation snapshot. Confirm/submit/doctor decision use
+current action/session + CAS/exact supported repeats, with no independent original
+confirmed-request receipt endpoint. Notifications read/unread/preferences/reminders
+likewise have current-state/CAS contracts, not an original attempt lookup. No reader
+fabricates such receipts. Comparison evaluation DELETE has current/history evidence
+but no keyed cancellation receipt. Calendar is revision-CAS only. These domains stay
+explicitly PARTIAL/BLOCKED for independent original proof; existing in-session flows
+remain functional. No new backend route is assumed or production setting changed.

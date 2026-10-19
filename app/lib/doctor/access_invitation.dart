@@ -329,11 +329,13 @@ class ClaimInvitationController extends PrivateController {
     }
   }
 
-  String? candidate(PendingIntent intent) {
+  String? candidate(PendingIntent intent) =>
+      candidateToken(intent.body['access_token'] as String);
+
+  String? candidateToken(String token) {
     // JWT content is only an untrusted routing hint for the owned attempt lookup.
     // It never grants access or establishes the patient identity in this UI.
     try {
-      final token = intent.body['access_token'] as String;
       final parts = token.split('.');
       if (parts.length != 3) return null;
       final body =
@@ -351,9 +353,11 @@ class ClaimInvitationController extends PrivateController {
     if (!current || busy || pending != null || !confirmed) return false;
     final token = input.trim();
     if (token.isEmpty || token.length > 4096) return false;
+    final hint = candidateToken(token);
     final intent = PendingIntent(
       path: 'doctor/claim',
-      attemptPath: '',
+      attemptPath: hint == null ? '' : 'doctor/patients/$hint/attempts/claim',
+      identityScope: {'patient_id': ?hint},
       body: {'access_token': token},
     );
     api.integrationIntents['doctor:claim'] = intent;

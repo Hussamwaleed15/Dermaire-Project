@@ -9,6 +9,7 @@ import 'clinical_receipt_reader.dart';
 import 'adherence_receipt_reader.dart';
 import 'message_receipt_reader.dart';
 import 'plan_receipt_reader.dart';
+import 'grant_receipt_reader.dart';
 
 class RecoveryReviewController extends PrivateController {
   List<OperationIdentity> identities = [];
@@ -28,6 +29,14 @@ class RecoveryReviewController extends PrivateController {
 
   JournalReceiptReader? readerFor(OperationIdentity i) {
     try {
+      if (i.path == 'doctor/claim' ||
+          i.path == 'doctor/generate-qr' ||
+          i.path.startsWith('doctor/access/') ||
+          i.path.startsWith('doctor/revoke/')) {
+        final reader = GrantReceiptReader(api, generation);
+        reader.contract(i);
+        return reader;
+      }
       if (i.path.startsWith('messaging/threads/')) {
         final reader = MessageReceiptReader(api, generation);
         reader.contract(i);

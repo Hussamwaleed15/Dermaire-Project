@@ -66,6 +66,7 @@ class AccessWire extends f.DoctorWire {
       return row == null
           ? f.json({
               'schema_version': 1,
+              'attempt_id': 'issue-attempt',
               'status': 'unknown',
               'result': null,
               'retry_safe': false,
@@ -95,6 +96,10 @@ class AccessWire extends f.DoctorWire {
         'patient_id': 'patient-1',
         'access_id': 'grant-1',
         'operation': 'claim',
+        'resource_id': row == null ? null : 'grant-1',
+        'recorded_at': row == null ? null : '2026-10-19T01:00:00Z',
+        'expires_at': row == null ? null : '2026-11-18T01:00:00Z',
+        if (row == null) 'retry_safe': false,
         'status': row == null ? 'unknown' : 'committed',
         'result': row,
         'snapshot_basis': 'original_committed_not_current',
