@@ -28,12 +28,20 @@ class AdherenceReceipt {
   final String? resource;
   final int? configurationRevision;
   final Map<String, dynamic>? original;
-  factory AdherenceReceipt.parse(Object? value, AdherencePending op) {
+  factory AdherenceReceipt.parse(Object? value, AdherencePending op) =>
+      AdherenceReceipt.parseIdentity(value, owner: op.owner, body: op.body);
+
+  /// Minimum identity reads need no restored patient note or invented payload.
+  factory AdherenceReceipt.parseIdentity(
+    Object? value, {
+    required String owner,
+    Map<String, dynamic>? body,
+  }) {
     if (value is! Map ||
         value['schema_version'] != 1 ||
         value['operation'] != 'routine_adherence' ||
-        value['owner_id'] != op.owner ||
-        value['actor_id'] != op.owner ||
+        value['owner_id'] != owner ||
+        value['actor_id'] != owner ||
         value['attempt_id'] is! String ||
         !RegExp(
           r'^[A-Za-z0-9_-]{1,128}$',
@@ -77,13 +85,14 @@ class AdherenceReceipt {
         timestamp(result['created_at'], naiveUtc: true) != committed ||
         result['configuration_snapshot'] is! Map ||
         result['configuration_snapshot']['revision'] != revision ||
-        [
-          'routine_entry_id',
-          'date',
-          'slot',
-          'status',
-          'note',
-        ].any((k) => result[k] != op.body[k])) {
+        body != null &&
+            [
+              'routine_entry_id',
+              'date',
+              'slot',
+              'status',
+              'note',
+            ].any((k) => result[k] != body[k])) {
       throw const FormatException('Wrong original adherence report');
     }
     final nested = result['receipt'];

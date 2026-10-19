@@ -62,3 +62,32 @@ POST schemas do not accept access_id or an access-match header; authorize select
 latest current VIEW grant under patient lock. Client validates current/original grant
 and receipt scope and refuses mismatches; only backend can atomically require the
 reviewed grant on first write. Existing keyed replay already rejects changed grants.
+
+## Q2a/Q3 — clinical and adherence metadata-only review
+
+ClinicalReceiptReader validates the specific clinical envelope/DTO from Q1, checks
+original doctor/patient/grant around receipt and current reads, and returns only
+resource/sequence metadata. A replacement grant is denied even for the same patient.
+Current review must be the original decision; a newer decision requires review,
+not replacement with the receipt. Clinical note current proof is authorized immutable
+record identity, not restored narrative.
+
+AdherenceReceipt.parseIdentity reuses the actual distinct AdherenceAttemptLookup,
+with owner/actor/configuration revision/nested receipt/UTC timestamp validation.
+In-session parse still checks exact original body. Metadata reader reconstructs no
+note. Current report lookup validates bounded100-row pages (max5000), rejects overlap,
+and never treats a bounded offset miss as deletion or new-key permission. Current
+routine revision is deliberately separate from the original report configuration.
+Neither receipt nor reported completion proves actual product use.
+
+Existing account-scoped review UI now supports doctor clinical and patient adherence
+identities; denial says original authorization is unavailable rather than failed
+write. Unknown/expired/read errors keep identities and replacement locks. No new
+storage fields, raw PHI persistence, native edits or production journal composition.
+
+26 new tests; focused118, full2150, analyze clean. Includes replacement grants,
+original/current/newer review distinction, unknown/expired/erased/403/401/503,
+malformed adherence scope/snapshot, late session response, real SQLCipher
+close/reopen of doctor metadata with fake platform keys, and actual doctor review
+UI at320px200% both themes. Host reopen is not process/device security proof.
+Q2 overall PARTIAL; messaging/plans/grants/Agent/notification contracts continue.

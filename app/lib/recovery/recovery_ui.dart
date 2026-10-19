@@ -5,6 +5,8 @@ import '../integration/private_view.dart';
 import 'operation_journal.dart';
 import 'product_receipt_reader.dart';
 import 'configuration_receipt_reader.dart';
+import 'clinical_receipt_reader.dart';
+import 'adherence_receipt_reader.dart';
 
 class RecoveryReviewController extends PrivateController {
   List<OperationIdentity> identities = [];
@@ -23,8 +25,18 @@ class RecoveryReviewController extends PrivateController {
   }
 
   JournalReceiptReader? readerFor(OperationIdentity i) {
-    if (role != 'patient') return null;
     try {
+      if (role == 'doctor') {
+        final reader = ClinicalReceiptReader(api, generation);
+        reader.contract(i);
+        return reader;
+      }
+      if (role != 'patient') return null;
+      if (i.path == 'routine/adherence') {
+        final reader = AdherenceReceiptReader(api, generation);
+        reader.contract(i);
+        return reader;
+      }
       if (i.path == 'products' || i.path.startsWith('products/')) {
         final reader = ProductReceiptReader(api, generation);
         reader.kind(i);
@@ -38,7 +50,12 @@ class RecoveryReviewController extends PrivateController {
     }
   }
 
-  String domainLabel(OperationIdentity i) => i.path.startsWith('products')
+  String domainLabel(OperationIdentity i) =>
+      i.path.startsWith('doctor/patients/')
+      ? (i.path.endsWith('/notes') ? 'clinical note' : 'clinical review')
+      : i.path == 'routine/adherence'
+      ? 'reported use'
+      : i.path.startsWith('products')
       ? 'product'
       : i.path.startsWith('routine/')
       ? 'routine'
@@ -71,7 +88,9 @@ class RecoveryReviewController extends PrivateController {
     } catch (e) {
       if (valid(ticket)) {
         outcome = null;
-        error = integrationError(e);
+        error = e is RecoveryPermissionLost
+            ? 'Original authorization is unavailable. Nothing was replayed. Retain this identity for authorized review.'
+            : integrationError(e);
       }
     } finally {
       finish(ticket);
