@@ -106,3 +106,18 @@ original-key preservation/no resend, and actual recovery UI at320px200% boththem
 Encrypted reopen uses fake platform keys with actual SQLCipher; it is NOT process
 termination, native device validation or production activation. Production journal
 remains DISABLED/NOT APPROVED; no native changes or protection bypass.
+
+## P5 — notification-to-capture continuity and plan guidance
+
+Patient inbox entry points now carry the current DermaireState into the plan opened
+from an authorized notification. This repairs a real missing guided-capture entry:
+previously a scheduled comparison reached from inbox had no capture state, while
+the same plan reached from the plans list did. Doctor inbox stays role-separated.
+The plan is always independently reread; notification source_revision is not promoted
+to current plan authority. Added a responsive semantic next-step card using actual
+plan state/role, with no elapsed-time completion, diagnostic progress, or inference
+claim. Cancellation/review states request no new capture. Existing typed controls,
+revision checks, schedules, consent and evaluation workflow remain authoritative.
+Six widget workflows verify inbox -> current revision8 despite older notice ->
+capture availability/state identity -> logout cleanup,320px200%,both themes. Actual
+camera hardware is not invoked or claimed by these navigation tests.

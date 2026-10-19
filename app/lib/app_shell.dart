@@ -268,7 +268,7 @@ class ProfileTab extends StatelessWidget {
         icon: 'ⓘ',
         title: 'Notification inbox',
         subtitle: 'Current updates, read state and reminder preferences',
-        onTap: () => openPage(context, const NotificationInboxScreen()),
+        onTap: () => openPage(context, NotificationInboxScreen(state: state)),
       ),
       ActionCard(
         icon: '✦',

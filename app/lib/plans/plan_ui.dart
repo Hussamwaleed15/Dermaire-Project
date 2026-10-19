@@ -10,6 +10,7 @@ import '../clinical/clinical_ui.dart' show clinicalTime;
 import '../integration/private_view.dart';
 import '../doctor/doctor_connection.dart';
 import 'plan_models.dart';
+import 'plan_journey_summary.dart';
 import 'plan_controller.dart';
 
 class ClinicalPlansScreen extends StatefulWidget {
@@ -185,6 +186,7 @@ class _ClinicalPlanState extends State<ClinicalPlanScreen> {
             Semantics(liveRegion: true, child: Text(c.outcome!)),
           if (plan != null) ...[
             Text(plan.purpose, style: Theme.of(context).textTheme.titleLarge),
+            PlanJourneySummary(plan: plan, role: c.role),
             StatusPill(
               plan.state.replaceAll('_', ' '),
               kind: StatusKind.neutral,

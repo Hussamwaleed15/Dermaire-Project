@@ -1,4 +1,5 @@
 import '../agent/server_agent_ui.dart';
+import '../dermaire_state.dart';
 import 'package:flutter/material.dart';
 import '../dermaire_widgets.dart';
 import '../entry/entry_motion.dart';
@@ -11,7 +12,8 @@ import 'inbox_controller.dart';
 import 'inbox_models.dart';
 
 class NotificationInboxScreen extends StatefulWidget {
-  const NotificationInboxScreen({super.key});
+  const NotificationInboxScreen({super.key, this.state});
+  final DermaireState? state;
   @override
   State<NotificationInboxScreen> createState() => _InboxState();
 }
@@ -134,7 +136,10 @@ class _InboxState extends State<NotificationInboxScreen> {
                         OutlinedButton(
                           onPressed: () => openEntry(
                             context,
-                            ClinicalPlanScreen(id: n.source),
+                            ClinicalPlanScreen(
+                              id: n.source,
+                              state: widget.state,
+                            ),
                           ),
                           child: const Text('Open current plan'),
                         ),

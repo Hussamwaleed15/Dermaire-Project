@@ -48,7 +48,7 @@ class PatientCareActions extends StatelessWidget {
         ListTile(
           leading: const Icon(Icons.notifications_outlined),
           title: const Text('Notification inbox'),
-          onTap: () => visit(const NotificationInboxScreen()),
+          onTap: () => visit(NotificationInboxScreen(state: state)),
         ),
         ListTile(
           leading: const Icon(Icons.auto_awesome_outlined),
