@@ -91,3 +91,26 @@ malformed adherence scope/snapshot, late session response, real SQLCipher
 close/reopen of doctor metadata with fake platform keys, and actual doctor review
 UI at320px200% both themes. Host reopen is not process/device security proof.
 Q2 overall PARTIAL; messaging/plans/grants/Agent/notification contracts continue.
+
+## Q2b/Q3 — messaging, follow-up and comparison attempt readers
+
+MessageReceiptReader reads current authorized thread pages with bounded cursors,
+checks original participant/grant/separate consent, validates actual message attempt
+ID/actor/thread/sequence and then reads the exact current message sequence. No message
+body is returned/persisted. Missing/replaced/closed original authority fails closed.
+
+PlanReceiptReader uses actual creation and per-plan attempt paths, role-specific
+operations, original patient/doctor/grant and expected revision. Plan DTOs, comparison
+job DTOs and clinician inference reviews are parsed separately. Original and current
+plan revisions are independent; original jobs never become a new current job and
+cancelled jobs do not prove active processing consent. New plan intents retain
+explicit patient/doctor metadata; old create identities can derive only the scoped
+patient route from their actual creation lookup path. No arbitrary image pair,
+image score, analysis result, delivery or clearance is generated.
+
+Existing review UI exposes message/plan/comparison receipt checks for both roles.
+28 new tests; focused123, full2178, analyze clean. Tests include both-role message
+permission/expiry/original-scope checks, plan creation/ack/cancel/reschedule/review,
+comparison capture/evaluation/clinician review and current replacement/cancellation,
+plus four real retained-message UI variants at320px200% with no body restoration.
+No native edits, production mutation wiring, journal activation or automatic send.

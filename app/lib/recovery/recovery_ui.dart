@@ -7,6 +7,8 @@ import 'product_receipt_reader.dart';
 import 'configuration_receipt_reader.dart';
 import 'clinical_receipt_reader.dart';
 import 'adherence_receipt_reader.dart';
+import 'message_receipt_reader.dart';
+import 'plan_receipt_reader.dart';
 
 class RecoveryReviewController extends PrivateController {
   List<OperationIdentity> identities = [];
@@ -26,6 +28,16 @@ class RecoveryReviewController extends PrivateController {
 
   JournalReceiptReader? readerFor(OperationIdentity i) {
     try {
+      if (i.path.startsWith('messaging/threads/')) {
+        final reader = MessageReceiptReader(api, generation);
+        reader.contract(i);
+        return reader;
+      }
+      if (i.path == 'clinical-plans' || i.path.startsWith('clinical-plans/')) {
+        final reader = PlanReceiptReader(api, generation);
+        reader.contract(i);
+        return reader;
+      }
       if (role == 'doctor') {
         final reader = ClinicalReceiptReader(api, generation);
         reader.contract(i);
@@ -50,8 +62,13 @@ class RecoveryReviewController extends PrivateController {
     }
   }
 
-  String domainLabel(OperationIdentity i) =>
-      i.path.startsWith('doctor/patients/')
+  String domainLabel(OperationIdentity i) => i.path.startsWith('messaging/')
+      ? 'message'
+      : i.path.startsWith('clinical-plans')
+      ? (i.path.contains('/evaluation')
+            ? 'comparison request'
+            : 'clinical plan')
+      : i.path.startsWith('doctor/patients/')
       ? (i.path.endsWith('/notes') ? 'clinical note' : 'clinical review')
       : i.path == 'routine/adherence'
       ? 'reported use'

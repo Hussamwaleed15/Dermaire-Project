@@ -598,6 +598,10 @@ class CreatePlanController extends PrivateController {
     final intent = PendingIntent(
       path: 'clinical-plans',
       attemptPath: 'clinical-plans/creation-attempts/${connection.patientId}',
+      identityScope: {
+        'patient_id': connection.patientId,
+        'doctor_id': connection.parent.session.userId,
+      },
       body: {'access_id': connection.grant!.id, ...fields},
     );
     api.integrationIntents[intentId] = intent;
