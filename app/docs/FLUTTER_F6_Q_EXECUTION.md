@@ -144,3 +144,25 @@ fabricates such receipts. Comparison evaluation DELETE has current/history evide
 but no keyed cancellation receipt. Calendar is revision-CAS only. These domains stay
 explicitly PARTIAL/BLOCKED for independent original proof; existing in-session flows
 remain functional. No new backend route is assumed or production setting changed.
+
+## Q3/Q7 — actionable uncertainty and explicit verified completion
+
+Recovery review now records separate per-identity read status, UTC check time and
+next action: unknown, expired, current record checked, review required, authorization
+unavailable, temporary verification unavailable. The read time is not a mutation or
+clinical clearance timestamp. Unknown/expired/503 are not silently called failed writes.
+
+An explicit Finish verified receipt review action re-reads the original receipt and
+current state before completing only the matching current-session in-memory identity.
+Fresh failure/denial/uncertainty keeps the lock. API refuses changed metadata/session or
+an active same-path intent; clinical local uncertainty is released only when no same-
+path original remains. Nothing is sent/replayed. Disk journal phases/activation are
+unchanged. Current differences still require separate authorized review; no blanket
+completion for old/expired receipts or bearer invitations.
+
+Unsupported Agent/notification/calendar/cancellation identities get precise current-
+state/original-session guidance rather than a fake receipt button. Four new widget
+regressions cover unknown -> late original committed read ->503 during explicit
+finish -> successful fresh finish, logout cleanup, and unsupported-domain guidance,
+320px200%/both themes. Focused85, full2194, analyze clean. Existing receipt UI tests
+remain passing, with no lost original identity on failed verification.

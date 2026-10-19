@@ -340,6 +340,36 @@ class ApiService extends ChangeNotifier {
           ),
         )
       : const [];
+
+  /// Trusted recovery UI calls only after an explicit fresh committed-receipt
+  /// and independent current-state verification. No mutation is sent here.
+  /// Refuse changed metadata/session or any remaining active same-path intent.
+  bool finishRetainedReview(OperationIdentity reviewed, int generation) {
+    if (!isCurrentSession(generation) ||
+        !hasConfirmedSafetyAcceptance ||
+        authenticatedOwner != reviewed.owner ||
+        authenticatedRole != reviewed.role) {
+      return false;
+    }
+    final key = '${reviewed.owner}:${reviewed.role}:${reviewed.key}';
+    final retained = _quarantinedOperations[key];
+    if (retained == null ||
+        jsonEncode(retained.toJson()) != jsonEncode(reviewed.toJson()) ||
+        integrationIntents.values.any((op) => op.path == reviewed.path)) {
+      return false;
+    }
+    _quarantinedOperations.remove(key);
+    final clinical = RegExp(
+      r'^doctor/patients/([A-Za-z0-9_-]+)/(notes|reviews)$',
+    ).firstMatch(reviewed.path);
+    if (clinical != null &&
+        !_quarantinedOperations.values.any((v) => v.path == reviewed.path)) {
+      uncertainDoctorWrites.remove('${clinical[1]}:${clinical[2]}');
+      pendingDoctorReceipts.remove('${clinical[1]}:${clinical[2]}');
+    }
+    return true;
+  }
+
   void _guardQuarantinedMutation(http.BaseRequest request) {
     if (['GET', 'HEAD', 'OPTIONS'].contains(request.method)) return;
     final root = Uri.parse(baseUrl).path;
