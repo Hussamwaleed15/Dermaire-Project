@@ -15,6 +15,46 @@ class DoctorWire {
   int writes = 0;
   final requests = <http.Request>[];
   final saved = <Map<String, dynamic>>[];
+  final clinicalAttempts = <String, Map<String, dynamic>>{};
+  final clinicalBodies = <String, String>{};
+  void recordClinical(http.Request request, http.Response response) {
+    final key = request.headers['Idempotency-Key'];
+    if (key == null || response.statusCode != 201) return;
+    final result = jsonDecode(response.body);
+    if (result is! Map<String, dynamic>) return;
+    final operation = request.url.path.endsWith('/notes') ? 'note' : 'review';
+    clinicalBodies[key] = request.body;
+    clinicalAttempts[key] = {
+      'schema_version': 1,
+      'attempt_id': 'attempt-$key',
+      'actor_id': owner,
+      'patient_id': patient,
+      'access_id': grant()['id'],
+      'operation': operation,
+      'resource_id': result['id'],
+      'recorded_at': '2026-10-19T01:00:00Z',
+      'expires_at': '2026-11-18T01:00:00Z',
+      'status': 'committed',
+      'result': Map<String, dynamic>.of(result),
+      'snapshot_basis': 'original_committed_not_current',
+    };
+  }
+
+  http.Response clinicalLookup(http.Request request) {
+    final key = request.url.path.split('/').last;
+    final value = clinicalAttempts[key];
+    return json(
+      value ??
+          {
+            'schema_version': 1,
+            'attempt_id': 'attempt-$key',
+            'status': 'unknown',
+            'result': null,
+            'retry_safe': false,
+          },
+    );
+  }
+
   Completer<http.Response>? pending;
   Map<String, dynamic> get profile => {
     'id': owner,
@@ -40,6 +80,7 @@ class DoctorWire {
     'revoked_by': null,
   };
   Map<String, dynamic> note(String content) => {
+    'schema_version': 'clinical-note-1.0',
     'id': 'note-1',
     'patient_id': patient,
     'doctor_id': owner,
@@ -93,6 +134,10 @@ class DoctorWire {
         'review': c.review(owner: patient),
       });
     }
+    if (path.contains('/attempts/note/') ||
+        path.contains('/attempts/review/')) {
+      return clinicalLookup(request);
+    }
     if (path.endsWith('/notes')) {
       if (request.method == 'POST') {
         writes++;
@@ -105,7 +150,9 @@ class DoctorWire {
         );
         if (noteMode == 'malformed') data['created_at'] = 'invalid';
         saved.add(data);
-        return json(data, 201);
+        final response = json(data, 201);
+        recordClinical(request, response);
+        return response;
       }
       if (noteMode == 'readback denied' && writes > 0) return json({}, 403);
       return json(saved);

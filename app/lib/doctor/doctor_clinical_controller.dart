@@ -1,3 +1,5 @@
+import '../integration/contract.dart';
+import 'clinical_operation_receipt.dart';
 import 'package:flutter/foundation.dart';
 import '../services/request_failure.dart';
 import '../routine/routine_controller.dart' show RoutineController;
@@ -115,31 +117,89 @@ class DoctorClinicalController extends ChangeNotifier {
             k: b[k],
         },
       );
-  void _reconcile(List<DoctorNote> notes, DoctorReviewRead review) {
+  String intentId(String kind) =>
+      'legacy:doctor:patients/${connection.patientId}/$kind';
+  PendingIntent? pending(String kind) =>
+      connection.parent.api.integrationIntents[intentId(kind)];
+
+  Future<void> _reconcile(
+    List<DoctorNote> notes,
+    DoctorReviewRead review,
+  ) async {
     final api = connection.parent.api;
     for (final kind in ['notes', 'reviews']) {
-      final receipt = api.pendingDoctorReceipts[key(kind)];
-      if (receipt == null ||
-          receipt['doctor_id'] != connection.parent.session.userId ||
-          receipt['patient_id'] != connection.patientId) {
+      final op = pending(kind);
+      if (op == null || !op.attemptPath.contains('/attempts/')) continue;
+      final grant = op.recoveryScope['access_id'];
+      if (grant != connection.grant?.id ||
+          op.recoveryScope['patient_id'] != connection.patientId ||
+          op.recoveryScope['doctor_id'] != connection.parent.session.userId) {
+        throw const FormatException('Original clinical authorization changed');
+      }
+      if (!await connection.verifyForRead() || !current) return;
+      final raw = await api.doctorResource(
+        '${op.attemptPath.substring('doctor/'.length)}/${op.key}',
+        connection.parent.generation,
+      );
+      if (!current || !identical(pending(kind), op)) return;
+      if (!await connection.verifyForRead() ||
+          !current ||
+          !identical(pending(kind), op)) {
+        return;
+      }
+      if (raw is Map &&
+          raw['status'] != 'unknown' &&
+          (raw['access_id'] != grant ||
+              raw['actor_id'] != connection.parent.session.userId ||
+              raw['patient_id'] != connection.patientId)) {
+        connection.invalidate();
+        throw const FormatException(
+          'Original clinical receipt authority changed',
+        );
+      }
+      final receipt = ClinicalOperationReceipt.parse(
+        raw,
+        doctor: connection.parent.session.userId,
+        patient: connection.patientId,
+        grant: grant as String,
+        operation: kind == 'notes' ? 'note' : 'review',
+        expectedSequence: op.recoveryScope['expected_sequence'] as int?,
+      );
+      final original = receipt.original;
+      if (receipt.status != 'committed' || original == null) {
+        api.uncertainDoctorWrites.add(key(kind));
+        outcome = receipt.status == 'unknown'
+            ? 'The original clinical outcome is unknown. Verification sends no clinical change; do not submit a replacement.'
+            : 'The original clinical result is expired or unavailable. Review current records; no change was repeated.';
         continue;
+      }
+      if (op.body.entries
+          .where((e) => e.key != 'expected_sequence')
+          .any((e) => original[e.key] != e.value)) {
+        throw const FormatException('Original clinical payload differs');
       }
       final found = kind == 'notes'
           ? notes.any(
               (n) =>
-                  n.id == receipt['id'] &&
-                  RoutineController.sameWire(n.wire, receipt),
+                  n.id == receipt.resource &&
+                  RoutineController.sameWire(n.wire, original),
             )
           : review.history.any(
-              (r) => r.id == receipt['id'] && sameDecision(r.wire, receipt),
+              (r) => r.id == receipt.resource && sameDecision(r.wire, original),
             );
-      if (found) {
-        api.pendingDoctorReceipts.remove(key(kind));
-        api.uncertainDoctorWrites.remove(key(kind));
-        api.integrationIntents.remove(
-          'legacy:doctor:patients/${connection.patientId}/$kind',
-        );
+      if (!found) {
+        api.uncertainDoctorWrites.add(key(kind));
+        outcome =
+            'Original receipt recorded; current authorized history differs. Review current records. No change was repeated.';
+        continue;
       }
+      api.pendingDoctorReceipts.remove(key(kind));
+      api.uncertainDoctorWrites.remove(key(kind));
+      api.integrationIntents.remove(intentId(kind));
+      outcome =
+          kind == 'reviews' && review.sequence > (original['sequence'] as int)
+          ? 'Review recorded and confirmed in history; a newer review is current.'
+          : 'Clinical record confirmed by original receipt and server readback.';
     }
   }
 
@@ -159,9 +219,12 @@ class DoctorClinicalController extends ChangeNotifier {
       if (!current || revision != _revision) return false;
       _notes.addAll(notes);
       _review = review;
-      _reconcile(notes, review);
+      await _reconcile(notes, review);
+      if (!current || revision != _revision) return false;
     } catch (failure) {
       if (!current || revision != _revision) return false;
+      _notes.clear();
+      _review = null;
       error = RequestFailure.from(failure).message;
       if (failure is RequestFailure &&
           [
@@ -373,7 +436,11 @@ class DoctorClinicalController extends ChangeNotifier {
         ..clear()
         ..addAll(notes);
       _review = read;
-      _reconcile(notes, read);
+      await _reconcile(notes, read);
+      if (!active() || pending(kind) != null) {
+        if (active()) api.uncertainDoctorWrites.add(operation);
+        return false;
+      }
       outcome = kind == 'reviews' && read.sequence > raw['sequence']
           ? 'Review recorded and confirmed in history; a newer review is current.'
           : 'Clinical record confirmed by server readback.';

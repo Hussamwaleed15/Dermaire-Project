@@ -27,6 +27,7 @@ class ClinicalWire extends f.DoctorWire {
   Map<String, dynamic> action(Map<String, dynamic> payload, [int? sequence]) =>
       {
         ...c.decision(owner: patient),
+        'schema_version': 'clinical-review-1.0',
         'id': 'review-${sequence ?? actions.length + 1}',
         'doctor_id': owner,
         'access_id': 'grant-$patient',
@@ -61,7 +62,12 @@ class ClinicalWire extends f.DoctorWire {
         posts++;
         final payload = jsonDecode(request.body) as Map<String, dynamic>;
         payloads.add(payload);
-        if (writeDelay != null) return writeDelay!.future;
+        if (writeDelay != null) {
+          return writeDelay!.future.then((response) {
+            recordClinical(request, response);
+            return response;
+          });
+        }
         if (['401', '403', '409', '422', '500'].contains(mode)) {
           return f.json({}, int.parse(mode));
         }
@@ -83,7 +89,9 @@ class ClinicalWire extends f.DoctorWire {
         } else {
           actions.add(row);
         }
-        return f.json(row, 201);
+        final response = f.json(row, 201);
+        recordClinical(request, response);
+        return response;
       }
       if (posts > 0 && mode == 'denied readback') return f.json({}, 403);
       if (posts > 0 && mode == 'lost readback') {

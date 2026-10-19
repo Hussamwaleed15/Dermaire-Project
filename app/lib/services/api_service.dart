@@ -1,3 +1,4 @@
+import '../doctor/doctor_models.dart' show DoctorGrant;
 import '../integration/contract.dart';
 import '../integration/operation_identity.dart';
 import '../entry/server_entry_metadata.dart';
@@ -446,9 +447,15 @@ class ApiService extends ChangeNotifier {
     }
 
     guard();
-    if (!RegExp(
-          r'^patients(/[A-Za-z0-9_-]+)?(/(notes|reviews|timeline))?(\?offset=[0-9]+&limit=[0-9]+)?$',
-        ).hasMatch(path) ||
+    final attemptRead =
+        method == 'GET' &&
+        RegExp(
+          r'^patients/[A-Za-z0-9_-]+/attempts/(note|review)/[a-f0-9]{48}$',
+        ).hasMatch(path);
+    if (!attemptRead &&
+            !RegExp(
+              r'^patients(/[A-Za-z0-9_-]+)?(/(notes|reviews|timeline))?(\?offset=[0-9]+&limit=[0-9]+)?$',
+            ).hasMatch(path) ||
         !(method == 'GET' ||
             method == 'POST' &&
                 RegExp(
@@ -456,8 +463,8 @@ class ApiService extends ChangeNotifier {
                 ).hasMatch(path))) {
       throw ArgumentError('Invalid doctor resource');
     }
-    // This legacy route does not send a server idempotency key. The local key
-    // correlates uncertainty only; GET collection history is not a keyed receipt.
+    // Compatibility map ID is retained; new writes use the real keyed clinical
+    // attempt path. A collection read is never treated as an attempt receipt.
     final intentId = 'legacy:doctor:$path';
     PendingIntent? original;
     if (method == 'POST') {
@@ -466,11 +473,45 @@ class ApiService extends ChangeNotifier {
           'An original clinical write remains unresolved. Refresh original history before another write.',
         );
       }
+      final patient = path.split('/')[1];
+      var scope = identityScope;
+      if (scope.isEmpty) {
+        final detail =
+            await doctorResource('patients/$patient', generation)
+                as Map<String, dynamic>;
+        final grant = DoctorGrant.fromApi(
+          detail['access'] as Map<String, dynamic>,
+          patient: patient,
+          doctor: authenticatedOwner,
+        );
+        guard();
+        if (detail['patient_id'] != patient ||
+            !grant.active(DateTime.now().toUtc())) {
+          throw const FormatException('Clinical grant is unavailable');
+        }
+        scope = {
+          'patient_id': patient,
+          'doctor_id': authenticatedOwner!,
+          'access_id': grant.id,
+        };
+      }
+      if (scope['patient_id'] != patient ||
+          scope['doctor_id'] != authenticatedOwner) {
+        throw const FormatException('Clinical write identity changed');
+      }
+      resourceId(scope['access_id']);
+      // Scope discovery may yield; prevent overlapping callers minting two keys.
+      if (integrationIntents.containsKey(intentId)) {
+        throw ApiException(
+          'An original clinical operation remains unresolved.',
+        );
+      }
       original = PendingIntent(
         path: 'doctor/$path',
-        attemptPath: 'doctor/$path',
+        attemptPath:
+            'doctor/patients/$patient/attempts/${path.endsWith('/notes') ? 'note' : 'review'}',
         body: payload ?? {},
-        identityScope: identityScope,
+        identityScope: scope,
       );
       original.uncertain = true;
       integrationIntents[intentId] = original;
@@ -478,7 +519,8 @@ class ApiService extends ChangeNotifier {
     final request = http.Request(method, Uri.parse('$baseUrl/doctor/$path'))
       ..followRedirects = false;
     request.headers.addAll(_headers(payload != null));
-    if (payload != null) request.body = jsonEncode(payload);
+    if (original != null) request.headers['Idempotency-Key'] = original.key;
+    if (payload != null) request.body = jsonEncode(original?.body ?? payload);
     final response = await _client
         .send(request)
         .then(http.Response.fromStream)

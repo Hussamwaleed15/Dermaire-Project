@@ -287,7 +287,11 @@ Future<void> connectedCareWorkflow(
       }
       final path = request.url.path;
       reads.add(path);
-      if (doctor && (path.endsWith('/notes') || path.endsWith('/reviews'))) {
+      if (doctor &&
+          (path.endsWith('/notes') ||
+              path.endsWith('/reviews') ||
+              path.contains('/attempts/note/') ||
+              path.contains('/attempts/review/'))) {
         return clinician.call(request);
       }
       if (path.contains('/messaging/') || path.endsWith('/doctor/access')) {

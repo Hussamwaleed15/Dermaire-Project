@@ -234,6 +234,21 @@ class _DoctorClinicalScreenState extends State<DoctorClinicalScreen>
           Semantics(liveRegion: true, child: Text(clinical.error!)),
         if (clinical.outcome != null)
           Semantics(liveRegion: true, child: Text(clinical.outcome!)),
+        for (final kind in ['notes', 'reviews'])
+          if (clinical.pending(kind) != null) ...[
+            const Text(
+              'An original clinical operation needs verification. Checking its receipt sends no clinical change.',
+            ),
+            OutlinedButton(
+              key: Key('verifyClinical$kind'),
+              onPressed: busy ? null : clinical.refresh,
+              child: Text(
+                kind == 'notes'
+                    ? 'Verify original note'
+                    : 'Verify original review',
+              ),
+            ),
+          ],
         if (validation != null)
           Semantics(liveRegion: true, child: Text(validation!)),
         if (clinical.confirmed) ...[
