@@ -8,9 +8,11 @@ import 'doctor_models.dart';
 /// A selected-patient editor/read model. Immutable writes are never replayed.
 class DoctorClinicalController extends ChangeNotifier {
   DoctorClinicalController(this.connection) {
+    _originalAccess = connection.grant?.id;
     connection.addListener(_accessChanged);
   }
   final DoctorConnectionController connection;
+  String? _originalAccess;
   final List<DoctorNote> _notes = [];
   DoctorReviewRead? _review;
   bool loading = false, saving = false, _disposed = false;
@@ -24,7 +26,18 @@ class DoctorClinicalController extends ChangeNotifier {
   bool uncertain(String kind) =>
       connection.parent.api.uncertainDoctorWrites.contains(key(kind));
   void _accessChanged() {
-    if (!current) clear();
+    if (!current) {
+      final grant = _originalAccess;
+      if (grant != null) {
+        connection.parent.api.quarantineGrantOperations(
+          grant,
+          connection.parent.generation,
+        );
+      }
+      clear();
+    } else {
+      _originalAccess = connection.grant?.id;
+    }
   }
 
   void clear() {

@@ -356,6 +356,45 @@ class ApiService extends ChangeNotifier {
     }
   }
 
+  /// Current-session grant loss separates raw drafts from minimum original
+  /// uncertainty. It emits no auth/session event and never issues a request.
+  void quarantineGrantOperations(String accessId, int generation) {
+    if (!isCurrentSession(generation) ||
+        authenticatedOwner == null ||
+        authenticatedRole == null) {
+      return;
+    }
+    final selected = integrationIntents.entries
+        .where((e) => e.value.recoveryScope['access_id'] == accessId)
+        .toList();
+    for (final entry in selected) {
+      final op = entry.value;
+      final patient = op.recoveryScope['patient_id'];
+      final kind = op.path.split('/').last;
+      final receiptId = pendingDoctorReceipts['$patient:$kind']?['id'];
+      final scope = {...op.recoveryScope};
+      if (receiptId is String &&
+          RegExp(r'^[A-Za-z0-9_-]{1,128}$').hasMatch(receiptId)) {
+        scope['resource_id'] = receiptId;
+      }
+      final identity = OperationIdentity(
+        owner: authenticatedOwner!,
+        role: authenticatedRole!,
+        path: op.path,
+        receiptPath: op.attemptPath,
+        key: op.key,
+        fingerprint: OperationIdentity.digest(op.body),
+        scope: scope,
+      );
+      _quarantinedOperations['${identity.owner}:${identity.role}:${identity.key}'] =
+          identity;
+      integrationIntents.remove(entry.key);
+      if (patient != null && ['notes', 'reviews'].contains(kind)) {
+        pendingDoctorReceipts.remove('$patient:$kind');
+      }
+    }
+  }
+
   String? get requiredSafetyPolicyVersion => _entryMetadata?.requiredPolicy;
   bool get profileReviewRequired =>
       hasConfirmedSafetyAcceptance &&
@@ -453,6 +492,37 @@ class ApiService extends ChangeNotifier {
         integrationIntents.remove(intentId);
       }
       throw RequestFailure.http(response.statusCode);
+    }
+    if (original != null &&
+        !identical(integrationIntents[intentId], original)) {
+      final qkey = '$authenticatedOwner:$authenticatedRole:${original.key}';
+      final retained = _quarantinedOperations[qkey];
+      if (retained != null) {
+        try {
+          final raw = jsonDecode(response.body);
+          if (raw is Map &&
+              raw['doctor_id'] == retained.owner &&
+              raw['patient_id'] == retained.scope['patient_id'] &&
+              (raw['access_id'] == null ||
+                  raw['access_id'] == retained.scope['access_id'])) {
+            final id = resourceId(raw['id']);
+            _quarantinedOperations[qkey] = OperationIdentity(
+              owner: retained.owner,
+              role: retained.role,
+              path: retained.path,
+              receiptPath: retained.receiptPath,
+              key: retained.key,
+              fingerprint: retained.fingerprint,
+              scope: {...retained.scope, 'resource_id': id},
+            );
+          }
+        } catch (_) {
+          /* Retain the original identity without exposing raw content. */
+        }
+      }
+      throw ApiException(
+        'Patient context changed. The original operation identity is retained for review.',
+      );
     }
     return jsonDecode(response.body);
   }

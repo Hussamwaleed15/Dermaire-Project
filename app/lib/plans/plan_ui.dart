@@ -21,7 +21,15 @@ class ClinicalPlansScreen extends StatefulWidget {
 }
 
 class _ClinicalPlansState extends State<ClinicalPlansScreen> {
-  late final controller = PlansController(patient: widget.patient);
+  late PlansController controller = PlansController(patient: widget.patient);
+  @override
+  void didUpdateWidget(covariant ClinicalPlansScreen old) {
+    super.didUpdateWidget(old);
+    if (old.patient != widget.patient) {
+      controller = PlansController(patient: widget.patient);
+    }
+  }
+
   @override
   Widget build(BuildContext context) => PrivateView(
     controller: controller,

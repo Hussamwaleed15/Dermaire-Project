@@ -1,3 +1,5 @@
+import '../messaging/messaging_ui.dart';
+import 'doctor_context_page.dart';
 import 'package:flutter/material.dart';
 import '../dermaire_widgets.dart';
 import '../clinical/clinical_ui.dart' show clinicalTime;
@@ -384,8 +386,18 @@ class _DoctorClinicalScreenState extends State<DoctorClinicalScreen>
               : () => save(true),
           child: const Text('Record review action'),
         ),
+        OutlinedButton(
+          onPressed: () => openPage(
+            context,
+            DoctorContextPage(
+              connection: widget.connection,
+              child: CareThreadsScreen(patient: widget.connection.patientId),
+            ),
+          ),
+          child: const Text('Open this patient’s care conversations'),
+        ),
         const Text(
-          'Doctor-patient messaging and exports are unavailable. This is not an emergency messaging service.',
+          'Care conversations require separate messaging consent. Export is not enabled. This is not an emergency messaging service.',
         ),
       ],
     );

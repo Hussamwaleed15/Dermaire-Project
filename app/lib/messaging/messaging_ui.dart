@@ -15,7 +15,17 @@ class CareThreadsScreen extends StatefulWidget {
 }
 
 class _CareThreadsState extends State<CareThreadsScreen> {
-  late final controller = ThreadsController(patient: widget.patient);
+  late ThreadsController controller = ThreadsController(
+    patient: widget.patient,
+  );
+  @override
+  void didUpdateWidget(covariant CareThreadsScreen old) {
+    super.didUpdateWidget(old);
+    if (old.patient != widget.patient) {
+      controller = ThreadsController(patient: widget.patient);
+    }
+  }
+
   @override
   Widget build(BuildContext context) => PrivateView(
     controller: controller,

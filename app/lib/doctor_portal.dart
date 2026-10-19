@@ -1,3 +1,4 @@
+import 'doctor/doctor_context_page.dart';
 import 'recovery/recovery_ui.dart';
 import 'clinical/clinical_snapshot_ui.dart';
 import 'doctor/access_invitation.dart';
@@ -433,9 +434,21 @@ class _PatientDetailScreenState extends State<PatientDetailScreen>
           Text(
             'Grant expiry: ${connection.grant!.expiresAt.toUtc().toIso8601String()} (UTC)',
           ),
-          const Text(
-            'Detailed viewing and export scopes are unavailable. Export is not enabled.',
-          ),
+          if (connection.grant!.scopes == null)
+            const Text(
+              'Detailed viewing and export scopes are unavailable. Export is not enabled.',
+            )
+          else ...[
+            Text('Recorded scopes: ${connection.grant!.scopes!.join(', ')}'),
+            Text(
+              connection.grant!.effectiveScopes == null
+                  ? 'Effective scopes are unconfirmed.'
+                  : 'Server-reported effective scopes: ${connection.grant!.effectiveScopes!.join(', ')}',
+            ),
+            const Text(
+              'VIEW does not grant EXPORT. Export is not enabled in this app.',
+            ),
+          ],
           OutlinedButton(
             onPressed: c.saving ? null : connection.refresh,
             child: const Text('Verify current access'),
@@ -478,7 +491,10 @@ class _PatientDetailScreenState extends State<PatientDetailScreen>
           OutlinedButton(
             onPressed: () => openEntry(
               context,
-              ClinicalPlansScreen(patient: widget.patient.id),
+              DoctorContextPage(
+                connection: connection,
+                child: ClinicalPlansScreen(patient: widget.patient.id),
+              ),
             ),
             child: const Text('Patient clinical plans'),
           ),
@@ -496,12 +512,26 @@ class _PatientDetailScreenState extends State<PatientDetailScreen>
           OutlinedButton(
             onPressed: () => openEntry(
               context,
-              DoctorClinicalScreen(connection: connection),
+              DoctorContextPage(
+                connection: connection,
+                child: DoctorClinicalScreen(connection: connection),
+              ),
             ),
             child: const Text('Notes and clinical reviews'),
           ),
+          OutlinedButton(
+            key: const Key('patientCareConversations'),
+            onPressed: () => openEntry(
+              context,
+              DoctorContextPage(
+                connection: connection,
+                child: CareThreadsScreen(patient: widget.patient.id),
+              ),
+            ),
+            child: const Text('This patient’s care conversations'),
+          ),
           const Text(
-            'Open Care conversations for consented messages. This workspace is not an emergency messaging service.',
+            'Messaging requires separate consent and the original grant. This workspace is not an emergency messaging service.',
           ),
         ],
       );

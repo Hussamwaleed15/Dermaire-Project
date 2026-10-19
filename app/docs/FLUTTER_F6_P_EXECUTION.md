@@ -48,3 +48,21 @@ calendar revision fences old CAS under the verified account lock; this is NOT an
 original receipt. Account-expiry quarantine still has no calendar receipt reader.
 Links from Routine, Reports and observation timeline;320px/200% consent resets on
 draft change.24 new tests, focused64, full2055, analyzer clean. No native changes.
+
+## P2/P3 — contextual doctor care and grant-loss privacy
+
+- Added patient-specific conversation entry points from patient detail and clinical
+  review, alongside the existing patient-specific plans. Current recorded and
+  effective scopes are surfaced when returned; VIEW never implies EXPORT.
+- Contextual care routes remove their private subtree when selected patient or
+  original authorization changes. Conversation/plan list controllers rebind on
+  patient prop changes, avoiding cached patient A results in patient B's view.
+- Grant loss quarantines raw uncertain clinical intents into minimum original
+  identities. A late note/review response can retain a validated result ID but
+  cannot restore its narrative or receipt cache. Replacement writes stay blocked.
+- Legacy denied-read tests now require this stricter cleanup for 403 as well as
+  session loss; 503 retains uncertainty without pretending permission was denied.
+- Added five regressions: note/review late replies, context removal, real
+  conversation list switch, real plan list switch. All transports deny live hosts.
+- This is software privacy/navigation work, not doctor license verification,
+  encrypted-journal activation, or a new backend receipt protocol.

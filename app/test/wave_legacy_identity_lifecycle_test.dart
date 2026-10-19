@@ -49,11 +49,11 @@ void main() {
             await editor.$3.refresh();
             expect(editor.$3.notes, isEmpty);
             expect(editor.$3.review, isNull);
-            if (status == 401) {
+            if (status == 401 || status == 403) {
               expect(api.integrationIntents, isEmpty);
               expect(api.pendingDoctorReceipts, isEmpty);
               w.readStatus = null;
-              await w.login();
+              if (status == 401) await w.login();
               final identity = api.quarantinedOperations.single;
               expect(identity.key, original.key);
               final encoded = jsonEncode(identity.toJson());
