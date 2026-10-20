@@ -50,6 +50,19 @@ class _PatientHomeState extends State<PatientHome> {
     });
   }
 
+  bool opening = false;
+  Future<void> visit(Widget page) async {
+    if (!current || opening) return;
+    opening = true;
+    try {
+      await openEntry(context, page);
+      if (!current) return;
+      await widget.state.refreshPatientHome(generation: generation);
+    } finally {
+      opening = false;
+    }
+  }
+
   void navigate(HomeAction action) {
     if (!current) return;
     final s = widget.state;
@@ -57,12 +70,12 @@ class _PatientHomeState extends State<PatientHome> {
       case HomeAction.safety:
       case HomeAction.clinician:
       case HomeAction.verifyGuidance:
-        openPage(context, ClinicalStatusScreen(controller: s.clinical));
+        unawaited(visit(ClinicalStatusScreen(controller: s.clinical)));
       case HomeAction.uncertainObservation:
       case HomeAction.observe:
-        openPage(context, CameraScreen(state: s));
+        unawaited(visit(CameraScreen(state: s)));
       case HomeAction.history:
-        openPage(context, TimelineScreen(state: s));
+        unawaited(visit(TimelineScreen(state: s)));
       case HomeAction.experiment:
         s.selectTab(1);
     }
@@ -123,8 +136,7 @@ class _PatientHomeState extends State<PatientHome> {
                 controller: s.clinical,
               ),
               OutlinedButton(
-                onPressed: () =>
-                    openEntry(context, const ClinicalSnapshotScreen()),
+                onPressed: () => visit(const ClinicalSnapshotScreen()),
                 child: const Text('Read combined clinical snapshot'),
               ),
               const SizedBox(height: 16),
@@ -201,14 +213,14 @@ class _PatientHomeState extends State<PatientHome> {
                     OutlinedButton(
                       key: const Key('homeRoutine'),
                       onPressed: current
-                          ? () => openEntry(context, RoutineScreen(state: s))
+                          ? () => visit(RoutineScreen(state: s))
                           : null,
                       child: const Text('My routine & reports'),
                     ),
                     OutlinedButton(
                       key: const Key('homeContext'),
                       onPressed: () {
-                        if (current) openPage(context, ContextScreen(state: s));
+                        if (current) unawaited(visit(ContextScreen(state: s)));
                       },
                       child: const Text("View or edit today's context"),
                     ),

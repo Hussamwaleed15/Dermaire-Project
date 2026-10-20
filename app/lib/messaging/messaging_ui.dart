@@ -1,3 +1,5 @@
+import '../doctor/doctor_connection.dart';
+import '../doctor/doctor_context_page.dart';
 import 'package:flutter/material.dart';
 import '../dermaire_widgets.dart';
 import '../entry/entry_motion.dart';
@@ -8,7 +10,8 @@ import 'messaging_models.dart';
 import 'anchored_conversation.dart';
 
 class CareThreadsScreen extends StatefulWidget {
-  const CareThreadsScreen({super.key, this.patient});
+  const CareThreadsScreen({super.key, this.patient, this.connection});
+  final DoctorConnectionController? connection;
   final String? patient;
   @override
   State<CareThreadsScreen> createState() => _CareThreadsState();
@@ -16,13 +19,15 @@ class CareThreadsScreen extends StatefulWidget {
 
 class _CareThreadsState extends State<CareThreadsScreen> {
   late ThreadsController controller = ThreadsController(
-    patient: widget.patient,
+    patient: widget.connection?.patientId ?? widget.patient,
   );
   @override
   void didUpdateWidget(covariant CareThreadsScreen old) {
     super.didUpdateWidget(old);
-    if (old.patient != widget.patient) {
-      controller = ThreadsController(patient: widget.patient);
+    if (old.patient != widget.patient || old.connection != widget.connection) {
+      controller = ThreadsController(
+        patient: widget.connection?.patientId ?? widget.patient,
+      );
     }
   }
 
@@ -45,8 +50,15 @@ class _CareThreadsState extends State<CareThreadsScreen> {
           const Text('No current consented conversations returned.'),
         for (final thread in c.threads)
           DermaireCard(
-            onTap: () =>
-                openEntry(context, CareConversationScreen(thread: thread)),
+            onTap: () => openEntry(
+              context,
+              widget.connection == null
+                  ? CareConversationScreen(thread: thread)
+                  : DoctorContextPage(
+                      connection: widget.connection!,
+                      child: CareConversationScreen(thread: thread),
+                    ),
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [

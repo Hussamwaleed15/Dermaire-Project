@@ -166,3 +166,34 @@ regressions cover unknown -> late original committed read ->503 during explicit
 finish -> successful fresh finish, logout cleanup, and unsupported-domain guidance,
 320px200%/both themes. Focused85, full2194, analyze clean. Existing receipt UI tests
 remain passing, with no lost original identity on failed verification.
+
+## Q4/Q5/Q6/Q7 — route-return readback and nested patient privacy
+
+Home direct observation/history/safety/clinical/routine/context routes now serialize
+opening and re-read the authoritative Home/baseline/observation/clinical projections
+on return, only while their original session remains current. A report-only save
+never sets metric-based Home completion locally. An old account's route return cannot
+refresh the replacement account through its stale Home instance.
+
+Selected-patient care lists now propagate the real DoctorConnectionController into
+conversation/plan detail routes, including Open confirmed plan after creation. The
+existing outer context wrapper could remove a list but could not remove a sibling
+Navigator-pushed detail route. Each nested route now owns the same context boundary,
+so selection changes, observed grant loss, or logout dispose its private subtree and
+ignore late reads. Global authorized lists retain their existing behavior. No cached
+grant is promoted to new authority, and no native/provider setting is changed.
+
+30 new actual-widget regressions: real Home -> observation -> guided-camera disclosure
+(no hardware startup) -> confirmed report -> Home -> routine/back; old-account return;
+nested messages/plans with switch/revocation/logout before or after delayed response;
+create -> open confirmed plan -> reschedule -> patient switch. Both themes,320px200%,
+reduced motion. Reschedule fake returns a precise winter Cairo11:00/09:00Z snapshot,
+not the shared fixture's stale UTC value. Eight existing connected-care journeys
+remain intact and doctor variants additionally submit a keyed clinical review with
+current sequence and urgent-safety preservation. Focused133, full2224, analyze clean.
+
+Q4/Q5 are DONE for these bounded repairs/tests, PARTIAL for the complete end-to-end
+roadmap. Q6 remains PARTIAL comprehensive audit/device qualification; this increment
+proves observed context-loss disposal/late-response suppression, not instant remote
+revocation detection or physical image storage security. No new single all-domain
+backend E2E claim. Q7 bounded useful navigation/uncertainty work is implemented.

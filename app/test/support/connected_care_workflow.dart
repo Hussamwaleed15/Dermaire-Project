@@ -201,6 +201,27 @@ Future<void> connectedCareWorkflow(
           expect(clinician.posts, 1);
           expect(clinician.saved.single['patient_id'], 'patient-1');
           expect(api.integrationIntents, isEmpty);
+          await tap(find.widgetWithText(ChoiceChip, 'reviewed'));
+          await tap(find.widgetWithText(ChoiceChip, 'doctor review'));
+          final rationale = find.byKey(const Key('clinicalRationale'));
+          await t.scrollUntilVisible(
+            rationale,
+            250,
+            scrollable: find.byType(Scrollable).first,
+          );
+          await t.ensureVisible(rationale);
+          await t.enterText(
+            rationale,
+            'Synthetic clinician recommendation preserves current urgent safety.',
+          );
+          FocusManager.instance.primaryFocus?.unfocus();
+          await t.pumpAndSettle();
+          await tap(find.byKey(const Key('recordClinicalReview')));
+          expect(clinician.posts, 2);
+          expect(clinician.actions.single['sequence'], 1);
+          expect(clinician.actions.single['recommendation'], 'doctor_review');
+          expect(clinician.actions.single['urgent_safety_preserved'], true);
+          expect(api.integrationIntents, isEmpty);
           await tap(find.text('Open this patient’s care conversations'));
           expect(find.byType(CareThreadsScreen), findsOneWidget);
           expect(

@@ -406,7 +406,10 @@ class _DoctorClinicalScreenState extends State<DoctorClinicalScreen>
             context,
             DoctorContextPage(
               connection: widget.connection,
-              child: CareThreadsScreen(patient: widget.connection.patientId),
+              child: CareThreadsScreen(
+                patient: widget.connection.patientId,
+                connection: widget.connection,
+              ),
             ),
           ),
           child: const Text('Open this patient’s care conversations'),

@@ -493,7 +493,10 @@ class _PatientDetailScreenState extends State<PatientDetailScreen>
               context,
               DoctorContextPage(
                 connection: connection,
-                child: ClinicalPlansScreen(patient: widget.patient.id),
+                child: ClinicalPlansScreen(
+                  patient: widget.patient.id,
+                  connection: connection,
+                ),
               ),
             ),
             child: const Text('Patient clinical plans'),
@@ -525,7 +528,10 @@ class _PatientDetailScreenState extends State<PatientDetailScreen>
               context,
               DoctorContextPage(
                 connection: connection,
-                child: CareThreadsScreen(patient: widget.patient.id),
+                child: CareThreadsScreen(
+                  patient: widget.patient.id,
+                  connection: connection,
+                ),
               ),
             ),
             child: const Text('This patient’s care conversations'),

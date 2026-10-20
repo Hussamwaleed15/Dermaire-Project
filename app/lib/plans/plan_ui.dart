@@ -1,3 +1,4 @@
+import '../doctor/doctor_context_page.dart';
 import '../doctor/doctor_records_controller.dart';
 import '../capture/guided_camera_screen.dart';
 import '../capture/guided_capture_models.dart';
@@ -14,7 +15,13 @@ import 'plan_journey_summary.dart';
 import 'plan_controller.dart';
 
 class ClinicalPlansScreen extends StatefulWidget {
-  const ClinicalPlansScreen({super.key, this.state, this.patient});
+  const ClinicalPlansScreen({
+    super.key,
+    this.state,
+    this.patient,
+    this.connection,
+  });
+  final DoctorConnectionController? connection;
   final DermaireState? state;
   final String? patient;
   @override
@@ -22,12 +29,16 @@ class ClinicalPlansScreen extends StatefulWidget {
 }
 
 class _ClinicalPlansState extends State<ClinicalPlansScreen> {
-  late PlansController controller = PlansController(patient: widget.patient);
+  late PlansController controller = PlansController(
+    patient: widget.connection?.patientId ?? widget.patient,
+  );
   @override
   void didUpdateWidget(covariant ClinicalPlansScreen old) {
     super.didUpdateWidget(old);
-    if (old.patient != widget.patient) {
-      controller = PlansController(patient: widget.patient);
+    if (old.patient != widget.patient || old.connection != widget.connection) {
+      controller = PlansController(
+        patient: widget.connection?.patientId ?? widget.patient,
+      );
     }
   }
 
@@ -52,7 +63,15 @@ class _ClinicalPlansState extends State<ClinicalPlansScreen> {
           DermaireCard(
             onTap: () => openEntry(
               context,
-              ClinicalPlanScreen(id: plan.id, state: widget.state),
+              widget.connection == null
+                  ? ClinicalPlanScreen(id: plan.id, state: widget.state)
+                  : DoctorContextPage(
+                      connection: widget.connection!,
+                      child: ClinicalPlanScreen(
+                        id: plan.id,
+                        state: widget.state,
+                      ),
+                    ),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -517,8 +536,13 @@ class _CreateClinicalPlanState extends State<CreateClinicalPlanScreen> {
             'Current server plan: ${c.created!.state} · revision ${c.created!.revision}',
           ),
           FilledButton(
-            onPressed: () =>
-                openEntry(context, ClinicalPlanScreen(id: c.created!.id)),
+            onPressed: () => openEntry(
+              context,
+              DoctorContextPage(
+                connection: widget.connection,
+                child: ClinicalPlanScreen(id: c.created!.id),
+              ),
+            ),
             child: const Text('Open confirmed plan'),
           ),
         ] else if (c.pending != null) ...[
