@@ -1,0 +1,55 @@
+# F7 — جرد القدرات وأدلة الإغلاق
+
+البداية2026-10-20: main نظيف، SHA3ec0b03e92c23e177ded80ca48eba24bfb95eeb7،
+fetch يطابقه. pub get ناجح؛ analyze clean؛2224 اختبار baseline ناجحًا.
+Backend لم يتغير منذ8ad2cea؛ طلب Backend السابق توقف قبل أي تعديل.
+نطاق هذه الموجة Flutter فقط، لا native/Tester/live services.
+
+## أبعاد الإثبات المستقلة
+
+I=تنفيذ بالمصدر؛ F=اختبارات fake HTTP/host ذات صلة ضمن المجموعة الكاملة.
+B=Backend حي؛ S=Simulator لهذه الوظيفة؛ D=جهاز فعلي؛ P=اعتماد إنتاج.
+«لا دليل» لا يعني أن وظيفة لم تُنفذ؛ يعني أننا لا ندعي تأهيل ذلك البعد.
+
+| القدرة / المصدر | I | F | B | S | D | P | المتبقي المصنف |
+|---|---|---|---|---|---|---|---|
+| Auth/onboarding/safety: services/api_service,entry,account | نعم | نعم | لا دليل | لا دليل لكل auth | مؤجل | لا اعتماد جديد | DEVICE VALIDATION، PRODUCTION QUALIFICATION |
+| Profile/Home/observations: account,home,observations | نعم | نعم | لا دليل | لا دليل شامل | مؤجل | لا اعتماد جديد | DEVICE VALIDATION؛ ربط completion بسيرفر فقط |
+| Guided camera/private images: capture | نعم | نعم | لا دليل | سابق محدود، لا تأهيل كاميرا شامل | مؤجل | لا اعتماد جديد | DEVICE VALIDATION، PRODUCTION QUALIFICATION |
+| Products/routine/adherence: products,routine | نعم | نعم | لا دليل | لا دليل شامل | مؤجل | لا اعتماد جديد | DEVICE VALIDATION؛ original recovery لا replacement آلي |
+| Experiments/history/PSM: experiments,psm,routine evidence | نعم | نعم | لا دليل | لا دليل شامل | مؤجل | لا اعتماد جديد | BACKEND DEPENDENCY للنموذج الفعلي منفصل عن evidence الحتمي |
+| Grants/snapshot: doctor,clinical | نعم | نعم | لا دليل | لا دليل شامل | مؤجل | لا اعتماد جديد | DEVICE VALIDATION؛ VIEW≠EXPORT |
+| Notes/reviews: doctor_clinical_controller | نعم keyed | نعم | لا دليل | لا دليل شامل | مؤجل | لا اعتماد جديد | FLUTTER FIX: أصل grant عند resume؛ BACKEND DEPENDENCY: atomic أول POST |
+| Messages/plans: messaging,plans | نعم | نعم | لا دليل | سابق smoke محدود | مؤجل | لا اعتماد جديد | FLUTTER FIX: refresh القائمة عند الرجوع، تثبيت أصل سياق الصفحة |
+| Comparison/history: plans/plan_evaluation | lifecycle نعم | نعم | لا دليل | سابق محدود | مؤجل | لا اعتماد جديد | EXTERNAL AI DEPENDENCY؛ BACKEND DEPENDENCY لإيصال cancel مستقل |
+| Inbox/preferences/reminders: notifications | نعم | نعم | لا دليل | سابق smoke محدود | مؤجل | لا اعتماد جديد | BACKEND DEPENDENCY: thread target/CAS؛ EXTERNAL PUSH DEPENDENCY |
+| Agent consent/requests: agent | broker نعم، inference unavailable | نعم | لا دليل | لا دليل شامل | مؤجل | لا اعتماد جديد | BACKEND DEPENDENCY: discovery/paging/target/original proof؛ EXTERNAL AI |
+| Receipts/recovery: recovery | memory/readers نعم؛ disk isolated | نعم | لا دليل | F6-N محدود فقط | مؤجل | DISABLED | FLUTTER FIX: factory مشتركة للقارئات وcomposition معزول؛ DEVICE/PRODUCTION gates |
+| Logout/switch/delete: API/controllers | نعم | نعم | لا دليل | سابق محدود | مؤجل | لا اعتماد جديد | DEVICE VALIDATION؛ PHI cleanup≠physical flash erasure |
+| Navigation/accessibility: themes/UI | نعم | نعم | غير منطبق | سابق محدود | مؤجل | لا اعتماد جديد | FLUTTER FIX للفجوات المثبتة؛ لا redesign |
+
+## خطة التنفيذ المحددة
+
+1. F7-B/F: تثبيت original grant في صفحة السياق وclinical controller؛ replacement
+   لا يعيد فتح صفحة قديمة. same-grant refresh يبقى ممكنًا. اختبارات controller/UI،
+   late-response/replacement وبدء صفحة جديدة بصلاحيتها الحالية. لا claim atomic POST.
+2. F7-E/F/G: await تفاصيل المحادثة/الخطة، refresh القائمة بعد الرجوع فقط لنفس
+   controller/session/context، ومنع duplicate navigation؛ اختبارات actual widgets.
+3. F7-C/D: استخراج اختيار القارئات الفعلية من UI إلى factory قابلة للحقن صراحة
+   في composition معزول؛ اختبارات SQLCipher restart + domain readers، لا تفعيل حي.
+4. F7-H/I: focused/analyze/full/diff/scope/fetch لكل دفعة؛ تسليم backend دقيق.
+
+القارئات الحالية تغطي كل العقود ذات receipt مستقل المتاحة. Agent action-attempt
+يرجع CURRENT action؛ notification/current CAS وcalendar CAS وevaluation DELETE
+ليست original receipts. لا endpoint جديد أو universal status مخترع. unknown لا
+يعني rejected/in_flight ولا إذن replay. مزودو inference/Push ما زالوا unavailable.
+
+## F7-B/F نتيجة الدفعة الأولى
+
+تثبيت grant مرة واحدة في DoctorContextPage وDoctorClinicalController. إعادة
+التحقق بنفس المنحة لا تكسر الاستخدام؛ المنحة البديلة لا تعيد binding الصفحة
+القديمة. شاشة notes/reviews تزيل المسودات وتعرض تعذر الوصول عند اختلاف الأصل.
+فتح صفحة جديدة صراحة يمكنه استخدام المنحة الجديدة بعد تحقق السيرفر.
+8 اختبارات جديدة، focused80/full2232/analyze clean. الرد السريري المتأخر يحتفظ
+بالهوية الدنيا الأصلية ولا يعيد payload أو private receipt إلى الصفحة.
+ضمان أول كتابة ذريًا ما زال BACKEND DEPENDENCY؛ لا header مخترع في هذه الدفعة.

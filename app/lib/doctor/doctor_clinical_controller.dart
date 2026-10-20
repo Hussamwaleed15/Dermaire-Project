@@ -20,7 +20,10 @@ class DoctorClinicalController extends ChangeNotifier {
   bool loading = false, saving = false, _disposed = false;
   String? error, outcome;
   int _revision = 0;
-  bool get current => !_disposed && connection.confirmed;
+  bool get current =>
+      !_disposed &&
+      connection.confirmed &&
+      connection.grant?.id == _originalAccess;
   bool get confirmed => current && _review != null && !loading && error == null;
   List<DoctorNote> get notes => confirmed ? List.unmodifiable(_notes) : [];
   DoctorReviewRead? get review => confirmed ? _review : null;
@@ -28,6 +31,7 @@ class DoctorClinicalController extends ChangeNotifier {
   bool uncertain(String kind) =>
       connection.parent.api.uncertainDoctorWrites.contains(key(kind));
   void _accessChanged() {
+    _originalAccess ??= connection.grant?.id;
     if (!current) {
       final grant = _originalAccess;
       if (grant != null) {
@@ -37,8 +41,6 @@ class DoctorClinicalController extends ChangeNotifier {
         );
       }
       clear();
-    } else {
-      _originalAccess = connection.grant?.id;
     }
   }
 

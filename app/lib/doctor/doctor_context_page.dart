@@ -38,7 +38,7 @@ class _DoctorContextPageState extends State<DoctorContextPage> {
         (!widget.connection.confirmed || next != originalGrant)) {
       quarantine(widget.connection);
     }
-    if (widget.connection.confirmed) originalGrant = next;
+    if (widget.connection.confirmed) originalGrant ??= next;
     if (mounted) setState(() {});
   }
 
@@ -62,7 +62,7 @@ class _DoctorContextPageState extends State<DoctorContextPage> {
   @override
   Widget build(BuildContext context) {
     final c = widget.connection;
-    if (!c.confirmed) {
+    if (!c.confirmed || c.grant?.id != originalGrant) {
       return Scaffold(
         appBar: AppBar(),
         body: const SafeArea(

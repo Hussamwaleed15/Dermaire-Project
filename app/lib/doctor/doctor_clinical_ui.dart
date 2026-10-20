@@ -83,7 +83,7 @@ class _DoctorClinicalScreenState extends State<DoctorClinicalScreen>
       clearOnActivate = true;
       return;
     }
-    if (!clinical.connection.confirmed) clearDrafts();
+    if (!clinical.current) clearDrafts();
     if (mounted) setState(() {});
   }
 
@@ -200,7 +200,7 @@ class _DoctorClinicalScreenState extends State<DoctorClinicalScreen>
   @override
   Widget build(BuildContext context) {
     if (!doctorViewVisible || clearOnActivate) return pausedDoctorView();
-    if (!widget.connection.confirmed) {
+    if (!clinical.current) {
       return Scaffold(
         appBar: AppBar(),
         body: const Center(
