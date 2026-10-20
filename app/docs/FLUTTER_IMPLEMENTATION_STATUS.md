@@ -1,3 +1,34 @@
+# Current F6-Q status — 2026-10-20
+
+This section supersedes older open-work statements below. Start
+`1df9822adb9690f2146fc754258f724a1b3b0c19`; final verified implementation
+`ed83523c1c54a7674cd0e84e42009434bedc5a16`, pushed and remote SHA matched.
+2087 -> **2224** host Flutter tests (+137), analyzer clean. Six implementation
+commits; final documentation commit follows. Full details and exact changed files:
+[Arabic report](FLUTTER_F6_Q_FINAL_REPORT_AR.md), [execution ledger](FLUTTER_F6_Q_EXECUTION.md).
+
+| Stream | Status | Verified outcome / remaining boundary |
+|---|---|---|
+| Q0 source inventory | DONE | Current Flutter + registered backend routes/schemas; isolated baseline; shared main verified |
+| Q1 clinical notes/reviews | DONE bounded | Real original key/body/grant/sequence, actual original receipt, independent current read; no duplicate/new-key retry or old review overriding current decision. Initial-write atomic access precondition is a backend gap |
+| Q2 domain recovery | PARTIAL | New metadata readers for adherence, clinical, message, plan/comparison and consent/claim; product/configuration readers retained. Agent current-action, notification/current CAS, calendar CAS and evaluation DELETE are not independent original receipts |
+| Q3 uncertainty | DONE bounded | Per-operation status/read time/next action; explicit finish only after fresh original/current proof; unknown/expired/denied/503 retain uncertainty |
+| Q4 patient journey | PARTIAL full roadmap / DONE bounded repairs | Home return reads authoritative state; no fabricated report-only metric completion; actual observation/guided disclosure/routine/back and old-account return tested |
+| Q5 doctor journey | PARTIAL full roadmap / DONE bounded repairs | Nested conversation/plan routes inherit selected original connection; creation/open/reschedule/clinical review exercised; selection/revocation/logout and delayed reads cannot restore old patient widgets |
+| Q6 privacy/safety | PARTIAL comprehensive qualification | Scoped minimum identities, raw cleanup, generation guards, observed-grant-loss disposal; existing full domain regressions preserved. No instant server revocation notification or blanket security proof |
+| Q7 UX | DONE bounded / PARTIAL product roadmap | Truthful useful recovery actions, route-return refresh and responsive existing design; both themes320px200% and reduced motion |
+| Q8 host verification/handoff | DONE host / PARTIAL device/E2E | Focused + full suite/analyze at every code checkpoint; source-grounded Hussam handoff; no live backend E2E or new simulator run |
+| Secure journal activation | BLOCKED / NOT APPROVED | Production mutation journaling remains disabled; no automatic replay/native edits/security override |
+| AI/Push | BLOCKED external | Actual unavailable providers preserved; no invented inference, clinician clearance or delivery |
+| Device qualification | DEFERRED physical | Prior bounded F6-N evidence unchanged; no new device/simulator security claim |
+
+Full suite checkpoints:2124,2150,2178,2190,2194,2224. Focused final133.
+No backend/Tester/native/production/provider modifications. F6/application as a whole
+remains PARTIAL; implemented and host-tested do not mean device-validated or
+production-approved. Historical status entries follow.
+
+---
+
 # Current F6-P status —2026-10-19
 
 This section supersedes older completion/blocker claims below. Historical entries

@@ -1,3 +1,36 @@
+# F6-Q current handoff to Hussam — 2026-10-20
+
+Source inspected again after Flutter integration; backend last change remains
+`8ad2ceafced5b1f06ade5a082d4939503d31c687`. No live requests/backend execution.
+This table supersedes historical mobile-integration blockers below. Keyed doctor
+notes/reviews and metadata-only readers for all supported requested domains are
+now implemented in Flutter. Existing APIs must not be recreated.
+
+| Priority | Actual endpoint / current behavior | Required contract and acceptance criteria | Flutter / privacy impact |
+|---|---|---|---|
+| P0 before safe replacement recovery | Product/configuration/clinical and other attempt GETs expose committed/unknown/expired; unknown is not terminal rejection or an in-flight fence | Define authenticated operation reservation/in-flight/terminal rejection/fencing and retention. A delayed original after unknown must not allow a second replacement commit. Test wrong owner, expiry and concurrent original/replacement | Flutter keeps original identity and blocks automatic new keys; cannot infer failure from unknown or503 |
+| P1 original clinical grant precondition | POST /doctor/patients/{patient}/notes and /reviews call doctor_loop.authorize(), selecting latest active VIEW grant under patient lock. ClinicalNoteCreate/ReviewActionCreate forbid extra fields and expose no original access precondition | Add an explicit documented first-write original-access precondition, validated atomically under the same lock before mutation. Test original A replaced by B between Flutter verify and POST: reject, no new note/review; same-key old-grant replay remains rejected; review expected_sequence CAS preserved | Flutter freezes/checks original grant before write and validates receipt afterward, but cannot make initial verify-to-POST atomic or invent a header. Keyed replay already exists; this asks only for initial original-grant binding |
+| P1 if restart recovery required | GET /agent/sessions/{id} requires known ID/original login/TTL; no session discovery/revoke-all | Authenticated minimum discovery and explicit bulk revocation; define cross-login/TTL/owner/original-grant semantics, test revoked/replaced contexts | No stored private session payload or guessed session identifiers |
+| P1 completeness/context | GET /agent/requests is limited to100; action_out lacks explicit authorized patient target | Stable authorized cursor + patient reference bound to original grant/session; test>100 rows, revoked and replacement grants | Flutter cannot claim complete inbox/history or infer patient navigation |
+| P1 independent original Agent proof | GET /agent/sessions/{session}/action-attempts/{key} returns action_out(row), the mutable CURRENT action. Confirm/submit/doctor decision use current action + CAS/repeat semantics | If independent recovery is required, specify immutable original preview/confirmation/request receipt, operation/actor/session/original grant/revision and retention; test later decisions/changes without rewriting original proof | Existing current-state flows work. A current action is not an original committed confirmation receipt; generic recovery reader deliberately unavailable |
+| P1 trusted notification target | GET /notifications exposes message source_id, without authorized thread resolver | Return authorized thread_id or resolver checking current participant/original consent; test revoked/closed/wrong owner | Flutter opens current conversation list and never guesses private thread |
+| P1 if cross-device ordering required | PUT /notifications/{id}/read and /unread have no CAS/attempt fencing; preferences/reminders use current CAS | Define monotonic ordered version/CAS and original-operation semantics where required; reversed device writes must have deterministic result | Local serialization cannot prove global ordering; current reads are not original receipts |
+| P2 if independent cancellation proof required | DELETE /clinical-plans/{id}/evaluation?expected_revision=N has current/history evidence, no keyed cancellation attempt | Document keyed original cancellation receipt/revision semantics before metadata-only original recovery is expected; test late cancel/newer job/role/grant loss | Existing cancellation remains available; no new key or fake receipt invented. Calendar revision-CAS has the same current-vs-original distinction |
+| External reviewed model work | services/model_providers.py: DisabledComparisonProvider; Agent DisabledAgentModel | Reviewed genuine model/private image transport + clinical validation and unavailable behavior | No diagnosis, invented scores, model result or medical clearance |
+| External provider + later mobile approval | POST /notifications/devices already exists; services/notifications.py DisabledPushProvider | Reviewed provider/token transport and actual device delivery/revocation/quiet hours validation | Registration/provider acceptance is not delivered Push. No native/provider setup changed |
+
+Already present and consumed: keyed clinical notes/reviews; adherence; product/routine/
+experiment receipts; message attempts with original thread consent; follow-up create/
+reschedule/ack/cancel/review/capture; plan evaluation/review receipts; grant issue/
+revoke/revoke_all and claim. Q2 readers never restore bearer codes, message bodies,
+clinical narratives or revoked authority from journal metadata.
+
+These requests are a written handoff only, not permission to edit Backend/Azure/DB
+or activate production journaling. No automatic message was sent to Hussam.
+Physical device qualification and production activation remain separately deferred.
+
+---
+
 # F6-P reverified handoff to Hussam —2026-10-19
 
 Source verification only. Last backend change remains
