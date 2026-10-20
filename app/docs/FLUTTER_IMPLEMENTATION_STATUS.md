@@ -1,3 +1,28 @@
+# Current F7 Flutter checkpoint — 2026-10-20
+
+Supersedes older remaining-reader/client-grant claims below. Start
+`3ec0b03e92c23e177ded80ca48eba24bfb95eeb7`; code checkpoint
+`2314ae2da97806b3d21cefab791d9b2d3df12ef3`. **2254 host tests**, +30 from2224,
+analyzer clean; bounded isolated iOS smoke1 passed. No Backend/Tester/native edits.
+
+| F7 stream | Status | Actual evidence / boundary |
+|---|---|---|
+| A inventory | DONE source audit / PARTIAL qualification | Separate implementation/fake HTTP/backend/simulator/device/production dimensions in FLUTTER_F7_FINAL_AUDIT_AR.md |
+| B clinical safeguards | DONE bounded Flutter / BLOCKED atomic first POST | Original grant remains fixed in old contextual page/editor; late replies cannot revive private drafts. New route can bind new verified authority. Server still lacks first-write original-access precondition |
+| C recovery contracts | DONE available readers / BLOCKED independent evidence where absent | Existing domain readers preserved; shared session/account/role/safety-bound catalog. Agent current-action, notification/calendar CAS, evaluation cancellation have no invented receipt |
+| D encrypted journal software | DONE bounded isolated integration / PARTIAL qualification | Actual SQLCipher commit-before-synthetic-send and reopened metadata feed real message/plan readers; persistence failure blocks send, unknown remains unresolved, newer current differs. Production composition DISABLED |
+| E/F patient/doctor journeys | DONE bounded verification / PARTIAL full roadmap | Eight extra real list-detail-send/ack/reschedule-back-current-list workflows, both roles/themes320px200%; original-grant editor/route regressions. Existing lifecycle already refreshes lists; no duplicate implementation |
+| G UX/accessibility | DONE bounded / PARTIAL product qualification | Clear access-ended page removes old private editor/drafts; approved tokens/reduced motion/large text preserved; no redesign |
+| H verification | DONE host + bounded simulator / PARTIAL device/E2E | Focused80 then65; full2232 then2254; analyze clean. iPhone17/iOS26.0 withdrawal smoke1 with denied live hosts, no Backend E2E or hardware-security proof |
+| I Git/handoff | DONE implementation commits / documentation closeout follows | Two independent implementation commits pushed normally; actual Backend unchanged; F7_HUSSAM_HANDOFF has endpoint/contract/acceptance/PG tests |
+
+Reports: FLUTTER_F7_FINAL_AUDIT_AR.md, FLUTTER_F7_FINAL_EXECUTION_REPORT_AR.md,
+FLUTTER_F7_HUSSAM_HANDOFF.md. Devices physical DEFERRED. Production journaling
+DISABLED / NOT APPROVED, real AI/Push BLOCKED external. F7/F6/app overall PARTIAL;
+no claim of complete backend/device/production qualification. Historical ledger:
+
+---
+
 # Current F6-Q status — 2026-10-20
 
 This section supersedes older open-work statements below. Start

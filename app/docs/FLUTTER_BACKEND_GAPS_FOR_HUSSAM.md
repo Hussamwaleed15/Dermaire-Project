@@ -1,3 +1,26 @@
+# F7 reverified Flutter handoff — 2026-10-20
+
+Backend remains `8ad2ceafced5b1f06ade5a082d4939503d31c687`; no newer atomic
+clinical guarantee or missing original receipts appeared. Flutter F7 fixed old
+page/editor re-binding to replacement grants, but that does NOT replace server
+atomic first-write authorization. Production journal remains disabled.
+
+Authoritative current actionable handoff:
+[FLUTTER_F7_HUSSAM_HANDOFF.md](FLUTTER_F7_HUSSAM_HANDOFF.md).
+It lists actual endpoints/headers/shapes/errors and explicitly labels proposed
+backward-compatible contracts and PostgreSQL concurrency acceptance criteria.
+
+Priorities unchanged: P0 durable unknown/in-flight/terminal fencing if replacement
+is expected; P1 atomic original-access first note/review; Agent discovery/pagination/
+authorized patient reference/immutable original confirmation evidence; notification
+authorized thread target and cross-device CAS. P2 independent evaluation DELETE
+receipt if required. AI/Push are external provider/validation work, not fake Flutter
+features. Existing keyed/readback/history/device-registration APIs must be preserved,
+not recreated. No automatic message to Hussam or Backend modification occurred.
+Historical source-verified details follow.
+
+---
+
 # F6-Q current handoff to Hussam — 2026-10-20
 
 Source inspected again after Flutter integration; backend last change remains

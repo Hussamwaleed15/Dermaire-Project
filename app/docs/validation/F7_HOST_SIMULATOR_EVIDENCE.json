@@ -1,0 +1,53 @@
+{
+  "date": "2026-10-20",
+  "start_sha": "3ec0b03e92c23e177ded80ca48eba24bfb95eeb7",
+  "code_sha": "2314ae2da97806b3d21cefab791d9b2d3df12ef3",
+  "baseline": {
+    "pub_get": "passed",
+    "analyze": "clean",
+    "flutter_tests": 2224
+  },
+  "increments": [
+    {
+      "code": "9dcab2003af4858cef1921c01a0dedc81ed1323c",
+      "focused": 80,
+      "full": 2232,
+      "analyze": "clean"
+    },
+    {
+      "code": "2314ae2da97806b3d21cefab791d9b2d3df12ef3",
+      "focused": 65,
+      "full": 2254,
+      "analyze": "clean"
+    }
+  ],
+  "ios": {
+    "device": "iPhone 17",
+    "runtime": "iOS 26.0",
+    "udid": "DB96C794-96EA-4BB6-BDB3-301F8F385FB9",
+    "target": "integration_test/withdrawal_smoke_test.dart",
+    "passed": 1,
+    "build_seconds": 27.6,
+    "transport": "fake HTTP only, flutter-tests.invalid host required",
+    "native_modified": false,
+    "scope": "synthetic safety/withdrawal/comparison cancellation/logout/account switch",
+    "hardware_security_proven": false,
+    "physical_device": false,
+    "original_state": "Shutdown"
+  },
+  "journal": {
+    "production_enabled": false,
+    "automatic_replay": false,
+    "host_keys": "fake JournalPlatform",
+    "storage": "real packaged SQLCipher, temporary test namespace only"
+  },
+  "backend_e2e": false,
+  "production_calls": false,
+  "physical_tests": "deferred by Amr",
+  "logs": [
+    "/tmp/dermaire-f7-baseline-test.log",
+    "/tmp/dermaire-f7-b-full.log",
+    "/tmp/dermaire-f7-d-full.log",
+    "/tmp/dermaire-f7-ios-smoke.log"
+  ]
+}

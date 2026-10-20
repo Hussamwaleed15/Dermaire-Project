@@ -13,16 +13,16 @@ B=Backend حي؛ S=Simulator لهذه الوظيفة؛ D=جهاز فعلي؛ P=�
 
 | القدرة / المصدر | I | F | B | S | D | P | المتبقي المصنف |
 |---|---|---|---|---|---|---|---|
-| Auth/onboarding/safety: services/api_service,entry,account | نعم | نعم | لا دليل | لا دليل لكل auth | مؤجل | لا اعتماد جديد | DEVICE VALIDATION، PRODUCTION QUALIFICATION |
+| Auth/onboarding/safety: services/api_service,entry,account | نعم | نعم | لا دليل | F7 safety/logout smoke فقط | مؤجل | لا اعتماد جديد | DEVICE VALIDATION، PRODUCTION QUALIFICATION |
 | Profile/Home/observations: account,home,observations | نعم | نعم | لا دليل | لا دليل شامل | مؤجل | لا اعتماد جديد | DEVICE VALIDATION؛ ربط completion بسيرفر فقط |
 | Guided camera/private images: capture | نعم | نعم | لا دليل | سابق محدود، لا تأهيل كاميرا شامل | مؤجل | لا اعتماد جديد | DEVICE VALIDATION، PRODUCTION QUALIFICATION |
 | Products/routine/adherence: products,routine | نعم | نعم | لا دليل | لا دليل شامل | مؤجل | لا اعتماد جديد | DEVICE VALIDATION؛ original recovery لا replacement آلي |
 | Experiments/history/PSM: experiments,psm,routine evidence | نعم | نعم | لا دليل | لا دليل شامل | مؤجل | لا اعتماد جديد | BACKEND DEPENDENCY للنموذج الفعلي منفصل عن evidence الحتمي |
 | Grants/snapshot: doctor,clinical | نعم | نعم | لا دليل | لا دليل شامل | مؤجل | لا اعتماد جديد | DEVICE VALIDATION؛ VIEW≠EXPORT |
 | Notes/reviews: doctor_clinical_controller | نعم keyed | نعم | لا دليل | لا دليل شامل | مؤجل | لا اعتماد جديد | FLUTTER FIX: أصل grant عند resume؛ BACKEND DEPENDENCY: atomic أول POST |
-| Messages/plans: messaging,plans | نعم | نعم | لا دليل | سابق smoke محدود | مؤجل | لا اعتماد جديد | FLUTTER FIX: تثبيت أصل سياق الصفحة؛ تحديث القائمة موجود ويُختبر |
+| Messages/plans: messaging,plans | نعم | نعم | لا دليل | F7 withdrawal smoke محدود | مؤجل | لا اعتماد جديد | FLUTTER FIX: تثبيت أصل سياق الصفحة؛ تحديث القائمة موجود ويُختبر |
 | Comparison/history: plans/plan_evaluation | lifecycle نعم | نعم | لا دليل | سابق محدود | مؤجل | لا اعتماد جديد | EXTERNAL AI DEPENDENCY؛ BACKEND DEPENDENCY لإيصال cancel مستقل |
-| Inbox/preferences/reminders: notifications | نعم | نعم | لا دليل | سابق smoke محدود | مؤجل | لا اعتماد جديد | BACKEND DEPENDENCY: thread target/CAS؛ EXTERNAL PUSH DEPENDENCY |
+| Inbox/preferences/reminders: notifications | نعم | نعم | لا دليل | F7 withdrawal smoke محدود | مؤجل | لا اعتماد جديد | BACKEND DEPENDENCY: thread target/CAS؛ EXTERNAL PUSH DEPENDENCY |
 | Agent consent/requests: agent | broker نعم، inference unavailable | نعم | لا دليل | لا دليل شامل | مؤجل | لا اعتماد جديد | BACKEND DEPENDENCY: discovery/paging/target/original proof؛ EXTERNAL AI |
 | Receipts/recovery: recovery | memory/readers نعم؛ disk isolated | نعم | لا دليل | F6-N محدود فقط | مؤجل | DISABLED | FLUTTER FIX: factory مشتركة للقارئات وcomposition معزول؛ DEVICE/PRODUCTION gates |
 | Logout/switch/delete: API/controllers | نعم | نعم | لا دليل | سابق محدود | مؤجل | لا اعتماد جديد | DEVICE VALIDATION؛ PHI cleanup≠physical flash erasure |
@@ -75,3 +75,13 @@ permissionDenied؛ logout/cross-account يمنعان القراءة والاخت
 أثبتت أن Navigator يمنع وصوله؛ لم نغيّر التنقل أو نُبقِ hit-test warnings في suite.
 
 focused65/full2254/analyze clean. +30 عن baseline2224 للموجة كلها.
+
+
+## دليل المحاكي والإغلاق
+
+iPhone17/iOS26.0 الموجود: integration_test/withdrawal_smoke_test.dart نجح1test
+بـfake HTTP فقط. safety/withdrawal/evaluation cancellation/logout/account switch
+هي حدود الإثبات؛ لا OAuth أو تصوير أو hardware security أو Backend E2E. أُعيد
+المحاكي إلى Shutdown. الدليل محفوظ في validation/F7_HOST_SIMULATOR_EVIDENCE.json.
+حالة المتبقي والعقود والخطوات التالية في FLUTTER_F7_FINAL_EXECUTION_REPORT_AR.md
+وFLUTTER_F7_HUSSAM_HANDOFF.md. journal حي DISABLED / NOT APPROVED.
