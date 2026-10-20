@@ -3,14 +3,8 @@ import '../dermaire_widgets.dart';
 import '../integration/operation_identity.dart';
 import '../integration/private_view.dart';
 import 'operation_journal.dart';
-import 'product_receipt_reader.dart';
-import 'configuration_receipt_reader.dart';
-import 'clinical_receipt_reader.dart';
-import 'adherence_receipt_reader.dart';
-import 'message_receipt_reader.dart';
-import 'plan_receipt_reader.dart';
-import 'grant_receipt_reader.dart';
 import 'recovery_check.dart';
+import 'recovery_reader_catalog.dart';
 import '../clinical/clinical_ui.dart' show clinicalTime;
 
 class RecoveryReviewController extends PrivateController {
@@ -33,49 +27,8 @@ class RecoveryReviewController extends PrivateController {
     notifyListeners();
   }
 
-  JournalReceiptReader? readerFor(OperationIdentity i) {
-    try {
-      if (i.path == 'doctor/claim' ||
-          i.path == 'doctor/generate-qr' ||
-          i.path.startsWith('doctor/access/') ||
-          i.path.startsWith('doctor/revoke/')) {
-        final reader = GrantReceiptReader(api, generation);
-        reader.contract(i);
-        return reader;
-      }
-      if (i.path.startsWith('messaging/threads/')) {
-        final reader = MessageReceiptReader(api, generation);
-        reader.contract(i);
-        return reader;
-      }
-      if (i.path == 'clinical-plans' || i.path.startsWith('clinical-plans/')) {
-        final reader = PlanReceiptReader(api, generation);
-        reader.contract(i);
-        return reader;
-      }
-      if (role == 'doctor') {
-        final reader = ClinicalReceiptReader(api, generation);
-        reader.contract(i);
-        return reader;
-      }
-      if (role != 'patient') return null;
-      if (i.path == 'routine/adherence') {
-        final reader = AdherenceReceiptReader(api, generation);
-        reader.contract(i);
-        return reader;
-      }
-      if (i.path == 'products' || i.path.startsWith('products/')) {
-        final reader = ProductReceiptReader(api, generation);
-        reader.kind(i);
-        return reader;
-      }
-      final reader = ConfigurationReceiptReader(api, generation);
-      reader.contract(i);
-      return reader;
-    } on FormatException {
-      return null;
-    }
-  }
+  late final _readers = RecoveryReaderCatalog(api, generation);
+  JournalReceiptReader? readerFor(OperationIdentity i) => _readers.readerFor(i);
 
   String unsupportedReason(OperationIdentity i) {
     if (i.path.startsWith('agent/')) {
