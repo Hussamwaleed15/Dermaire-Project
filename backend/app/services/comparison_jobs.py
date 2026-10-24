@@ -73,13 +73,25 @@ def status(db,actor,plan_id):
     return job or {"state":"not_requested","inference":None}
 
 
-def cancel(db,actor,plan_id,revision):
+def cancel(db,actor,plan_id,payload,key=None):
+    if isinstance(payload,int):
+        from app.schemas.clinical_plans import CancelEvaluation
+        payload=CancelEvaluation(expected_revision=payload)
     plan=plans.authorize(db,actor,plan_id)
+    identifier=plans.identity(plan.user_id,actor.id,"evaluation_cancel",key,plan_id) if key else None
+    if identifier:
+        prior=plans.replay(db,identifier,payload)
+        if prior:return prior
     job=latest(db,plan)
     if not job:raise HTTPException(404,"Evaluation not found")
-    if job["state"]=="cancelled":return job
-    if plan.revision!=revision:raise HTTPException(409,"Clinical plan revision changed")
+    if job["state"]=="cancelled":
+        if not identifier:return job
+        raise HTTPException(409,"Evaluation already cancelled by another attempt")
+    if plan.revision!=payload.expected_revision:raise HTTPException(409,"Clinical plan revision changed")
     job=record(db,plan,actor,{**job,"state":"cancelled","lease_token":None,"lease_until":None,"inference":None})
+    if identifier:
+        db.add(ClinicalPlanAttempt(id=identifier,plan_id=plan.id,user_id=plan.user_id,actor_id=actor.id,
+            operation="evaluation_cancel",payload_hash=plans.fingerprint(payload),result=job))
     from app.services.agent_platform import save
     save(db)
     return job

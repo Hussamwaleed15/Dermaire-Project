@@ -179,6 +179,22 @@ def test_new_login_does_not_revive_logged_out_agent_authority(loop):
     assert client.get(ROOT+"/sessions/"+session["id"],headers=auth(patient)).status_code==403
 
 
+def test_account_session_discovery_is_metadata_only_and_isolated(loop):
+    client,_,patient,foreign,_=loop
+    first,headers=opened(loop)
+    second=client.post(ROOT+"/sessions",headers={**auth(patient),"Idempotency-Key":KEY+"-second"},
+        json={"longitudinal_read_consent":True,"proposal_actions_consent":False})
+    assert second.status_code==201,second.text
+    page=client.get(ROOT+"/sessions?limit=1",headers=headers)
+    assert page.status_code==200,page.text
+    body=page.json()
+    assert len(body["items"])==1 and body["next_before"]
+    assert body["context_included"] is False and "context" not in body["items"][0]
+    next_page=client.get(ROOT+"/sessions?limit=1&before="+body["next_before"],headers=headers)
+    assert next_page.status_code==200 and len(next_page.json()["items"])==1
+    assert client.get(ROOT+"/sessions",headers=auth(foreign)).json()["items"]==[]
+
+
 def test_active_session_limit_is_bounded(loop):
     client,db,patient,_,_=loop
     headers=auth(patient)

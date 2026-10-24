@@ -177,6 +177,26 @@ def source_active(db, notice, now):
         and notice.user_id in (thread.patient_id,thread.doctor_id) and "VIEW" in granted_scopes(grant))
 
 
+def target(db, notice, now):
+    """Return a structured navigation target only under current authority."""
+    if not source_active(db,notice,now):return None
+    if notice.kind=="message":
+        from app.models.messaging import ThreadMessage
+        message=db.get(ThreadMessage,notice.source_id)
+        return {"type":"conversation","thread_id":message.thread_id,
+            "message_id":message.id,"authority":"current_server_authorized"}
+    if notice.kind in ("follow_up","comparison"):
+        return {"type":"clinical_plan","plan_id":notice.source_id,
+            "authority":"current_server_authorized"}
+    if notice.kind=="routine":
+        return {"type":"routine","routine_entry_id":notice.source_id,
+            "authority":"current_server_authorized"}
+    if notice.kind=="agent_request":
+        return {"type":"agent_request","request_id":notice.source_id,
+            "authority":"current_server_authorized"}
+    return None
+
+
 def claim(db, now=None):
     now=now or datetime.now(timezone.utc)
     row=db.query(NotificationJob).filter(

@@ -69,6 +69,12 @@ def session_out(row):
         "model":DisabledAgentModel().respond(context=None,message=None),"medical_execution_enabled":False}
 
 
+def session_summary(row):
+    return {"id":row.id,"revision":row.revision,"expires_at":utc(row.expires_at),
+        "scopes":row.scopes,"context_at":utc(row.context_at),"tool_calls":row.tool_calls,
+        "max_tool_calls":8,"model_status":"unavailable","medical_execution_enabled":False}
+
+
 def create(db,actor,claims,payload,key):
     if actor.role!="patient" or payload.longitudinal_read_consent is not True:raise HTTPException(403,"Explicit patient retrieval consent required")
     identifier=attempt_id("agent-session",actor.id,key)

@@ -69,21 +69,26 @@ def inbox(response: Response,limit: int=Query(50,ge=1,le=100),before: str | None
     rows=query.order_by(Notification.created_at.desc(),Notification.id.desc()).limit(limit+1).all()
     items=[{"id":row.id,"kind":row.kind,"source_id":row.source_id,"source_revision":row.source_revision,
             "created_at":utc(row.created_at),"due_at":utc(row.due_at),"read_at":utc(row.read_at) if row.read_at else None,
-            "unread":row.read_at is None,"push_delivery":"unconfirmed"} for row in rows[:limit] if service.source_active(db,row,now)]
+            "unread":row.read_at is None,"state_revision":row.state_revision,
+            "target":service.target(db,row,now),"push_delivery":"unconfirmed"} for row in rows[:limit] if service.source_active(db,row,now)]
     return {"items":items,"next_before":rows[limit-1].id if len(rows)>limit else None,
             "unread_in_page":sum(item["unread"] for item in items),
             "provider":"disabled","delivery_confirmed":False}
 
 
 @router.put("/{notification_id}/read")
-def read(notification_id: str,response: Response,actor: User=Depends(get_current_user),db: Session=Depends(get_db)):
+def read(notification_id: str,response: Response,expected_revision: int | None=Query(None,ge=1),
+         actor: User=Depends(get_current_user),db: Session=Depends(get_db)):
     response.headers["Cache-Control"]="no-store"
     row=db.query(Notification).filter_by(id=notification_id,user_id=actor.id).with_for_update().first()
     now=datetime.now(timezone.utc)
     if not row or row.cancelled_at or utc(row.due_at)>now or not service.source_active(db,row,now):
         raise HTTPException(404,"Notification not found")
-    if not row.read_at: row.read_at=now; db.commit()
-    return {"id":row.id,"read_at":utc(row.read_at),"receipt":"app_read_acknowledged","delivery_confirmed":False}
+    if expected_revision is not None and row.state_revision!=expected_revision:
+        raise HTTPException(412,"Notification state changed; refresh revision")
+    if not row.read_at: row.read_at=now; row.state_revision+=1; db.commit()
+    return {"id":row.id,"read_at":utc(row.read_at),"unread":False,"state_revision":row.state_revision,
+        "receipt":"app_read_acknowledged","delivery_confirmed":False}
 
 @router.get("/routine-reminders/{entry_id}")
 def get_routine_reminder(entry_id: str,response: Response,actor: User=Depends(get_current_user),db: Session=Depends(get_db)):
@@ -105,14 +110,17 @@ def put_routine_reminder(entry_id: str,payload: RoutineReminderIn,response: Resp
 
 
 @router.put("/{notification_id}/unread")
-def unread(notification_id: str,response: Response,actor: User=Depends(get_current_user),db: Session=Depends(get_db)):
+def unread(notification_id: str,response: Response,expected_revision: int | None=Query(None,ge=1),
+           actor: User=Depends(get_current_user),db: Session=Depends(get_db)):
     response.headers["Cache-Control"]="no-store"
     row=db.query(Notification).filter_by(id=notification_id,user_id=actor.id).with_for_update().first()
     now=datetime.now(timezone.utc)
     if not row or row.cancelled_at or utc(row.due_at)>now or not service.source_active(db,row,now):
         raise HTTPException(404,"Notification not found")
-    row.read_at=None; db.commit()
-    return {"id":row.id,"read_at":None,"unread":True,"delivery_confirmed":False}
+    if expected_revision is not None and row.state_revision!=expected_revision:
+        raise HTTPException(412,"Notification state changed; refresh revision")
+    if row.read_at is not None:row.read_at=None;row.state_revision+=1;db.commit()
+    return {"id":row.id,"read_at":None,"unread":True,"state_revision":row.state_revision,"delivery_confirmed":False}
 
 @router.get("/history")
 def history(response: Response,limit: int=Query(50,ge=1,le=100),before: str | None=None,

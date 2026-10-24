@@ -184,6 +184,42 @@ def test_duplicate_receipt_headers_rejected(loop):
     assert db.query(ClinicalAttempt).count() == db.query(ClinicalNote).count() == 0
 
 
+@pytest.mark.parametrize('operation', ['note', 'review'])
+def test_first_write_can_bind_exact_original_grant(loop, operation):
+    client, db, patient, _, doctors = loop
+    original = grant(loop)
+    original.status = 'revoked'
+    original.revoked_at = datetime.now(timezone.utc)
+    replacement = DoctorPatientAccess(id='replacement-grant', patient_id=patient.id,
+        doctor_id=doctors[0].id, access_token='synthetic-replacement', status='active',
+        granted_by=patient.id, expires_at=datetime.now(timezone.utc)+timedelta(hours=1))
+    db.add(replacement); db.commit()
+    path = ROOT + '/patients/patient/' + ('notes' if operation == 'note' else 'reviews')
+    payload = {'content': 'Synthetic bound clinical note'} if operation == 'note' else {
+        'state': 'reviewed', 'expected_sequence': 0}
+    base = {**auth(doctors[0]), 'Idempotency-Key': KEY}
+    denied = client.post(path, headers={**base, 'Original-Grant-Id': original.id}, json=payload)
+    assert denied.status_code == 403
+    assert db.query(ClinicalAttempt).count() == 0
+    accepted = client.post(path, headers={**base, 'Original-Grant-Id': replacement.id}, json=payload)
+    assert accepted.status_code == 201, accepted.text
+    assert accepted.headers['original-grant-binding'] == 'explicit'
+    assert db.query(ClinicalAttempt).one().access_id == replacement.id
+
+
+def test_original_grant_header_wrong_patient_or_doctor_is_denied(loop):
+    client, db, patient, foreign, doctors = loop
+    grant(loop)
+    wrong = DoctorPatientAccess(id='wrong-grant', patient_id=foreign.id, doctor_id=doctors[0].id,
+        access_token='synthetic-wrong', status='active', granted_by=foreign.id,
+        expires_at=datetime.now(timezone.utc)+timedelta(hours=1))
+    db.add(wrong); db.commit()
+    response = client.post(ROOT+'/patients/patient/notes', headers={**auth(doctors[0]),
+        'Original-Grant-Id': wrong.id}, json={'content': 'Synthetic denied clinical note'})
+    assert response.status_code == 403
+    assert db.query(ClinicalNote).count() == 0
+
+
 def test_repeated_revocation_new_keys_record_receipts_without_duplicate_transition(loop):
     from app.models import GrantAttempt, AuditLog
     client, db, patient, _, _ = loop

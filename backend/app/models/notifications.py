@@ -35,6 +35,7 @@ class Notification(Base):
     kind = Column(String(20), nullable=False)
     source_id = Column(String(36), nullable=False)
     source_revision = Column(Integer, nullable=False)
+    state_revision = Column(Integer, nullable=False, default=1)
     created_at = Column(DateTime, nullable=False, default=utc_now)
     due_at = Column(DateTime, nullable=False)
     read_at = Column(DateTime, nullable=True)

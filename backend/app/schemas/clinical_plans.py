@@ -58,6 +58,11 @@ class EvaluatePlan(BaseModel):
     expected_revision: int=Field(ge=1)
     image_processing_consent: bool
 
+
+class CancelEvaluation(BaseModel):
+    model_config=ConfigDict(extra="forbid",strict=True)
+    expected_revision: int=Field(ge=1)
+
 class ReviewEvaluation(BaseModel):
     model_config=ConfigDict(extra="forbid",strict=True)
     expected_revision: int=Field(ge=1)

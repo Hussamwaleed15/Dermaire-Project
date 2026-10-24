@@ -244,10 +244,12 @@ def add_clinical_note(
     db: Session = Depends(get_db),
     response: Response = None,
     idempotency_key: list[str] | None = Header(None),
+    original_grant_id: str | None = Header(None, alias="Original-Grant-Id", min_length=1, max_length=36),
 ):
     response = response or Response()
     idempotency_key = clinical_attempts.key(idempotency_key)
-    patient, grant = authorize(db, current_doctor, patient_id)
+    patient, grant = authorize(db, current_doctor, patient_id, access_id=original_grant_id)
+    response.headers['Original-Grant-Binding'] = 'explicit' if original_grant_id else 'legacy-current'
     attempt, previous = clinical_attempts.begin(db, current_doctor.id, patient_id, grant, 'note', idempotency_key, payload, response)
     if previous is not None:
         return previous
@@ -352,10 +354,12 @@ def patient_reviews(patient_id: str, current_doctor: User = Depends(require_role
 @router.post("/patients/{patient_id}/reviews", response_model=ReviewActionOut, status_code=201)
 def add_review(patient_id: str, payload: ReviewActionCreate,
         current_doctor: User = Depends(require_role(["doctor"])), db: Session = Depends(get_db),
-        response: Response = None, idempotency_key: list[str] | None = Header(None)):
+        response: Response = None, idempotency_key: list[str] | None = Header(None),
+        original_grant_id: str | None = Header(None, alias="Original-Grant-Id", min_length=1, max_length=36)):
     response = response or Response()
     idempotency_key = clinical_attempts.key(idempotency_key)
-    patient, grant = authorize(db, current_doctor, patient_id)
+    patient, grant = authorize(db, current_doctor, patient_id, access_id=original_grant_id)
+    response.headers['Original-Grant-Binding'] = 'explicit' if original_grant_id else 'legacy-current'
     attempt, previous = clinical_attempts.begin(db, current_doctor.id, patient_id, grant, 'review', idempotency_key, payload, response)
     if previous is not None:
         return previous

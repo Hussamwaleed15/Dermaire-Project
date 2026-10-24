@@ -248,6 +248,24 @@ def test_evaluation_typed_envelope_and_cancellation_fence(loop):
     with pytest.raises(ValidationError):AgentInference(status="unavailable",invoked=True,response="fake")
 
 
+def test_evaluation_cancellation_has_attempt_specific_receipt(loop):
+    client,_,_,_,_=loop
+    plan,base,headers=evaluation_ready(loop)
+    queued=client.post(base+"/evaluation",headers=headers,
+        json={"expected_revision":3,"image_processing_consent":True})
+    assert queued.status_code==202
+    cancellation_key=KEY+"-cancel"
+    cancel=client.delete(base+"/evaluation?expected_revision=4",
+        headers={**headers,"Idempotency-Key":cancellation_key})
+    assert cancel.status_code==200 and cancel.json()["state"]=="cancelled"
+    replay=client.delete(base+"/evaluation?expected_revision=4",
+        headers={**headers,"Idempotency-Key":cancellation_key})
+    assert replay.status_code==200 and replay.json()==cancel.json()
+    receipt=client.get(base+"/attempts/evaluation_cancel/"+cancellation_key,headers=headers)
+    assert receipt.status_code==200 and receipt.json()["status"]=="committed"
+    assert receipt.json()["result"]["id"]==queued.json()["id"]
+
+
 def seed_evaluation_pg(engine):
     from app.services import comparison_jobs
     from app.schemas.clinical_plans import EvaluatePlan

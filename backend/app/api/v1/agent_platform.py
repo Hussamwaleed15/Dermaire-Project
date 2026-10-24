@@ -1,5 +1,5 @@
 from datetime import datetime,timezone
-from fastapi import APIRouter,Depends,Header,HTTPException,Response
+from fastapi import APIRouter,Depends,Header,HTTPException,Response,Query
 from sqlalchemy.orm import Session
 from app.api.deps import require_role,get_token_payload
 from app.core.database import get_db
@@ -31,6 +31,35 @@ def create(payload: SessionIn,response: Response,keys: list[str] | None=Header(N
            actor: User=Depends(patient),claims: dict=Depends(get_token_payload),db: Session=Depends(get_db)):
     private(response)
     return service.create(db,actor,claims,payload,key_of(keys))
+
+
+@router.get("/sessions")
+def sessions(response: Response,limit: int=Query(20,ge=1,le=100),before: str | None=None,
+             actor: User=Depends(patient),db: Session=Depends(get_db)):
+    """Discover active sessions for the current account and original login.
+
+    This deliberately returns only recovery metadata, never stored private
+    context or turns. Each discovered session still has its original login,
+    credential, expiry and revocation checked before it is returned.
+    """
+    private(response)
+    query=db.query(AgentSession).filter_by(user_id=actor.id)
+    if before:
+        anchor=query.filter(AgentSession.id==before).first()
+        if not anchor:raise HTTPException(422,"Invalid agent session cursor")
+        from sqlalchemy import or_,and_
+        query=query.filter(or_(AgentSession.expires_at<anchor.expires_at,
+            and_(AgentSession.expires_at==anchor.expires_at,AgentSession.id<anchor.id)))
+    rows=query.order_by(AgentSession.expires_at.desc(),AgentSession.id.desc()).limit(limit+1).all()
+    items=[]
+    for row in rows[:limit]:
+        try:service.authorize(db,actor,row.id)
+        except HTTPException as error:
+            if error.status_code not in (403,404):raise
+            continue
+        items.append(service.session_summary(row))
+    return {"items":items,"limit":limit,"next_before":rows[limit-1].id if len(rows)>limit else None,
+        "context_included":False,"turns_included":False}
 
 
 @router.get("/sessions/{session_id}")
@@ -106,19 +135,33 @@ def submit_request(action_id: str,payload: SubmitRequest,
 
 
 @router.get("/requests")
-def request_inbox(response: Response,actor: User=Depends(require_role(["doctor"])),db: Session=Depends(get_db)):
+def request_inbox(response: Response,limit: int=Query(50,ge=1,le=100),before: str | None=None,
+                  actor: User=Depends(require_role(["doctor"])),db: Session=Depends(get_db)):
     private(response)
     # JSON extraction works on SQLite legacy and PostgreSQL; never return another
     # doctor's request or bypass current consent on historical rows.
-    rows=db.query(AgentAction).filter(AgentAction.result["doctor_id"].as_string()==actor.id).order_by(AgentAction.previewed_at.desc(),AgentAction.id).limit(100).all()
+    query=db.query(AgentAction).filter(AgentAction.result["doctor_id"].as_string()==actor.id)
+    if before:
+        anchor=query.filter(AgentAction.id==before).first()
+        if not anchor:raise HTTPException(422,"Invalid clinician request cursor")
+        from sqlalchemy import or_,and_
+        query=query.filter(or_(AgentAction.previewed_at<anchor.previewed_at,
+            and_(AgentAction.previewed_at==anchor.previewed_at,AgentAction.id<anchor.id)))
+    rows=query.order_by(AgentAction.previewed_at.desc(),AgentAction.id.desc()).limit(limit+1).all()
     authorized={}
     # Acquire shared patient locks consistently across doctors while keeping the
     # response in its documented newest-first order.
     for row in sorted(rows,key=lambda item:(item.user_id,item.id)):
-        try:authorized[row.id]=service.action_out(service.request_row(db,actor,row.id))
+        try:
+            current=service.request_row(db,actor,row.id)
+            authorized[row.id]={**service.action_out(current),"patient_ref":{
+                "patient_id":current.user_id,"access_id":current.result["access_id"],
+                "authority":"current_original_grant"}}
         except HTTPException as error:
             if error.status_code not in (403,404):raise
-    return {"items":[authorized[row.id] for row in rows if row.id in authorized],"limit":100,"medical_execution_enabled":False,"notification_delivery":"unavailable"}
+    return {"items":[authorized[row.id] for row in rows[:limit] if row.id in authorized],"limit":limit,
+        "next_before":rows[limit-1].id if len(rows)>limit else None,
+        "medical_execution_enabled":False,"notification_delivery":"unavailable"}
 
 
 @router.post("/requests/{action_id}/decision")

@@ -15,15 +15,24 @@ from app.services.doctor_consent import consent_of, granted_scopes
 
 RANK = {"track": 0, "low_risk_self_care": 1, "doctor_review": 2, "urgent": 3}
 
-def authorize(db, doctor, patient_id, *, scope="VIEW"):
+def authorize(db, doctor, patient_id, *, scope="VIEW", access_id=None):
     # Same patient lock serializes clinician writes, revocations and account deletion.
     patient = db.query(User).filter_by(id=patient_id, role="patient").with_for_update().first()
-    grants = db.query(DoctorPatientAccess).filter(
+    query = db.query(DoctorPatientAccess).filter(
         DoctorPatientAccess.patient_id == patient_id,
         DoctorPatientAccess.doctor_id == doctor.id,
         DoctorPatientAccess.status == "active",
         DoctorPatientAccess.expires_at > datetime.now(timezone.utc),
-    ).order_by(DoctorPatientAccess.created_at.desc(), DoctorPatientAccess.id.desc()).with_for_update().all()
+    )
+    if access_id is not None:
+        # A hardened clinical writer names the exact grant it opened under.  The
+        # patient row and that grant row are locked in the same order used by
+        # deletion/revocation, so a replacement grant can never authorize an
+        # operation initiated under a revoked grant.
+        query = query.filter(DoctorPatientAccess.id == access_id)
+    grants = query.order_by(
+        DoctorPatientAccess.created_at.desc(), DoctorPatientAccess.id.desc()
+    ).with_for_update().all()
     grant = next((g for g in grants if scope in granted_scopes(g)), None)
     if not patient or not grant:
         raise HTTPException(403, "No current access to this patient")

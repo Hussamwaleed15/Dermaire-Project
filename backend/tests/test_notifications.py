@@ -43,6 +43,9 @@ def test_opt_in_inbox_device_encryption_and_disabled_provider(loop):
     assert inbox.headers["cache-control"]=="no-store" and len(inbox.json()["items"])==1
     assert "Private clinical" not in inbox.text and TOKEN not in inbox.text
     notice=inbox.json()["items"][0]["id"]
+    target=inbox.json()["items"][0]["target"]
+    assert target["type"]=="conversation" and target["thread_id"]==thread
+    assert target["authority"]=="current_server_authorized"
     assert client.get(ROOT,headers=auth(foreign)).json()["items"]==[]
     assert client.put(ROOT+f"/{notice}/read",headers=auth(foreign)).status_code==404
     result=client.put(ROOT+f"/{notice}/read",headers=auth(doctors[0])).json()
@@ -51,6 +54,19 @@ def test_opt_in_inbox_device_encryption_and_disabled_provider(loop):
     output=service.dispatch_one(db)
     assert output["provider_outcome"]=="unavailable" and output["delivery_confirmed"] is False
     assert db.query(NotificationJob).one().state=="provider_unavailable"
+
+
+def test_notification_state_revision_rejects_stale_cross_device_intent(loop):
+    client,_,_,_,doctors=loop
+    setup_delivery(loop)
+    item=client.get(ROOT,headers=auth(doctors[0])).json()["items"][0]
+    assert item["state_revision"]==1
+    read=client.put(ROOT+f"/{item['id']}/read?expected_revision=1",headers=auth(doctors[0]))
+    assert read.status_code==200 and read.json()["state_revision"]==2
+    stale=client.put(ROOT+f"/{item['id']}/unread?expected_revision=1",headers=auth(doctors[0]))
+    assert stale.status_code==412
+    current=client.put(ROOT+f"/{item['id']}/unread?expected_revision=2",headers=auth(doctors[0]))
+    assert current.status_code==200 and current.json()["state_revision"]==3
 
 
 def test_fake_local_pipeline_is_generic_and_deduplicated(loop):
