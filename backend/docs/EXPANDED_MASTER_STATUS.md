@@ -1,5 +1,12 @@
 # Expanded backend master status — post-expanded completion wave
 
+> 2026-10-24 F7 update: source milestone `7e7cd166b972af28eb60eeaf3b2c79b6ed91dbc2`
+> adds explicit original-grant clinical writes, Agent discovery/request paging,
+> authorized notification targets plus state CAS, and evaluation-cancellation
+> receipts. Migration head is `20261024_14`. See `BACKEND_F7_FINAL_REPORT_AR.md`.
+> F7 real PostgreSQL validation is BLOCKED; historical PostgreSQL results below
+> remain historical and must not be interpreted as F7 proof.
+
 Canonical baseline independently verified and fetched:
 `275e753b3d07cbe86f0aed08d558802355ce2c6d`. Work uses a new isolated clone. M0
 acceptance/DAG commit `91e659d15a2d95c07f89a5adac06459124c08051` was normally pushed
