@@ -1,5 +1,12 @@
 # Expanded backend master status — post-expanded completion wave
 
+> 2026-10-24 F8 qualification: PostgreSQL 18 gate completed with 1148 passed,
+> including 95 real PostgreSQL cases and zero skips. Commit
+> `7706c6a76c1947ecf71b5f1a86bcbde3fe224a41` fixes the F7 header default exposed
+> by psycopg and adds PostgreSQL coverage for original-grant replacement, Agent
+> discovery, notification CAS and evaluation-cancellation recovery. See
+> `BACKEND_F8_FINAL_REPORT_AR.md`.
+
 > 2026-10-24 F7 update: source milestone `7e7cd166b972af28eb60eeaf3b2c79b6ed91dbc2`
 > adds explicit original-grant clinical writes, Agent discovery/request paging,
 > authorized notification targets plus state CAS, and evaluation-cancellation
