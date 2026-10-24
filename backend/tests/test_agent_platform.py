@@ -9,7 +9,7 @@ from app.models.agent_platform import AgentSession,AgentTurn,AgentAction
 from app.schemas.agent_platform import SessionIn,ActionIn,ConfirmAction
 from app.services import agent_platform as service
 from tests.test_doctor_loop import loop,auth,urgent
-from tests.test_postgres_gate import pg_engine,seed
+from tests.test_postgres_gate import pg_engine,pg_loop,seed
 
 ROOT="/api/v1/agent"
 KEY="synthetic-agent-operation-0001"
@@ -193,6 +193,10 @@ def test_account_session_discovery_is_metadata_only_and_isolated(loop):
     next_page=client.get(ROOT+"/sessions?limit=1&before="+body["next_before"],headers=headers)
     assert next_page.status_code==200 and len(next_page.json()["items"])==1
     assert client.get(ROOT+"/sessions",headers=auth(foreign)).json()["items"]==[]
+
+
+def test_pg_account_session_discovery_is_metadata_only_and_isolated(pg_loop):
+    test_account_session_discovery_is_metadata_only_and_isolated(pg_loop)
 
 
 def test_active_session_limit_is_bounded(loop):

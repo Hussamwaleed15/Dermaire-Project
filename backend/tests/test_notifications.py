@@ -11,7 +11,7 @@ from app.services import messaging
 from app.schemas.messaging import SendMessage
 from tests.test_doctor_loop import loop, auth
 from tests.test_messaging import opened, KEY
-from tests.test_postgres_gate import pg_engine, seed
+from tests.test_postgres_gate import pg_engine, pg_loop, seed
 
 ROOT="/api/v1/notifications"
 TOKEN="synthetic-private-device-token"
@@ -67,6 +67,10 @@ def test_notification_state_revision_rejects_stale_cross_device_intent(loop):
     assert stale.status_code==412
     current=client.put(ROOT+f"/{item['id']}/unread?expected_revision=2",headers=auth(doctors[0]))
     assert current.status_code==200 and current.json()["state_revision"]==3
+
+
+def test_pg_notification_state_revision_rejects_stale_cross_device_intent(pg_loop):
+    test_notification_state_revision_rejects_stale_cross_device_intent(pg_loop)
 
 
 def test_fake_local_pipeline_is_generic_and_deduplicated(loop):

@@ -10,7 +10,7 @@ from app.models.notifications import Notification,NotificationJob
 from app.schemas.clinical_plans import CreatePlan,ConfirmPlan,RevisePlan
 from app.services import clinical_plans as service
 from tests.test_doctor_loop import loop,grant,auth
-from tests.test_postgres_gate import pg_engine,seed
+from tests.test_postgres_gate import pg_engine,pg_loop,seed
 
 ROOT="/api/v1/clinical-plans"
 KEY="synthetic-plan-attempt-0001"
@@ -264,6 +264,10 @@ def test_evaluation_cancellation_has_attempt_specific_receipt(loop):
     receipt=client.get(base+"/attempts/evaluation_cancel/"+cancellation_key,headers=headers)
     assert receipt.status_code==200 and receipt.json()["status"]=="committed"
     assert receipt.json()["result"]["id"]==queued.json()["id"]
+
+
+def test_pg_evaluation_cancellation_has_attempt_specific_receipt(pg_loop):
+    test_evaluation_cancellation_has_attempt_specific_receipt(pg_loop)
 
 
 def seed_evaluation_pg(engine):

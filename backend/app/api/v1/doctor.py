@@ -1,5 +1,5 @@
 ﻿from datetime import datetime, timedelta, timezone
-from typing import List, Optional
+from typing import Annotated, List, Optional
 from fastapi import APIRouter, Body, Depends, Query, status, HTTPException, Header, Response
 from sqlalchemy.orm import Session
 from app.core.database import get_db
@@ -244,7 +244,7 @@ def add_clinical_note(
     db: Session = Depends(get_db),
     response: Response = None,
     idempotency_key: list[str] | None = Header(None),
-    original_grant_id: str | None = Header(None, alias="Original-Grant-Id", min_length=1, max_length=36),
+    original_grant_id: Annotated[str | None, Header(alias="Original-Grant-Id", min_length=1, max_length=36)] = None,
 ):
     response = response or Response()
     idempotency_key = clinical_attempts.key(idempotency_key)
@@ -355,7 +355,7 @@ def patient_reviews(patient_id: str, current_doctor: User = Depends(require_role
 def add_review(patient_id: str, payload: ReviewActionCreate,
         current_doctor: User = Depends(require_role(["doctor"])), db: Session = Depends(get_db),
         response: Response = None, idempotency_key: list[str] | None = Header(None),
-        original_grant_id: str | None = Header(None, alias="Original-Grant-Id", min_length=1, max_length=36)):
+        original_grant_id: Annotated[str | None, Header(alias="Original-Grant-Id", min_length=1, max_length=36)] = None):
     response = response or Response()
     idempotency_key = clinical_attempts.key(idempotency_key)
     patient, grant = authorize(db, current_doctor, patient_id, access_id=original_grant_id)

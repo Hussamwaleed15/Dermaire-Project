@@ -220,6 +220,34 @@ def test_original_grant_header_wrong_patient_or_doctor_is_denied(loop):
     assert db.query(ClinicalNote).count() == 0
 
 
+@pytest.mark.parametrize('operation', ['note', 'review'])
+def test_pg_revoked_original_is_not_revived_by_replacement(pg_engine, operation):
+    factory = seed(pg_engine)
+    with factory() as db:
+        db.add_all([
+            DoctorPatientAccess(id='original', patient_id='owner', doctor_id='doctor0',
+                access_token='synthetic-original', status='revoked', granted_by='owner',
+                revoked_at=datetime.now(timezone.utc), expires_at=datetime.now(timezone.utc)+timedelta(hours=1)),
+            DoctorPatientAccess(id='replacement', patient_id='owner', doctor_id='doctor0',
+                access_token='synthetic-replacement', status='active', granted_by='owner',
+                expires_at=datetime.now(timezone.utc)+timedelta(hours=1)),
+        ])
+        db.commit()
+    def write(access_id):
+        with factory() as db:
+            actor=db.get(User,'doctor0')
+            if operation=='note':
+                return add_clinical_note('owner',ClinicalNoteCreate(content='Synthetic bound note'),actor,db,
+                    Response(),KEY,access_id)
+            return add_review('owner',ReviewActionCreate(state='reviewed',expected_sequence=0),actor,db,
+                Response(),KEY,access_id)
+    with pytest.raises(HTTPException) as denied:write('original')
+    assert denied.value.status_code==403
+    write('replacement')
+    with factory() as db:
+        assert db.query(ClinicalAttempt).one().access_id=='replacement'
+
+
 def test_repeated_revocation_new_keys_record_receipts_without_duplicate_transition(loop):
     from app.models import GrantAttempt, AuditLog
     client, db, patient, _, _ = loop
