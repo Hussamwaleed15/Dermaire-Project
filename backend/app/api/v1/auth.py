@@ -1,7 +1,7 @@
 import hashlib
 import secrets
 from datetime import datetime, timedelta, timezone
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Response, status
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from google.oauth2 import id_token as google_id_token
@@ -13,10 +13,21 @@ from app.core.security import get_password_hash, verify_password, create_access_
 from app.core.config import settings
 from app.core.exceptions import DermaireException, InvalidCredentialsException
 from app.models import User
-from app.schemas import UserRegister, UserLogin, TokenResponse, UserOut, AcceptSafetyRequest
+from app.schemas import (
+    UserRegister, UserLogin, TokenResponse, UserOut, AcceptSafetyRequest,
+    SafetyPolicyContractOut,
+)
 from app.api.deps import get_current_user, get_token_payload, record_audit
 
 router = APIRouter(prefix="/auth", tags=["Authentication & Medical Safety"])
+
+
+@router.get("/safety-policy", response_model=SafetyPolicyContractOut)
+def safety_policy_contract(response: Response):
+    """Return the version and immutable reference Flutter must review before acceptance."""
+    from app.services.policy_consent import policy_contract
+    response.headers["Cache-Control"] = "no-store"
+    return policy_contract()
 
 
 class GoogleAuthRequest(BaseModel):
