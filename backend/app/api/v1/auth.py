@@ -1,8 +1,7 @@
-import hashlib
 import secrets
 from datetime import datetime, timedelta, timezone
-from fastapi import APIRouter, Depends, Response, status
-from pydantic import BaseModel
+from fastapi import APIRouter, BackgroundTasks, Depends, Response, status
+from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy.orm import Session
 from google.oauth2 import id_token as google_id_token
 from google.auth.transport import requests as google_requests
@@ -35,13 +34,13 @@ class GoogleAuthRequest(BaseModel):
 
 
 class ForgotPasswordRequest(BaseModel):
-    email: str
+    email: EmailStr
 
 
 class ResetPasswordRequest(BaseModel):
-    email: str
-    token: str
-    new_password: str
+    email: EmailStr
+    token: str = Field(pattern=r"^[0-9]{8}$")
+    new_password: str = Field(min_length=8, max_length=128)
 
 
 RESET_TOKEN_TTL_MINUTES = 30
@@ -70,6 +69,17 @@ def send_password_reset_email(recipient_email: str, reset_token: str):
 
     poller = email_client.begin_send(message)
     poller.result()
+
+
+def send_password_reset_email_safely(recipient_email: str, reset_token: str):
+    """Run after the response; provider failures never expose account existence."""
+    try:
+        send_password_reset_email(recipient_email, reset_token)
+    except Exception:
+        # Do not propagate or render provider details, recipient identity, or token.
+        # Provider-side delivery telemetry is the operational source for this failure.
+        return False
+    return True
 
 
 @router.post("/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
@@ -199,27 +209,39 @@ def google_login(payload: GoogleAuthRequest, db: Session = Depends(get_db)):
 
 
 @router.post("/forgot-password")
-def forgot_password(payload: ForgotPasswordRequest, db: Session = Depends(get_db)):
+def forgot_password(
+    payload: ForgotPasswordRequest,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+):
     """
     Starts the password-reset flow. If the account exists, an 8-digit
-    single-use reset code is generated, only its SHA-256 hash is stored,
+    single-use reset code is generated, only its keyed HMAC-SHA-256 digest is stored,
     and the code is delivered by email.
 
     The same generic response is returned whether or not the email exists,
     so this endpoint cannot be used to enumerate registered accounts.
     """
-    user = db.query(User).filter(User.email == payload.email).first()
+    from app.services.password_reset import claim_request_slot, token_digest
+
+    allowed = claim_request_slot(db, payload.email)
+    user = db.query(User).filter(User.email == payload.email).with_for_update().first()
 
     reset_token = None
-    if user:
+    if user and allowed:
         reset_token = f"{secrets.randbelow(100_000_000):08d}"
-        user.reset_token_hash = hashlib.sha256(reset_token.encode()).hexdigest()
+        user.reset_token_hash = token_digest(reset_token)
         user.reset_token_expires = datetime.now(timezone.utc) + timedelta(minutes=RESET_TOKEN_TTL_MINUTES)
         user.reset_token_attempts = 0
-        db.commit()
+        from app.models import AuditLog
+        db.add(AuditLog(actor_id=user.id, action="PASSWORD_RESET_REQUESTED",
+                        target_resource="users", details={}))
+    db.commit()
 
-        record_audit(db, user.id, "PASSWORD_RESET_REQUESTED", "users", {})
-        send_password_reset_email(user.email, reset_token)
+    if user and allowed and reset_token and not settings.EXPOSE_PASSWORD_RESET_TOKEN:
+        background_tasks.add_task(
+            send_password_reset_email_safely, user.email, reset_token
+        )
 
     response = {
         "message": "If an account exists for this email, a password reset code has been sent."
@@ -234,7 +256,8 @@ def forgot_password(payload: ForgotPasswordRequest, db: Session = Depends(get_db
 
 @router.post("/reset-password", response_model=UserOut)
 def reset_password(payload: ResetPasswordRequest, db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.email == payload.email).first()
+    from app.services.password_reset import token_matches
+    user = db.query(User).filter(User.email == payload.email).with_for_update().first()
 
     now = datetime.now(timezone.utc)
     expires_at = (
@@ -261,9 +284,7 @@ def reset_password(payload: ResetPasswordRequest, db: Session = Depends(get_db))
             status_code=status.HTTP_429_TOO_MANY_REQUESTS
         )
 
-    token_hash = hashlib.sha256(payload.token.encode()).hexdigest()
-
-    if not secrets.compare_digest(token_hash, user.reset_token_hash):
+    if not token_matches(payload.token, user.reset_token_hash):
         user.reset_token_attempts += 1
 
         if user.reset_token_attempts >= MAX_RESET_ATTEMPTS:
