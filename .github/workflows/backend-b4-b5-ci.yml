@@ -78,6 +78,9 @@ jobs:
               len(schema["paths"]),
               len(schema.get("components", {}).get("schemas", {})),
           )
-          assert inventory == (114, 117), inventory
+          assert inventory == (116, 119), inventory
+          assert "/api/v1/auth/safety-policy" in schema["paths"]
+          assert "/api/v1/auth/forgot-password" in schema["paths"]
+          assert "/api/v1/auth/reset-password" in schema["paths"]
           print(f"OpenAPI: {inventory[0]} paths / {inventory[1]} schemas")
           PY

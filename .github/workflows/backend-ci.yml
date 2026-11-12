@@ -86,7 +86,10 @@ jobs:
           schema = app.openapi()
           paths = len(schema["paths"])
           components = len(schema.get("components", {}).get("schemas", {}))
-          assert (paths, components) == (115, 117), (paths, components)
+          assert (paths, components) == (116, 119), (paths, components)
+          assert "/api/v1/auth/safety-policy" in schema["paths"]
+          assert "/api/v1/auth/forgot-password" in schema["paths"]
+          assert "/api/v1/auth/reset-password" in schema["paths"]
           print(f"OpenAPI: {paths} paths / {components} schemas")
           PY
 
