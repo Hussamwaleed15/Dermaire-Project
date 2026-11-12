@@ -33,6 +33,10 @@ class Settings(BaseSettings):
     # Enable only after version-aware clients are available (staged rollout).
     SAFETY_POLICY_REQUIRED_VERSION: str = "1.0"
     SAFETY_POLICY_ENFORCE: bool = False
+    # Set only after the exact policy text has been approved and published.
+    # The digest binds the displayed document to the version being accepted.
+    SAFETY_POLICY_DOCUMENT_URL: str = ""
+    SAFETY_POLICY_DOCUMENT_SHA256: str = ""
 
     @field_validator("SAFETY_POLICY_REQUIRED_VERSION")
     @classmethod
@@ -41,6 +45,34 @@ class Settings(BaseSettings):
         if len(value) > 20 or not re.fullmatch(r"[0-9]+\.[0-9]+", value):
             raise ValueError("Policy version must be major.minor, at most 20 characters")
         return value
+
+    @model_validator(mode="after")
+    def validate_safety_policy_document(self):
+        document_url = self.SAFETY_POLICY_DOCUMENT_URL.strip()
+        document_digest = self.SAFETY_POLICY_DOCUMENT_SHA256.strip().lower()
+        if bool(document_url) != bool(document_digest):
+            raise ValueError(
+                "SAFETY_POLICY_DOCUMENT_URL and SAFETY_POLICY_DOCUMENT_SHA256 "
+                "must be configured together"
+            )
+        if document_url:
+            url = urlsplit(document_url)
+            if (url.scheme != "https" or not url.hostname or url.username or url.password
+                    or url.fragment):
+                raise ValueError(
+                    "SAFETY_POLICY_DOCUMENT_URL must be a public HTTPS URL "
+                    "without credentials or fragments"
+                )
+            import re
+            if not re.fullmatch(r"[0-9a-f]{64}", document_digest):
+                raise ValueError("SAFETY_POLICY_DOCUMENT_SHA256 must be 64 lowercase hex characters")
+            self.SAFETY_POLICY_DOCUMENT_URL = document_url
+            self.SAFETY_POLICY_DOCUMENT_SHA256 = document_digest
+        if self.SAFETY_POLICY_ENFORCE and not document_url:
+            raise ValueError(
+                "SAFETY_POLICY_ENFORCE requires an approved policy document URL and SHA-256"
+            )
+        return self
 
     # Google Sign-In (OAuth 2.0)
     # This must be the "Web application" client ID from Google Cloud Console —
