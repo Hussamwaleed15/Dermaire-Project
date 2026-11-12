@@ -1,0 +1,120 @@
+name: Backend CI
+
+on:
+  pull_request:
+    paths:
+      - "backend/**"
+      - ".github/workflows/backend-ci.yml"
+  push:
+    branches: [main]
+    paths:
+      - "backend/**"
+      - ".github/workflows/backend-ci.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: backend-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      ENVIRONMENT: test
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: gate
+          POSTGRES_DB: postgres
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports:
+          - 55441:5432
+        options: >-
+          --health-cmd "pg_isready -U gate -d postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install dependencies
+        run: python -m pip install --disable-pip-version-check -r requirements.txt
+
+      - name: Run complete test suite with disposable PostgreSQL gates
+        env:
+          DERMAIRE_LOCAL_PG_GATE: "55441"
+        run: python -m pytest -q --basetemp=.pytest-tmp-ci
+
+      - name: Compile Backend
+        run: python -m compileall -q app tests
+
+      - name: Check patch whitespace
+        working-directory: .
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          if [ -n "$PR_BASE_SHA" ]; then
+            git diff --check "$PR_BASE_SHA"...HEAD
+          else
+            git show --check --format= HEAD
+          fi
+
+      - name: Record OpenAPI inventory
+        run: |
+          python - <<'PY'
+          from app.main import app
+          schema = app.openapi()
+          paths = len(schema["paths"])
+          components = len(schema.get("components", {}).get("schemas", {}))
+          assert (paths, components) == (115, 117), (paths, components)
+          print(f"OpenAPI: {paths} paths / {components} schemas")
+          PY
+
+      - name: Create commit-bound provenance evidence
+        working-directory: .
+        shell: bash
+        run: |
+          mkdir -p evidence
+          git archive --format=tar.gz --output=evidence/dermaire-source.tar.gz HEAD
+          python -m pip freeze --all > evidence/python-dependencies.txt
+          python - <<'PY'
+          import hashlib, json, os, pathlib
+          artifact = pathlib.Path("evidence/dermaire-source.tar.gz")
+          digest = hashlib.sha256(artifact.read_bytes()).hexdigest()
+          data = {
+              "git_commit_sha": os.environ["GITHUB_SHA"],
+              "artifact": artifact.name,
+              "sha256": digest,
+              "workflow_run_id": os.environ["GITHUB_RUN_ID"],
+          }
+          pathlib.Path("evidence/provenance.json").write_text(
+              json.dumps(data, indent=2) + "\n", encoding="utf-8"
+          )
+          print(f"{digest}  {artifact.name}")
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: backend-provenance-${{ github.sha }}
+          path: evidence/
+          if-no-files-found: error
+          retention-days: 30

@@ -44,7 +44,7 @@ is package compatibility metadata, not a live database observation.
    build timestamp. Retain the artifact digest and dependency manifest.
 3. Restore or create an isolated staging target and rehearse every required
    migration there. Verify row invariants, `alembic check`, rollback constraints,
-   readiness, OpenAPI 114/117 and focused PostgreSQL concurrency tests.
+   readiness, OpenAPI 115/117 and focused PostgreSQL concurrency tests.
 4. Deploy the artifact to staging only after separate approval. Confirm
    `/health/build` matches the reviewed commit and all instances converge.
 5. Document migration duration, locks, failure recovery, backup/PITR evidence and
@@ -57,7 +57,26 @@ is package compatibility metadata, not a live database observation.
 All HTTP responses receive `X-Content-Type-Options: nosniff`,
 `X-Frame-Options: SAMEORIGIN`, `Referrer-Policy: no-referrer` and a restrictive
 camera/microphone/geolocation `Permissions-Policy`. Staging and production also
-receive one-year HSTS with subdomains. Existing application-provided values are
-preserved. A Content Security Policy is not added globally because Swagger,
-ReDoc and the bundled static pages need a route-specific inventory first; an
-untested global policy could silently break those interfaces.
+receive one-year HSTS. `includeSubDomains` is intentionally withheld until an
+authoritative DNS and TLS inventory proves that every subordinate host is HTTPS
+only; enabling it without that evidence could make an unrelated subdomain
+unreachable. Existing application-provided values are preserved. A Content
+Security Policy is not added globally because Swagger, ReDoc and the bundled
+static pages need a route-specific inventory first; an untested global policy
+could silently break those interfaces.
+
+## Continuous verification
+
+The Backend CI workflow runs on the exact pull-request commit. It installs from
+the checked-in requirements, starts an isolated PostgreSQL service bound to the
+test-only gate port, enables all disposable PostgreSQL fixtures, runs the full
+Backend suite, compiles the application, checks the Git diff for whitespace
+errors and records the OpenAPI path/schema counts. It also creates a source
+archive directly from the checked-out commit plus a small provenance statement,
+dependency manifest and SHA-256 digest, then uploads those files as CI evidence.
+
+That archive is verification evidence, not an approved deployable release. A
+release pipeline must build the actual deployable artifact from the reviewed
+commit, inject `BUILD_GIT_SHA` from that immutable checkout (never free-form
+operator input), retain the deployable artifact digest and verify
+`/health/build` against it before promotion.

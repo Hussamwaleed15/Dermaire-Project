@@ -25,7 +25,7 @@ class SecurityHeaders:
                     b"permissions-policy": b"camera=(), microphone=(), geolocation=()",
                 }
                 if settings.ENVIRONMENT in {"staging", "production"}:
-                    additions[b"strict-transport-security"] = b"max-age=31536000; includeSubDomains"
+                    additions[b"strict-transport-security"] = b"max-age=31536000"
                 for name, value in additions.items():
                     if name not in existing:
                         headers.append((name, value))

@@ -120,9 +120,7 @@ def test_security_headers_are_conservative_and_managed_hsts(client, monkeypatch)
     assert response.headers["permissions-policy"] == (
         "camera=(), microphone=(), geolocation=()"
     )
-    assert response.headers["strict-transport-security"] == (
-        "max-age=31536000; includeSubDomains"
-    )
+    assert response.headers["strict-transport-security"] == "max-age=31536000"
 
 
 def test_database_timeout_is_retryable_and_private(client, monkeypatch):
