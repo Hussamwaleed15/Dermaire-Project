@@ -4,6 +4,7 @@ from unittest.mock import Mock
 from app.core import database
 from app.services.azure_blob import azure_blob_service
 from app.core.config import Settings
+from app.core.build_info import REQUIRED_ALEMBIC_REVISION, build_metadata
 
 
 def test_postgres_url_uses_installed_driver_and_preserves_tls():
@@ -45,7 +46,7 @@ def test_managed_readiness_requires_independent_journal(monkeypatch):
     from app.services.deletion_journal import deletion_journal
 
     db = Mock()
-    db.execute.return_value.scalars.return_value.all.return_value = ["20261024_14"]
+    db.execute.return_value.scalars.return_value.all.return_value = [REQUIRED_ALEMBIC_REVISION]
     monkeypatch.setattr(settings, "ENVIRONMENT", "staging")
     monkeypatch.setattr(azure_blob_service, "health", lambda: {"state": "available"})
     monkeypatch.setattr(deletion_journal, "health", lambda: "unavailable")
@@ -68,6 +69,58 @@ def test_managed_readiness_rejects_unreconciled_revision(monkeypatch, revision):
     monkeypatch.setattr(azure_blob_service, "health", lambda: {"state": "available"})
     monkeypatch.setattr(deletion_journal, "health", lambda: "available")
     assert readiness(db).status_code == 503
+
+
+def test_build_metadata_is_public_validated_and_not_cached(client, monkeypatch):
+    from app.core.config import settings
+
+    monkeypatch.setattr(settings, "BUILD_GIT_SHA", "A" * 40)
+    monkeypatch.setattr(settings, "BUILD_TIMESTAMP", "2026-10-24T17:12:18+00:00")
+    response = client.get("/health/build")
+    assert response.status_code == 200
+    assert response.headers["cache-control"] == "no-store"
+    assert response.json() == {
+        "available": True,
+        "git_commit_sha": "a" * 40,
+        "build_timestamp": "2026-10-24T17:12:18Z",
+        "api_version": settings.VERSION,
+        "required_alembic_revision": REQUIRED_ALEMBIC_REVISION,
+    }
+
+
+@pytest.mark.parametrize(
+    ("sha", "timestamp"),
+    [
+        ("", ""),
+        ("not-a-sha secret-looking-value", "2026-10-24T17:12:18Z"),
+        ("a" * 40, "not-a-timestamp secret-looking-value"),
+        ("a" * 40, "2026-10-24T17:12:18"),
+    ],
+)
+def test_invalid_build_metadata_fails_closed_without_echo(monkeypatch, sha, timestamp):
+    from app.core.config import settings
+
+    monkeypatch.setattr(settings, "BUILD_GIT_SHA", sha)
+    monkeypatch.setattr(settings, "BUILD_TIMESTAMP", timestamp)
+    result = build_metadata()
+    assert result["available"] is False
+    assert result["git_commit_sha"] is None
+    assert result["build_timestamp"] is None
+    assert "secret-looking-value" not in json.dumps(result)
+
+
+def test_security_headers_are_conservative_and_managed_hsts(client, monkeypatch):
+    from app.core.config import settings
+
+    monkeypatch.setattr(settings, "ENVIRONMENT", "production")
+    response = client.get("/health/live")
+    assert response.headers["x-content-type-options"] == "nosniff"
+    assert response.headers["x-frame-options"] == "SAMEORIGIN"
+    assert response.headers["referrer-policy"] == "no-referrer"
+    assert response.headers["permissions-policy"] == (
+        "camera=(), microphone=(), geolocation=()"
+    )
+    assert response.headers["strict-transport-security"] == "max-age=31536000"
 
 
 def test_database_timeout_is_retryable_and_private(client, monkeypatch):

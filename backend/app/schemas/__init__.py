@@ -30,6 +30,18 @@ class AcceptSafetyRequest(BaseModel):
     accepted: Literal[True] = True
     policy_version: str = Field("1.0", max_length=20, pattern=r"^[0-9]+\.[0-9]+$")
 
+class SafetyPolicyDocumentOut(BaseModel):
+    url: str
+    sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+
+class SafetyPolicyContractOut(BaseModel):
+    schema_version: Literal[1] = 1
+    required_version: str
+    enforcement_enabled: bool
+    document_status: Literal["approved", "unavailable"]
+    document: SafetyPolicyDocumentOut | None = None
+    acceptance_ready: bool
+
 class SafetyConsentOut(BaseModel):
     schema_version: Literal[1] = 1
     state: Literal["missing", "current", "outdated", "unknown"]
