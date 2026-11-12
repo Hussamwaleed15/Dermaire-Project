@@ -27,7 +27,7 @@ jobs:
       ENVIRONMENT: test
     services:
       postgres:
-        image: postgres:16-alpine
+        image: postgres:18-alpine
         env:
           POSTGRES_USER: gate
           POSTGRES_DB: postgres
