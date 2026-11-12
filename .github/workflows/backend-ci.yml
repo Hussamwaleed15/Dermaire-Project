@@ -49,6 +49,7 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
 
       - uses: actions/setup-python@v5
         with:
@@ -92,16 +93,22 @@ jobs:
       - name: Create commit-bound provenance evidence
         working-directory: .
         shell: bash
+        env:
+          EXPECTED_GIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
           mkdir -p evidence
           git archive --format=tar.gz --output=evidence/dermaire-source.tar.gz HEAD
           python -m pip freeze --all > evidence/python-dependencies.txt
           python - <<'PY'
-          import hashlib, json, os, pathlib
+          import hashlib, json, os, pathlib, subprocess
           artifact = pathlib.Path("evidence/dermaire-source.tar.gz")
           digest = hashlib.sha256(artifact.read_bytes()).hexdigest()
+          checked_out_sha = subprocess.check_output(
+              ["git", "rev-parse", "HEAD"], text=True
+          ).strip()
+          assert checked_out_sha == os.environ["EXPECTED_GIT_SHA"]
           data = {
-              "git_commit_sha": os.environ["GITHUB_SHA"],
+              "git_commit_sha": checked_out_sha,
               "artifact": artifact.name,
               "sha256": digest,
               "workflow_run_id": os.environ["GITHUB_RUN_ID"],
@@ -114,7 +121,7 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: backend-provenance-${{ github.sha }}
+          name: backend-provenance-${{ github.event.pull_request.head.sha || github.sha }}
           path: evidence/
           if-no-files-found: error
           retention-days: 30
