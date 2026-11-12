@@ -52,6 +52,8 @@ class Settings(BaseSettings):
     # up, since leaving it on would let anyone reset any account's password
     # just by knowing their email.
     EXPOSE_PASSWORD_RESET_TOKEN: bool = False
+    PASSWORD_RESET_RATE_LIMIT: int = 3
+    PASSWORD_RESET_RATE_WINDOW_MINUTES: int = 15
 
     # Azure Communication Services Email
     AZURE_COMMUNICATION_CONNECTION_STRING: str = ""
@@ -153,6 +155,16 @@ class Settings(BaseSettings):
                     "SECRET_KEY must be explicitly configured with a non-empty, "
                     "non-development secret in production/staging"
                 )
+            if self.EXPOSE_PASSWORD_RESET_TOKEN:
+                raise ValueError(
+                    "EXPOSE_PASSWORD_RESET_TOKEN cannot be enabled in production/staging"
+                )
+        if not 1 <= self.PASSWORD_RESET_RATE_LIMIT <= 20:
+            raise ValueError("PASSWORD_RESET_RATE_LIMIT must be between 1 and 20")
+        if not 1 <= self.PASSWORD_RESET_RATE_WINDOW_MINUTES <= 1440:
+            raise ValueError(
+                "PASSWORD_RESET_RATE_WINDOW_MINUTES must be between 1 and 1440"
+            )
         return self
 
     # Configuration presence only; the service health probe checks reachability/privacy.
