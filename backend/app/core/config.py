@@ -15,6 +15,10 @@ class Settings(BaseSettings):
     # App Identity
     PROJECT_NAME: str = "Dermaire Skin Lab API"
     VERSION: str = "1.0.0"
+    # Supplied by the build pipeline. They are public provenance, never secrets.
+    # Missing or malformed values are reported as unavailable rather than echoed.
+    BUILD_GIT_SHA: str = ""
+    BUILD_TIMESTAMP: str = ""
     API_V1_STR: str = "/api/v1"
     IMAGINE_COP_EDITION: str = "Microsoft Imagine Cup 2027"
     ENVIRONMENT: Literal["development", "test", "staging", "production"] = "development"
