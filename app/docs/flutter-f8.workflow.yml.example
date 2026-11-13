@@ -1,12 +1,16 @@
 name: Flutter F8 source gate
 on:
   pull_request:
+    types: [opened, synchronize, reopened, edited]
     branches: [main, codex/flutter-f8-original-grant, codex/flutter-f8-2-to-5-integration]
+    paths: ['app/**', '.github/workflows/flutter-f8.yml']
+  push:
+    branches: [main]
     paths: ['app/**', '.github/workflows/flutter-f8.yml']
 permissions:
   contents: read
 concurrency:
-  group: flutter-f8-${{ github.event.pull_request.number }}
+  group: flutter-f8-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 jobs:
   source:
@@ -16,13 +20,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - snapshot: F8-1
-            ref: 25b0e1f9e04861c98736894d1b31fb02933142cb
-          - snapshot: F8-2-to-5
-            ref: 5d855b499f73866ba6894fe67f950e81ec1b6e51
-          - snapshot: reviewed-merge
-            ref: ${{ github.sha }}
+        snapshot: ${{ fromJSON(github.event_name == 'pull_request' && '["current-pr-merge","current-pr-head"]' || '["current-main"]') }}
     defaults:
       run:
         shell: bash
@@ -34,8 +32,10 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: ${{ matrix.ref }}
+          ref: ${{ matrix.snapshot == 'current-pr-head' && github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
+      - name: Verify checked out revision
+        run: test "$(git rev-parse HEAD)" = "${{ matrix.snapshot == 'current-pr-head' && github.event.pull_request.head.sha || github.sha }}"
       - name: Install exact Flutter SDK
         run: |
           git init "$RUNNER_TEMP/flutter"

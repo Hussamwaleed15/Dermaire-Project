@@ -13,7 +13,7 @@ Their Flutter ancestry has no .github/workflows directory. Backend workflows
 live in separate unmerged Backend branches, are not Flutter gates and were not
 modified. Successful local tests are not GitHub checks or independent approval.
 
-## Cost/permission gate: CI NOT activated
+## CI activation and ownership correction
 
 GitHub repository metadata confirms visibility=public. Official documentation
 states standard GitHub-hosted runners in public repositories are free:
@@ -22,18 +22,12 @@ https://docs.github.com/en/actions/how-tos/write-workflows/choose-where-workflow
 Larger runners are billed; none is proposed. No cache/artifact upload or paid
 service is proposed. Reassess if visibility or runner type changes.
 
-Local credential verification confirmed Amr-A-Abdallah without printing secrets.
-GET repos/Hussamwaleed15/Dermaire-Project/actions/permissions returned403 under
-Amr's credentials. That does not prove Actions is disabled or that all workflow
-writes are forbidden; it means permitted Actions configuration could not be
-verified. Per the explicit task gate, no active workflow was published or run.
-No repository settings were changed; Hussam's connector was not used to publish.
-
-The complete proposal is flutter-f8.workflow.yml.example in this directory,
-NOT under .github/workflows and NOT executable by Actions. A maintainer must
-verify Actions enablement, allowed actions, Amr's workflow publication rights
-and the standard public runner selection, then explicitly authorize activation.
-No budget increase, billing mutation or protection bypass is requested.
+The original proposal and Flutter source changes were authored by
+Amr-A-Abdallah. On 2026-11-13 Hussam explicitly authorized the CI-only correction
+and test execution on PR8, without merge. The correction is authored and
+published under Hussam's configured Git identity; it is not attributed to Amr.
+No repository settings, branch protection, required checks or billing settings
+are changed. No budget increase, paid runner or protection bypass is requested.
 
 ## Reproducible proposed gate
 
@@ -47,18 +41,20 @@ includes existing F8 security/privacy tests and test HTTP binding/invalid-host
 guards. Setup may download SDK/pub/native assets; no command invokes OAuth,
 patient/Backend/Azure/Push/email/model services. This is source verification.
 
-Three matrix snapshots: exact PR6, exact PR7, and the proposed CI merge commit.
-The last slot tests the source-order fix too. Explicit snapshots must be updated
-when reviewed heads change; stale green jobs are not evidence for a new SHA.
-These matrix jobs would belong to the CI PR's check suite; they do NOT install
-checks on the original PR6/PR7 heads. Publish the gate through approved ancestry
-and rerun it on their final merge/reconciliation heads as part of merge review.
+PR runs test two dynamic revisions: GitHub's current PR merge result and the
+current PR head SHA. The `edited` activity covers a base retarget when the branch
+and path filters still match; a retarget alone must not be treated as green until
+the resulting run is observed. A push to `main` tests the exact pushed SHA after
+a future authorized merge. Historic PR6/PR7 snapshot jobs were removed because
+they were stale evidence and tripled every run. PR8 checks still do NOT attach
+checks to the original PR6/PR7 heads; their final reconciled heads need their own
+applicable workflow/check evidence later.
 
 Linux feasibility: installed sqlite3-3.5.2 native hooks include Linux x64
 SQLCipher assets with pinned hashes; pubspec selects source:sqlcipher. Host key
 platforms are mocked in unit tests. No source evidence requires macOS for this
-suite. Linux has NOT been executed here because the permission gate remains.
-Therefore feasibility is source-grounded, not a Linux-pass claim. If Linux fails,
+suite. Linux results are recorded from GitHub Actions after each authorized PR8
+run. Until a run completes, feasibility remains source-grounded. If Linux fails,
 inspect actual native dependency evidence before proposing standard macOS;
 do not skip SQLCipher/security cases or substitute plaintext SQLite.
 
@@ -96,15 +92,14 @@ no production assertion was weakened.
    diff for intended Flutter-only changes. If squash/rebase diverged ancestry,
    reconcile with a normal reviewed merge or separately authorized clean restack;
    never force-push existing history or duplicate F8-1 changes.
-4. Activate the CI proposal only after the permission gate is resolved. Execute
-   analyze/full tests/required CI for final heads and base combinations. Obtain
+4. Execute analyze/full tests/required CI for final heads and base combinations. Obtain
    independent review of PR7's final head, not stale approvals, then only an
    authorized maintainer may merge it.
 5. Backend merge/deployment, approved policy document and coordinated rollout
    remain Hussam/owner tasks. No Flutter merge proves production API compatibility.
 
-F8 source/host work is reviewable; GitHub CI is PREPARED/BLOCKED on permission
-verification, not green. F8-2 policy rollout remains PARTIAL and default-off.
+F8 source/host work is reviewable; GitHub CI is green only for the exact SHAs
+reported by completed runs. F8-2 policy rollout remains PARTIAL and default-off.
 F8-6 physical-device/camera/OAuth/Keychain/Keystore/Push/recovery validation remains
 deferred; no staging E2E, production API or clinical AI qualification. No F9 work
 started. Recommended next: close CI/review gates, then define F9 as a bounded
