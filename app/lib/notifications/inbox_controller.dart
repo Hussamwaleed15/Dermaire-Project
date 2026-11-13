@@ -151,7 +151,10 @@ class InboxController extends PrivateController {
       await readPage(ticket);
       if (!valid(ticket)) return false;
       final currentRow = _notices.where((n) => n.id == notice.id).firstOrNull;
-      if (currentRow == null || (currentRow.read != null) != read) {
+      if (currentRow == null ||
+          currentRow.stateRevision == null ||
+          currentRow.stateRevision! < (receipt['state_revision'] as int) ||
+          (currentRow.read != null) != read) {
         throw const FormatException('Read state changed; refresh');
       }
       await readHistory(ticket);

@@ -1380,8 +1380,8 @@ class ApiService extends ChangeNotifier {
   }) async {
     if (!RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(email) ||
         !RegExp(r'^[0-9]{8}$').hasMatch(token) ||
-        newPassword.length < 8 ||
-        newPassword.length > 128) {
+        newPassword.runes.length < 8 ||
+        newPassword.runes.length > 128) {
       throw ApiException(
         'Enter an eight-digit code and a password of 8–128 characters.',
       );

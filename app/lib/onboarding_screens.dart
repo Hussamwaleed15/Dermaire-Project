@@ -837,8 +837,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   Future<void> _submitNewPassword() async {
     if (loading) return;
     if (!RegExp(r'^[0-9]{8}$').hasMatch(resetToken.text) ||
-        newPassword.text.length < 8 ||
-        newPassword.text.length > 128) {
+        newPassword.text.runes.length < 8 ||
+        newPassword.text.runes.length > 128) {
       setState(
         () => errorText =
             'Enter an eight-digit code and a password of 8–128 characters.',

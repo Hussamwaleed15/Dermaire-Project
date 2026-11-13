@@ -139,6 +139,10 @@ class SessionSummary {
         v['max_tool_calls'] != 8 ||
         v['scopes'] is! List ||
         !(v['scopes'] as List).contains('longitudinal_read') ||
+        (v['scopes'] as List).toSet().length != (v['scopes'] as List).length ||
+        (v['scopes'] as List).any(
+          (s) => !['longitudinal_read', 'proposal_actions'].contains(s),
+        ) ||
         count(v['tool_calls']) > 8) {
       throw const FormatException('Unverified session summary');
     }
@@ -151,19 +155,23 @@ class SessionSummary {
 
 class AgentDiscovery extends PrivateController {
   final rows = <SessionSummary>[];
+  final _cursors = <String>{};
   String? next;
   @override
   bool get current => super.current && role == 'patient';
   @override
   void wipe() {
     rows.clear();
+    _cursors.clear();
     next = null;
   }
 
   @override
   Future<void> refresh() => load();
   Future<void> load({bool more = false}) async {
-    if (!current || busy || more && next == null) return;
+    if (!current || busy || more && (next == null || rows.length >= 500)) {
+      return;
+    }
     final cursor = more ? next : null;
     final ticket = begin();
     if (!more) wipe();
@@ -188,10 +196,21 @@ class AgentDiscovery extends PrivateController {
           ? null
           : resourceId(data['next_before']);
       final ids = rows.map((r) => r.id).toSet();
-      if (page.any((r) => !ids.add(r.id)) || after != null && after == cursor) {
+      final combined = [...rows, ...page];
+      for (var i = 1; i < combined.length; i++) {
+        final previous = combined[i - 1], current = combined[i];
+        if (current.expires.isAfter(previous.expires) ||
+            current.expires == previous.expires &&
+                current.id.compareTo(previous.id) >= 0) {
+          throw const FormatException('Unordered session page');
+        }
+      }
+      if (page.any((r) => !ids.add(r.id)) ||
+          after != null && (after == cursor || _cursors.contains(after))) {
         throw const FormatException('Session page changed; refresh');
       }
       if (!valid(ticket)) return;
+      if (after != null) _cursors.add(after);
       rows.addAll(page.where((r) => r.expires.isAfter(DateTime.now().toUtc())));
       next = after;
     } catch (e) {

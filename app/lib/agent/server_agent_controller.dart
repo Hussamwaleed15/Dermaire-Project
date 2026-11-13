@@ -659,9 +659,10 @@ class ServerAgentController extends PrivateController {
 }
 
 class ClinicianRequestsController extends PrivateController {
+  final _pageCursors = <String>{};
   String? next;
   Future<void> more() async {
-    if (!current || busy || next == null) return;
+    if (!current || busy || next == null || _requests.length >= 500) return;
     final ticket = begin();
     try {
       await pull(ticket, before: next);
@@ -689,6 +690,7 @@ class ClinicianRequestsController extends PrivateController {
   void wipe() {
     _clock?.cancel();
     _requests.clear();
+    _pageCursors.clear();
     next = null;
     outcome = null;
   }
@@ -740,12 +742,18 @@ class ClinicianRequestsController extends PrivateController {
     final cursor = data['next_before'] == null
         ? null
         : resourceId(data['next_before']);
-    if (cursor != null && cursor == before ||
+    if (cursor != null &&
+            before != null &&
+            (cursor == before || _pageCursors.contains(cursor)) ||
         before != null &&
             rows.any((r) => _requests.any((old) => old.id == r.id))) {
       throw const FormatException('Request pages changed; refresh');
     }
-    if (before == null) _requests.clear();
+    if (before == null) {
+      _requests.clear();
+      _pageCursors.clear();
+    }
+    if (cursor != null) _pageCursors.add(cursor);
     _requests.addAll(rows);
     next = cursor;
     _clock?.cancel();
