@@ -41,6 +41,7 @@ class InboxWire extends f.DoctorWire {
       'id': 'notice-2',
       'kind': 'follow_up',
       'source_id': 'plan-1',
+      'state_revision': 1,
       'source_revision': 1,
       'created_at': '2026-10-18T12:00:00Z',
       'due_at': '2026-10-18T12:00:00Z',
@@ -52,6 +53,7 @@ class InboxWire extends f.DoctorWire {
       'id': 'notice-1',
       'kind': 'message',
       'source_id': 'message-1',
+      'state_revision': 1,
       'source_revision': 1,
       'created_at': '2026-10-18T10:00:00Z',
       'due_at': '2026-10-18T10:00:00Z',
@@ -133,8 +135,10 @@ class InboxWire extends f.DoctorWire {
       final read = path.endsWith('/read');
       n['read_at'] = read ? '2026-10-18T13:00:00Z' : null;
       n['unread'] = !read;
+      n['state_revision'] = (n['state_revision'] as int) + 1;
       return f.json({
         'id': id,
+        'state_revision': n['state_revision'],
         'read_at': n['read_at'],
         if (read) 'receipt': 'app_read_acknowledged',
         if (!read) 'unread': true,

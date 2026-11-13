@@ -119,7 +119,11 @@ class InboxController extends PrivateController {
   }
 
   Future<bool> mark(InboxNotice notice, {required bool read}) async {
-    if (!current || busy || !notices.any((n) => n.id == notice.id)) {
+    if (!current ||
+        busy ||
+        notice.stateRevision == null ||
+        notice.stateRevision! < 1 ||
+        !notices.any((n) => identical(n, notice))) {
       return false;
     }
     final ticket = begin();
@@ -129,9 +133,12 @@ class InboxController extends PrivateController {
           'notifications/${notice.id}/${read ? 'read' : 'unread'}',
           generation,
           method: 'PUT',
+          query: {'expected_revision': '${notice.stateRevision}'},
         )).data,
       );
       if (receipt['id'] != notice.id ||
+          receipt['state_revision'] is! int ||
+          receipt['state_revision'] < notice.stateRevision! ||
           receipt['delivery_confirmed'] != false ||
           (read
               ? (receipt['receipt'] != 'app_read_acknowledged' ||
@@ -155,6 +162,15 @@ class InboxController extends PrivateController {
     } catch (e) {
       if (valid(ticket)) {
         wipe();
+        if (e is IntegrationFailure && e.status == 412) {
+          try {
+            await readPage(ticket);
+            if (valid(ticket)) await readHistory(ticket);
+            if (!valid(ticket)) return false;
+          } catch (_) {
+            if (valid(ticket)) wipe();
+          }
+        }
         error =
             'Read state is unconfirmed. Refresh the inbox. ${integrationError(e)}';
       }

@@ -7,6 +7,8 @@ import '../clinical/clinical_ui.dart' show clinicalTime;
 import '../integration/private_view.dart';
 import '../plans/plan_ui.dart';
 import '../messaging/messaging_ui.dart';
+import '../messaging/messaging_models.dart';
+import '../clinical/clinical_models.dart';
 import 'notification_availability.dart';
 import 'inbox_controller.dart';
 import 'inbox_models.dart';
@@ -22,6 +24,27 @@ class _InboxState extends State<NotificationInboxScreen> {
   final controller = InboxController();
   String? category;
   bool unreadOnly = false;
+  Future<void> openNotice(InboxNotice notice) async {
+    final c = controller;
+    if (!c.current || notice.threadId == null) return;
+    try {
+      final response = await c.api.integrationResource(
+        'messaging/threads/${notice.threadId}',
+        c.generation,
+      );
+      final thread = CareThread.fromApi(object(response.data), c.owner, c.role);
+      if (!mounted || !c.current || thread.id != notice.threadId) return;
+      await openEntry(context, CareConversationScreen(thread: thread));
+    } catch (_) {
+      if (mounted && c.current) {
+        setState(
+          () => c.error =
+              'Conversation unavailable. Refresh current permissions.',
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) => PrivateView(
     controller: controller,
@@ -125,7 +148,7 @@ class _InboxState extends State<NotificationInboxScreen> {
                     runSpacing: 8,
                     children: [
                       OutlinedButton(
-                        onPressed: c.busy
+                        onPressed: c.busy || n.stateRevision == null
                             ? null
                             : () => c.mark(n, read: n.read == null),
                         child: Text(
@@ -145,8 +168,14 @@ class _InboxState extends State<NotificationInboxScreen> {
                         ),
                       if (n.kind == 'message')
                         OutlinedButton(
-                          onPressed: () =>
-                              openEntry(context, const CareThreadsScreen()),
+                          onPressed: c.busy
+                              ? null
+                              : () => n.threadId == null
+                                    ? openEntry(
+                                        context,
+                                        const CareThreadsScreen(),
+                                      )
+                                    : openNotice(n),
                           child: const Text('Open care conversations'),
                         ),
                       if (n.kind == 'routine' && c.role == 'patient')
