@@ -117,6 +117,7 @@ enum BrokerActionStage {
 }
 
 class BrokerAction {
+  String? patientReference, originalGrantReference;
   BrokerAction(Map<String, dynamic> v, {String? doctor})
     : id = resourceId(v['id']),
       kind = text(v['kind']),
@@ -131,6 +132,16 @@ class BrokerAction {
       result = v['result'] == null
           ? null
           : Map.unmodifiable(object(v['result'])) {
+    final ref = v['patient_ref'];
+    if (doctor != null && ref != null) {
+      if (ref is! Map ||
+          ref['authority'] != 'current_original_grant' ||
+          ref['access_id'] != result?['access_id']) {
+        throw const FormatException('Unverified authorized patient reference');
+      }
+      patientReference = resourceId(ref['patient_id']);
+      originalGrantReference = resourceId(ref['access_id']);
+    }
     if (!brokerKinds.contains(kind) ||
         !['preview', 'confirmed', 'revoked'].contains(state) ||
         revision < 1 ||

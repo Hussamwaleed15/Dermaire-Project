@@ -5,6 +5,7 @@ import '../integration/private_view.dart';
 import 'server_agent_controller.dart';
 import 'server_agent_models.dart';
 import 'agent_workspace_summary.dart';
+import 'agent_discovery.dart';
 
 class ServerAgentScreen extends StatefulWidget {
   const ServerAgentScreen({super.key});
@@ -47,6 +48,24 @@ class _ServerAgentState extends State<ServerAgentScreen> {
             selected: c.selected,
             busy: c.busy,
             failed: c.error != null,
+          ),
+          TextButton(
+            onPressed: c.busy
+                ? null
+                : () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => AgentDiscoveryScreen(
+                        onSelect: (id) async {
+                          if (!c.authenticatedCurrent || c.pending != null) {
+                            return;
+                          }
+                          c.api.integrationReferences['agent-active'] = id;
+                          await c.show();
+                        },
+                      ),
+                    ),
+                  ),
+            child: const Text('Discover authorized sessions'),
           ),
           OutlinedButton(
             onPressed: c.busy ? null : c.refresh,
@@ -589,11 +608,35 @@ class _ClinicianRequestsState extends State<ClinicianRequestsScreen> {
           ),
         if (!c.busy && c.error == null && c.requests.isEmpty)
           const Text('No currently authorized clinician requests.'),
-        for (final request in c.requests)
+        for (final request in c.requests) ...[
           _ClinicianDecisionCard(
             key: ValueKey('${request.id}:${request.revision}'),
             controller: c,
             request: request,
+          ),
+          if (request.patientReference != null &&
+              request.originalGrantReference != null)
+            TextButton(
+              onPressed: c.busy
+                  ? null
+                  : () {
+                      if (!c.current || !c.requests.contains(request)) return;
+                      Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => AgentPatientScreen(
+                            patient: request.patientReference!,
+                            grant: request.originalGrantReference!,
+                          ),
+                        ),
+                      );
+                    },
+              child: const Text('Open authorized patient reference'),
+            ),
+        ],
+        if (c.next != null)
+          TextButton(
+            onPressed: c.busy ? null : c.more,
+            child: const Text('Earlier authorized requests'),
           ),
         const Text(
           'Accepting or reviewing a request does not execute treatment, create a follow-up plan or certify safety. Use the actual clinical plan workflow for clinician-authored care.',
