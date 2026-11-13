@@ -878,8 +878,16 @@ class _EvaluationActionsState extends State<_EvaluationActions> {
               'rejected',
             ].contains(job.currentState))
           OutlinedButton(
-            onPressed: disabled ? null : c.cancelEvaluation,
-            child: const Text('Cancel evaluation request'),
+            onPressed: disabled
+                ? null
+                : c.cancellation != null
+                ? c.reconcileCancellation
+                : c.cancelEvaluation,
+            child: Text(
+              c.cancellation == null
+                  ? 'Cancel evaluation request'
+                  : 'Verify original cancellation',
+            ),
           ),
         if (inference is Map && inference['result'] is Map) ...[
           Text('Model version: ${inference['model_version']}'),

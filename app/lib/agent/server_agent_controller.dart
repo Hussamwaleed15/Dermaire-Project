@@ -659,6 +659,23 @@ class ServerAgentController extends PrivateController {
 }
 
 class ClinicianRequestsController extends PrivateController {
+  final _pageCursors = <String>{};
+  String? next;
+  Future<void> more() async {
+    if (!current || busy || next == null || _requests.length >= 500) return;
+    final ticket = begin();
+    try {
+      await pull(ticket, before: next);
+    } catch (e) {
+      if (valid(ticket)) {
+        wipe();
+        error = integrationError(e);
+      }
+    } finally {
+      finish(ticket);
+    }
+  }
+
   Timer? _clock;
   final _requests = <BrokerAction>[];
   final _seen = <String, int>{};
@@ -673,6 +690,8 @@ class ClinicianRequestsController extends PrivateController {
   void wipe() {
     _clock?.cancel();
     _requests.clear();
+    _pageCursors.clear();
+    next = null;
     outcome = null;
   }
 
@@ -693,9 +712,13 @@ class ClinicianRequestsController extends PrivateController {
     }
   }
 
-  Future<void> pull(int ticket) async {
+  Future<void> pull(int ticket, {String? before}) async {
     final data = object(
-      (await api.integrationResource('agent/requests', generation)).data,
+      (await api.integrationResource(
+        'agent/requests',
+        generation,
+        query: {'limit': '100', 'before': ?before},
+      )).data,
     );
     if (data['limit'] != 100 ||
         data['medical_execution_enabled'] != false ||
@@ -716,13 +739,28 @@ class ClinicianRequestsController extends PrivateController {
     for (final a in rows) {
       _seen[a.id] = a.revision;
     }
-    _requests
-      ..clear()
-      ..addAll(rows);
+    final cursor = data['next_before'] == null
+        ? null
+        : resourceId(data['next_before']);
+    if (cursor != null &&
+            before != null &&
+            (cursor == before || _pageCursors.contains(cursor)) ||
+        before != null &&
+            rows.any((r) => _requests.any((old) => old.id == r.id))) {
+      throw const FormatException('Request pages changed; refresh');
+    }
+    if (before == null) {
+      _requests.clear();
+      _pageCursors.clear();
+    }
+    if (cursor != null) _pageCursors.add(cursor);
+    _requests.addAll(rows);
+    next = cursor;
     _clock?.cancel();
-    if (rows.isNotEmpty) {
-      final dates = rows.map((r) => timestamp(r.result!['expires_at'])).toList()
-        ..sort();
+    if (_requests.isNotEmpty) {
+      final dates =
+          _requests.map((r) => timestamp(r.result!['expires_at'])).toList()
+            ..sort();
       _clock = Timer(dates.first.difference(DateTime.now().toUtc()), () {
         if (!current) return;
         revision++;

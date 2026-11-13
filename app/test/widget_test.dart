@@ -242,7 +242,10 @@ void main() {
         );
         await tester.tap(find.text('Send reset code'));
         await tester.pumpAndSettle();
-        expect(find.textContaining('If an account exists'), findsOneWidget);
+        expect(
+          find.textContaining('If this address is eligible'),
+          findsOneWidget,
+        );
         await tester.tap(find.text('Back to sign in'));
         await tester.pumpAndSettle();
 
