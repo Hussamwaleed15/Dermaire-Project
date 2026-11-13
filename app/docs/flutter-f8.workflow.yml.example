@@ -32,7 +32,7 @@ jobs:
       FLUTTER_SUPPRESS_ANALYTICS: 'true'
       DART_SUPPRESS_ANALYTICS: 'true'
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           ref: ${{ matrix.ref }}
           persist-credentials: false
@@ -40,7 +40,8 @@ jobs:
         run: |
           git init "$RUNNER_TEMP/flutter"
           git -C "$RUNNER_TEMP/flutter" remote add origin https://github.com/flutter/flutter.git
-          git -C "$RUNNER_TEMP/flutter" fetch --depth 1 origin 058e0af2c2b57e369d905a03ac9748b0ebf543c6
+          git -C "$RUNNER_TEMP/flutter" fetch --depth 1 origin tag 3.44.8
+          test "$(git -C "$RUNNER_TEMP/flutter" rev-parse FETCH_HEAD)" = 058e0af2c2b57e369d905a03ac9748b0ebf543c6
           git -C "$RUNNER_TEMP/flutter" checkout --detach FETCH_HEAD
           echo "$RUNNER_TEMP/flutter/bin" >> "$GITHUB_PATH"
       - name: Verify SDK and resolve locked dependencies
