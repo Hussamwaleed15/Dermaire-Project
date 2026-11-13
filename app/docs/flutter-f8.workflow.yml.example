@@ -1,0 +1,59 @@
+name: Flutter F8 source gate
+on:
+  pull_request:
+    branches: [main, codex/flutter-f8-original-grant, codex/flutter-f8-2-to-5-integration]
+    paths: ['app/**', '.github/workflows/flutter-f8.yml']
+permissions:
+  contents: read
+concurrency:
+  group: flutter-f8-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+jobs:
+  source:
+    name: Flutter source / ${{ matrix.snapshot }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - snapshot: F8-1
+            ref: 25b0e1f9e04861c98736894d1b31fb02933142cb
+          - snapshot: F8-2-to-5
+            ref: 5d855b499f73866ba6894fe67f950e81ec1b6e51
+          - snapshot: reviewed-merge
+            ref: ${{ github.sha }}
+    defaults:
+      run:
+        shell: bash
+        working-directory: app
+    env:
+      CI: 'true'
+      FLUTTER_SUPPRESS_ANALYTICS: 'true'
+      DART_SUPPRESS_ANALYTICS: 'true'
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ matrix.ref }}
+          persist-credentials: false
+      - name: Install exact Flutter SDK
+        run: |
+          git init "$RUNNER_TEMP/flutter"
+          git -C "$RUNNER_TEMP/flutter" remote add origin https://github.com/flutter/flutter.git
+          git -C "$RUNNER_TEMP/flutter" fetch --depth 1 origin 058e0af2c2b57e369d905a03ac9748b0ebf543c6
+          git -C "$RUNNER_TEMP/flutter" checkout --detach FETCH_HEAD
+          echo "$RUNNER_TEMP/flutter/bin" >> "$GITHUB_PATH"
+      - name: Verify SDK and resolve locked dependencies
+        run: |
+          flutter --version
+          dart --version
+          flutter pub get --enforce-lockfile
+          git diff --exit-code
+      - name: Analyze
+        run: flutter analyze --no-pub
+      - name: Complete synthetic unit, widget and contract suite
+        run: flutter test --no-pub --reporter expanded
+      - name: Source integrity
+        run: |
+          git diff --check
+          git diff --exit-code
