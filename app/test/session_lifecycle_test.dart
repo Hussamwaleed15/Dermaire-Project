@@ -139,7 +139,7 @@ void main() {
         await login();
         await ApiService.instance.resetPassword(
           email: 'test@example.com',
-          token: 'test-code',
+          token: '12345678',
           newPassword: 'new-test-password',
         );
         expect(ApiService.instance.isAuthenticated, isFalse);

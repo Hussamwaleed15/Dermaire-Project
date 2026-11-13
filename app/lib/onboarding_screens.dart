@@ -820,16 +820,11 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       errorText = null;
     });
     try {
-      final data = await ApiService.instance.forgotPassword(
-        email: email.text.trim(),
-      );
+      await ApiService.instance.forgotPassword(email: email.text.trim());
       if (!mounted) return;
       setState(() {
         sent = true;
-        devNote = data['note']?.toString();
-        if (data['reset_token'] != null) {
-          resetToken.text = data['reset_token'].toString();
-        }
+        devNote = null;
       });
     } catch (e) {
       if (!mounted) return;
@@ -840,10 +835,13 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   }
 
   Future<void> _submitNewPassword() async {
-    if (resetToken.text.trim().isEmpty || newPassword.text.trim().length < 8) {
+    if (loading) return;
+    if (!RegExp(r'^[0-9]{8}$').hasMatch(resetToken.text) ||
+        newPassword.text.length < 8 ||
+        newPassword.text.length > 128) {
       setState(
         () => errorText =
-            'Enter the reset code and a password of at least 8 characters.',
+            'Enter an eight-digit code and a password of 8–128 characters.',
       );
       return;
     }
@@ -854,8 +852,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     try {
       await ApiService.instance.resetPassword(
         email: email.text.trim(),
-        token: resetToken.text.trim(),
-        newPassword: newPassword.text.trim(),
+        token: resetToken.text,
+        newPassword: newPassword.text,
       );
       if (!mounted) return;
       setState(() => resetDone = true);
@@ -922,7 +920,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         const Notice(
           icon: '✓',
           text:
-              'If an account exists for this email, a reset code has been sent.',
+              'If this address is eligible, a reset code may arrive. Delivery is not guaranteed.',
           color: DermaireColors.safeBackground,
         ),
         if (devNote != null) ...[
@@ -991,9 +989,43 @@ class _SafetyResponsibilityScreenState
   bool reachedEnd = false;
   bool loading = false;
   String? error;
+  String? policyText;
+  int _policyRequest = 0;
+  Future<void> _readPolicy() async {
+    final ticket = ++_policyRequest;
+    final generation = ApiService.instance.sessionGeneration;
+    setState(() {
+      policyText = null;
+      reachedEnd = false;
+    });
+    try {
+      final policy = await ApiService.instance.readVerifiedPolicy();
+      if (!mounted ||
+          ticket != _policyRequest ||
+          generation != ApiService.instance.sessionGeneration) {
+        return;
+      }
+      ApiService.instance.verifiedPolicy = policy;
+      setState(() {
+        policyText = policy.document;
+        reachedEnd = false;
+      });
+      WidgetsBinding.instance.addPostFrameCallback((_) => _checkScroll());
+    } catch (_) {
+      if (mounted && ticket == _policyRequest) {
+        setState(
+          () => error = 'Approved policy unavailable. Refresh to retry.',
+        );
+      }
+    }
+  }
 
   Future<void> _acceptSafety() async {
-    if (!reachedEnd || loading) return;
+    if (!reachedEnd ||
+        loading ||
+        ApiService.verifiedPolicyRollout && policyText == null) {
+      return;
+    }
     setState(() {
       loading = true;
       error = null;
@@ -1030,6 +1062,13 @@ class _SafetyResponsibilityScreenState
       }
     } catch (failure) {
       if (!mounted) return;
+      if (ApiService.verifiedPolicyRollout) {
+        ApiService.instance.verifiedPolicy = null;
+        policyText = null;
+        reachedEnd = false;
+        await _readPolicy();
+        if (!mounted) return;
+      }
       setState(
         () => error = failure is ApiException
             ? failure.message
@@ -1044,6 +1083,7 @@ class _SafetyResponsibilityScreenState
   void initState() {
     super.initState();
     controller.addListener(_checkScroll);
+    if (ApiService.verifiedPolicyRollout) _readPolicy();
     WidgetsBinding.instance.addPostFrameCallback((_) => _checkScroll());
   }
 
@@ -1100,7 +1140,12 @@ class _SafetyResponsibilityScreenState
         EntryPress(
           child: FilledButton(
             key: const Key('acceptSafetyButton'),
-            onPressed: reachedEnd && !loading ? _acceptSafety : null,
+            onPressed:
+                reachedEnd &&
+                    !loading &&
+                    (!ApiService.verifiedPolicyRollout || policyText != null)
+                ? _acceptSafety
+                : null,
             child: Text('I understand — continue'),
           ),
         ),
@@ -1112,6 +1157,13 @@ class _SafetyResponsibilityScreenState
           ),
       ],
       children: [
+        if (ApiService.verifiedPolicyRollout) ...[
+          if (policyText != null) SelectableText(policyText!),
+          TextButton(
+            onPressed: loading ? null : _readPolicy,
+            child: const Text('Refresh approved policy'),
+          ),
+        ],
         if (ApiService.instance.isAuthenticated &&
             ApiService.instance.authenticatedRole == 'patient')
           OutlinedButton(
