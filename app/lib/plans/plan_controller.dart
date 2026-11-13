@@ -70,6 +70,59 @@ class PlanController extends PrivateController {
   ClinicalPlan? get value => current ? _value : null;
   List<PlanEvent> get history => current ? List.unmodifiable(_history) : [];
   String get intentId => 'plan:$id';
+  String get cancellationId => 'evaluation-cancel:$id';
+  PendingIntent? get cancellation =>
+      authenticatedCurrent ? api.integrationIntents[cancellationId] : null;
+  Future<void> reconcileCancellation() async {
+    final original = cancellation;
+    if (!current || busy || original == null) return;
+    final ticket = begin();
+    try {
+      final before = await read();
+      if (!valid(ticket) ||
+          before.patient != original.recoveryScope['patient_id'] ||
+          before.grant != original.recoveryScope['access_id']) {
+        return;
+      }
+      final receipt = object(
+        (await api.integrationResource(
+          'clinical-plans/$id/attempts/evaluation_cancel/${original.key}',
+          generation,
+        )).data,
+      );
+      resourceId(receipt['attempt_id']);
+      if (!valid(ticket)) return;
+      if (!['committed', 'unknown', 'expired'].contains(receipt['status'])) {
+        throw const FormatException('Unsupported cancellation receipt');
+      }
+      if (receipt['status'] != 'committed' || receipt['result'] == null) {
+        outcome =
+            'Original cancellation unresolved or expired. No cancellation repeated.';
+        return;
+      }
+      final historical = PlanEvaluation(object(receipt['result']), before);
+      if (historical.state != 'cancelled' ||
+          historical.wire['id'] != original.recoveryScope['job_id']) {
+        throw const FormatException('Original evaluation changed');
+      }
+      final latest = await read();
+      if (!valid(ticket)) return;
+      apply(latest);
+      await readEvaluation(ticket);
+      if (!valid(ticket)) return;
+      api.integrationIntents.remove(cancellationId);
+      outcome =
+          'Original cancellation recorded. Current evaluation: ${evaluation?.currentState}. No change repeated.';
+    } catch (e) {
+      if (valid(ticket)) {
+        wipe();
+        error = integrationError(e);
+      }
+    } finally {
+      finish(ticket);
+    }
+  }
+
   PendingIntent? get pending =>
       authenticatedCurrent ? api.integrationIntents[intentId] : null;
   @override
@@ -230,6 +283,7 @@ class PlanController extends PrivateController {
         busy ||
         plan == null ||
         pending != null ||
+        cancellation != null ||
         plan.revision != expected) {
       return false;
     }
@@ -433,6 +487,7 @@ class PlanController extends PrivateController {
     if (!current ||
         busy ||
         pending != null ||
+        cancellation != null ||
         plan == null ||
         plan.kind != 'comparison' ||
         evaluation == null ||
@@ -444,19 +499,35 @@ class PlanController extends PrivateController {
       final before = await read();
       if (!valid(ticket)) return;
       if (before.revision != plan.revision) throw IntegrationFailure(409);
+      final original = PendingIntent(
+        path: 'clinical-plans/$id/evaluation',
+        attemptPath: 'clinical-plans/$id/attempts/evaluation_cancel',
+        method: 'DELETE',
+        body: {'expected_revision': plan.revision},
+        identityScope: {
+          'patient_id': plan.patient,
+          'access_id': plan.grant,
+          'job_id': resourceId(evaluation!.wire['id']),
+        },
+      );
+      api.integrationIntents[cancellationId] = original;
       final data = object(
         (await api.integrationResource(
           'clinical-plans/$id/evaluation',
           generation,
           method: 'DELETE',
+          key: original.key,
           query: {'expected_revision': '${plan.revision}'},
           withdrawal: true,
         )).data,
       );
       final receipt = PlanEvaluation(data, plan);
-      if (receipt.state != 'cancelled') {
+      if (receipt.state != 'cancelled' ||
+          receipt.wire['id'] != original.recoveryScope['job_id']) {
         throw const FormatException('Unverified evaluation cancellation');
       }
+      if (!valid(ticket)) return;
+      api.integrationIntents.remove(cancellationId);
       final latest = await read();
       if (!valid(ticket)) return;
       apply(latest);
