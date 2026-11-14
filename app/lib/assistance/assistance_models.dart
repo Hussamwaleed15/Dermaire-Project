@@ -179,6 +179,10 @@ class AssistanceResponse {
           'unsupported',
         ].contains(task) ||
         message.length > 50000 ||
+        (inferences.isNotEmpty && provider.mode != 'grounded_ai') ||
+        (provider.invoked && !provider.configured) ||
+        (provider.availability == 'available' &&
+            provider.mode != 'grounded_ai') ||
         facts.map((f) => f.id).toSet().length != facts.length ||
         inferences.any(
           (i) =>
@@ -188,17 +192,11 @@ class AssistanceResponse {
       throw const FormatException('Unverified assistance evidence');
     }
     final moderation = d['moderation'];
-    if (moderation != null) {
-      final m = object(moderation);
-      if (m['provider'] != 'azure_content_safety' ||
-          !['not_invoked', 'available', 'degraded'].contains(m['state']) ||
-          m['configured'] is! bool ||
-          m['invoked'] is! bool ||
-          m['flagged'] is! bool) {
-        throw const FormatException('Unsupported moderation format');
-      }
-    }
+    this.moderation = moderation == null
+        ? null
+        : AssistanceModeration(object(moderation));
   }
+
   final String owner, schema, contextVersion, task, message, escalation;
   final SafetyAssessment safety;
   final AssistanceClinician? clinician;
@@ -206,4 +204,20 @@ class AssistanceResponse {
   final List<AssistanceFact> facts;
   final List<AssistanceInference> inferences;
   final List<String> uncertainties, nextSteps;
+  late final AssistanceModeration? moderation;
+}
+
+class AssistanceModeration {
+  AssistanceModeration(Map<String, dynamic> d)
+    : configured = flag(d['configured']),
+      invoked = flag(d['invoked']),
+      flagged = flag(d['flagged']),
+      state = text(d['state']) {
+    if (d['provider'] != 'azure_content_safety' ||
+        !['not_invoked', 'available', 'degraded'].contains(state)) {
+      throw const FormatException('Unsupported moderation metadata');
+    }
+  }
+  final bool configured, invoked, flagged;
+  final String state;
 }
