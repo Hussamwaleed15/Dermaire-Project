@@ -122,6 +122,7 @@ class Fixture {
     clinical: state.clinical,
     observations: state.observations,
     hasExperiment: state.home.current?['experiment'] != null,
+    observationStatus: state.home.observationStatus,
   );
 }
 
@@ -202,7 +203,8 @@ void main() {
           f.state.observations.phase = ObservationPhase.uncertain;
         }
         expect(f.next.action, switch (scenario) {
-          'history' => HomeAction.history,
+          // A historical row cannot establish today's completion.
+          'history' => HomeAction.observe,
           'experiment' => HomeAction.experiment,
           'urgent' || 'engine_review' => HomeAction.safety,
           'clinician' => HomeAction.clinician,
@@ -717,6 +719,20 @@ void main() {
       final f = Fixture();
       if (scenario == 'history') {
         f.history.data = [ObservationRecord.fromApi(o.record(), owner: 'a')];
+        f.home.data['observation_status'] = {
+          'schema_version': 1,
+          'day_basis': 'UTC',
+          'today_completed': true,
+          'recent': [
+            {
+              'id': 'server-record',
+              'created_at': f.home.data['as_of'],
+              'time_of_day': 'Morning',
+              'kind': 'report_only',
+              'measurement_available': false,
+            },
+          ],
+        };
       }
       if (scenario == 'experiment') f.home.data = h.snapshot();
       if (scenario == 'urgent') f.clinical.status = 'urgent';

@@ -38,7 +38,18 @@ class HomeObservationStatus {
         recent.length > 2 ||
         recent.map((r) => r.id).toSet().length != recent.length ||
         recent.any((r) => r.createdAt.isAfter(asOf)) ||
-        completedToday != recent.any((r) => day(r.createdAt) == home['date'])) {
+        completedToday != recent.any((r) => day(r.createdAt) == home['date']) ||
+        (home['today_checked_in'] != true &&
+            recent.any(
+              (r) =>
+                  r.kind == 'report_and_measurement' &&
+                  day(r.createdAt) == home['date'],
+            )) ||
+        recent.any(
+          (r) =>
+              r.kind == 'report_only' &&
+              (home['journal'] as List).any((j) => object(j)['id'] == r.id),
+        )) {
       throw const FormatException('Unverified Home observation status');
     }
     for (var i = 1; i < recent.length; i++) {
