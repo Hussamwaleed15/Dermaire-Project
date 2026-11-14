@@ -150,10 +150,13 @@ Future<void> mount(
 }
 
 Future<void> reveal(WidgetTester t, Finder finder) async {
+  // Home can span many viewports at 200% text; keep discovery bounded while
+  // reaching controls after the clinical guidance and independent status cards.
   await t.scrollUntilVisible(
     finder,
-    200,
+    400,
     scrollable: find.byType(Scrollable).first,
+    maxScrolls: 100,
   );
   await t.pumpAndSettle();
 }
@@ -840,16 +843,18 @@ void main() {
               await mount(t, f, dark: dark, scale: scale, reduced: reduced);
               final semantics = t.ensureSemantics();
               await reveal(t, find.byKey(const Key('homePersonalStatus')));
-              final transition = t.widget<AnimatedSize>(
-                find.descendant(
-                  of: find.byKey(const Key('homePersonalStatus')),
-                  matching: find.byType(AnimatedSize),
-                ),
+              final transition = find.descendant(
+                of: find.byKey(const Key('homePersonalStatus')),
+                matching: find.byType(AnimatedSize),
               );
-              expect(
-                transition.duration,
-                reduced ? Duration.zero : const Duration(milliseconds: 180),
-              );
+              if (reduced) {
+                expect(transition, findsNothing);
+              } else {
+                expect(
+                  t.widget<AnimatedSize>(transition).duration,
+                  const Duration(milliseconds: 180),
+                );
+              }
               expect(
                 Theme.of(
                   t.element(find.byKey(const Key('homePersonalStatus'))),
