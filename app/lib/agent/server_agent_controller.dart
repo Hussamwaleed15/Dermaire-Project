@@ -732,6 +732,7 @@ class ClinicianRequestsController extends PrivateController {
     if (rows.map((a) => a.id).toSet().length != rows.length) {
       throw const FormatException('Duplicate requests');
     }
+    verifyAgentRequestOrder([if (before != null) ..._requests, ...rows]);
     if (!valid(ticket)) return;
     if (rows.any((a) => a.revision < (_seen[a.id] ?? 0))) {
       throw const FormatException('Stale clinician request state');
