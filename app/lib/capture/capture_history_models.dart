@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:typed_data';
 import 'guided_capture_models.dart';
 
@@ -69,4 +70,22 @@ String captureReadError(Object error, {bool image = false}) {
         : 'The server returned unsupported capture information. Please retry.';
   }
   return 'Could not read ${image ? 'the private image' : 'capture information'}. Check your connection and retry.';
+}
+
+String measurementReadError(Object error) {
+  if (error is TimeoutException) {
+    return 'Measurement read timed out. Retry this read.';
+  }
+  if (error is PrivateCaptureException) {
+    if (error.status == 404) {
+      return 'No recorded measurement is available for this capture. No value is inferred.';
+    }
+    if (error.status == 409) {
+      return 'This capture cannot be measured. Refresh its current details.';
+    }
+  }
+  if (error is FormatException || error is TypeError) {
+    return 'Unsupported or inconsistent measurement response. No verified values are shown.';
+  }
+  return captureReadError(error);
 }

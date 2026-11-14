@@ -1,3 +1,5 @@
+import '../capture/capture_history_screen.dart';
+import '../capture/measurement_history_screen.dart';
 import '../doctor/doctor_context_page.dart';
 import '../doctor/doctor_records_controller.dart';
 import '../capture/guided_camera_screen.dart';
@@ -278,6 +280,50 @@ class _ClinicalPlanState extends State<ClinicalPlanScreen> {
                 controller: c,
                 plan: plan,
               ),
+              if (c.role == 'patient' && widget.state != null) ...[
+                for (final id in [
+                  plan.baseline,
+                  plan.followup,
+                ].whereType<String>())
+                  TextButton(
+                    key: ValueKey('planCaptureDetails:$id'),
+                    onPressed: c.busy
+                        ? null
+                        : () {
+                            if (c.current &&
+                                c.value?.id == plan.id &&
+                                c.value?.revision == plan.revision) {
+                              openEntry(
+                                context,
+                                CaptureDetailScreen(
+                                  state: widget.state!,
+                                  id: id,
+                                ),
+                              );
+                            }
+                          },
+                    child: Text(
+                      'Open ${id == plan.baseline ? 'baseline' : 'follow-up'} capture details',
+                    ),
+                  ),
+                TextButton(
+                  key: const Key('planMeasurementHistory'),
+                  onPressed: c.busy
+                      ? null
+                      : () {
+                          if (c.current) {
+                            openEntry(
+                              context,
+                              MeasurementHistoryScreen(state: widget.state!),
+                            );
+                          }
+                        },
+                  child: const Text('Account measurement history'),
+                ),
+                const Text(
+                  'Account history is separate from this plan. Opening a record does not associate it as baseline or follow-up.',
+                ),
+              ],
               Text('Baseline capture: ${plan.baseline}'),
               Text('Follow-up capture: ${plan.followup ?? 'Not attached'}'),
               _EvaluationActions(
