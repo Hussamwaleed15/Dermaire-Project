@@ -23,7 +23,7 @@ Map<String, dynamic> projection() {
       {
         'id': 'context-1',
         'date': '2026-10-13',
-        'unusual_conditions': ['poor_sleep'],
+        'unusual_conditions': true,
         'freshness': p.fresh('stale'),
       },
     ],
@@ -88,6 +88,21 @@ void main() {
     await ApiService.instance.init();
   });
   tearDown(() => ApiService.instance.init());
+  for (final flag in [false, null]) {
+    test(
+      'nullable unusual_conditions=$flag remains distinct from reported yes',
+      () {
+        final d = projection();
+        final context = Map<String, dynamic>.from(
+          ((d['sources'] as Map)['daily_context'] as Map)['days'][0] as Map,
+        );
+        context['unusual_conditions'] = flag;
+        ((d['sources'] as Map)['daily_context'] as Map)['days'] = [context];
+        expect(model(d).contextDays.single.unusualConditions, flag);
+        expect(model(d).partialIssues, isEmpty);
+      },
+    );
+  }
   test(
     'product warnings retain deterministic source references and limitations',
     () {
@@ -231,7 +246,7 @@ void main() {
     'PSM consumes real supported context routine history and product projections',
     () {
       final m = model();
-      expect(m.contextDays.single.conditions, ['poor_sleep']);
+      expect(m.contextDays.single.unusualConditions, true);
       expect(m.routine!.unknown, 7);
       expect(m.routine!.history.single.product, 'old-product');
       expect(m.productEvidence.single.completeness, 'incomplete');

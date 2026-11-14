@@ -5,14 +5,14 @@ class PsmContextDay {
   PsmContextDay(Map<String, dynamic> d)
     : id = psmId(d['id']),
       date = text(d['date']),
-      conditions = psmTexts(d['unusual_conditions']),
+      unusualConditions = optionalFlag(d['unusual_conditions']),
       freshness = PsmFreshness.fromApi(object(d['freshness'])) {
     if (!RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(date)) {
       throw const FormatException('Unsupported context date');
     }
   }
   final String id, date;
-  final List<String> conditions;
+  final bool? unusualConditions;
   final PsmFreshness freshness;
 }
 

@@ -35,9 +35,11 @@ class PsmSourceView extends StatelessWidget {
           Text('Context: ${day.id} · Reported date: ${day.date}'),
           PsmFreshnessLabel(value: day.freshness),
           Text(
-            day.conditions.isEmpty
-                ? 'No unusual conditions listed in this record; other context is unknown.'
-                : 'Reported conditions: ${day.conditions.join(', ')}',
+            'Reported unusual conditions: ${switch (day.unusualConditions) {
+              true => 'yes',
+              false => 'no',
+              null => 'unknown',
+            }}. No specific contextual factors are supplied by this field.',
           ),
         ],
         const Text('Routine · patient-reported configuration'),
