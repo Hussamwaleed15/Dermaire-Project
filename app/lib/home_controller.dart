@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'home/home_response.dart';
 import 'package:flutter/foundation.dart';
@@ -14,8 +15,11 @@ class RemoteHomeRepository implements HomeRepository {
 }
 
 class HomeController extends ChangeNotifier {
-  HomeController(this.repository);
+  HomeController(this.repository, {DateTime Function()? now})
+    : now = now ?? DateTime.now;
   final HomeRepository repository;
+  final DateTime Function() now;
+  Timer? _dayRollover;
   Map<String, dynamic>? _snapshot;
   int _generation = 0;
   bool loading = false;
@@ -25,6 +29,7 @@ class HomeController extends ChangeNotifier {
   bool stale = false;
   void markStale() {
     if (_disposed) return;
+    _dayRollover?.cancel();
     _generation++;
     loading = false;
     stale = _snapshot != null;
@@ -32,7 +37,7 @@ class HomeController extends ChangeNotifier {
   }
 
   String? error;
-  String get today => DateTime.now().toUtc().toIso8601String().split('T').first;
+  String get today => now().toUtc().toIso8601String().split('T').first;
   bool get available =>
       !_disposed &&
       _session == ApiService.instance.sessionGeneration &&
@@ -64,6 +69,7 @@ class HomeController extends ChangeNotifier {
         generation == _generation &&
         session == ApiService.instance.sessionGeneration;
     loading = true;
+    _dayRollover?.cancel();
     stale = _snapshot != null;
     error = null;
     notifyListeners();
@@ -74,9 +80,15 @@ class HomeController extends ChangeNotifier {
       if (!valid()) return false;
       validate(value);
       _snapshot = jsonDecode(jsonEncode(value)) as Map<String, dynamic>;
-      retrievedAt = DateTime.now().toUtc();
+      retrievedAt = now().toUtc();
       stale = false;
       loading = false;
+      final clock = now().toUtc();
+      final midnight = DateTime.utc(clock.year, clock.month, clock.day + 1);
+      _dayRollover = Timer(midnight.difference(clock), () {
+        // Expire the presentation's day, never create a due schedule or write.
+        if (valid()) markStale();
+      });
       notifyListeners();
       return true;
     } catch (failure) {
@@ -98,6 +110,7 @@ class HomeController extends ChangeNotifier {
   }
 
   void clear() {
+    _dayRollover?.cancel();
     _generation++;
     _snapshot = null;
     _session = null;
@@ -110,6 +123,7 @@ class HomeController extends ChangeNotifier {
 
   @override
   void dispose() {
+    _dayRollover?.cancel();
     _disposed = true;
     _generation++;
     super.dispose();
