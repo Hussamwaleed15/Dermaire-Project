@@ -42,6 +42,8 @@ class CaptureProxy {
   }) : key = text(data['key']),
        unit = text(data['unit']),
        status = text(data['status']),
+       reason = data['reason'] == null ? null : text(data['reason']),
+       meaning = data['meaning'] == null ? null : text(data['meaning']),
        value = data['value'] as num?,
        measuredAt = timestamp(data['measured_at']),
        limitations = List.unmodifiable(
@@ -65,6 +67,7 @@ class CaptureProxy {
     }
   }
   final String key, unit, status;
+  final String? reason, meaning;
   final num? value;
   final DateTime measuredAt;
   final List<String> limitations;
@@ -78,6 +81,8 @@ class CaptureMeasurement {
        captureId = text(value['capture_id']),
        algorithm = text(value['algorithm_version']),
        status = text(value['status']),
+       provenance = text(value['provenance']),
+       comparison = CaptureMeasurementComparison.fromApi(value['comparison']),
        qualityFingerprint = text(
          object(value['capture_quality'])['request_fingerprint'],
        ),
@@ -118,7 +123,8 @@ class CaptureMeasurement {
       throw const FormatException('Unverified measurement');
     }
   }
-  final String id, captureId, algorithm, status, qualityFingerprint;
+  final String id, captureId, algorithm, status, qualityFingerprint, provenance;
+  final CaptureMeasurementComparison comparison;
   final DateTime measuredAt;
   final Map<String, CaptureProxy> metrics;
 }
@@ -213,4 +219,34 @@ class GuidedCaptureWriteException implements Exception {
   const GuidedCaptureWriteException(this.failure, {this.candidateId});
   final CaptureWriteFailure failure;
   final String? candidateId;
+}
+
+// Comparison metadata is optional and independently untrusted. A bad comparison
+// must not erase otherwise valid measurements or manufacture change analysis.
+class CaptureMeasurementComparison {
+  const CaptureMeasurementComparison(this.state, this.reason);
+  final String state;
+  final String? reason;
+  factory CaptureMeasurementComparison.fromApi(Object? value) {
+    if (value == null) {
+      return const CaptureMeasurementComparison('absent', null);
+    }
+    if (value is! Map ||
+        !['not_comparable', 'comparable'].contains(value['state'])) {
+      return const CaptureMeasurementComparison('unsupported', null);
+    }
+    if (value['state'] == 'not_comparable' &&
+        value['reason'] is String &&
+        (value['reason'] as String).isNotEmpty &&
+        value['deltas'] == null &&
+        value['previous_comparable_measurement_id'] == null) {
+      return CaptureMeasurementComparison(
+        'not_comparable',
+        value['reason'] as String,
+      );
+    }
+    // Current quality contract leaves key pose/lighting dimensions unknown.
+    // A comparable claim is not locally qualified; no deltas are displayed.
+    return const CaptureMeasurementComparison('unsupported', null);
+  }
 }
