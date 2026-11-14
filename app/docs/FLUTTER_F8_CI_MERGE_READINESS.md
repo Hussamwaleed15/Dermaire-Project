@@ -5,13 +5,18 @@ codex/flutter-f8-2-to-5-integration at
 5d855b499f73866ba6894fe67f950e81ec1b6e51. Separate feature branch:
 codex/flutter-f8-ci-readiness, stacked on PR7 without rewriting PR6/7.
 
-## Why checks are absent
+## Workflow coverage and observed CI
 
 PR6 is open at25b0e1f9e04861c98736894d1b31fb02933142cb, base main.
 PR7 is open at5d855b499f73866ba6894fe67f950e81ec1b6e51, base the PR6 branch.
-Their Flutter ancestry has no .github/workflows directory. Backend workflows
-live in separate unmerged Backend branches, are not Flutter gates and were not
-modified. Successful local tests are not GitHub checks or independent approval.
+PR8 now commits .github/workflows/flutter-f8.yml (activation head
+16cdd38d7f27dc295f25d2243fba08aa6a530417). Backend workflows remain separate
+and were not modified. Successful local tests are not independent approval.
+
+GitHub confirms run 43418894776 completed successfully for that exact head:
+https://github.com/Hussamwaleed15/Dermaire-Project/actions/runs/43418894776
+Configured, triggered and successfully completed are distinct states. This prior
+run does not qualify subsequent remediation commits; inspect their own runs.
 
 ## CI activation and ownership correction
 
@@ -29,7 +34,7 @@ published under Hussam's configured Git identity; it is not attributed to Amr.
 No repository settings, branch protection, required checks or billing settings
 are changed. No budget increase, paid runner or protection bypass is requested.
 
-## Reproducible proposed gate
+## Configured source gate
 
 Standard ubuntu-24.04 runner,25min timeout, contents:read, no stored checkout
 credentials, no secrets, no pull_request_target, no native/device build.
@@ -79,7 +84,8 @@ No speculative changes or Backend patches were made.
 
 Local final verification: focused24 passed; full2330 passed,0 failed,0 skipped;
 flutter analyze --no-pub clean; git diff --check clean; proposal YAML parsed.
-No Linux/GitHub CI execution was triggered. The initial four ordering fixtures
+That historical local verification preceded activation. Linux/GitHub execution
+is now confirmed by the exact-head run linked above. The initial four ordering fixtures
 were corrected to preserve Backend's five-minute preview validity invariant;
 no production assertion was weakened.
 
