@@ -102,6 +102,7 @@ class _PatientHomeState extends State<PatientHome> {
         clinical: s.clinical,
         observations: s.observations,
         hasExperiment: experiment != null,
+        observationStatus: s.home.observationStatus,
       );
       final loading =
           s.home.loading ||

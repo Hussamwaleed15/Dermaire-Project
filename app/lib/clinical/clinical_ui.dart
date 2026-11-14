@@ -98,11 +98,8 @@ class ClinicalStatusPanel extends StatelessWidget {
         (s.value?.level == SafetyLevel.urgent) ||
         (showEmbedded && embedded.level == SafetyLevel.urgent);
     final actionable =
-        !r.stale &&
-        r.value?.supported == true &&
-        (r.value!.state == ReviewState.followUp ||
-            r.value!.decision?.level == SafetyLevel.urgent ||
-            r.value!.decision?.level == SafetyLevel.doctorReview);
+        r.value?.hasUrgentGuidance == true ||
+        (!r.stale && r.value?.needsAttention == true);
     final directPanel = _engine(
       context,
       s.value,
@@ -380,7 +377,7 @@ class ClinicalStatusPanel extends StatelessWidget {
           ? value.state.label
           : 'Unsupported review status',
       icon: Icons.medical_services_outlined,
-      urgent: level == SafetyLevel.urgent,
+      urgent: value?.hasUrgentGuidance == true,
       caution:
           level == SafetyLevel.doctorReview ||
           value?.state == ReviewState.followUp ||
@@ -441,6 +438,12 @@ class ClinicalStatusPanel extends StatelessWidget {
           ],
         ] else
           const Text('No clinician approval or decision can be inferred.'),
+        if (compact && supported && value?.notes?.isNotEmpty == true)
+          Text(
+            value!.hasUrgentGuidance
+                ? 'Patient-visible urgent clinician guidance is recorded. Open Safety & clinician guidance to read the instructions.'
+                : 'Patient-visible clinician notes are recorded. Open Safety & clinician guidance to read them.',
+          ),
         if (!compact && supported && value != null) ...[
           Text(
             read.stale

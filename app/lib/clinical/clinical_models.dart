@@ -234,6 +234,17 @@ class ClinicianReview {
   ReviewState get state => ReviewState.parse(rawState);
   bool get supported =>
       schemaVersion == 'doctor-loop-2.0' && state != ReviewState.unknown;
+  bool get hasUrgentGuidance =>
+      supported && decision?.level == SafetyLevel.urgent;
+  bool get needsAttention =>
+      supported &&
+      (decision != null ||
+          notes?.isNotEmpty == true ||
+          [
+            ReviewState.pending,
+            ReviewState.inReview,
+            ReviewState.followUp,
+          ].contains(state));
 }
 
 /// Patient-visible immutable clinician note, independent of current decision.
