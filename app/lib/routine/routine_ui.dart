@@ -1,3 +1,4 @@
+import 'adherence_evidence.dart';
 import 'routine_evidence_ui.dart';
 import '../dermaire_widgets.dart' show openPage;
 import '../notifications/inbox_ui.dart';
@@ -30,9 +31,11 @@ class RoutineScreen extends StatefulWidget {
   State<RoutineScreen> createState() => _RoutineScreenState();
 }
 
-class _RoutineScreenState extends State<RoutineScreen> {
-  late final RoutineController controller;
-  late final int generation;
+class _RoutineScreenState extends State<RoutineScreen>
+    with WidgetsBindingObserver {
+  late RoutineController controller;
+  bool backgrounded = false;
+  late int generation;
   late String reportDay;
   bool get current =>
       widget.repository != null ||
@@ -41,6 +44,12 @@ class _RoutineScreenState extends State<RoutineScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    ApiService.instance.addListener(_sessionChanged);
+    bind();
+  }
+
+  void bind() {
     generation = ApiService.instance.sessionGeneration;
     reportDay = DateTime.now().toUtc().toIso8601String().substring(0, 10);
     controller = RoutineController(
@@ -49,8 +58,32 @@ class _RoutineScreenState extends State<RoutineScreen> {
         await widget.state?.refreshRoutineContext(generation: session);
       },
     );
-    ApiService.instance.addListener(_sessionChanged);
     controller.refresh();
+  }
+
+  @override
+  void didUpdateWidget(covariant RoutineScreen old) {
+    super.didUpdateWidget(old);
+    if (old.repository != widget.repository || old.state != widget.state) {
+      controller.dispose();
+      bind();
+    }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if ([
+          AppLifecycleState.hidden,
+          AppLifecycleState.paused,
+          AppLifecycleState.detached,
+        ].contains(state) &&
+        !backgrounded) {
+      backgrounded = true;
+      controller.markReadStale();
+    } else if (state == AppLifecycleState.resumed && backgrounded) {
+      backgrounded = false;
+      if (current) controller.refresh();
+    }
   }
 
   void _sessionChanged() {
@@ -59,6 +92,7 @@ class _RoutineScreenState extends State<RoutineScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     ApiService.instance.removeListener(_sessionChanged);
     controller.dispose();
     super.dispose();
@@ -627,6 +661,9 @@ class _RoutineScreenState extends State<RoutineScreen> {
                               Text(
                                 '${entry['active'] == true ? 'Active' : 'Stopped'} · Start ${entry['start_date']}',
                               ),
+                              Text(
+                                'Routine entry: ${entry['id']} · Product: ${entry['product_id']} · Revision: ${entry['revision'] ?? 'legacy unknown'}',
+                              ),
                               if (widget.state != null)
                                 Wrap(
                                   children: [
@@ -686,56 +723,60 @@ class _RoutineScreenState extends State<RoutineScreen> {
                                       ),
                                     ],
                                   ),
-                                for (final report in controller.history!.where(
-                                  (h) =>
-                                      h['routine_entry_id'] == entry['id'] &&
-                                      h['date'] == day &&
-                                      (group == 'Stopped' ||
-                                          h['slot'] == group),
-                                ))
-                                  Text(
-                                    '${report['slot']} · Server-confirmed ${report['status']} report · ${report['date']} UTC',
-                                  ),
                                 for (final slot
                                     in group == 'Stopped'
                                         ? (entry['schedule'] == 'BOTH'
                                               ? ['AM', 'PM']
                                               : [entry['schedule'] as String])
                                         : [group])
-                                  Wrap(
+                                  Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
-                                      for (final status
-                                          in entry['active'] == true
-                                              ? ['completed', 'skipped']
-                                              : ['skipped'])
-                                        TextButton(
-                                          onPressed:
-                                              controller.saving ||
-                                                  controller.adherencePending !=
-                                                      null ||
-                                                  controller.stale ||
-                                                  controller.uncertain.contains(
-                                                    'adherence:${entry['id']}:$day:$slot',
-                                                  ) ||
-                                                  controller.history!.any(
-                                                    (h) =>
-                                                        h['routine_entry_id'] ==
-                                                            entry['id'] &&
-                                                        h['date'] == day &&
-                                                        h['slot'] == slot,
-                                                  )
-                                              ? null
-                                              : () => _save('adherence', {
-                                                  'routine_entry_id':
-                                                      entry['id'],
-                                                  'date': day,
-                                                  'slot': slot,
-                                                  'status': status,
-                                                }),
-                                          child: Text(
-                                            '$slot $status ${day == DateTime.now().toUtc().toIso8601String().substring(0, 10) ? 'today' : day}',
-                                          ),
-                                        ),
+                                      AdherenceSlotEvidence(
+                                        entry: entry,
+                                        history: controller.history!,
+                                        day: day,
+                                        slot: slot,
+                                        stale: controller.stale,
+                                      ),
+                                      Wrap(
+                                        children: [
+                                          for (final status
+                                              in entry['active'] == true
+                                                  ? ['completed', 'skipped']
+                                                  : ['skipped'])
+                                            TextButton(
+                                              onPressed:
+                                                  controller.saving ||
+                                                      controller
+                                                              .adherencePending !=
+                                                          null ||
+                                                      controller.stale ||
+                                                      controller.uncertain.contains(
+                                                        'adherence:${entry['id']}:$day:$slot',
+                                                      ) ||
+                                                      controller.history!.any(
+                                                        (h) =>
+                                                            h['routine_entry_id'] ==
+                                                                entry['id'] &&
+                                                            h['date'] == day &&
+                                                            h['slot'] == slot,
+                                                      )
+                                                  ? null
+                                                  : () => _save('adherence', {
+                                                      'routine_entry_id':
+                                                          entry['id'],
+                                                      'date': day,
+                                                      'slot': slot,
+                                                      'status': status,
+                                                    }),
+                                              child: Text(
+                                                '$slot $status ${day == DateTime.now().toUtc().toIso8601String().substring(0, 10) ? 'today' : day}',
+                                              ),
+                                            ),
+                                        ],
+                                      ),
                                     ],
                                   ),
                               ],
@@ -768,7 +809,7 @@ class _RoutineScreenState extends State<RoutineScreen> {
                         '${row['date']} ${row['slot']} · ${row['status']}',
                       ),
                       subtitle: Text(
-                        '${(row['configuration_snapshot'] as Map)['product_name']} · user reported\nRecorded ${row['created_at']} · Snapshot schedule ${(row['configuration_snapshot'] as Map)['schedule']}${row['note'] == null ? '' : '\nNote: ${row['note']}'}',
+                        '${(row['configuration_snapshot'] as Map)['product_name']} · Product ID: ${(row['configuration_snapshot'] as Map)['product_id']} · Entry: ${row['routine_entry_id']} · user reported\nRecorded ${row['created_at']} · Snapshot schedule ${(row['configuration_snapshot'] as Map)['schedule']}${row['note'] == null ? '' : '\nNote: ${row['note']}'}',
                       ),
                     ),
                 ],

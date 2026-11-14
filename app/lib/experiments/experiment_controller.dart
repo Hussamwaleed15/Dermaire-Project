@@ -456,6 +456,17 @@ class ExperimentController extends ChangeNotifier {
               row['routine_entry_id'] is String)) &&
       (row['result'] == null || validResult(row['result']));
 
+  void markReadStale() {
+    if (_disposed) return;
+    stale = true;
+    if (!saving) {
+      ++_generation;
+      loading = false;
+      loadingMore = false;
+    }
+    notifyListeners();
+  }
+
   void discardUnauthorizedRead(RequestFailure failure) {
     if (failure.kind != RequestFailureKind.denied &&
         failure.kind != RequestFailureKind.session) {
