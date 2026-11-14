@@ -1,3 +1,4 @@
+import 'experiment_evidence.dart';
 import 'activation_review.dart';
 import 'package:flutter/material.dart';
 import 'experiment_controller.dart';
@@ -29,8 +30,11 @@ class ExperimentsView extends StatefulWidget {
   State<ExperimentsView> createState() => _ExperimentsViewState();
 }
 
-class _ExperimentsViewState extends State<ExperimentsView> {
-  late final int generation;
+class _ExperimentsViewState extends State<ExperimentsView>
+    with WidgetsBindingObserver {
+  late int generation;
+  bool backgrounded = false;
+  int activationEpoch = 0;
   bool get current =>
       !widget.controller.remote ||
       ApiService.instance.isCurrentSession(generation) &&
@@ -38,6 +42,7 @@ class _ExperimentsViewState extends State<ExperimentsView> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     generation = ApiService.instance.sessionGeneration;
     if (widget.autoLoad &&
         widget.controller.rows == null &&
@@ -51,6 +56,43 @@ class _ExperimentsViewState extends State<ExperimentsView> {
         }
       });
     }
+  }
+
+  @override
+  void didUpdateWidget(covariant ExperimentsView old) {
+    super.didUpdateWidget(old);
+    if (old.controller != widget.controller || old.state != widget.state) {
+      generation = ApiService.instance.sessionGeneration;
+      activationEpoch++;
+      checkingActivation = false;
+      if (widget.autoLoad && widget.controller.rows == null) {
+        widget.controller.refresh();
+      }
+    }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if ([
+          AppLifecycleState.hidden,
+          AppLifecycleState.paused,
+          AppLifecycleState.detached,
+        ].contains(state) &&
+        !backgrounded) {
+      backgrounded = true;
+      activationEpoch++;
+      checkingActivation = false;
+      widget.controller.markReadStale();
+    } else if (state == AppLifecycleState.resumed && backgrounded) {
+      backgrounded = false;
+      if (current) widget.controller.refresh();
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
   }
 
   bool get activationForeground =>
@@ -72,6 +114,7 @@ class _ExperimentsViewState extends State<ExperimentsView> {
       await c.write('${row['id']}/activate', {}, expected: row);
       return;
     }
+    final ticket = activationEpoch;
     setState(() => checkingActivation = true);
     try {
       final entry =
@@ -80,7 +123,13 @@ class _ExperimentsViewState extends State<ExperimentsView> {
                 generation,
               )
               as Map<String, dynamic>;
-      if (!mounted || !current || !activationForeground) return;
+      if (!mounted ||
+          !current ||
+          !activationForeground ||
+          ticket != activationEpoch ||
+          !identical(c, widget.controller)) {
+        return;
+      }
       if (!RoutineController.validRow(entry, 'user_configured') ||
           entry['id'] != row['routine_entry_id'] ||
           entry['product_id'] != row['product_id']) {
@@ -94,7 +143,12 @@ class _ExperimentsViewState extends State<ExperimentsView> {
           experiment: row,
         ),
       );
-      if (!mounted || !current || !activationForeground || confirmed != true) {
+      if (!mounted ||
+          !current ||
+          !activationForeground ||
+          confirmed != true ||
+          ticket != activationEpoch ||
+          !identical(c, widget.controller)) {
         return;
       }
       await c.write(
@@ -114,7 +168,9 @@ class _ExperimentsViewState extends State<ExperimentsView> {
         );
       }
     } finally {
-      if (mounted) setState(() => checkingActivation = false);
+      if (mounted && ticket == activationEpoch) {
+        setState(() => checkingActivation = false);
+      }
     }
   }
 
@@ -235,11 +291,7 @@ class _ExperimentsViewState extends State<ExperimentsView> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        row['definition_snapshot']?['product']?['name']
-                                ?.toString() ??
-                            'Routine entry ${row['routine_entry_id'] ?? 'legacy'}',
-                      ),
+                      FrozenExperimentSummary(row: row),
                       Text('Status: ${row['status']}'),
                       if (row['engine_version'] != 2)
                         const Text(
@@ -328,6 +380,9 @@ class _ExperimentsViewState extends State<ExperimentsView> {
                                   row['status'] == 'draft'
                                       ? 'cancelled'
                                       : 'stopped',
+                                  stillCurrent: () =>
+                                      current &&
+                                      identical(widget.controller, c),
                                 ),
                           child: Text(
                             row['status'] == 'draft'
@@ -386,8 +441,11 @@ class _ExperimentsViewState extends State<ExperimentsView> {
                           Text('• $limitation'),
                         ExpansionTile(
                           title: const Text('Evidence and source references'),
+                          expansionAnimationStyle: EntryMotion.reduced(context)
+                              ? AnimationStyle.noAnimation
+                              : null,
                           children: [
-                            _EvidenceDetails(
+                            ExperimentEvidenceDetails(
                               result: row['result']['result'] as Map,
                             ),
                           ],
@@ -410,8 +468,9 @@ Future<void> _finish(
   BuildContext context,
   ExperimentController c,
   Map<String, dynamic> row,
-  String status,
-) async {
+  String status, {
+  required bool Function() stillCurrent,
+}) async {
   final generation = ApiService.instance.sessionGeneration;
   final yes = await showDialog<bool>(
     context: context,
@@ -434,62 +493,9 @@ Future<void> _finish(
   );
   if (yes == true &&
       context.mounted &&
+      stillCurrent() &&
       (!c.remote || ApiService.instance.isCurrentSession(generation))) {
     await c.write('${row['id']}/finish', {'status': status}, expected: row);
-  }
-}
-
-class _EvidenceDetails extends StatelessWidget {
-  const _EvidenceDetails({required this.result});
-  final Map result;
-  @override
-  Widget build(BuildContext context) {
-    final comparison = result['comparison'] as Map? ?? const {};
-    final change = result['observed_change'] as Map? ?? const {};
-    final provenance = result['provenance'] as Map;
-    final snapshot = provenance['definition_snapshot'] is Map
-        ? provenance['definition_snapshot'] as Map
-        : null;
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('Saved evaluation: ${result['evaluated_at']}'),
-          Text(
-            'Source: ${provenance['source']} · ${provenance['algorithm'] ?? 'Not supplied'}',
-          ),
-          if (snapshot != null)
-            Text(
-              'Frozen definition: ${snapshot['frozen_at'] ?? 'Not supplied'} · Routine ${snapshot['expected'] is Map ? snapshot['expected']['id'] ?? 'Not supplied' : 'Not supplied'}',
-            ),
-          Text(
-            'Baseline window: ${comparison['start'] ?? 'Not supplied'} to ${comparison['end_exclusive'] ?? 'Not supplied'} (end excluded)',
-          ),
-          Text(
-            'Source compared: ${comparison['measurement_source'] ?? 'Not supplied'} · Baseline days: ${comparison['baseline_days'] ?? 'Unknown'} · Experiment days: ${comparison['experiment_days'] ?? 'Unknown'}',
-          ),
-          if (change.isNotEmpty)
-            Text(
-              'Metric: ${change['metric'] ?? 'Unknown'} · Baseline value: ${change['baseline_mean'] ?? 'Unavailable'} · Experiment value: ${change['experiment_mean'] ?? 'Unavailable'} · Difference: ${change['delta_points'] ?? 'Unavailable'}',
-            ),
-          const Text(
-            'Numeric values keep the server scale. This API does not provide explicit units; values are not interpreted as percentages or capture fractions.',
-          ),
-          const Text(
-            'Rule-based observational evidence. Not image comparison, causal proof, diagnosis or an AI-directed treatment plan.',
-          ),
-          for (final item
-              in provenance['experiment_checkins'] is List
-                  ? provenance['experiment_checkins'] as List
-                  : const [])
-            if (item is Map)
-              Text(
-                'Observation ${item['id']} · ${item['created_at']} · Source ${item['source'] ?? 'user report; measurement unknown'}',
-              ),
-        ],
-      ),
-    );
   }
 }
 

@@ -132,6 +132,8 @@ void main() {
       MaterialApp(home: RoutineScreen(repository: repository)),
     );
     await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Stop'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Stop'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Stop step'));
@@ -153,6 +155,8 @@ void main() {
       ..entries = [entry()]
       ..fake = true;
     await tester.pumpWidget(MaterialApp(home: RoutineScreen(repository: bad)));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('Stop'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Stop'));
     await tester.pumpAndSettle();
