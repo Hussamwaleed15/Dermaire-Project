@@ -57,6 +57,17 @@ class AssistanceController extends ChangeNotifier {
     }
   }
 
+  void invalidateSnapshot() {
+    if (!current) return;
+    _revision++;
+    _response = null;
+    question = null;
+    error = null;
+    attempts = 0;
+    busy = false;
+    notifyListeners();
+  }
+
   Future<void> send(String input, {bool retry = false}) async {
     if (!current || busy) return;
     final value = input.trim();

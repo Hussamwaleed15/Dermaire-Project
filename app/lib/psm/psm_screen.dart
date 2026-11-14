@@ -1,3 +1,4 @@
+import 'psm_source_view.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../dermaire_state.dart';
@@ -62,11 +63,18 @@ class PersonalSkinModelScreen extends StatefulWidget {
       _PersonalSkinModelScreenState();
 }
 
-class _PersonalSkinModelScreenState extends State<PersonalSkinModelScreen> {
-  late final PsmController controller;
+class _PersonalSkinModelScreenState extends State<PersonalSkinModelScreen>
+    with WidgetsBindingObserver {
+  late PsmController controller;
+  bool returned = false, backgrounded = false;
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    bind();
+  }
+
+  void bind() {
     controller = PsmController(
       ApiService.instance,
       repository: widget.repository,
@@ -75,12 +83,50 @@ class _PersonalSkinModelScreenState extends State<PersonalSkinModelScreen> {
     unawaited(controller.refresh());
   }
 
+  @override
+  void didUpdateWidget(covariant PersonalSkinModelScreen old) {
+    super.didUpdateWidget(old);
+    if (old.repository != widget.repository ||
+        old.state != widget.state ||
+        old.timeout != widget.timeout) {
+      controller.removeListener(changed);
+      controller.dispose();
+      returned = false;
+      bind();
+    }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if ([
+          AppLifecycleState.paused,
+          AppLifecycleState.hidden,
+          AppLifecycleState.detached,
+        ].contains(state) &&
+        !backgrounded) {
+      backgrounded = true;
+      controller.markStale();
+    } else if (state == AppLifecycleState.resumed && backgrounded) {
+      backgrounded = false;
+      if (controller.current) {
+        returned = true;
+        unawaited(controller.refresh());
+        unawaited(
+          widget.state.clinical.refresh(
+            expectedGeneration: controller.generation,
+          ),
+        );
+      }
+    }
+  }
+
   void changed() {
     if (mounted) setState(() {});
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     controller.removeListener(changed);
     controller.dispose();
     super.dispose();
@@ -124,6 +170,22 @@ class _PersonalSkinModelScreenState extends State<PersonalSkinModelScreen> {
         if (safety != null)
           _PsmSafety(safety: safety, stale: controller.safetyStale),
         ClinicalHomePanel(controller: widget.state.clinical),
+        if (controller.clinician != null)
+          PsmClinicianPanel(
+            value: controller.clinician!,
+            stale: controller.clinicianStale,
+          ),
+        if (returned)
+          Semantics(
+            liveRegion: true,
+            child: Text(
+              controller.phase == PsmPhase.loading
+                  ? 'Welcome back. Refreshing your recorded evidence; previous snapshots are not current clearance.'
+                  : model == null
+                  ? 'Welcome back. Current evidence could not be confirmed. Retry when ready.'
+                  : 'Welcome back. Evidence has been reread from the server. Missing records do not imply missed treatment or worsening.',
+            ),
+          ),
         OutlinedButton.icon(
           key: const Key('refreshPersonalSkinModel'),
           onPressed: controller.phase == PsmPhase.loading
@@ -139,7 +201,10 @@ class _PersonalSkinModelScreenState extends State<PersonalSkinModelScreen> {
           ),
         if (controller.error != null)
           Semantics(liveRegion: true, child: Text(controller.error!)),
-        if (model != null) EntryReveal(child: PsmEvidenceView(model: model)),
+        if (model != null)
+          EntryReveal(
+            child: PsmEvidenceView(model: model, showClinician: false),
+          ),
         DermaireCard(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -235,7 +300,12 @@ class _PsmSafety extends StatelessWidget {
 }
 
 class PsmEvidenceView extends StatelessWidget {
-  const PsmEvidenceView({super.key, required this.model});
+  const PsmEvidenceView({
+    super.key,
+    required this.model,
+    this.showClinician = true,
+  });
+  final bool showClinician;
   final PersonalSkinModel model;
   Widget section(BuildContext context, String title, List<Widget> children) =>
       DermaireCard(
@@ -292,32 +362,13 @@ class PsmEvidenceView extends StatelessWidget {
             'No data does not mean healthy skin. No meaningful tracking change is not medical clearance.',
           ),
         ]),
-        if (model.clinician != null)
-          section(context, 'Clinician decision · PSM snapshot', [
-            const Text(
-              'Source: clinician-authored decision. Read current guidance independently above.',
-            ),
-            Text('Decision record: ${model.clinician!.id}'),
-            Text('State: ${model.clinician!.state}'),
-            if (ReviewState.parse(model.clinician!.state) ==
-                    ReviewState.unknown ||
-                model.clinician!.recommendation != null &&
-                    SafetyLevel.parse(model.clinician!.recommendation!) ==
-                        SafetyLevel.unknown)
-              const Text(
-                'Unsupported clinician snapshot value. Read current guidance separately.',
-              ),
-            if (model.clinician!.recommendation != null)
-              Text('Server recommendation: ${model.clinician!.recommendation}'),
-            if (model.clinician!.rationale != null)
-              Text(model.clinician!.rationale!),
-            Text(
-              'Recorded: ${clinicalTime(model.clinician!.recordedAt)} · Freshness: ${model.clinician!.freshness.state}',
-            ),
-            const Text(
-              'A lower clinician recommendation does not remove independent urgent Safety Engine guidance.',
-            ),
-          ]),
+        if (showClinician && model.clinician != null)
+          PsmClinicianPanel(value: model.clinician!),
+        if (model.clinician == null)
+          Text(
+            'Clinician snapshot state: ${model.doctorState ?? 'unavailable'} · Current decision visibility: ${model.doctorVisibility ?? 'not supplied'}. No historical decision is substituted.',
+          ),
+        PsmSourceView(model: model),
         section(context, 'Your reported profile', [
           if (p == null)
             const Text('Supported profile evidence is unavailable.')
@@ -332,8 +383,7 @@ class PsmEvidenceView extends StatelessWidget {
             Text(
               'Goals: ${p.goals.isEmpty ? 'not provided' : p.goals.join(', ')}',
             ),
-            if (p.freshness != null)
-              Text('Profile freshness: ${p.freshness!.state}'),
+            if (p.freshness != null) PsmFreshnessLabel(value: p.freshness!),
             for (final evidence in p.evidence)
               _EvidenceReference(value: evidence),
           ],
@@ -532,6 +582,8 @@ class _FindingCard extends StatelessWidget {
       Text(finding.statement),
       Text('Deterministic finding: ${finding.code} · ${finding.direction}'),
       Text('Evidence strength: ${finding.strength}'),
+      if (finding.freshness != null)
+        PsmFreshnessLabel(value: finding.freshness!),
       if (finding.confidence != null)
         Text(
           'Returned confidence label: ${finding.confidence} (not a probability)',

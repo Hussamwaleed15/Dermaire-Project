@@ -1,3 +1,4 @@
+import 'psm_sources.dart';
 import '../clinical/clinical_models.dart';
 import '../capture/guided_capture_models.dart';
 
@@ -39,7 +40,12 @@ num? psmNumber(Object? value) {
 
 class PsmFreshness {
   PsmFreshness.fromApi(Map<String, dynamic> data)
-    : state = psmChoice(data['state'], ['missing', 'fresh', 'stale']),
+    : state = psmChoice(data['state'], [
+        'missing',
+        'fresh',
+        'stale',
+        'unknown',
+      ]),
       latestAt = psmTime(data['latest_at']),
       ageDays = optionalCount(data['age_days']);
   final String state;
@@ -99,6 +105,9 @@ class PsmFinding {
       confidence = data['confidence'] == null
           ? null
           : psmStrength(data['confidence']),
+      freshness = data['freshness'] == null
+          ? null
+          : PsmFreshness.fromApi(object(data['freshness'])),
       caveats = psmTexts(data['caveats'] ?? []),
       referenceValue = psmNumber(data['reference_value']),
       recentValue = psmNumber(data['recent_value']),
@@ -121,6 +130,7 @@ class PsmFinding {
   final int? evidenceCount;
   final DateTime? latestEvidenceAt;
   final String? confidence;
+  final PsmFreshness? freshness;
   final List<String> caveats;
   // Returned legacy/reference numbers have no unit in Finding. Preserve typed
   // values but do not display them as calibrated or fractional image metrics.
@@ -541,6 +551,50 @@ class PersonalSkinModel {
       doctor?['current_decision'],
       PsmClinicianSnapshot.new,
     );
+    clinicianReadbackComplete =
+        doctor != null &&
+        doctor.containsKey('current_decision') &&
+        !issues.any((i) => i.startsWith('PSM clinician'));
+    doctorState = doctor == null ? null : optionalText(doctor['state']);
+    doctorVisibility = doctor == null
+        ? null
+        : optionalText(doctor['current_decision_visibility']);
+    final context = optional('Daily context', sources['daily_context'], (d) {
+      if (d['category'] != 'patient_reported') {
+        throw const FormatException('Unsupported context source');
+      }
+      return d;
+    });
+    contextDays = items(
+      'Daily context records',
+      context?['days'],
+      PsmContextDay.new,
+    );
+    routine = optional(
+      'Routine evidence',
+      sources['routine'],
+      PsmRoutineEvidence.new,
+    );
+    final products = optional(
+      'Product evidence',
+      sources['product_intelligence'],
+      (d) {
+        if (d['category'] != 'deterministic_derived') {
+          throw const FormatException('Unsupported product source');
+        }
+        return d;
+      },
+    );
+    productEvidence = items(
+      'Product records',
+      products?['products'],
+      PsmProductEvidence.new,
+    );
+    productWarnings = items(
+      'Product warnings',
+      products?['warnings'],
+      PsmProductWarning.new,
+    );
     // Never fall back to older visible history when current decision is null.
     partialIssues = List.unmodifiable(issues);
   }
@@ -556,5 +610,11 @@ class PersonalSkinModel {
   late final List<PsmExperiment> experiments;
   late final SafetyAssessment? safety;
   late final PsmClinicianSnapshot? clinician;
+  late final bool clinicianReadbackComplete;
+  late final String? doctorState, doctorVisibility;
+  late final List<PsmContextDay> contextDays;
+  late final PsmRoutineEvidence? routine;
+  late final List<PsmProductEvidence> productEvidence;
+  late final List<PsmProductWarning> productWarnings;
   late final List<String> partialIssues;
 }
