@@ -436,6 +436,10 @@ class ClinicalStatusPanel extends StatelessWidget {
                 'The server reports a difference between this recommendation and its current safety evaluation.',
               ),
           ],
+          if (!supported && value.hasUrgentGuidance)
+            const Text(
+              'The server reports urgent clinician guidance in an unsupported review format. Verify the current instructions; this view cannot establish clearance.',
+            ),
         ] else
           const Text('No clinician approval or decision can be inferred.'),
         if (compact && supported && value?.notes?.isNotEmpty == true)

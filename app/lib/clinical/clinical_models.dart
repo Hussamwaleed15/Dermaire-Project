@@ -234,8 +234,7 @@ class ClinicianReview {
   ReviewState get state => ReviewState.parse(rawState);
   bool get supported =>
       schemaVersion == 'doctor-loop-2.0' && state != ReviewState.unknown;
-  bool get hasUrgentGuidance =>
-      supported && decision?.level == SafetyLevel.urgent;
+  bool get hasUrgentGuidance => decision?.level == SafetyLevel.urgent;
   bool get needsAttention =>
       supported &&
       (decision != null ||

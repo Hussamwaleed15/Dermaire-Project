@@ -40,7 +40,9 @@ class HomeNextAction {
       return HomeNextAction(
         HomeAction.clinician,
         'Review urgent clinician guidance',
-        r.stale
+        !r.value!.supported
+            ? 'The server reports urgent clinician guidance in an unsupported review format. Verify current instructions; this view cannot establish clearance.'
+            : r.stale
             ? 'Previously retrieved urgent clinician guidance remains relevant to review. Refresh to verify current instructions; this view cannot clear it.'
             : 'Patient-visible clinician guidance requires urgent attention. Open the recorded instructions; no treatment is performed by this action.',
       );

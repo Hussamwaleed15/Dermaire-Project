@@ -37,6 +37,18 @@ class NotesRepository extends f.ClinicalRepo {
       }, owner: 'a');
 }
 
+class UnsupportedUrgentRepository extends f.ClinicalRepo {
+  @override
+  Future<ClinicianReview> readReview(int generation) async =>
+      ClinicianReview.fromApi({
+        ...c.review(
+          state: 'reviewed',
+          action: c.decision(recommendation: 'urgent'),
+        ),
+        'schema_version': 'future-review',
+      }, owner: 'a');
+}
+
 void main() {
   final api = ApiService.instance;
   setUp(() async {
@@ -212,6 +224,52 @@ void main() {
         await t.pumpWidget(const SizedBox());
         controller.dispose();
         fixture.state.dispose();
+      }, () => o.isolated(fixture.transport));
+    },
+  );
+
+  testWidgets(
+    'unsupported clinician format cannot suppress a parsed urgent recommendation',
+    (t) async {
+      final fixture = f.Fixture();
+      await http.runWithClient(() async {
+        await fixture.ready();
+        final controller = ClinicalController(
+          api,
+          repository: UnsupportedUrgentRepository(),
+        );
+        await controller.refresh();
+        final next = HomeNextAction.select(
+          clinical: controller,
+          observations: fixture.state.observations,
+          hasExperiment: true,
+          observationStatus: fixture.state.home.observationStatus,
+        );
+        expect(controller.review.value!.supported, isFalse);
+        expect(next.action, HomeAction.clinician);
+        expect(next.reason, contains('unsupported review format'));
+        await t.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: SingleChildScrollView(
+                child: ClinicalHomePanel(controller: controller),
+              ),
+            ),
+          ),
+        );
+        await t.pumpAndSettle();
+        expect(
+          find.textContaining('server reports urgent clinician guidance'),
+          findsOneWidget,
+        );
+        expect(
+          t.getTopLeft(find.text('Clinician review')).dy,
+          lessThan(t.getTopLeft(find.text('Safety Engine')).dy),
+        );
+        await t.pumpWidget(const SizedBox());
+        controller.dispose();
+        fixture.state.dispose();
+        await api.init();
       }, () => o.isolated(fixture.transport));
     },
   );
