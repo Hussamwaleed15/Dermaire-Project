@@ -399,7 +399,7 @@ def test_pg_operation_reservation_expiry_after_lock_wait_rolls_back_domain_write
         claim = reservations.reserve(
             db, owner_id="owner", domain="products", operation="create",
             key="postgres_post_lock_expiry_key_0001", payload_hash=digest,
-            lease=timedelta(seconds=3))
+            lease=timedelta(seconds=1))
         db.commit()
         lease_expires_at = db.get(OperationReservation, claim.reservation_id).lease_expires_at
 
@@ -409,6 +409,10 @@ def test_pg_operation_reservation_expiry_after_lock_wait_rolls_back_domain_write
 
         def stale_worker():
             with factory() as db:
+                # The engine-wide 3s lock timeout is intentionally shorter than many
+                # production waits, but this test must outlive the lease before the
+                # owner lock is released so the post-lock fence can be evaluated.
+                db.execute(text("SET LOCAL lock_timeout='5s'"))
                 db.add(Product(id="reservation-domain-write", user_id="owner",
                                name="Must roll back", category="treatment"))
                 try:
@@ -436,6 +440,7 @@ def test_pg_operation_reservation_expiry_after_lock_wait_rolls_back_domain_write
             db, owner_id="owner", domain="products", operation="create",
             key="postgres_post_lock_expiry_key_0001", payload_hash=digest)
         assert takeover.generation == 2
+        db.commit()
         db.add(Product(id="reservation-domain-write", user_id="owner",
                        name="Takeover write", category="treatment"))
         reservations.commit(
