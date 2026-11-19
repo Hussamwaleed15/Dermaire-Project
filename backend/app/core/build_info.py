@@ -6,7 +6,7 @@ import re
 from app.core.config import settings
 
 
-REQUIRED_ALEMBIC_REVISION = "20261024_14"
+REQUIRED_ALEMBIC_REVISION = "20261024_15"
 _GIT_SHA = re.compile(r"^[0-9a-fA-F]{40}$")
 
 
