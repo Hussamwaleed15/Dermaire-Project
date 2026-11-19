@@ -392,6 +392,64 @@ def test_pg_operation_reservation_commit_serializes_takeover(pg_engine):
     assert result.result_snapshot == {"committed": True}
 
 
+def test_pg_operation_reservation_expiry_after_lock_wait_rolls_back_domain_write(pg_engine):
+    factory = seed(pg_engine)
+    digest = reservations.payload_digest({"synthetic": "post-lock-expiry"})
+    with factory() as db:
+        claim = reservations.reserve(
+            db, owner_id="owner", domain="products", operation="create",
+            key="postgres_post_lock_expiry_key_0001", payload_hash=digest,
+            lease=timedelta(seconds=3))
+        db.commit()
+        lease_expires_at = db.get(OperationReservation, claim.reservation_id).lease_expires_at
+
+    with factory() as blocker:
+        blocker.query(User).filter_by(id="owner").with_for_update().one()
+        assert datetime.now(timezone.utc).replace(tzinfo=None) < lease_expires_at
+
+        def stale_worker():
+            with factory() as db:
+                db.add(Product(id="reservation-domain-write", user_id="owner",
+                               name="Must roll back", category="treatment"))
+                try:
+                    reservations.commit(
+                        db, owner_id="owner", reservation_id=claim.reservation_id,
+                        generation=claim.generation, lease_token=claim.lease_token,
+                        result_snapshot={"product_id": "reservation-domain-write"})
+                    db.commit()
+                    return "committed"
+                except reservations.ReservationFenceLost:
+                    db.rollback()
+                    return "fenced"
+
+        with ThreadPoolExecutor(1) as pool:
+            waiting = pool.submit(stale_worker)
+            observe_lock_wait(pg_engine)
+            delay = (lease_expires_at - datetime.now(timezone.utc).replace(tzinfo=None)).total_seconds()
+            time.sleep(max(0, delay) + 0.1)
+            blocker.commit()
+            assert waiting.result(timeout=8) == "fenced"
+
+    with factory() as db:
+        assert db.get(Product, "reservation-domain-write") is None
+        takeover = reservations.reserve(
+            db, owner_id="owner", domain="products", operation="create",
+            key="postgres_post_lock_expiry_key_0001", payload_hash=digest)
+        assert takeover.generation == 2
+        db.add(Product(id="reservation-domain-write", user_id="owner",
+                       name="Takeover write", category="treatment"))
+        reservations.commit(
+            db, owner_id="owner", reservation_id=takeover.reservation_id,
+            generation=takeover.generation, lease_token=takeover.lease_token,
+            result_snapshot={"product_id": "reservation-domain-write"})
+        db.commit()
+
+    with factory() as db:
+        assert db.query(Product).filter_by(id="reservation-domain-write").count() == 1
+        row = db.get(OperationReservation, claim.reservation_id)
+        assert row.status == "committed" and row.generation == 2
+
+
 def test_pg_operation_reservation_migration_and_guarded_downgrade(pg_engine, monkeypatch):
     monkeypatch.setattr(settings, "DATABASE_URL", pg_engine.url.render_as_string(hide_password=False))
     cfg = Config(str(Path(__file__).parents[1] / "alembic.ini"))

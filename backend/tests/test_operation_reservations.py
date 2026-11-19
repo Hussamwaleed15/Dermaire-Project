@@ -164,6 +164,28 @@ def test_lease_never_outlives_retention(factory):
         db.rollback()
 
 
+def test_post_lock_clock_fences_reserve_renew_and_fail(factory):
+    started = datetime(2026, 1, 1, tzinfo=timezone.utc)
+    expired = started + timedelta(seconds=2)
+    with factory() as db:
+        first = claim(db, now=started, lease=timedelta(seconds=1))
+        db.commit()
+
+        takeover = claim(db, now=lambda: expired, lease=timedelta(seconds=1))
+        assert takeover.generation == 2
+        db.rollback()
+
+        for finish in (reservations.renew, reservations.fail):
+            kwargs = dict(owner_id=OWNER, reservation_id=first.reservation_id,
+                          generation=first.generation, lease_token=first.lease_token,
+                          now=lambda: expired)
+            if finish is reservations.fail:
+                kwargs["failure_code"] = "expired_worker"
+            with pytest.raises(reservations.ReservationFenceLost):
+                finish(db, **kwargs)
+            db.rollback()
+
+
 def test_database_constraints_reject_invalid_shape(factory):
     with factory() as db:
         db.execute(text("PRAGMA foreign_keys=ON"))

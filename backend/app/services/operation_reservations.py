@@ -59,10 +59,19 @@ def payload_digest(value) -> str:
 
 
 def _now(value=None):
-    value = value or datetime.now(timezone.utc)
+    value = datetime.now(timezone.utc) if value is None else value
     if value.tzinfo is not None:
         value = value.astimezone(timezone.utc).replace(tzinfo=None)
     return value
+
+
+def _clock(value=None):
+    """Return a clock without reading it before a potentially blocking lock."""
+    if callable(value):
+        return value
+    if value is not None:
+        return lambda: value
+    return lambda: datetime.now(timezone.utc)
 
 
 def _validate(domain, operation, key, digest, lease, retention):
@@ -110,12 +119,13 @@ def reserve(db: Session, *, owner_id: str, domain: str, operation: str, key: str
             retention=DEFAULT_RETENTION) -> ReservationClaim:
     """Claim new/failed/abandoned work. Caller commits the claim before doing work."""
     _validate(domain, operation, key, payload_hash, lease, retention)
-    now = _now(now)
+    clock = _clock(now)
     _lock_owner(db, owner_id)  # Global order: owner, then reservation.
     key_hash = _key_hash(owner_id, domain, operation, key)
     row = (db.query(OperationReservation)
            .filter_by(owner_id=owner_id, domain=domain, operation=operation, key_hash=key_hash)
            .populate_existing().with_for_update().one_or_none())
+    now = _now(clock())
     if row is None:
         token = secrets.token_urlsafe(32)
         row = OperationReservation(
@@ -139,26 +149,27 @@ def reserve(db: Session, *, owner_id: str, domain: str, operation: str, key: str
     return _claim_row(row, now, lease)
 
 
-def _lock_fenced(db, *, owner_id, reservation_id, generation, lease_token, now):
+def _lock_fenced(db, *, owner_id, reservation_id, generation, lease_token, clock):
     _lock_owner(db, owner_id)
     row = (db.query(OperationReservation)
            .filter_by(id=reservation_id, owner_id=owner_id)
            .populate_existing().with_for_update().one_or_none())
+    now = _now(clock())
     valid = (row is not None and row.status == "reserved" and row.generation == generation
              and now < row.retain_until and now < row.lease_expires_at and lease_token
              and hmac.compare_digest(row.lease_token_hash, _token_hash(lease_token)))
     if not valid:
         raise ReservationFenceLost("reservation lease is missing, expired, or superseded")
-    return row
+    return row, now
 
 
 def renew(db: Session, *, owner_id: str, reservation_id: str, generation: int,
           lease_token: str, now=None, lease=DEFAULT_LEASE):
     if lease <= timedelta(0):
         raise ValueError("lease must be positive")
-    now = _now(now)
-    row = _lock_fenced(db, owner_id=owner_id, reservation_id=reservation_id,
-                       generation=generation, lease_token=lease_token, now=now)
+    clock = _clock(now)
+    row, now = _lock_fenced(db, owner_id=owner_id, reservation_id=reservation_id,
+                            generation=generation, lease_token=lease_token, clock=clock)
     row.lease_expires_at = min(now + lease, row.retain_until)
     row.updated_at = now
     return row.lease_expires_at
@@ -167,9 +178,9 @@ def renew(db: Session, *, owner_id: str, reservation_id: str, generation: int,
 def commit(db: Session, *, owner_id: str, reservation_id: str, generation: int,
            lease_token: str, result_snapshot=None, now=None) -> ReservationClaim:
     """Fence and mark committed; commit this and the domain mutation together."""
-    now = _now(now)
-    row = _lock_fenced(db, owner_id=owner_id, reservation_id=reservation_id,
-                       generation=generation, lease_token=lease_token, now=now)
+    clock = _clock(now)
+    row, now = _lock_fenced(db, owner_id=owner_id, reservation_id=reservation_id,
+                            generation=generation, lease_token=lease_token, clock=clock)
     row.status = "committed"
     row.lease_token_hash = None
     row.lease_expires_at = None
@@ -184,9 +195,9 @@ def fail(db: Session, *, owner_id: str, reservation_id: str, generation: int,
          lease_token: str, failure_code: str, now=None) -> ReservationClaim:
     if not _NAME.fullmatch(failure_code or ""):
         raise ValueError("failure_code must be a non-sensitive stable identifier")
-    now = _now(now)
-    row = _lock_fenced(db, owner_id=owner_id, reservation_id=reservation_id,
-                       generation=generation, lease_token=lease_token, now=now)
+    clock = _clock(now)
+    row, now = _lock_fenced(db, owner_id=owner_id, reservation_id=reservation_id,
+                            generation=generation, lease_token=lease_token, clock=clock)
     row.status = "failed"
     row.lease_token_hash = None
     row.lease_expires_at = None
