@@ -39,20 +39,98 @@ and no migration was run against a managed or live database.
 - Downgrade succeeds only when the table is empty. It refuses a populated table
   to prevent silent loss of attempt identities or retained results.
 - The application readiness contract now requires `20261024_15`. The previous
-  application build requires exactly `20261024_14`; therefore a rolling
-  mixed-version migration is **not proven safe**. Any later rollout needs an
-  approved compatibility strategy or a bounded maintenance cutover. B6-A does
-  not authorize either.
+  application build requires exactly `20261024_14`. Both builds use an exact
+  equality gate, not an additive revision range. Therefore a rolling
+  mixed-version migration is **known to fail readiness**, even though the DDL is
+  additive. The selected plan for this PR is a bounded maintenance cutover; an
+  expand/deploy/activate rollout would first require a separately reviewed
+  compatibility release of the old application. B6-A does not authorize either
+  rollout.
+
+### Compatibility matrix
+
+| Application build | DB `_14` | DB `_15` | DB `_16` |
+| --- | --- | --- | --- |
+| `main@6c6255b` requiring `_14` | ready, subject to other health gates | **503** | **503** |
+| PR #22 requiring `_15` | **503** | ready, subject to other health gates | **503** |
+
+`_15` does not alter a legacy table or endpoint contract, so the incompatibility
+is caused by the deliberate exact readiness gate rather than by old code reading
+the new table. Readiness failure still removes an instance from service and must
+be treated as operational incompatibility.
+
+### Selected release sequence: maintenance cutover
+
+This is a plan only; no managed database or deployment was changed by B6-A.
+
+1. Confirm the release artifact SHA, independent approval, PostgreSQL CI on that
+   SHA, current DB revision `_14`, zero drift, backup/PITR validity, migration
+   owner, rollback owner, and an accepted write-unavailability window.
+2. Close traffic and pause all application workers and background writers. Do
+   not leave `_14` and `_15` builds sharing the database.
+3. Record the deletion-journal watermark and recoverable DB checkpoint, then run
+   exactly one reviewed migrator from `_14` to `_15`.
+4. Run `alembic current`, `alembic check`, schema/constraint audit, and confirm
+   the new table is empty before application activation.
+5. Start only the reviewed `_15` artifact. Require `/health/build` to report the
+   exact artifact SHA and required revision `_15`, then require readiness and
+   privacy-safe synthetic smoke to pass before reopening traffic.
+6. Keep B6-B inactive. The presence of `_15` does not authorize any endpoint to
+   write reservation rows.
+
+Failure handling:
+
+- Before migration commit: abort, retain `_14`, verify revision/readiness, and
+  reopen only after the original state is confirmed.
+- After `_15`, while `operation_reservations` is empty: keep traffic closed,
+  downgrade to `_14`, verify exact revision/audit, redeploy the archived `_14`
+  artifact, then smoke before reopening.
+- If the table is non-empty: downgrade intentionally fails. Keep traffic closed;
+  do not truncate or bypass the guard. Prefer roll-forward with the reviewed
+  `_15` artifact. A DB restore requires the separately approved recovery and
+  deletion-journal replay procedure, with explicit data-loss/RPO acceptance.
+- If `_15` readiness or smoke fails for a non-schema reason: code rollback alone
+  is insufficient because `_14` rejects DB `_15`; either correct/roll forward or
+  perform the guarded empty-table downgrade before restoring `_14`.
+
+### Alternative not selected: expand/deploy/activate
+
+A no-downtime sequence is possible only with a preceding compatibility release
+based on the old application that accepts both `_14` and `_15` while continuing
+to ignore the new table. All old exact-`_14` instances must first be drained.
+Only then may the additive migration run, followed by PR #22 deployment. Endpoint
+activation remains a later B6-B change. PR #22 alone cannot make the already
+released `_14` build accept `_15`, so that strategy is outside this PR.
 
 ## Verification at this branch
 
-- Unit/state/migration tests: passed locally on SQLite.
-- Existing account deletion and readiness tests: passed locally.
-- Seeded SQLite Alembic rehearsal: passed and preserved the eight seeded rows.
-- PostgreSQL concurrency tests were authored for unique claims, owner-lock
-  serialization versus takeover, fencing, and guarded downgrade. They were
-  skipped because the dedicated loopback gate at port `55441` was unavailable;
-  Docker Desktop was also unavailable. No PostgreSQL success is claimed.
+- Original local verification: **1076 passed, 100 skipped**; focused final suite:
+  **41 passed**; seeded SQLite Alembic rehearsal preserved all eight seeded rows.
+- On exact head `156f757748a729aa8c67b4292a5869d90b7294bb`, Backend CI,
+  Backend B3 CI and Backend B4-B5 CI passed with PostgreSQL 18. Backend Core
+  reported PostgreSQL 18.7 and **1177 passed** with no skips reported.
+- The exact `_14`/`_15`/newer compatibility boundary is covered by an explicit
+  unit matrix. After adding the matrix and runbook, the full local backend suite
+  passed with **1081 passed, 100 skipped**. No managed database migration,
+  deployment, or rollback was run.
+
+## B6-A acceptance tests for an authorized rehearsal
+
+1. Static/unit: exact gate accepts only `_15`; `_14`, `_16`, empty and multiple
+   heads fail closed. `/health/build` declares `_15` without exposing DB state.
+2. Migration: populated representative `_14` upgrades to `_15` without changing
+   legacy row counts/content; `alembic check` is clean and constraints/indexes
+   match the reviewed revision.
+3. Empty rollback: `_15 -> _14` succeeds only with zero reservation rows, and the
+   archived `_14` build becomes ready again.
+4. Guarded rollback: one synthetic reservation causes downgrade refusal, leaves
+   revision `_15`, and preserves the row.
+5. Deployment: during the cutover no `_14` and `_15` workers overlap; before
+   traffic, every instance reports the same reviewed SHA and readiness 200.
+6. Inactivity: OpenAPI has no B6 reservation endpoint and representative legacy
+   traffic leaves `operation_reservations` empty.
+7. Failure drill: induced migration, readiness and smoke failures keep traffic
+   closed and follow the matching branch above without destructive cleanup.
 
 ## B6-B admission gates
 
