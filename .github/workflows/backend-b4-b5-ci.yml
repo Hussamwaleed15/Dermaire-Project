@@ -2,9 +2,6 @@ name: Backend B4 B5 CI
 
 on:
   pull_request:
-    paths:
-      - "backend/**"
-      - ".github/workflows/backend-b4-b5-ci.yml"
   workflow_dispatch:
 
 permissions:
