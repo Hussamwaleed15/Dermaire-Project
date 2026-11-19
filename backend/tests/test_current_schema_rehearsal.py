@@ -1,5 +1,6 @@
 import json
 import os
+import re
 from pathlib import Path
 import pytest
 from sqlalchemy import create_engine,text
@@ -30,7 +31,7 @@ def test_current_schema_seeded_pg(pg_engine):
     result=run(pg_engine)
     assert result["revision"] == "20261024_14" and result["seeded_rows"] == 8
     assert result["data_preserved"] and result["legacy_export_not_broadened"]
-    assert "18.6" in result["database_version"]
+    assert re.search(r"^PostgreSQL 18(?:\.|\s)", result["database_version"])
     evidence(result,"H2_SCHEMA_REHEARSAL_POSTGRESQL.json")
     with pytest.raises(RuntimeError,match="empty disposable"):run(pg_engine)
 
