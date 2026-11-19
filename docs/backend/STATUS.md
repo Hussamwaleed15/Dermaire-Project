@@ -5,7 +5,8 @@
 | Shared between people | حسام وليد؛ مراجعة مستقلة ذات صلة: `salma30001-blip` على PR #4 فقط |
 | Tracks / Departments | Backend؛ Testing/QA للتحقق الآلي |
 | Owner | حسام وليد |
-| Status | Verified جزئياً — دمج المصدر مثبت، ولا يعني Production readiness أو Deployment |
+| Documentation / Verification status | Partially verified — دمج المصدر مثبت، ولا يعني Production readiness أو Deployment |
+| Implementation status | Unknown — لا يوجد هنا دليل أحدث يثبت العمل الجاري بعد PR #4 |
 | Last updated | 2026-11-19 (Africa/Cairo) |
 | Last verified SHA | [`bf979ef99581b71314859ea3fb482c1fe79fe6fa`](https://github.com/Hussamwaleed15/Dermaire-Project/commit/bf979ef99581b71314859ea3fb482c1fe79fe6fa) |
 
@@ -33,6 +34,13 @@
 
 - حالة النشر الحالية وProduction readiness: `Unknown / غير مثبتة بهذا التقرير`.
 - المالك التنفيذي لمراجعة Testing/QA المستمرة: `TBD`.
+
+## Dependencies / Cross-track handoffs
+
+| الاعتماد / التسليم | المسؤول / Track التابع | الحالة | المطلوب لتأكيد الاعتماد | التقرير المشترك |
+|---|---|---|---|---|
+| Backend ↔ Flutter API contracts | Backend + Flutter؛ الملاك التفصيليون `TBD` | Potential / planned requirement — غير مثبت كتنفيذ | عقد API موثق، معايير قبول، PR/commit أو نتائج contract tests، وتأكيد المالكين | TBD — يُنشأ من [القالب](../shared/REPORT_TEMPLATE.md) عند بدء التنسيق الفعلي |
+| Backend ↔ AI inference API contract | Backend + AI؛ الملاك التفصيليون `TBD` | Potential / planned requirement — غير مثبت كتنفيذ | توثيق request/response، الإصدارات، الأخطاء، الأمان، ومعيار قبول مدعوم بدليل | TBD — يُنشأ من [القالب](../shared/REPORT_TEMPLATE.md) عند بدء التنسيق الفعلي |
 
 ## Decisions
 

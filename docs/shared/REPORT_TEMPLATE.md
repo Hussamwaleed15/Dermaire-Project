@@ -5,7 +5,8 @@
 | Shared between people | [أسماء GitHub/الأسماء المؤكدة، أو TBD] |
 | Tracks / Departments | [Backend / Azure-Database / AI-ML / Flutter / Testing] |
 | Owner | [اسم واحد مسؤول عن تحديث التقرير، أو TBD] |
-| Status | [Unknown / Planned / In progress / Blocked / Completed / Verified] |
+| Documentation / Verification status | [Unknown / Needs re-verification / Partially verified / Verified] |
+| Implementation status | [Unknown / Planned / In progress / Blocked / Completed] |
 | Started | [YYYY-MM-DD أو TBD] |
 | Last updated | [YYYY-MM-DD، Africa/Cairo] |
 | Last verified date | [YYYY-MM-DD أو TBD] |
@@ -31,6 +32,12 @@
 
 1. [خطوة + مسؤول + تاريخ مستهدف أو TBD]
 
+## Dependencies / Cross-track handoffs
+
+| الاعتماد / التسليم | المسؤول / Track التابع | الحالة | المطلوب لتأكيد الاعتماد | التقرير المشترك |
+|---|---|---|---|---|
+| [وصف dependency أو handoff] | [اسم + Track، أو TBD] | [Unknown / Potential / Planned / In progress / Blocked / Completed] | [عقد/قرار/اختبار/موافقة + دليل مطلوب] | [هذا التقرير أو رابط تقرير مشترك آخر] |
+
 ## Blockers
 
 - [العائق، أثره، من يملك القرار، أو None].
@@ -47,7 +54,7 @@
 
 ## Unknowns / TBD
 
-- [ما لم يتم التحقق منه بوضوح؛ لا تحوله إلى افتراض].
+- [ما لم يتم التحقق منه بوضوح؛ لا تحوله إلى افتراض. `Unknown` لا يعني عدم وجود عمل].
 
 ## Update log
 

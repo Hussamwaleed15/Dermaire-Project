@@ -5,7 +5,8 @@
 | Shared between people | حسام وليد؛ باقي المشاركين `TBD` |
 | Tracks / Departments | Azure / Infrastructure / Database؛ الاعتمادات المشتركة `TBD` |
 | Owner | حسام وليد |
-| Status | Unknown — لم يتم إجراء تحقق حي ضمن هذا التقرير |
+| Documentation / Verification status | Unknown — لم يتم إجراء تحقق حي ضمن هذا التقرير |
+| Implementation status | Unknown — غير متحققة من الأدلة المتاحة، ولا تعني عدم وجود عمل |
 | Last updated | 2026-11-19 (Africa/Cairo) |
 | Last verified SHA | TBD |
 
@@ -31,6 +32,12 @@
 
 - الحالة الحية لـAzure resources، deployments، database revision، backups، وmonitoring: `TBD / غير متحققة هنا`.
 - أسماء المشاركين وأصحاب الموافقة: `TBD`.
+
+## Dependencies / Cross-track handoffs
+
+| الاعتماد / التسليم | المسؤول / Track التابع | الحالة | المطلوب لتأكيد الاعتماد | التقرير المشترك |
+|---|---|---|---|---|
+| AI ↔ Azure resource and security requirements | AI + Azure / Infrastructure؛ الملاك التفصيليون `TBD` | Potential / planned requirement — غير مثبت كتنفيذ | متطلبات موارد وأمان غير حساسة، حدود البيانات، الملكية، التكلفة، الموافقات، ودليل PR/قرار | TBD — يُنشأ من [القالب](../shared/REPORT_TEMPLATE.md) عند بدء التنسيق الفعلي |
 
 ## Decisions
 

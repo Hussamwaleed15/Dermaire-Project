@@ -5,7 +5,8 @@
 | Shared between people | TBD |
 | Tracks / Departments | Flutter؛ الاعتمادات المشتركة `TBD` |
 | Owner | TBD — لا يوجد اسم مؤكد |
-| Status | Unknown — لم يتم التحقق من الحالة الحالية |
+| Documentation / Verification status | Unknown — لم يتم التحقق من الأدلة الحالية |
+| Implementation status | Unknown — غير متحققة من الأدلة المتاحة، ولا تعني عدم وجود عمل |
 | Last updated | 2026-11-19 (Africa/Cairo) |
 | Last verified SHA | TBD |
 
@@ -30,6 +31,12 @@ TBD بعد تأكيد المالك ونطاق Flutter الحالي.
 ## Blockers / Unknowns
 
 - Owner، المشاركون، النطاق الحالي، build status، release status: `TBD`.
+
+## Dependencies / Cross-track handoffs
+
+| الاعتماد / التسليم | المسؤول / Track التابع | الحالة | المطلوب لتأكيد الاعتماد | التقرير المشترك |
+|---|---|---|---|---|
+| Backend ↔ Flutter API contracts | Flutter + Backend؛ الملاك التفصيليون `TBD` | Potential / planned requirement — غير مثبت كتنفيذ | عقد API موثق، معايير قبول، PR/commit أو نتائج contract tests، وتأكيد المالكين | TBD — يُنشأ من [القالب](../shared/REPORT_TEMPLATE.md) عند بدء التنسيق الفعلي |
 
 ## Decisions
 

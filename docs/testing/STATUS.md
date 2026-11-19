@@ -5,7 +5,8 @@
 | Shared between people | TBD |
 | Tracks / Departments | Testing / QA؛ كل التراكات حسب نطاق الاختبار |
 | Owner | TBD — لا يوجد اسم مؤكد |
-| Status | Unknown — لم يتم التحقق من الحالة الحالية الشاملة |
+| Documentation / Verification status | Unknown — لم يتم التحقق من الأدلة الشاملة الحالية |
+| Implementation status | Unknown — غير متحققة من الأدلة المتاحة، ولا تعني عدم وجود عمل |
 | Last updated | 2026-11-19 (Africa/Cairo) |
 | Last verified SHA | TBD |
 
@@ -30,6 +31,12 @@ TBD بعد تحديد Owner وخطة الاختبار الشاملة. نتائج
 ## Blockers / Unknowns
 
 - Owner، coverage المقبولة، البيئات، والأجزاء التي لم تُختبر: `TBD`.
+
+## Dependencies / Cross-track handoffs
+
+| الاعتماد / التسليم | المسؤول / Track التابع | الحالة | المطلوب لتأكيد الاعتماد | التقرير المشترك |
+|---|---|---|---|---|
+| معايير القبول وأدلة الاختبار لكل Track | Testing / QA + الـTrack المعني؛ الملاك `TBD` | Potential / planned requirement — غير مثبت كتنفيذ شامل | test matrix، البيئة، SHA، نتائج قابلة للتتبع، وتأكيد مسؤول التوقيع | TBD — يُنشأ من [القالب](../shared/REPORT_TEMPLATE.md) عند بدء التنسيق الفعلي |
 
 ## Decisions
 

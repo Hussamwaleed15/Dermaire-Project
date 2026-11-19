@@ -5,7 +5,8 @@
 | Shared between people | حسام وليد؛ باقي المشاركين `TBD` |
 | Tracks / Departments | AI / ML؛ الاعتمادات المشتركة `TBD` |
 | Owner | حسام وليد |
-| Status | Unknown — لم يتم التحقق من حالة التنفيذ الحالية |
+| Documentation / Verification status | Unknown — لم يتم التحقق من الأدلة الحالية |
+| Implementation status | Unknown — غير متحققة من الأدلة المتاحة، ولا تعني عدم وجود عمل |
 | Last updated | 2026-11-19 (Africa/Cairo) |
 | Last verified SHA | TBD |
 
@@ -31,6 +32,13 @@
 
 - النطاق، dataset، model/provider، المقاييس، وحالة التكامل: `TBD`.
 - أسماء المشاركين واعتمادات Backend/Flutter/Azure: `TBD`.
+
+## Dependencies / Cross-track handoffs
+
+| الاعتماد / التسليم | المسؤول / Track التابع | الحالة | المطلوب لتأكيد الاعتماد | التقرير المشترك |
+|---|---|---|---|---|
+| AI ↔ Backend inference API contract | AI + Backend؛ الملاك التفصيليون `TBD` | Potential / planned requirement — غير مثبت كتنفيذ | توثيق request/response، الإصدارات، الأخطاء، الأمان، ومعيار قبول مدعوم بدليل | TBD — يُنشأ من [القالب](../shared/REPORT_TEMPLATE.md) عند بدء التنسيق الفعلي |
+| AI ↔ Azure resource and security requirements | AI + Azure / Infrastructure؛ الملاك التفصيليون `TBD` | Potential / planned requirement — غير مثبت كتنفيذ | متطلبات موارد وأمان غير حساسة، حدود البيانات، الملكية، التكلفة، الموافقات، ودليل PR/قرار | TBD — يُنشأ من [القالب](../shared/REPORT_TEMPLATE.md) عند بدء التنسيق الفعلي |
 
 ## Decisions
 
