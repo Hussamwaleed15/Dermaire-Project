@@ -64,6 +64,27 @@ def observe_lock_wait(engine):
     raise AssertionError("Expected real PostgreSQL lock wait was not observed")
 
 
+def observe_specific_lock_wait_before(engine, *, worker_pid, blocker_pid, expires_at):
+    """Prove the selected backend is blocked by the selected backend pre-expiry."""
+    deadline = time.monotonic() + 3
+    with engine.connect() as observer:
+        while time.monotonic() < deadline:
+            observed_at, wait_event_type, blocking_pids = observer.execute(text(
+                "SELECT clock_timestamp() AT TIME ZONE 'UTC', wait_event_type, "
+                "pg_blocking_pids(pid) FROM pg_stat_activity WHERE pid=:worker_pid"
+            ), {"worker_pid": worker_pid}).one()
+            if observed_at >= expires_at:
+                raise AssertionError(
+                    "Worker owner-row lock wait was not observed before lease expiry"
+                )
+            if wait_event_type == "Lock" and blocker_pid in blocking_pids:
+                return observed_at
+            time.sleep(0.01)
+    raise AssertionError(
+        "Selected worker backend was not observed waiting on the owner-row blocker"
+    )
+
+
 def test_pg_seeded_migrations_and_protected_downgrade(pg_engine, monkeypatch):
     monkeypatch.setattr(settings, "DATABASE_URL", pg_engine.url.render_as_string(hide_password=False))
     cfg = Config(str(Path(__file__).parents[1] / "alembic.ini"))
@@ -399,13 +420,16 @@ def test_pg_operation_reservation_expiry_after_lock_wait_rolls_back_domain_write
         claim = reservations.reserve(
             db, owner_id="owner", domain="products", operation="create",
             key="postgres_post_lock_expiry_key_0001", payload_hash=digest,
-            lease=timedelta(seconds=1))
+            lease=timedelta(seconds=2))
         db.commit()
         lease_expires_at = db.get(OperationReservation, claim.reservation_id).lease_expires_at
 
     with factory() as blocker:
         blocker.query(User).filter_by(id="owner").with_for_update().one()
+        blocker_pid = blocker.execute(text("SELECT pg_backend_pid()")).scalar_one()
         assert datetime.now(timezone.utc).replace(tzinfo=None) < lease_expires_at
+        worker_ready = Event()
+        worker_state = {}
 
         def stale_worker():
             with factory() as db:
@@ -413,6 +437,10 @@ def test_pg_operation_reservation_expiry_after_lock_wait_rolls_back_domain_write
                 # production waits, but this test must outlive the lease before the
                 # owner lock is released so the post-lock fence can be evaluated.
                 db.execute(text("SET LOCAL lock_timeout='5s'"))
+                worker_state["pid"] = db.execute(
+                    text("SELECT pg_backend_pid()")
+                ).scalar_one()
+                worker_ready.set()
                 db.add(Product(id="reservation-domain-write", user_id="owner",
                                name="Must roll back", category="treatment"))
                 try:
@@ -428,7 +456,11 @@ def test_pg_operation_reservation_expiry_after_lock_wait_rolls_back_domain_write
 
         with ThreadPoolExecutor(1) as pool:
             waiting = pool.submit(stale_worker)
-            observe_lock_wait(pg_engine)
+            assert worker_ready.wait(timeout=1), "Worker backend PID was not published"
+            wait_observed_at = observe_specific_lock_wait_before(
+                pg_engine, worker_pid=worker_state["pid"], blocker_pid=blocker_pid,
+                expires_at=lease_expires_at)
+            assert wait_observed_at < lease_expires_at
             delay = (lease_expires_at - datetime.now(timezone.utc).replace(tzinfo=None)).total_seconds()
             time.sleep(max(0, delay) + 0.1)
             blocker.commit()
