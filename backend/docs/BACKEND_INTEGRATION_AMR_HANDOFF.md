@@ -61,7 +61,10 @@ off. Enabling it remains a separately authorized environment rollout.
 1. Preserve and send `Original-Grant-Id` on every first attempt and retry of
    clinical note/review POSTs. Use a replacement grant only after opening a new
    context; treat 403 as loss of the original authority.
-2. Send `Original-Grant-Binding: explicit`; `legacy-current` is migration-only.
+2. Verify that every successful Backend response carries
+   `Original-Grant-Binding: explicit`. Flutter must not send this response
+   header. Treat a missing value or `legacy-current` as an unsafe binding and
+   do not consider the clinical write confirmed.
 3. Page account sessions through `GET /agent/sessions?limit=&before=` and doctor
    requests through `GET /agent/requests?limit=&before=`. Navigate only with the
    returned `patient_ref`.
