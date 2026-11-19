@@ -8,11 +8,16 @@
 | Documentation / Verification status | Verified للمصدر والـCI عند PR #4، وPartially verified للحالة الحالية؛ لا تحقق runtime/staging حي |
 | Implementation status | In progress — API واسع ومختبر، مع gaps تكامل وتشغيل موثقة أدناه |
 | Last updated | 2026-11-19 (Africa/Cairo) |
-| Last verified SHA | [`62893d13dd1558d1c689297f8e23ced8e24fbdc4`](https://github.com/Hussamwaleed15/Dermaire-Project/commit/62893d13dd1558d1c689297f8e23ced8e24fbdc4) |
+| Last verified SHA | B6-A review branch pending commit/CI; baseline `6c6255b8ef0802a28c1b9fceed222a7c9b79a50a` |
 
 ## بنعمل إيه الآن
 
 نثبت inventory الـAPI وعقود الأمان والتكامل وprovenance، ونفصل نجاح المصدر/CI عن staging وProduction readiness.
+
+إضافة B6-A الحالية تبني فقط طبقة reservations غير مفعلة على أي endpoint. اختبارات
+SQLite نجحت، لكن PostgreSQL gate المحلي غير متاح، لذلك الحالة **In review / PG
+evidence pending** وليست completion. التفاصيل والـinvariants وحدود B6-B في
+[`B6_A_OPERATION_RESERVATIONS.md`](B6_A_OPERATION_RESERVATIONS.md).
 
 ## عملنا إيه — Verified
 

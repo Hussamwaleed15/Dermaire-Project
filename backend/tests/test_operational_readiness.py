@@ -4,7 +4,11 @@ from unittest.mock import Mock
 from app.core import database
 from app.services.azure_blob import azure_blob_service
 from app.core.config import Settings
-from app.core.build_info import REQUIRED_ALEMBIC_REVISION, build_metadata
+from app.core.build_info import (
+    REQUIRED_ALEMBIC_REVISION,
+    build_metadata,
+    schema_is_compatible,
+)
 
 
 def test_postgres_url_uses_installed_driver_and_preserves_tls():
@@ -69,6 +73,20 @@ def test_managed_readiness_rejects_unreconciled_revision(monkeypatch, revision):
     monkeypatch.setattr(azure_blob_service, "health", lambda: {"state": "available"})
     monkeypatch.setattr(deletion_journal, "health", lambda: "available")
     assert readiness(db).status_code == 503
+
+
+@pytest.mark.parametrize(
+    ("revision", "compatible"),
+    [
+        (["20261024_14"], False),
+        (["20261024_15"], True),
+        (["20261024_16"], False),
+        (["20261024_14", "20261024_15"], False),
+    ],
+)
+def test_b6_a_schema_gate_is_exact_not_additive_range(revision, compatible):
+    """Document the deploy/rollback boundary independently of migration shape."""
+    assert schema_is_compatible(revision) is compatible
 
 
 def test_build_metadata_is_public_validated_and_not_cached(client, monkeypatch):

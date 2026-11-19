@@ -71,3 +71,11 @@
 | التاريخ | من حدّث التقرير | التغيير |
 |---|---|---|
 | 2026-11-19 | حسام / Codex inventory | إنشاء سجل واحد للتسليمات المؤكدة ومنع التكرار بين STATUS files |
+# B6-A backend handoff — 2026-11-19
+
+Backend added an inactive, additive operation-reservation foundation for review.
+It is not wired to Flutter, AI, or any API endpoint and changes no client
+contract. PostgreSQL concurrency evidence is still pending because the dedicated
+local gate was unavailable. B6-B must not begin until the gates in
+[`../backend/B6_A_OPERATION_RESERVATIONS.md`](../backend/B6_A_OPERATION_RESERVATIONS.md)
+are independently reviewed, including Salma's own review on the PR.
