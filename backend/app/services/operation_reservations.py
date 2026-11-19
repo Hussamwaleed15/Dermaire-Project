@@ -19,7 +19,7 @@ from app.models import OperationReservation, User
 
 
 _NAME = re.compile(r"^[a-z][a-z0-9_.-]{0,63}$")
-_KEY = re.compile(r"^[A-Za-z0-9_-]{32,128}$")
+_KEY = re.compile(r"^[A-Za-z0-9_-]{16,128}$")
 _HASH = re.compile(r"^[0-9a-f]{64}$")
 DEFAULT_LEASE = timedelta(seconds=30)
 DEFAULT_RETENTION = timedelta(days=30)
@@ -69,7 +69,7 @@ def _validate(domain, operation, key, digest, lease, retention):
     if not _NAME.fullmatch(domain or "") or not _NAME.fullmatch(operation or ""):
         raise ValueError("domain and operation must be stable lowercase identifiers")
     if not _KEY.fullmatch(key or ""):
-        raise ValueError("operation key must contain 32-128 ASCII letters, digits, underscores or hyphens")
+        raise ValueError("operation key must contain 16-128 ASCII letters, digits, underscores or hyphens")
     if not _HASH.fullmatch(digest or ""):
         raise ValueError("payload_hash must be a lowercase SHA-256 digest")
     if lease <= timedelta(0) or retention <= lease:

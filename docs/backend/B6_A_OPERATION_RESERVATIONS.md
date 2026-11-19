@@ -11,7 +11,9 @@ and no migration was run against a managed or live database.
 ## Invariants
 
 1. One durable identity exists for `(owner, domain, operation, key_hash)`. The
-   raw client key is never stored. Domain/operation names are stable and bounded.
+   raw client key is never stored. Keys preserve the existing 16–128 character
+   ASCII letters/digits/underscore/hyphen contract. Domain/operation names are
+   stable and bounded.
 2. The identity is permanently bound to one canonical SHA-256 payload digest
    during its retention window. A different payload is a conflict.
 3. Every worker claim has a monotonically increasing `generation` and an

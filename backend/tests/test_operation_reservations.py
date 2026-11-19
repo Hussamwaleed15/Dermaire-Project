@@ -13,6 +13,7 @@ from app.services import operation_reservations as reservations
 
 
 OWNER = "reservation-owner"
+OTHER_OWNER = "reservation-owner-two"
 KEY = "synthetic_operation_key_0000000001"
 DIGEST = reservations.payload_digest({"resource": "synthetic", "value": 1})
 
@@ -25,6 +26,8 @@ def factory():
     with maker() as db:
         db.add(User(id=OWNER, email="reservation@synthetic.test", hashed_password="test",
                     full_name="Synthetic", role="patient"))
+        db.add(User(id=OTHER_OWNER, email="reservation-two@synthetic.test",
+                    hashed_password="test", full_name="Synthetic Two", role="patient"))
         db.commit()
     try:
         yield maker
@@ -37,6 +40,43 @@ def claim(db, **overrides):
                   payload_hash=DIGEST)
     values.update(overrides)
     return reservations.reserve(db, **values)
+
+
+@pytest.mark.parametrize("length", [16, 31, 32, 128])
+def test_key_length_compatibility_boundaries_are_accepted(factory, length):
+    key = "A" * length
+    with factory() as db:
+        value = claim(db, key=key)
+        row = db.get(OperationReservation, value.reservation_id)
+        assert value.status == "reserved"
+        assert row.key_hash != key
+        assert key not in repr(row.__dict__)
+
+
+@pytest.mark.parametrize("length", [15, 129])
+def test_key_length_outside_contract_is_rejected(factory, length):
+    with factory() as db, pytest.raises(ValueError, match="16-128"):
+        claim(db, key="A" * length)
+
+
+@pytest.mark.parametrize("key", ["A" * 15 + ".", "A" * 15 + ":", "A" * 15 + " ",
+                                  "A" * 15 + "/", "A" * 15 + "é"])
+def test_key_disallowed_characters_are_rejected(factory, key):
+    with factory() as db, pytest.raises(ValueError, match="ASCII letters"):
+        claim(db, key=key)
+
+
+def test_key_hash_is_owner_bound_and_payload_digest_is_canonical(factory):
+    assert reservations.payload_digest({"b": 2, "a": 1}) == reservations.payload_digest(
+        {"a": 1, "b": 2})
+    assert reservations.payload_digest({"a": 1}) != reservations.payload_digest({"a": 2})
+    with factory() as db:
+        first = claim(db, key="A" * 16)
+        second = claim(db, owner_id=OTHER_OWNER, key="A" * 16)
+        first_row = db.get(OperationReservation, first.reservation_id)
+        second_row = db.get(OperationReservation, second.reservation_id)
+        assert first_row.key_hash != second_row.key_hash
+        assert first_row.payload_hash == second_row.payload_hash == DIGEST
 
 
 def test_commit_replay_binding_and_no_raw_secrets(factory):
