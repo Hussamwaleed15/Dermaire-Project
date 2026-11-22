@@ -1,5 +1,6 @@
 import json
 import os
+import re
 from pathlib import Path
 import pytest
 from sqlalchemy import create_engine,text
@@ -18,7 +19,7 @@ def test_current_schema_seeded_sqlite(tmp_path):
     engine=create_engine("sqlite:///"+(tmp_path/"dermaire_rehearsal_f5.db").as_posix())
     try:
         result=run(engine)
-        assert result["revision"] == "20261024_14" and result["seeded_rows"] == 8
+        assert result["revision"] == "20261024_15" and result["seeded_rows"] == 8
         assert result["data_preserved"] and result["checkin_reconciliation_preserved"]
         evidence(result,"H2_SCHEMA_REHEARSAL_SQLITE.json")
         with pytest.raises(RuntimeError,match="empty disposable"):
@@ -28,9 +29,9 @@ def test_current_schema_seeded_sqlite(tmp_path):
 
 def test_current_schema_seeded_pg(pg_engine):
     result=run(pg_engine)
-    assert result["revision"] == "20261024_14" and result["seeded_rows"] == 8
+    assert result["revision"] == "20261024_15" and result["seeded_rows"] == 8
     assert result["data_preserved"] and result["legacy_export_not_broadened"]
-    assert "18.6" in result["database_version"]
+    assert re.search(r"^PostgreSQL 18(?:\.|\s)", result["database_version"])
     evidence(result,"H2_SCHEMA_REHEARSAL_POSTGRESQL.json")
     with pytest.raises(RuntimeError,match="empty disposable"):run(pg_engine)
 

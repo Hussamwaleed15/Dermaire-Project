@@ -374,3 +374,4 @@ from app.models.configuration_attempts import ConfigurationAttempt
 from app.models.clinical_attempts import ClinicalAttempt, GrantAttempt
 
 from app.models.routine_history import RoutineConfigurationEvent, UserCalendarPolicy
+from app.models.operation_reservations import OperationReservation
