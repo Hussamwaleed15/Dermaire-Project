@@ -6,6 +6,27 @@ from app.core.config import settings
 from app.models import AuditLog, User
 
 
+def policy_contract():
+    document_available = bool(
+        settings.SAFETY_POLICY_DOCUMENT_URL
+        and settings.SAFETY_POLICY_DOCUMENT_SHA256
+    )
+    document = None
+    if document_available:
+        document = {
+            "url": settings.SAFETY_POLICY_DOCUMENT_URL,
+            "sha256": settings.SAFETY_POLICY_DOCUMENT_SHA256,
+        }
+    return {
+        "schema_version": 1,
+        "required_version": settings.SAFETY_POLICY_REQUIRED_VERSION,
+        "enforcement_enabled": settings.SAFETY_POLICY_ENFORCE,
+        "document_status": "approved" if document_available else "unavailable",
+        "document": document,
+        "acceptance_ready": document_available,
+    }
+
+
 def consent_snapshot(user):
     version = user.safety_policy_version
     timestamp = user.safety_accepted_at

@@ -9,8 +9,10 @@ from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.core.config import settings
+from app.core.build_info import build_metadata, schema_is_compatible
 from app.core.database import init_db, get_db
 from app.core.observability import RequestTelemetry, operation_event, boot_id, process_started
+from app.core.security_headers import SecurityHeaders
 from app.core.exceptions import (
     DermaireException,
     dermaire_exception_handler,
@@ -57,6 +59,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.add_middleware(RequestTelemetry)
+app.add_middleware(SecurityHeaders)
 
 # Exception Handlers Registration
 app.add_exception_handler(DermaireException, dermaire_exception_handler)
@@ -98,6 +101,11 @@ def liveness():
     return {"status": "alive", "boot_id": boot_id,
             "uptime_seconds": round(time.monotonic() - process_started, 2)}
 
+@app.get("/health/build", tags=["System Health"])
+def build_identity():
+    from fastapi.responses import JSONResponse
+    return JSONResponse(content=build_metadata(), headers={"Cache-Control": "no-store"})
+
 @app.get("/health/ready", tags=["System Health"])
 def readiness(db: Session = Depends(get_db)):
     from sqlalchemy import text
@@ -108,7 +116,7 @@ def readiness(db: Session = Depends(get_db)):
         db.execute(text("SELECT 1"))
         if settings.ENVIRONMENT in {"staging", "production"}:
             revision = db.execute(text("SELECT version_num FROM alembic_version")).scalars().all()
-            if revision != ["20261024_14"]:
+            if not schema_is_compatible(revision):
                 raise RuntimeError("Schema revision unavailable")
         database = "available"
     except Exception:

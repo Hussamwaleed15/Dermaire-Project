@@ -168,6 +168,8 @@ def delete_account(db, user_id, *, journal=None):
     db.query(AgentSession).filter_by(user_id=user_id).delete(synchronize_session=False)
     db.query(ThreadMessage).filter(ThreadMessage.thread_id.in_(thread_ids)).delete(synchronize_session=False)
     db.query(MessageThread).filter(thread_filter).delete(synchronize_session=False)
+    from app.models.operation_reservations import OperationReservation
+    db.query(OperationReservation).filter_by(owner_id=user_id).delete(synchronize_session=False)
     db.query(GrantAttempt).filter(grant_receipts).delete(synchronize_session=False)
     db.query(ClinicalAttempt).filter(receipt_filter).delete(synchronize_session=False)
     db.query(ClinicalNote).filter(notes).delete(synchronize_session=False)
