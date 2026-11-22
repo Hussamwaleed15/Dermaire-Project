@@ -15,6 +15,10 @@ class Settings(BaseSettings):
     # App Identity
     PROJECT_NAME: str = "Dermaire Skin Lab API"
     VERSION: str = "1.0.0"
+    # Supplied by the build pipeline. They are public provenance, never secrets.
+    # Missing or malformed values are reported as unavailable rather than echoed.
+    BUILD_GIT_SHA: str = ""
+    BUILD_TIMESTAMP: str = ""
     API_V1_STR: str = "/api/v1"
     IMAGINE_COP_EDITION: str = "Microsoft Imagine Cup 2027"
     ENVIRONMENT: Literal["development", "test", "staging", "production"] = "development"
@@ -29,6 +33,10 @@ class Settings(BaseSettings):
     # Enable only after version-aware clients are available (staged rollout).
     SAFETY_POLICY_REQUIRED_VERSION: str = "1.0"
     SAFETY_POLICY_ENFORCE: bool = False
+    # Set only after the exact policy text has been approved and published.
+    # The digest binds the displayed document to the version being accepted.
+    SAFETY_POLICY_DOCUMENT_URL: str = ""
+    SAFETY_POLICY_DOCUMENT_SHA256: str = ""
 
     @field_validator("SAFETY_POLICY_REQUIRED_VERSION")
     @classmethod
@@ -37,6 +45,34 @@ class Settings(BaseSettings):
         if len(value) > 20 or not re.fullmatch(r"[0-9]+\.[0-9]+", value):
             raise ValueError("Policy version must be major.minor, at most 20 characters")
         return value
+
+    @model_validator(mode="after")
+    def validate_safety_policy_document(self):
+        document_url = self.SAFETY_POLICY_DOCUMENT_URL.strip()
+        document_digest = self.SAFETY_POLICY_DOCUMENT_SHA256.strip().lower()
+        if bool(document_url) != bool(document_digest):
+            raise ValueError(
+                "SAFETY_POLICY_DOCUMENT_URL and SAFETY_POLICY_DOCUMENT_SHA256 "
+                "must be configured together"
+            )
+        if document_url:
+            url = urlsplit(document_url)
+            if (url.scheme != "https" or not url.hostname or url.username or url.password
+                    or url.fragment):
+                raise ValueError(
+                    "SAFETY_POLICY_DOCUMENT_URL must be a public HTTPS URL "
+                    "without credentials or fragments"
+                )
+            import re
+            if not re.fullmatch(r"[0-9a-f]{64}", document_digest):
+                raise ValueError("SAFETY_POLICY_DOCUMENT_SHA256 must be 64 lowercase hex characters")
+            self.SAFETY_POLICY_DOCUMENT_URL = document_url
+            self.SAFETY_POLICY_DOCUMENT_SHA256 = document_digest
+        if self.SAFETY_POLICY_ENFORCE and not document_url:
+            raise ValueError(
+                "SAFETY_POLICY_ENFORCE requires an approved policy document URL and SHA-256"
+            )
+        return self
 
     # Google Sign-In (OAuth 2.0)
     # This must be the "Web application" client ID from Google Cloud Console —
@@ -52,6 +88,8 @@ class Settings(BaseSettings):
     # up, since leaving it on would let anyone reset any account's password
     # just by knowing their email.
     EXPOSE_PASSWORD_RESET_TOKEN: bool = False
+    PASSWORD_RESET_RATE_LIMIT: int = 3
+    PASSWORD_RESET_RATE_WINDOW_MINUTES: int = 15
 
     # Azure Communication Services Email
     AZURE_COMMUNICATION_CONNECTION_STRING: str = ""
@@ -153,6 +191,16 @@ class Settings(BaseSettings):
                     "SECRET_KEY must be explicitly configured with a non-empty, "
                     "non-development secret in production/staging"
                 )
+            if self.EXPOSE_PASSWORD_RESET_TOKEN:
+                raise ValueError(
+                    "EXPOSE_PASSWORD_RESET_TOKEN cannot be enabled in production/staging"
+                )
+        if not 1 <= self.PASSWORD_RESET_RATE_LIMIT <= 20:
+            raise ValueError("PASSWORD_RESET_RATE_LIMIT must be between 1 and 20")
+        if not 1 <= self.PASSWORD_RESET_RATE_WINDOW_MINUTES <= 1440:
+            raise ValueError(
+                "PASSWORD_RESET_RATE_WINDOW_MINUTES must be between 1 and 1440"
+            )
         return self
 
     # Configuration presence only; the service health probe checks reachability/privacy.
