@@ -1,5 +1,47 @@
 # Flutter F8 CI and merge readiness
 
+## Current evidence checkpoint — 23 November 2026
+
+Task DERMAIRE-FLUTTER-QA-M1-02-FINAL-CLOSURE. Documentation-only correction
+by Amr A. Abdallah / Amr-A-Abdallah; no source, tests or workflow behavior changed.
+Before this documentation correction, the verified PR8 HEAD is
+`12d88727bb7b00aac1be5ffbc309336c3e169ca8`; base PR7 is
+`a5a3f2e8b1974a979214e463308c114cc09ac09c`.
+These are the pre-correction revisions, not a claim that a subsequent docs
+commit has already passed CI. The final current HEAD and its own run/job/merge
+revision evidence are maintained in PR8's description after push, avoiding a
+self-referential documentation/CI update cycle.
+
+Latest independently verified Flutter CI supplied with Amr's QA handoff:
+[run45071674083](https://github.com/Hussamwaleed15/Dermaire-Project/actions/runs/45071674083).
+GitHub API rechecked its head_sha as `12d88727bb7b00aac1be5ffbc309336c3e169ca8`,
+completed/success, with successful `Flutter source / current-pr-head` and
+`Flutter source / current-pr-merge` jobs. A run's head_sha identifies the PR
+head; it does not itself identify the checked-out synthetic merge commit.
+This historical run does not validate the new documentation commit.
+
+- QA-M1-01: PASS, independently verified previously according to the supplied
+  Salma Ahmed re-verification handoff (controller12/12, related71/71,
+  full2342/2342 and analyzer PASS). No tests are reopened or reimplemented.
+- QA-M1-02: documentation remediation implemented; pending Salma's final
+  independent re-verification. Not formally approved or CLOSED.
+- Public GitHub comments retrieved before this correction still contain the
+  older open findings; no submitted formal reviews were returned. The supplied
+  latest QA result and public historical comments are separate evidence.
+- Active workflow `.github/workflows/flutter-f8.yml` tests dynamic PR head and
+  synthetic merge; app/docs changes match its path filter. Workflow unchanged.
+- CI success is source evidence, not QA approval, native/device, live Backend,
+  staging, clinical, provider or production qualification. Policy stays off.
+- PR8 remains dependent on PR6/PR7 integration, current required Backend and
+  Flutter checks and independent review. Salma decides QA approval; Hussam
+  owns final merge authorization. No merge/retarget/protection change authorized.
+
+Earlier sections below are dated historical evidence. Their heads, base
+snapshots, test totals and runs43418894776/43613490447 must not be interpreted
+as the current PR HEAD or as qualification of later commits.
+
+## Historical implementation record (preserved)
+
 2026-11-13. Amr A. Abdallah / Amr-A-Abdallah. Starting branch
 codex/flutter-f8-2-to-5-integration at
 5d855b499f73866ba6894fe67f950e81ec1b6e51. Separate feature branch:
