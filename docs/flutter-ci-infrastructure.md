@@ -32,12 +32,13 @@ fails if dependency resolution or the checks alter tracked source.
 
 ## Bootstrap limitation
 
-GitHub evaluates a `pull_request` workflow from the pull request's base branch.
-Consequently, the infrastructure pull request that first introduces this file
-cannot provide hosted evidence from this workflow for itself. Local YAML and
-logic validation is useful, but it is not a substitute for GitHub-hosted evidence.
-The gate becomes authoritative only after this infrastructure change is reviewed
-and merged into `main`.
+Existing pull requests cannot use a proposed workflow that is present only on a
+different pull-request branch. GitHub may exercise a newly added workflow on its
+own infrastructure pull request, but that run validates only this infrastructure
+PR's head and synthetic merge. It cannot qualify PR #6, #7, or #8. Those pull
+requests can obtain authoritative evidence from this gate only after the workflow
+is reviewed and merged into their base `main`, followed by a new eligible
+`pull_request` event.
 
 ## Post-merge procedure for existing Flutter pull requests
 
