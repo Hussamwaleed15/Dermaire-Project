@@ -209,3 +209,11 @@ Android runtime BLOCKED no SDK/AVD. Secure restart recovery still PARTIAL/BLOCKE
 specific native approval/device storage qualification; no persistence claim.
 The earlier inference that no iOS simulator exists is superseded by direct simctl
 inventory and successful execution. No tracked native/backend/Tester change.
+
+## Product M4 —14 November2026 (separate from historical F6-M M4)
+
+Dedicated codex/flutter-m4-complete-implementation from main@b995873f2b76e0c37a08f23fbf40322174aba6fe. Four supported source gaps addressed: actual evaluation metric contract/integrity, frozen/saved evidence references, explicit adherence unknown/historical-configuration labels, read lifecycle/context fencing. Source b2bf9cfc21a345b8696c3e83845c9ae9367046a2.30new tests;682related;2284full passed,0failed/0skipped;analyzer/diff clean. See M4_COMPLETE_FLUTTER_IMPLEMENTATION_REPORT.md and M4_EXTERNAL_DEPENDENCIES.md for matrix and final delivery supplement.
+
+Flutter supported source COMPLETE; product M4 remains PENDING FORMAL CLOSURE / PENDING SALMA REVIEW. Per-case clinician-plan baseline/timing contract is externally blocked: existing engine freezes previous28days, not universal medical timing. Live/device/clinical qualification outstanding. No Backend/native/Tester/provider/policy changes, merge or M5 start. Prior milestone/QA entries remain unchanged. PR6–12 were inspected but not imported, merged, approved or retroactively relabeled; M1/M2/M3 source evidence remains in their separate open PR stacks.
+
+Final product-M4 disposable compatibility: PR10+M4=2337, PR11+M4=2311, PR12+M4=2315, PR8+M4=2372 full tests passed (each0failed/0skipped,exit0), exact source patch applied cleanly with identical lockfile. Source compatibility only; no original refs modified.

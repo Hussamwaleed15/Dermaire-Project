@@ -600,6 +600,17 @@ class RoutineController extends ChangeNotifier {
           row['revision'] >= 1 &&
           row['revision'] <= 2147483647 &&
           row['revision_protected'] is bool;
+  void markReadStale() {
+    if (_disposed) return;
+    stale = true;
+    if (!saving) {
+      ++_generation;
+      loading = false;
+      loadingMore = false;
+    }
+    notifyListeners();
+  }
+
   void discardUnauthorizedRead(RequestFailure failure) {
     if (failure.kind != RequestFailureKind.denied &&
         failure.kind != RequestFailureKind.session) {

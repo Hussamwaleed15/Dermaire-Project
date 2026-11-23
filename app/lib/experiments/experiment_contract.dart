@@ -1,3 +1,4 @@
+import 'metric_contract.dart';
 import '../routine/routine_controller.dart';
 
 /// Actual owned ExperimentOut/EvaluationOut wire data; legacy records are read-only.
@@ -28,7 +29,8 @@ abstract final class ExperimentContract {
       return false;
     }
     final r = data['result'] as Map;
-    return r['engine_version'] == 2 &&
+    return ExperimentMetricContract.accepts(r) &&
+        r['engine_version'] == 2 &&
         labels.contains(r['label']) &&
         [
           'insufficient',
