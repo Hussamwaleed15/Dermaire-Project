@@ -7,6 +7,7 @@ from app.core.config import settings
 from app.core.security import create_access_token
 from app.services.policy_consent import consent_snapshot, accept_policy
 from app.schemas import AcceptSafetyRequest
+from app.core.config import Settings
 
 @pytest.mark.parametrize("accepted,version,stamp,state", [
     (False,"1.0",None,"missing"), (True,"1.0",None,"unknown"),
@@ -52,6 +53,67 @@ def test_registration_cannot_implicitly_accept_changed_policy(client, monkeypatc
     body=dict(email="new-policy@example.com",password="Synthetic-password-123",full_name="Synthetic",accept_safety=True)
     assert client.post("/api/v1/auth/register",json=body).status_code==409
     assert client.post("/api/v1/auth/register",json={**body,"policy_version":"2.0"}).status_code==201
+
+
+def test_public_policy_contract_fails_closed_until_approved_document_exists(client, monkeypatch):
+    monkeypatch.setattr(settings, "SAFETY_POLICY_REQUIRED_VERSION", "2.0")
+    monkeypatch.setattr(settings, "SAFETY_POLICY_DOCUMENT_URL", "")
+    monkeypatch.setattr(settings, "SAFETY_POLICY_DOCUMENT_SHA256", "")
+    response = client.get("/api/v1/auth/safety-policy")
+    assert response.status_code == 200
+    assert response.headers["cache-control"] == "no-store"
+    assert response.json() == {
+        "schema_version": 1,
+        "required_version": "2.0",
+        "enforcement_enabled": False,
+        "document_status": "unavailable",
+        "document": None,
+        "acceptance_ready": False,
+    }
+
+    monkeypatch.setattr(settings, "SAFETY_POLICY_DOCUMENT_URL", "https://policy.example.test/safety/2.0")
+    monkeypatch.setattr(settings, "SAFETY_POLICY_DOCUMENT_SHA256", "a" * 64)
+    approved = client.get("/api/v1/auth/safety-policy").json()
+    assert approved["document_status"] == "approved"
+    assert approved["acceptance_ready"] is True
+    assert approved["document"] == {
+        "url": "https://policy.example.test/safety/2.0",
+        "sha256": "a" * 64,
+    }
+
+
+@pytest.mark.parametrize("overrides", [
+    {"SAFETY_POLICY_DOCUMENT_URL": "https://policy.example.test/safety/1.0"},
+    {"SAFETY_POLICY_DOCUMENT_SHA256": "a" * 64},
+    {
+        "SAFETY_POLICY_DOCUMENT_URL": "http://policy.example.test/safety/1.0",
+        "SAFETY_POLICY_DOCUMENT_SHA256": "a" * 64,
+    },
+    {
+        "SAFETY_POLICY_DOCUMENT_URL": "https://policy.example.test/safety/1.0",
+        "SAFETY_POLICY_DOCUMENT_SHA256": "not-a-digest",
+    },
+    {"SAFETY_POLICY_ENFORCE": True},
+])
+def test_policy_document_configuration_fails_closed(overrides):
+    with pytest.raises(ValueError):
+        Settings(_env_file=None, **overrides)
+
+
+def test_enforcement_allows_account_erasure_after_policy_change(client, db_session, monkeypatch):
+    user = User(
+        id="policy-delete", email="policy-delete@example.com", full_name="Synthetic",
+        hashed_password="test", role="patient", safety_accepted=True,
+        safety_policy_version="1.0", safety_accepted_at=datetime.now(timezone.utc),
+    )
+    db_session.add(user); db_session.commit()
+    user_id = user.id
+    auth = {"Authorization": "Bearer " + create_access_token(user.id, user.role, hashed_password="test")}
+    monkeypatch.setattr(settings, "SAFETY_POLICY_REQUIRED_VERSION", "2.0")
+    monkeypatch.setattr(settings, "SAFETY_POLICY_ENFORCE", True)
+    assert client.patch("/api/v1/users/skin-profile", headers=auth, json={}).status_code == 403
+    assert client.delete("/api/v1/users/me", headers=auth).status_code == 204
+    assert db_session.query(User).filter_by(id=user_id).first() is None
 
 
 def test_pg_concurrent_consent(pg_engine):
