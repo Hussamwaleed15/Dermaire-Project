@@ -1,0 +1,103 @@
+name: Flutter source verification
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - 'app/**'
+      - '.github/workflows/flutter-source-verification.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'app/**'
+      - '.github/workflows/flutter-source-verification.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: flutter-source-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Flutter source / ${{ matrix.snapshot }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        snapshot: ${{ fromJSON(github.event_name == 'pull_request' && '["pr-head","synthetic-merge"]' || '["main"]') }}
+    defaults:
+      run:
+        shell: bash
+        working-directory: app
+    env:
+      CI: 'true'
+      FLUTTER_SUPPRESS_ANALYTICS: 'true'
+      DART_SUPPRESS_ANALYTICS: 'true'
+      FLUTTER_VERSION: '3.44.8'
+      FLUTTER_COMMIT: '058e0af2c2b57e369d905a03ac9748b0ebf543c6'
+
+    steps:
+      - name: Select expected revision
+        id: revision
+        working-directory: .
+        env:
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          EVENT_SHA: ${{ github.sha }}
+          SNAPSHOT: ${{ matrix.snapshot }}
+        run: |
+          if [[ "$SNAPSHOT" == "pr-head" ]]; then
+            expected_sha="$PR_HEAD_SHA"
+          else
+            expected_sha="$EVENT_SHA"
+          fi
+          test -n "$expected_sha"
+          echo "expected_sha=$expected_sha" >> "$GITHUB_OUTPUT"
+          printf '### Flutter source evidence\n\n- Snapshot: `%s`\n- Expected SHA: `%s`\n' \
+            "$SNAPSHOT" "$expected_sha" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Check out exact revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ steps.revision.outputs.expected_sha }}
+          persist-credentials: false
+
+      - name: Verify checked-out revision
+        env:
+          EXPECTED_SHA: ${{ steps.revision.outputs.expected_sha }}
+        run: |
+          actual_sha="$(git rev-parse HEAD)"
+          test "$actual_sha" = "$EXPECTED_SHA"
+          printf -- '- Checked-out SHA: `%s`\n' "$actual_sha" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Install pinned Flutter SDK
+        run: |
+          git init "$RUNNER_TEMP/flutter"
+          git -C "$RUNNER_TEMP/flutter" remote add origin https://github.com/flutter/flutter.git
+          git -C "$RUNNER_TEMP/flutter" fetch --depth 1 origin "tag $FLUTTER_VERSION"
+          test "$(git -C "$RUNNER_TEMP/flutter" rev-parse FETCH_HEAD)" = "$FLUTTER_COMMIT"
+          git -C "$RUNNER_TEMP/flutter" checkout --detach FETCH_HEAD
+          echo "$RUNNER_TEMP/flutter/bin" >> "$GITHUB_PATH"
+
+      - name: Verify toolchain and locked dependencies
+        run: |
+          flutter --version
+          test "$(flutter --version --machine | python3 -c 'import json,sys; print(json.load(sys.stdin)["frameworkVersion"])')" = "$FLUTTER_VERSION"
+          test "$(dart --version 2>&1 | sed -n 's/^Dart SDK version: \([^ ]*\).*/\1/p')" = "3.12.2"
+          flutter pub get --enforce-lockfile
+          git diff --exit-code
+
+      - name: Analyze
+        run: flutter analyze --no-pub
+
+      - name: Run full Flutter test suite
+        run: flutter test --no-pub --reporter expanded
+
+      - name: Verify source integrity
+        if: always()
+        run: |
+          git diff --check
+          git diff --exit-code
