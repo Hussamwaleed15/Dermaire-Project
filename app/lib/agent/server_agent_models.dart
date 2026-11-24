@@ -116,6 +116,17 @@ enum BrokerActionStage {
   withdrawn,
 }
 
+void verifyAgentRequestOrder(List<BrokerAction> requests) {
+  for (var i = 1; i < requests.length; i++) {
+    final previous = requests[i - 1], current = requests[i];
+    if (current.previewed.isAfter(previous.previewed) ||
+        current.previewed == previous.previewed &&
+            current.id.compareTo(previous.id) >= 0) {
+      throw const FormatException('Unordered clinician request page');
+    }
+  }
+}
+
 class BrokerAction {
   String? patientReference, originalGrantReference;
   BrokerAction(Map<String, dynamic> v, {String? doctor})
