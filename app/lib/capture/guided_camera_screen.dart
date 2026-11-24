@@ -1,3 +1,4 @@
+import 'measurement_evidence.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../dermaire_state.dart';
@@ -666,26 +667,12 @@ class CaptureResult extends StatelessWidget {
               const Text(
                 'No verified image estimates are available in this response.',
               )
-            else ...[
-              Text(
-                'Algorithm: ${measurement!.algorithm} · Status: ${measurement!.status}',
+            else
+              MeasurementEvidence(measurement: measurement!),
+            if (measurement == null && record.measurementUnavailable)
+              const Text(
+                'The embedded measurement was unsupported or inconsistent. No verified values are shown.',
               ),
-              Text('Computed: ${clinicalTime(measurement!.measuredAt)}'),
-              for (final metric in measurement!.metrics.values) ...[
-                Text(
-                  metric.key == 'red_chromaticity_proxy'
-                      ? 'Red chromaticity proxy'
-                      : 'Texture contrast proxy',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                Text(
-                  metric.value == null
-                      ? 'Value unavailable (${metric.status})'
-                      : '${metric.value} · ${metric.unit} · Limited image proxy',
-                ),
-                for (final limit in metric.limitations) Text(limit),
-              ],
-            ],
             if (measurementError != null)
               Semantics(liveRegion: true, child: Text(measurementError!)),
             if (record.state == 'accepted' && measurement == null)

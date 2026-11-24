@@ -1,3 +1,4 @@
+import 'measurement_history_screen.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show ScrollCacheExtent;
@@ -27,7 +28,7 @@ class CaptureHistoryScreen extends StatefulWidget {
 }
 
 class _CaptureHistoryScreenState extends State<CaptureHistoryScreen> {
-  late final CaptureHistoryController history;
+  late CaptureHistoryController history;
   @override
   void initState() {
     super.initState();
@@ -36,6 +37,20 @@ class _CaptureHistoryScreenState extends State<CaptureHistoryScreen> {
       repository: widget.repository,
     )..addListener(changed);
     unawaited(history.refresh());
+  }
+
+  @override
+  void didUpdateWidget(covariant CaptureHistoryScreen old) {
+    super.didUpdateWidget(old);
+    if (old.repository != widget.repository || old.state != widget.state) {
+      history.removeListener(changed);
+      history.dispose();
+      history = CaptureHistoryController(
+        ApiService.instance,
+        repository: widget.repository,
+      )..addListener(changed);
+      unawaited(history.refresh());
+    }
   }
 
   void changed() {
@@ -87,6 +102,19 @@ class _CaptureHistoryScreenState extends State<CaptureHistoryScreen> {
         onPressed: camera,
         icon: const Icon(Icons.camera_alt_outlined),
         label: const Text('New guided capture'),
+      ),
+      OutlinedButton.icon(
+        key: const Key('openMeasurementHistory'),
+        onPressed: () => openEntry(
+          context,
+          MeasurementHistoryScreen(
+            state: widget.state,
+            repository: widget.repository,
+            images: widget.images,
+          ),
+        ),
+        icon: const Icon(Icons.history),
+        label: const Text('Recorded measurement history'),
       ),
       OutlinedButton.icon(
         key: const Key('refreshCaptureHistory'),
@@ -231,7 +259,7 @@ class CaptureDetailScreen extends StatefulWidget {
 }
 
 class _CaptureDetailScreenState extends State<CaptureDetailScreen> {
-  late final CaptureDetailController detail;
+  late CaptureDetailController detail;
   @override
   void initState() {
     super.initState();
@@ -241,6 +269,23 @@ class _CaptureDetailScreenState extends State<CaptureDetailScreen> {
       repository: widget.repository,
     )..addListener(changed);
     unawaited(detail.refresh());
+  }
+
+  @override
+  void didUpdateWidget(covariant CaptureDetailScreen old) {
+    super.didUpdateWidget(old);
+    if (old.id != widget.id ||
+        old.repository != widget.repository ||
+        old.state != widget.state) {
+      detail.removeListener(changed);
+      detail.dispose();
+      detail = CaptureDetailController(
+        ApiService.instance,
+        widget.id,
+        repository: widget.repository,
+      )..addListener(changed);
+      unawaited(detail.refresh());
+    }
   }
 
   void changed() {
@@ -305,20 +350,6 @@ class _CaptureDetailScreenState extends State<CaptureDetailScreen> {
             reading: detail.reading,
             onRead: detail.readMeasurement,
           ),
-          if (detail.measurement != null) ...[
-            Text(
-              detail.measurement!.status == 'unavailable'
-                  ? 'Source: server-recorded unavailability.'
-                  : 'Source: server-computed upload bytes, bound to this capture and quality fingerprint.',
-            ),
-            const Text(
-              'Region: fixed bilateral cheek rectangles from the frontal face detector.',
-            ),
-            for (final metric in detail.measurement!.metrics.values)
-              Text(
-                'Source capture: ${detail.measurement!.captureId} · Method: ${detail.measurement!.algorithm} · Metric: ${metric.key}',
-              ),
-          ],
         ],
       ],
     );

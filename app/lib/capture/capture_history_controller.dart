@@ -202,10 +202,9 @@ class CaptureDetailController extends ChangeNotifier {
         throw const FormatException('Unverified measurement');
       }
       measurement = value;
-    } catch (_) {
+    } catch (e) {
       if (!current || request != measurementRevision) return;
-      measurementError =
-          'Verified image estimates could not be read. They may be unavailable. You can retry this read.';
+      measurementError = measurementReadError(e);
     }
     if (current && request == measurementRevision) {
       reading = false;
@@ -221,6 +220,109 @@ class CaptureDetailController extends ChangeNotifier {
     record = null;
     measurement = null;
     api.removeListener(sessionChanged);
+    super.dispose();
+  }
+}
+
+// Read-only, bounded traversal of the receipt window. No image fetch, metric
+// generation, automatic replay, or client-side comparison is performed here.
+class MeasurementHistoryController extends CaptureHistoryController {
+  MeasurementHistoryController(super.api, {super.repository, super.timeout});
+  static const batchSize = 5;
+  final Map<String, CaptureMeasurement> measurements = {};
+  final Map<String, String> failures = {};
+  int visibleCount = 0;
+  bool reading = false;
+  String? readingId;
+  bool get hasMore => confirmed && visibleCount < records.length;
+  List<GuidedCaptureRecord> get visibleRecords =>
+      List.unmodifiable(records.take(visibleCount));
+
+  void clearMeasurements() {
+    measurements.clear();
+    failures.clear();
+    visibleCount = 0;
+    reading = false;
+    readingId = null;
+  }
+
+  @override
+  void sessionChanged() {
+    if (!current) clearMeasurements();
+    super.sessionChanged();
+  }
+
+  @override
+  Future<void> refresh() async {
+    clearMeasurements();
+    final pending = super.refresh();
+    final request = revision;
+    await pending;
+    if (current && request == revision && confirmed && !loading) {
+      await loadMore();
+    }
+  }
+
+  Future<void> loadMore() async {
+    if (!current || loading || reading || !hasMore) return;
+    final request = revision;
+    final start = visibleCount;
+    visibleCount = (visibleCount + batchSize).clamp(0, records.length);
+    reading = true;
+    notifyListeners();
+    for (final record in records.sublist(start, visibleCount)) {
+      if (!current || request != revision) return;
+      await readOne(record, request);
+    }
+    finish(request);
+  }
+
+  Future<void> retry(String id) async {
+    if (!current || loading || reading || !failures.containsKey(id)) return;
+    final record = visibleRecords.where((row) => row.id == id).firstOrNull;
+    if (record == null) return;
+    final request = revision;
+    reading = true;
+    await readOne(record, request);
+    finish(request);
+  }
+
+  Future<void> readOne(GuidedCaptureRecord record, int request) async {
+    if (record.state != 'accepted') return;
+    readingId = record.id;
+    failures.remove(record.id);
+    measurements.remove(record.id);
+    notifyListeners();
+    try {
+      final value = await repository
+          .measurement(record.id, generation)
+          .timeout(timeout);
+      if (!current || request != revision) return;
+      if (value.captureId != record.id ||
+          value.qualityFingerprint != record.quality.requestFingerprint) {
+        throw const FormatException('Measurement identity mismatch');
+      }
+      measurements[record.id] = value;
+    } catch (e) {
+      if (!current || request != revision) return;
+      failures[record.id] = measurementReadError(e);
+    }
+    if (current && request == revision) {
+      readingId = null;
+      notifyListeners();
+    }
+  }
+
+  void finish(int request) {
+    if (!current || request != revision) return;
+    reading = false;
+    readingId = null;
+    notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    clearMeasurements();
     super.dispose();
   }
 }
