@@ -1,3 +1,19 @@
+# M1 remaining Flutter engineering — 2026-11-14
+
+PR9 head83e00a019689b1ff55dc4dc959ab860f9b60c781 is the base of
+codex/flutter-m1-remaining-implementation. Five concrete new source gaps are
+addressed: current Home action authority, clinician guidance visibility,
+cross-projection measurement consistency, uncertain-write Home freshness and
+UTC-day view expiry. Source commits fa6e674,0dc49a5,ee284b1. New32 tests;
+related329 and full2307 pass, analyzer clean. Final temporary F8 source assembly
+passes2395 tests, without modifying original refs. Exact Git delivery is recorded
+in M1_COMPLETE_FLUTTER_IMPLEMENTATION_REPORT.md/delivery.
+Expanded structured fields and approved policy rollout remain blocked; real
+OAuth/device/live Backend/clinical/production qualification is not claimed.
+M1 overall is PARTIAL, not CLOSED. No Backend/native/Tester/provider activation.
+
+---
+
 # Master Plan M1 Home observation readback — 2026-11-14
 
 Master Plan v1.0 supplied by Amr is retained in

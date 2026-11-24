@@ -40,7 +40,7 @@ class DermaireState extends ChangeNotifier {
       ApiService.instance,
       repository: observationRepository,
       onConfirmed: _observationConfirmed,
-      onUncertain: _refreshObservationSafety,
+      onUncertain: _observationUncertain,
     )..addListener(notifyListeners);
     clinical = ClinicalController(
       ApiService.instance,
@@ -74,6 +74,15 @@ class DermaireState extends ChangeNotifier {
     // using a safety response as proof that the observation was saved.
     clinical.markStale();
     unawaited(clinical.refresh());
+  }
+
+  void _observationUncertain() {
+    // The submission may have committed. An old aggregate is no longer a
+    // current completion view; a fresh aggregate still cannot resolve its key.
+    home.markStale();
+    observations.markHistoryStale();
+    _refreshObservationSafety();
+    unawaited(home.refresh());
   }
 
   void _observationConfirmed() {
