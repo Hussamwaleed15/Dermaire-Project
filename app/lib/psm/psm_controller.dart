@@ -40,6 +40,10 @@ class PsmController extends ChangeNotifier {
   int _request = 0;
   PersonalSkinModel? _model;
   SafetyAssessment? _lastSafety;
+  PsmClinicianSnapshot? _lastClinician;
+  PsmClinicianSnapshot? get clinician => current ? _lastClinician : null;
+  bool get clinicianStale =>
+      model?.clinician == null || !identical(model?.clinician, _lastClinician);
   PsmPhase phase = PsmPhase.idle;
   String? error;
   bool get current =>
@@ -58,10 +62,20 @@ class PsmController extends ChangeNotifier {
       _request++;
       _model = null;
       _lastSafety = null;
+      _lastClinician = null;
       error = null;
       phase = PsmPhase.ended;
       notifyListeners();
     }
+  }
+
+  void markStale() {
+    if (!current) return;
+    _request++;
+    _model = null;
+    phase = PsmPhase.idle;
+    error = null;
+    notifyListeners();
   }
 
   Future<void> refresh() async {
@@ -79,11 +93,15 @@ class PsmController extends ChangeNotifier {
       }
       _model = value;
       if (value.safety != null) _lastSafety = value.safety;
+      if (value.clinicianReadbackComplete) {
+        _lastClinician = value.clinician;
+      }
       phase = PsmPhase.ready;
     } catch (e) {
       if (!current || request != _request) return;
       if (e is PsmReadException && [401, 403].contains(e.status)) {
         _lastSafety = null;
+        _lastClinician = null;
       }
       phase = e is FormatException || e is TypeError
           ? PsmPhase.unsupported
@@ -110,6 +128,7 @@ class PsmController extends ChangeNotifier {
     _request++;
     _model = null;
     _lastSafety = null;
+    _lastClinician = null;
     api.removeListener(sessionChanged);
     super.dispose();
   }

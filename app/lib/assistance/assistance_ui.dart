@@ -89,6 +89,15 @@ class AssistanceEvidence extends StatelessWidget {
             if (response.provider.reason != null)
               Text('Reported reason: ${response.provider.reason}'),
             Text('Versions: ${response.schema} · ${response.contextVersion}'),
+            Text(
+              response.provider.mode == 'grounded_ai'
+                  ? 'Reported grounded provider response; recorded facts and inference remain separate.'
+                  : 'Deterministic or restricted server assistance. No successful model-generated response is claimed.',
+            ),
+            if (response.moderation != null)
+              Text(
+                'Content policy metadata: ${response.moderation!.state} · Invoked: ${response.moderation!.invoked} · Flagged: ${response.moderation!.flagged}. Content policy is not a medical safety assessment.',
+              ),
             const Text(
               'This is informational contextual assistance, not an autonomous agent or clinician diagnosis.',
             ),
@@ -120,8 +129,11 @@ class AssistanceEvidence extends StatelessWidget {
                     'Fact: ${fact.id} · Record: ${fact.sourceId} · Field: ${fact.field}',
                   ),
                   Text('Freshness: ${fact.freshness}'),
-                  if (fact.recordedAt != null)
-                    Text('Recorded: ${clinicalTime(fact.recordedAt!)}'),
+                  Text(
+                    fact.recordedAt == null
+                        ? 'Source timestamp not supplied; source age is unknown.'
+                        : 'Recorded: ${clinicalTime(fact.recordedAt!)}',
+                  ),
                   SelectableText('Returned value: ${fact.valueJson}'),
                   SelectableText('Returned provenance: ${fact.provenanceJson}'),
                   if (fact.confidence != null)
@@ -195,17 +207,47 @@ class ContextualAssistanceScreen extends StatefulWidget {
       _ContextualAssistanceScreenState();
 }
 
-class _ContextualAssistanceScreenState
-    extends State<ContextualAssistanceScreen> {
-  late final AssistanceController controller;
+class _ContextualAssistanceScreenState extends State<ContextualAssistanceScreen>
+    with WidgetsBindingObserver {
+  late AssistanceController controller;
+  bool snapshotCleared = false;
   final input = TextEditingController();
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    bind();
+  }
+
+  void bind() {
     controller = AssistanceController(
       ApiService.instance,
       repository: widget.repository,
     )..addListener(changed);
+  }
+
+  @override
+  void didUpdateWidget(covariant ContextualAssistanceScreen old) {
+    super.didUpdateWidget(old);
+    if (old.repository != widget.repository || old.state != widget.state) {
+      controller.removeListener(changed);
+      controller.dispose();
+      input.clear();
+      snapshotCleared = false;
+      bind();
+    }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if ([
+      AppLifecycleState.paused,
+      AppLifecycleState.hidden,
+      AppLifecycleState.detached,
+    ].contains(state)) {
+      snapshotCleared = true;
+      controller.invalidateSnapshot();
+    }
   }
 
   void changed() {
@@ -215,6 +257,7 @@ class _ContextualAssistanceScreenState
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     controller.removeListener(changed);
     controller.dispose();
     input.dispose();
@@ -237,6 +280,10 @@ class _ContextualAssistanceScreenState
               'Ask about your recorded evidence. Only the current question is sent; no local model, photos or conversation history is added.',
           children: [
             ClinicalHomePanel(controller: widget.state.clinical),
+            if (snapshotCleared)
+              const Text(
+                'Previous assistance was cleared after leaving the app. Ask again explicitly to check current context; no request was automatically repeated.',
+              ),
             TextField(
               key: const Key('assistanceQuestion'),
               controller: input,
