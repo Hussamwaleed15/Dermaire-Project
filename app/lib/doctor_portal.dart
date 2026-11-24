@@ -346,9 +346,11 @@ class PatientDetailScreen extends StatefulWidget {
     super.key,
     required this.controller,
     required this.patient,
+    this.expectedGrant,
   });
   final DoctorWorkspaceController controller;
   final DoctorPatient patient;
+  final String? expectedGrant;
   @override
   State<PatientDetailScreen> createState() => _PatientDetailScreenState();
 }
@@ -412,7 +414,9 @@ class _PatientDetailScreenState extends State<PatientDetailScreen>
           ),
         );
       }
-      if (!connection.confirmed) {
+      if (!connection.confirmed ||
+          widget.expectedGrant != null &&
+              connection.grant?.id != widget.expectedGrant) {
         return DermairePage(
           eyebrow: 'Clinician access',
           title: 'Verify current patient access',

@@ -15,9 +15,20 @@ class InboxNotice {
       kind = text(v['kind']),
       source = resourceId(v['source_id']),
       revision = count(v['source_revision']),
+      stateRevision = v['state_revision'] == null
+          ? null
+          : count(v['state_revision']),
       created = timestamp(v['created_at']),
       due = timestamp(v['due_at']),
       read = v['read_at'] == null ? null : timestamp(v['read_at']) {
+    final target = v['target'];
+    if (kind == 'message' &&
+        target is Map &&
+        target['type'] == 'conversation' &&
+        target['authority'] == 'current_server_authorized' &&
+        target['message_id'] == source) {
+      threadId = resourceId(target['thread_id']);
+    }
     if (!noticeKinds.contains(kind) ||
         v['unread'] != (read == null) ||
         v['push_delivery'] != 'unconfirmed') {
@@ -26,6 +37,8 @@ class InboxNotice {
   }
   final String id, kind, source;
   final int revision;
+  final int? stateRevision;
+  String? threadId;
   final DateTime created, due;
   final DateTime? read;
 }
