@@ -142,7 +142,7 @@ void main() {
               throwsA(anything),
             );
             expect(w.posts, 1);
-            expect(w.duplicateRequests, 2);
+            expect(w.duplicateRequests, 1);
             expect(v.$3.pending(kind)!.key, original.key);
             await v.$3.refresh();
             expect(v.$3.pending(kind), isNull);

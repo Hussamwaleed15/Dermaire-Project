@@ -179,5 +179,8 @@ class DoctorWire {
       http.runWithClient(body, () => MockClient(call));
 }
 
-http.Response json(Object? value, [int status = 200]) =>
-    http.Response(jsonEncode(value), status);
+http.Response json(Object? value, [int status = 200]) => http.Response(
+  jsonEncode(value),
+  status,
+  headers: {if (status == 201) 'Original-Grant-Binding': 'explicit'},
+);

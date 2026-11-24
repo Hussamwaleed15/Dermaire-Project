@@ -7,6 +7,8 @@ import '../clinical/clinical_ui.dart' show clinicalTime;
 import '../integration/private_view.dart';
 import '../plans/plan_ui.dart';
 import '../messaging/messaging_ui.dart';
+import '../messaging/messaging_models.dart';
+import '../clinical/clinical_models.dart';
 import 'notification_availability.dart';
 import 'inbox_controller.dart';
 import 'inbox_models.dart';
@@ -22,6 +24,27 @@ class _InboxState extends State<NotificationInboxScreen> {
   final controller = InboxController();
   String? category;
   bool unreadOnly = false;
+  Future<void> openNotice(InboxNotice notice) async {
+    final c = controller;
+    if (!c.current || notice.threadId == null) return;
+    try {
+      final response = await c.api.integrationResource(
+        'messaging/threads/${notice.threadId}',
+        c.generation,
+      );
+      final thread = CareThread.fromApi(object(response.data), c.owner, c.role);
+      if (!mounted || !c.current || thread.id != notice.threadId) return;
+      await openEntry(context, CareConversationScreen(thread: thread));
+    } catch (_) {
+      if (mounted && c.current) {
+        setState(
+          () => c.error =
+              'Conversation unavailable. Refresh current permissions.',
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) => PrivateView(
     controller: controller,
@@ -60,6 +83,10 @@ class _InboxState extends State<NotificationInboxScreen> {
           const Text(
             'Device push delivery is unavailable. App read acknowledgments do not prove delivery. No sensitive notification bodies are stored on this device.',
           ),
+          if (c.unconfirmedReadChanges > 0)
+            Text(
+              '${c.unconfirmedReadChanges} original app-read changes remain unconfirmed. Current read state is separate from original attempt proof. Identities remain in session memory; no automatic replay.',
+            ),
           if (c.busy) const Text('Reading authorized updates…'),
           if (c.error != null)
             Semantics(liveRegion: true, child: Text(c.error!)),
@@ -125,13 +152,27 @@ class _InboxState extends State<NotificationInboxScreen> {
                     runSpacing: 8,
                     children: [
                       OutlinedButton(
-                        onPressed: c.busy
+                        onPressed: c.busy || n.stateRevision == null
                             ? null
                             : () => c.mark(n, read: n.read == null),
                         child: Text(
                           n.read == null ? 'Mark read' : 'Mark unread',
                         ),
                       ),
+                      if (c.pendingRead(n) case final original?)
+                        OutlinedButton(
+                          onPressed:
+                              c.busy ||
+                                  original.body['expected_revision'] !=
+                                      n.stateRevision
+                              ? null
+                              : () => c.mark(
+                                  n,
+                                  read: original.path.endsWith('/read'),
+                                  original: original,
+                                ),
+                          child: const Text('Retry original app-read change'),
+                        ),
                       if (['follow_up', 'comparison'].contains(n.kind))
                         OutlinedButton(
                           onPressed: () => openEntry(
@@ -145,8 +186,14 @@ class _InboxState extends State<NotificationInboxScreen> {
                         ),
                       if (n.kind == 'message')
                         OutlinedButton(
-                          onPressed: () =>
-                              openEntry(context, const CareThreadsScreen()),
+                          onPressed: c.busy
+                              ? null
+                              : () => n.threadId == null
+                                    ? openEntry(
+                                        context,
+                                        const CareThreadsScreen(),
+                                      )
+                                    : openNotice(n),
                           child: const Text('Open care conversations'),
                         ),
                       if (n.kind == 'routine' && c.role == 'patient')
@@ -179,13 +226,24 @@ class _InboxState extends State<NotificationInboxScreen> {
           ],
           if (c.next != null)
             OutlinedButton(
-              onPressed: c.busy ? null : () => c.more(),
+              onPressed: c.busy || c.inboxLimitReached ? null : () => c.more(),
               child: const Text('Load earlier updates'),
+            ),
+          if (c.inboxLimitReached)
+            const Text(
+              'Loaded inbox limit reached (500). Refresh to read current updates; this is not complete lifetime history.',
             ),
           const Text(
             'Notification history',
             style: TextStyle(fontWeight: FontWeight.bold),
           ),
+          if (c.historyError != null) ...[
+            Semantics(liveRegion: true, child: Text(c.historyError!)),
+            OutlinedButton(
+              onPressed: c.busy ? null : c.refreshHistory,
+              child: const Text('Retry transport history read'),
+            ),
+          ],
           for (final n in c.history)
             DermaireCard(
               child: Column(
@@ -196,10 +254,12 @@ class _InboxState extends State<NotificationInboxScreen> {
                   if (n.jobs.isEmpty) const Text('No transport job returned.'),
                   for (final job in n.jobs) ...[
                     Text(
-                      'Transport state: ${job['state']} · attempts ${job['attempts']}',
+                      'Transport state: ${transportStateLabel(job['state'] as String)} · attempts ${job['attempts']}',
                     ),
                     for (final a in job['attempt_history'] as List)
-                      Text('Attempt ${a['number']}: ${a['state']}'),
+                      Text(
+                        'Attempt ${a['number']}: ${transportStateLabel(a['state'] as String)}',
+                      ),
                   ],
                   const Text('Device delivery is unconfirmed.'),
                 ],
@@ -207,8 +267,14 @@ class _InboxState extends State<NotificationInboxScreen> {
             ),
           if (c.nextHistory != null)
             OutlinedButton(
-              onPressed: c.busy ? null : () => c.more(history: true),
+              onPressed: c.busy || c.historyLimitReached
+                  ? null
+                  : () => c.more(history: true),
               child: const Text('Load earlier history'),
+            ),
+          if (c.historyLimitReached)
+            const Text(
+              'Loaded transport history limit reached (500). No earlier delivery evidence is inferred.',
             ),
           const Text(
             'Updates and reminders do not replace clinical care or emergency guidance.',
@@ -280,6 +346,21 @@ class _PreferencesState extends State<NotificationPreferencesScreen> {
             onPressed: c.busy ? null : c.retryOriginal,
             child: const Text('Retry original settings'),
           ),
+        if (c.unconfirmedWithdrawal)
+          const Text(
+            'The original disable-all request remains unconfirmed. Reading current settings is not an original-operation receipt. No withdrawal is automatically repeated.',
+          ),
+        if (c.unconfirmedOriginals > 0)
+          Text(
+            '${c.unconfirmedOriginals} earlier settings attempts have unknown original outcomes. A newer CAS revision fences their retry; matching current values are not original-operation receipts. Identities remain in memory for this session only.',
+          ),
+        if (c.confirmedAt != null)
+          Text(
+            'Last successful read received here: ${clinicalTime(c.confirmedAt!)}. This is read freshness, not proof of device delivery or current medical authority.',
+          ),
+        const Text(
+          'Unsaved settings edits exist only in memory. Refreshing, leaving this private view, backgrounding or signing out clears this draft. No draft or private cache survives closing the app.',
+        ),
         if (c.value != null)
           _SettingsForm(
             key: ValueKey('${c.path}:${c.value!.revision}'),
