@@ -1,3 +1,19 @@
+# Master Plan M1 Home observation readback — 2026-11-14
+
+Master Plan v1.0 supplied by Amr is retained in
+DERMAIRE_PROJECT_MASTER_PLAN_HANDOFF.md. Current reconciliation and first slice:
+MASTER_PLAN_RECONCILIATION_M1_HOME.md. Dedicated branch codex/flutter-m1-home-observation-readback starts at main
+b995873f, the earliest base containing its dependencies; PR6/7/8 remain untouched. Home now reads
+the existing observation_status contract independently of measured completion and
+baseline; missing legacy projection stays unavailable, malformed data fails closed.
+This bounded Flutter implementation is not full M1/product/device/production completion.
+Verified on the main-based branch:21 new focused tests,215 related,2275 full
+passed (0 failed/0 skipped), analyzer/diff clean. PR8-stack compatibility run2363
+passed. Commit/draft PR are recorded in the delivery report.
+The F7/F6 sections below remain historical and do not override newer F8/M1 source.
+
+---
+
 # Current F7 Flutter checkpoint — 2026-10-20
 
 Supersedes older remaining-reader/client-grant claims below. Start

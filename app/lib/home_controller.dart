@@ -44,6 +44,13 @@ class HomeController extends ChangeNotifier {
       ? jsonDecode(jsonEncode(_snapshot)) as Map<String, dynamic>
       : null;
 
+  HomeObservationStatus? get observationStatus {
+    final value = current;
+    return value == null || !value.containsKey('observation_status')
+        ? null
+        : HomeObservationStatus.fromHome(value);
+  }
+
   void validate(Map<String, dynamic> value) =>
       validateHomeResponse(value, today);
 

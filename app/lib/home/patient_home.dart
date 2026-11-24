@@ -266,86 +266,121 @@ class HomePersonalStatus extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final home = state.home.current;
+    final observations = state.home.observationStatus;
     final experiment = home?['experiment'] as Map?;
     final baseline = state.baseline;
+    final content = DermaireCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            'Your current status',
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
+          const SizedBox(height: 10),
+          Text(
+            'Daily observation',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          Semantics(
+            liveRegion: true,
+            child: Text(
+              home == null
+                  ? state.home.loading
+                        ? 'Loading observation status…'
+                        : 'Observation status unconfirmed. Refresh Home to verify.'
+                  : observations == null
+                  ? 'Observation completion is unavailable from this server. This does not mean no observation was recorded.'
+                  : observations.completedToday
+                  ? 'Observation recorded today (UTC)'
+                  : 'No observation recorded today (UTC)',
+            ),
+          ),
+          if (observations != null) ...[
+            Text(
+              'Observation status as of ${clinicalTime(timestamp(home!['as_of']))}',
+            ),
+            for (final row in observations.recent)
+              Text(
+                'Record ${row.id} · ${clinicalTime(row.createdAt)} · ${row.moment} · '
+                '${row.kind == 'report_only' ? 'Report-only observation · No confirmed measurements in this record' : 'Observation with confirmed tracking measurements'}',
+              ),
+          ],
+          const Text(
+            'Recording an observation does not confirm an image capture, a measurement day or clinical improvement.',
+          ),
+          const SizedBox(height: 12),
+          Semantics(
+            liveRegion: true,
+            child: Text(
+              home == null
+                  ? state.home.loading
+                        ? 'Loading tracking status…'
+                        : state.home.error ??
+                              'Tracking status unconfirmed. Refresh to verify.'
+                  : home['today_checked_in'] == true
+                  ? 'Confirmed tracking measurement recorded today (UTC)'
+                  : 'No confirmed tracking measurement recorded today (UTC)',
+            ),
+          ),
+          if (home != null)
+            Text(
+              'Tracking status as of ${clinicalTime(timestamp(home['as_of']))}',
+            ),
+          if (home == null && state.home.retrievedAt != null)
+            const Text(
+              'Previously retrieved Home data is not shown as current.',
+            ),
+          const SizedBox(height: 12),
+          Text(
+            baseline.available
+                ? 'Tracking reference: ${baseline.completedDays} of 5 confirmed UTC days'
+                : baseline.loading
+                ? 'Loading tracking reference…'
+                : baseline.error ??
+                      'Tracking reference unconfirmed. Refresh to verify.',
+          ),
+          if (baseline.available && baseline.retrievedAt != null)
+            Text(
+              'Baseline retrieved ${clinicalTime(baseline.retrievedAt!)}. Calculation time is unavailable.',
+            ),
+          if (!baseline.available && baseline.retrievedAt != null)
+            const Text(
+              'Previously retrieved baseline data is not shown as current.',
+            ),
+          const Text(
+            'Tracking measurements may be user-entered values or nonclinical image estimates. A reference is not a clinical assessment. Report-only observations do not count as measurement days.',
+          ),
+          if (home != null &&
+              baseline.available &&
+              home['today_checked_in'] != baseline.todayCheckedIn)
+            const Text(
+              'Home and the tracking reference differ about today’s measurements. Home includes experiment-linked values; the reference uses unlinked values. Separate read times may also differ.',
+            ),
+          const SizedBox(height: 12),
+          if (home != null && experiment == null)
+            const Text('No current experiment'),
+          if (experiment != null) ...[
+            Text(
+              'Day ${experiment['current_day']} of ${experiment['target_days']}',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+            Text(
+              'Testing: ${experiment['product_name'] ?? 'No linked product'} · ${experiment['primary_concern']}',
+            ),
+            Text('Status: ${experiment['status']}'),
+            const Text(
+              'Scheduled experiment day, not adherence or improvement. Open the experiment for its recorded evidence.',
+            ),
+          ],
+        ],
+      ),
+    );
+    if (EntryMotion.reduced(context)) return content;
     return AnimatedSize(
       duration: EntryMotion.duration(context, 180),
       alignment: Alignment.topCenter,
-      child: DermaireCard(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              'Your current status',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-            const SizedBox(height: 10),
-            Semantics(
-              liveRegion: true,
-              child: Text(
-                home == null
-                    ? state.home.loading
-                          ? 'Loading tracking status…'
-                          : state.home.error ??
-                                'Tracking status unconfirmed. Refresh to verify.'
-                    : home['today_checked_in'] == true
-                    ? 'Confirmed tracking measurement recorded today (UTC)'
-                    : 'No confirmed tracking measurement recorded today (UTC)',
-              ),
-            ),
-            if (home != null)
-              Text(
-                'Tracking status as of ${clinicalTime(timestamp(home['as_of']))}',
-              ),
-            if (home == null && state.home.retrievedAt != null)
-              const Text(
-                'Previously retrieved Home data is not shown as current.',
-              ),
-            const SizedBox(height: 12),
-            Text(
-              baseline.available
-                  ? 'Tracking reference: ${baseline.completedDays} of 5 confirmed UTC days'
-                  : baseline.loading
-                  ? 'Loading tracking reference…'
-                  : baseline.error ??
-                        'Tracking reference unconfirmed. Refresh to verify.',
-            ),
-            if (baseline.available && baseline.retrievedAt != null)
-              Text(
-                'Baseline retrieved ${clinicalTime(baseline.retrievedAt!)}. Calculation time is unavailable.',
-              ),
-            if (!baseline.available && baseline.retrievedAt != null)
-              const Text(
-                'Previously retrieved baseline data is not shown as current.',
-              ),
-            const Text(
-              'Tracking measurements may be user-entered values or nonclinical image estimates. A reference is not a clinical assessment. Report-only observations do not count as measurement days.',
-            ),
-            if (home != null &&
-                baseline.available &&
-                home['today_checked_in'] != baseline.todayCheckedIn)
-              const Text(
-                'Home and the tracking reference differ about today’s measurements. Home includes experiment-linked values; the reference uses unlinked values. Separate read times may also differ.',
-              ),
-            const SizedBox(height: 12),
-            if (home != null && experiment == null)
-              const Text('No current experiment'),
-            if (experiment != null) ...[
-              Text(
-                'Day ${experiment['current_day']} of ${experiment['target_days']}',
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-              Text(
-                'Testing: ${experiment['product_name'] ?? 'No linked product'} · ${experiment['primary_concern']}',
-              ),
-              Text('Status: ${experiment['status']}'),
-              const Text(
-                'Scheduled experiment day, not adherence or improvement. Open the experiment for its recorded evidence.',
-              ),
-            ],
-          ],
-        ),
-      ),
+      child: content,
     );
   }
 }
