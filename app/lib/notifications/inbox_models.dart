@@ -59,12 +59,47 @@ class NoticeHistory {
         v['delivery_confirmed'] != false) {
       throw const FormatException('Invalid notification history');
     }
+    if (jobs.length > 100) throw const FormatException('History job bound');
+    final ids = <String>{};
     for (final j in jobs) {
-      resourceId(j['id']);
-      text(j['state']);
-      count(j['attempts']);
-      if (j['attempt_history'] is! List) {
+      if (!ids.add(resourceId(j['id'])) ||
+          ![
+            'queued',
+            'leased',
+            'retry',
+            'provider_unavailable',
+            'provider_accepted',
+            'cancelled',
+          ].contains(j['state'])) {
+        throw const FormatException('Unsupported transport state');
+      }
+      final attempts = count(j['attempts']);
+      final history = j['attempt_history'];
+      if (history is! List ||
+          history.length > 100 ||
+          history.length > attempts) {
         throw const FormatException('Invalid attempt history');
+      }
+      int previous = 0;
+      final attemptIds = <String>{};
+      for (final raw in history) {
+        final a = object(raw);
+        final number = count(a['number']);
+        if (!attemptIds.add(resourceId(a['id'])) ||
+            number <= previous ||
+            number > attempts ||
+            a['delivery_confirmed'] != false ||
+            ![
+              'leased',
+              'retry',
+              'provider_accepted',
+              'provider_unavailable',
+              'unknown',
+              'unavailable',
+            ].contains(a['state'])) {
+          throw const FormatException('Unsupported attempt evidence');
+        }
+        previous = number;
       }
     }
   }
@@ -155,3 +190,14 @@ List<InboxNotice> filterLoadedNotices(
 );
 String noticeUtcDay(InboxNotice notice) =>
     notice.due.toUtc().toIso8601String().substring(0, 10);
+
+String transportStateLabel(String state) => switch (state) {
+  'queued' => 'Queued for transport; device delivery unknown',
+  'leased' => 'Transport attempt in progress; device delivery unknown',
+  'retry' => 'Transport retry pending; device delivery unknown',
+  'provider_accepted' => 'Provider accepted; device delivery is NOT confirmed',
+  'provider_unavailable' ||
+  'unavailable' => 'Provider unavailable; no device delivery proof',
+  'cancelled' => 'Transport cancelled; no device delivery proof',
+  _ => 'Attempt outcome unknown; no device delivery proof',
+};

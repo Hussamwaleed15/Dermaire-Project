@@ -209,3 +209,12 @@ Android runtime BLOCKED no SDK/AVD. Secure restart recovery still PARTIAL/BLOCKE
 specific native approval/device storage qualification; no persistence claim.
 The earlier inference that no iOS simulator exists is superseded by direct simctl
 inventory and successful execution. No tracked native/backend/Tester change.
+
+
+## Product Master Plan M5 — 14 November 2026
+
+Distinct from historical F6-M M5 above; prior M1–M4 and QA statuses are unchanged and remain on their own open PR stacks. M5 source94ca238ec5497caa4f5f6a9ce27d5047aa56ec83 on dedicated codex/flutter-m5-complete-implementation, stacked on PR7@5d855b499f73866ba6894fe67f950e81ec1b6e51 (PR6 ancestry). Draft PR14: https://github.com/Hussamwaleed15/Dermaire-Project/pull/14. No push to main/other PR branches.
+
+Six demonstrated safely code-addressable gaps completed: bounded ordered inbox/read revision integrity; truthful typed transport attempts; settings/withdrawal original unknown retention; app-read original CAS retention; memory-only draft/freshness/inert availability disclosure; independent optional-history error/retry. Existing domain recovery readers and owner/session/role/Safety/consent guards preserved.27 focused,424 related,2353 full host tests passed; analyzer no issues; diff check clean. Disposable exact M5+PR10/11/12/13 full counts2406/2380/2384/2383; PR8+M5=2369; all analyzer/test exits0. These are source compatibility, not merged/live/device qualification.
+
+Six original requirements: inbox/preferences source VERIFIED; consent/scheduling current contract VERIFIED but live worker/provider unqualified; device registration and real delivery BLOCKED DEVICE/PROVIDER; secure memory-only views/drafts verified, persistent cache PARTIAL product/security/device approval; original recovery PARTIAL missing notification/settings durable attempt proof. SQLCipher/SecureRecoverySession remain qualification-only, not production composed. No native/Backend/Tester/provider/dependency/workflow/production edits or activation. M5 Flutter safe source implementation COMPLETE (6/6); product milestone PARTIAL/PENDING FORMAL CLOSURE; independent QA PENDING SALMA REVIEW. See M5_COMPLETE_FLUTTER_IMPLEMENTATION_REPORT.md and M5_EXTERNAL_DEPENDENCIES.md. M6 not started.

@@ -34,6 +34,12 @@ class NotificationAvailabilityScreen extends StatelessWidget {
         ),
       ),
       Text(
+        'Push token: unavailable. This app does not acquire a device token or register an installation. Reminder consent, OS permission, device registration and actual delivery are separate.',
+      ),
+      Text(
+        'Push provider transport: disabled. Scheduling or an in-app read does not establish provider acceptance or device delivery.',
+      ),
+      Text(
         'Open Dermaire to check your current routine and safety or clinician guidance. Notifications do not replace clinical care.',
       ),
     ],
