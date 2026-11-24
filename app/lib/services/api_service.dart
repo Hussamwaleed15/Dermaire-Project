@@ -549,7 +549,11 @@ class ApiService extends ChangeNotifier {
     final request = http.Request(method, Uri.parse('$baseUrl/doctor/$path'))
       ..followRedirects = false;
     request.headers.addAll(_headers(payload != null));
-    if (original != null) request.headers['Idempotency-Key'] = original.key;
+    if (original != null) {
+      request.headers['Idempotency-Key'] = original.key;
+      request.headers['Original-Grant-Id'] =
+          original.recoveryScope['access_id'] as String;
+    }
     if (payload != null) request.body = jsonEncode(original?.body ?? payload);
     final response = await _client
         .send(request)
@@ -564,6 +568,18 @@ class ApiService extends ChangeNotifier {
         integrationIntents.remove(intentId);
       }
       throw RequestFailure.http(response.statusCode);
+    }
+    if (original != null &&
+        response.headers.entries
+                .where((e) => e.key.toLowerCase() == 'original-grant-binding')
+                .map((e) => e.value)
+                .singleOrNull !=
+            'explicit') {
+      // A successful SQL commit is possible. Retain the exact intent for
+      // read-only reconciliation; never classify absent proof as rejection.
+      throw ApiException(
+        'Clinical outcome is unconfirmed: original grant binding was not verified. Refresh original records; do not resend.',
+      );
     }
     if (original != null &&
         !identical(integrationIntents[intentId], original)) {
@@ -619,6 +635,40 @@ class ApiService extends ChangeNotifier {
     }
 
     guard();
+    PendingIntent? clinicalOriginal;
+    if (method == 'POST' &&
+        RegExp(
+          r'^doctor/patients/[A-Za-z0-9_-]+/(notes|reviews)$',
+        ).hasMatch(path)) {
+      clinicalOriginal =
+          integrationIntents['legacy:doctor:${path.substring('doctor/'.length)}'];
+      if (clinicalOriginal == null ||
+          clinicalOriginal.key != key ||
+          clinicalOriginal.recoveryScope['doctor_id'] != authenticatedOwner ||
+          jsonEncode(clinicalOriginal.body) != jsonEncode(body)) {
+        throw ApiException('Original clinical operation identity is required.');
+      }
+      final patient = path.split('/')[2];
+      final detail =
+          await doctorResource('patients/$patient', generation)
+              as Map<String, dynamic>;
+      guard();
+      final grant = DoctorGrant.fromApi(
+        detail['access'] as Map<String, dynamic>,
+        patient: patient,
+        doctor: authenticatedOwner,
+      );
+      if (detail['patient_id'] != patient ||
+          clinicalOriginal.recoveryScope['patient_id'] != patient ||
+          grant.id != clinicalOriginal.recoveryScope['access_id'] ||
+          !grant.active(DateTime.now().toUtc()) ||
+          !identical(
+            integrationIntents['legacy:doctor:${path.substring('doctor/'.length)}'],
+            clinicalOriginal,
+          )) {
+        throw ApiException('Original clinical authority is unavailable.');
+      }
+    }
     if (!RegExp(r'^[A-Za-z0-9_/-]+$').hasMatch(path) ||
         path.contains('//') ||
         ![
@@ -666,6 +716,11 @@ class ApiService extends ChangeNotifier {
     )..followRedirects = false;
     request.headers.addAll(_headers(body != null));
     request.headers.addAll(preconditions);
+    if (clinicalOriginal != null) {
+      request.headers['Original-Grant-Id'] =
+          clinicalOriginal.recoveryScope['access_id'] as String;
+      request.headers.remove('Original-Grant-Binding');
+    }
     if (key != null) request.headers['Idempotency-Key'] = key;
     if (body != null) request.body = jsonEncode(body);
     final response = await _client
@@ -675,6 +730,16 @@ class ApiService extends ChangeNotifier {
     guard();
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw IntegrationFailure(response.statusCode);
+    }
+    if (clinicalOriginal != null &&
+        response.headers.entries
+                .where((e) => e.key.toLowerCase() == 'original-grant-binding')
+                .map((e) => e.value)
+                .singleOrNull !=
+            'explicit') {
+      throw ApiException(
+        'Clinical outcome is unconfirmed. Verify original records; do not resend.',
+      );
     }
     return IntegrationResponse(
       response.body.isEmpty ? null : jsonDecode(response.body),
