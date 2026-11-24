@@ -2,6 +2,7 @@ import '../doctor/doctor_models.dart' show DoctorGrant;
 import '../integration/contract.dart';
 import '../integration/operation_identity.dart';
 import '../entry/server_entry_metadata.dart';
+import '../entry/verified_policy.dart';
 import 'dart:convert';
 import 'api_exception.dart';
 import 'request_failure.dart';
@@ -26,6 +27,23 @@ import 'package:shared_preferences/shared_preferences.dart';
 class ApiService extends ChangeNotifier {
   ApiService._();
   static final ApiService instance = ApiService._();
+  static const verifiedPolicyRollout = bool.fromEnvironment(
+    'DERMAIRE_VERIFIED_POLICY',
+  );
+  VerifiedPolicy? verifiedPolicy;
+  Future<VerifiedPolicy> readVerifiedPolicy() async {
+    verifiedPolicy = null;
+    final response = await _client
+        .get(Uri.parse('$baseUrl/auth/safety-policy'))
+        .timeout(const Duration(seconds: 15));
+    if (response.statusCode != 200) {
+      throw ApiException('Approved safety policy unavailable.');
+    }
+    final metadata = PolicyMetadata(
+      jsonDecode(response.body) as Map<String, dynamic>,
+    );
+    return metadata.download(_client).timeout(const Duration(seconds: 20));
+  }
 
   Future<Map<String, dynamic>> submitCapture(
     Uint8List bytes,
@@ -549,7 +567,11 @@ class ApiService extends ChangeNotifier {
     final request = http.Request(method, Uri.parse('$baseUrl/doctor/$path'))
       ..followRedirects = false;
     request.headers.addAll(_headers(payload != null));
-    if (original != null) request.headers['Idempotency-Key'] = original.key;
+    if (original != null) {
+      request.headers['Idempotency-Key'] = original.key;
+      request.headers['Original-Grant-Id'] =
+          original.recoveryScope['access_id'] as String;
+    }
     if (payload != null) request.body = jsonEncode(original?.body ?? payload);
     final response = await _client
         .send(request)
@@ -564,6 +586,18 @@ class ApiService extends ChangeNotifier {
         integrationIntents.remove(intentId);
       }
       throw RequestFailure.http(response.statusCode);
+    }
+    if (original != null &&
+        response.headers.entries
+                .where((e) => e.key.toLowerCase() == 'original-grant-binding')
+                .map((e) => e.value)
+                .singleOrNull !=
+            'explicit') {
+      // A successful SQL commit is possible. Retain the exact intent for
+      // read-only reconciliation; never classify absent proof as rejection.
+      throw ApiException(
+        'Clinical outcome is unconfirmed: original grant binding was not verified. Refresh original records; do not resend.',
+      );
     }
     if (original != null &&
         !identical(integrationIntents[intentId], original)) {
@@ -619,6 +653,40 @@ class ApiService extends ChangeNotifier {
     }
 
     guard();
+    PendingIntent? clinicalOriginal;
+    if (method == 'POST' &&
+        RegExp(
+          r'^doctor/patients/[A-Za-z0-9_-]+/(notes|reviews)$',
+        ).hasMatch(path)) {
+      clinicalOriginal =
+          integrationIntents['legacy:doctor:${path.substring('doctor/'.length)}'];
+      if (clinicalOriginal == null ||
+          clinicalOriginal.key != key ||
+          clinicalOriginal.recoveryScope['doctor_id'] != authenticatedOwner ||
+          jsonEncode(clinicalOriginal.body) != jsonEncode(body)) {
+        throw ApiException('Original clinical operation identity is required.');
+      }
+      final patient = path.split('/')[2];
+      final detail =
+          await doctorResource('patients/$patient', generation)
+              as Map<String, dynamic>;
+      guard();
+      final grant = DoctorGrant.fromApi(
+        detail['access'] as Map<String, dynamic>,
+        patient: patient,
+        doctor: authenticatedOwner,
+      );
+      if (detail['patient_id'] != patient ||
+          clinicalOriginal.recoveryScope['patient_id'] != patient ||
+          grant.id != clinicalOriginal.recoveryScope['access_id'] ||
+          !grant.active(DateTime.now().toUtc()) ||
+          !identical(
+            integrationIntents['legacy:doctor:${path.substring('doctor/'.length)}'],
+            clinicalOriginal,
+          )) {
+        throw ApiException('Original clinical authority is unavailable.');
+      }
+    }
     if (!RegExp(r'^[A-Za-z0-9_/-]+$').hasMatch(path) ||
         path.contains('//') ||
         ![
@@ -666,6 +734,11 @@ class ApiService extends ChangeNotifier {
     )..followRedirects = false;
     request.headers.addAll(_headers(body != null));
     request.headers.addAll(preconditions);
+    if (clinicalOriginal != null) {
+      request.headers['Original-Grant-Id'] =
+          clinicalOriginal.recoveryScope['access_id'] as String;
+      request.headers.remove('Original-Grant-Binding');
+    }
     if (key != null) request.headers['Idempotency-Key'] = key;
     if (body != null) request.body = jsonEncode(body);
     final response = await _client
@@ -675,6 +748,16 @@ class ApiService extends ChangeNotifier {
     guard();
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw IntegrationFailure(response.statusCode);
+    }
+    if (clinicalOriginal != null &&
+        response.headers.entries
+                .where((e) => e.key.toLowerCase() == 'original-grant-binding')
+                .map((e) => e.value)
+                .singleOrNull !=
+            'explicit') {
+      throw ApiException(
+        'Clinical outcome is unconfirmed. Verify original records; do not resend.',
+      );
     }
     return IntegrationResponse(
       response.body.isEmpty ? null : jsonDecode(response.body),
@@ -1161,6 +1244,10 @@ class ApiService extends ChangeNotifier {
     required String fullName,
     bool acceptSafety = true,
   }) async {
+    final reviewedPolicy = verifiedPolicy;
+    if (verifiedPolicyRollout && reviewedPolicy == null) {
+      throw ApiException('Review the verified policy before registering.');
+    }
     final generation = await _beginAuthentication();
     final res = await _client
         .post(
@@ -1171,6 +1258,8 @@ class ApiService extends ChangeNotifier {
             'password': password,
             'full_name': fullName,
             'accept_safety': acceptSafety,
+            if (verifiedPolicyRollout)
+              'policy_version': reviewedPolicy!.version,
           }),
         )
         .timeout(const Duration(seconds: 20));
@@ -1258,21 +1347,29 @@ class ApiService extends ChangeNotifier {
   /// Starts the password-reset flow. The backend emails a reset code when
   /// an account exists for the supplied email address.
   Future<Map<String, dynamic>> forgotPassword({required String email}) async {
-    final res = await _client.post(
-      Uri.parse('$baseUrl/auth/forgot-password'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'email': email}),
-    );
+    if (!RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(email)) {
+      throw ApiException('Enter a valid email address.');
+    }
+    final res = await _client
+        .post(
+          Uri.parse('$baseUrl/auth/forgot-password'),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({'email': email}),
+        )
+        .timeout(const Duration(seconds: 20));
     if (res.body.isEmpty) {
       throw ApiException(
         'Empty response from server (status ${res.statusCode})',
       );
     }
-    final data = jsonDecode(res.body) as Map<String, dynamic>;
     if (res.statusCode >= 200 && res.statusCode < 300) {
-      return data;
+      return {
+        'message': 'If this address is eligible, a reset code may arrive.',
+      };
     }
-    throw ApiException(data['message']?.toString() ?? 'Request failed', data);
+    throw ApiException(
+      'The reset request could not be confirmed. Try again later.',
+    );
   }
 
   /// Completes a password reset using the code sent to the user's email.
@@ -1281,28 +1378,37 @@ class ApiService extends ChangeNotifier {
     required String token,
     required String newPassword,
   }) async {
-    final res = await _client.post(
-      Uri.parse('$baseUrl/auth/reset-password'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'email': email,
-        'token': token,
-        'new_password': newPassword,
-      }),
-    );
+    if (!RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(email) ||
+        !RegExp(r'^[0-9]{8}$').hasMatch(token) ||
+        newPassword.runes.length < 8 ||
+        newPassword.runes.length > 128) {
+      throw ApiException(
+        'Enter an eight-digit code and a password of 8–128 characters.',
+      );
+    }
+    final generation = _sessionGeneration;
+    final res = await _client
+        .post(
+          Uri.parse('$baseUrl/auth/reset-password'),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({
+            'email': email,
+            'token': token,
+            'new_password': newPassword,
+          }),
+        )
+        .timeout(const Duration(seconds: 20));
     if (res.body.isEmpty) {
       throw ApiException(
         'Empty response from server (status ${res.statusCode})',
       );
     }
-    final data = jsonDecode(res.body) as Map<String, dynamic>;
     if (res.statusCode >= 200 && res.statusCode < 300) {
-      await _clearSession();
+      if (generation == _sessionGeneration) await _clearSession();
       return;
     }
     throw ApiException(
-      data['message']?.toString() ?? 'Password reset failed',
-      data,
+      'The reset code could not be accepted. Request a new code or try again later.',
     );
   }
 
@@ -1329,6 +1435,7 @@ class ApiService extends ChangeNotifier {
   }
 
   Future<void> _clearSession({bool preserveOperationIdentity = false}) async {
+    verifiedPolicy = null;
     if (preserveOperationIdentity) {
       final owner = _sessionUserId, role = _sessionRole;
       if (owner != null && role != null) {
@@ -1467,7 +1574,12 @@ class ApiService extends ChangeNotifier {
 
   /// Acknowledges the write only. Call readSafetyAcceptance before entry.
   Future<void> acceptSafetyTerms() async {
-    final policy = requiredSafetyPolicyVersion;
+    final policy = verifiedPolicyRollout
+        ? verifiedPolicy?.version
+        : requiredSafetyPolicyVersion;
+    if (verifiedPolicyRollout && policy == null) {
+      throw ApiException('Review the verified policy before accepting.');
+    }
     final generation = _sessionGeneration;
     _consentGeneration = null;
     _confirmedSafetyAcceptance = null;
